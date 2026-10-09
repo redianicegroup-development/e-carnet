@@ -1,0 +1,7 @@
+started_at_utc=2026-10-05T19:21:18Z
+project=/home/ubuntu/work/e-carnet
+postgresql=BLOCKED docker-compose-unavailable
+restore=BLOCKED docker-compose-unavailable
+staging=BLOCKED docker-compose-unavailable
+verdict=NO-GO
+reason=PostgreSQL, restauration isolée et staging réel non vérifiables dans cet environnement

@@ -1,0 +1,6 @@
+git init
+git add .
+git commit -m "v1 init"
+git branch -M main
+git remote add origin https://github.com/redianicegroup-development/Mon-Carnet-Num-rique-.git
+git push -u origin main

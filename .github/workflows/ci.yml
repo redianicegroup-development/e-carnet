@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+
+jobs:
+  api-tests:
+    runs-on: ubuntu-latest
+    env:
+      DJANGO_SECRET_KEY: ci-only-not-a-secret
+      DJANGO_DEBUG: "true"
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+      DATABASE_URL: postgres://ecarnet:ecarnet-test-only@localhost:5432/ecarnet
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: ecarnet
+          POSTGRES_USER: ecarnet
+          POSTGRES_PASSWORD: ecarnet-test-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ecarnet -d ecarnet"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r apps/api/requirements.txt
+      - run: python apps/api/manage.py check
+      - run: python apps/api/manage.py makemigrations --check --dry-run
+      - run: python apps/api/manage.py test
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint --workspace=@ecarnet/web
+      - run: npm run build --workspace=@ecarnet/web

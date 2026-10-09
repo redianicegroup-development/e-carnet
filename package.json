@@ -1,0 +1,27 @@
+{
+  "name": "e-carnet",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "npm@10.9.2",
+  "engines": {
+    "node": ">=22",
+    "npm": ">=10"
+  },
+  "workspaces": [
+    "apps/web",
+    "packages/ui"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=@ecarnet/web",
+    "build": "npm run build --workspace=@ecarnet/web",
+    "start": "npm run start --workspace=@ecarnet/web",
+    "lint": "npm run lint --workspace=@ecarnet/web",
+    "test:api": "node scripts/django.cjs test",
+    "check:api": "node scripts/django.cjs check",
+    "migrate": "node scripts/django.cjs migrate",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f api web db",
+    "test:web": "npm run test --workspace=@ecarnet/web"
+  }
+}

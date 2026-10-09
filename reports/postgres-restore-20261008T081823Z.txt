@@ -1,0 +1,15 @@
+started_at_utc=2026-10-08T08:18:23Z
+finished_at_utc=2026-10-08T08:18:24Z
+source_database_name=ecarnet_pg_smoke
+restored_database=ecarnet_restore_20261008T081823Z
+archive_format=postgres-custom
+archive_bytes=212757
+archive_sha256=8c59a4d5695c587a2f404505f3effc1de0e3ebbb8a4f1b954ac1d660ce5fcaa5
+pg_restore_list=passed
+restore_exit_on_error=passed
+marker_restored=1
+migration_rows_restored=40
+restore_elapsed_seconds=1
+source_database_modified_by_restore=no
+rpo=not_measured_requires_external_scheduled_backup_and_failure_marker
+rto=local_restore_command_duration_only_not_service_recovery

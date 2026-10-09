@@ -1,0 +1,40 @@
+from django.urls import path
+
+from .views import (
+    EstablishmentCreateView,
+    EstablishmentCatalogView,
+    EstablishmentDetailView,
+    EstablishmentInvitationAcceptView,
+    EstablishmentJoinCodeCreateView,
+    EstablishmentJoinCodeRedeemView,
+    EstablishmentListView,
+    EstablishmentMembershipListView,
+    MembershipDecisionView,
+    MembershipLeaveView,
+    MembershipTerminateByEstablishmentView,
+    MembershipRequestView,
+    SetActiveEstablishmentView,
+    StaffAdministratorInvitationView,
+    StaffEstablishmentCreateView,
+    StartupEstablishmentQueueView,
+)
+
+urlpatterns = [
+    path("", EstablishmentListView.as_view()),
+    path("catalog/", EstablishmentCatalogView.as_view()),
+    path("create/", EstablishmentCreateView.as_view()),
+    path("invitations/accept/", EstablishmentInvitationAcceptView.as_view()),
+    path("join-codes/redeem/", EstablishmentJoinCodeRedeemView.as_view()),
+    path("startup/queue/", StartupEstablishmentQueueView.as_view()),
+    path("startup/establishments/", StaffEstablishmentCreateView.as_view()),
+    path("startup/<uuid:establishment_id>/decision/", StartupEstablishmentQueueView.as_view()),
+    path("startup/<uuid:establishment_id>/administrator-invitation/", StaffAdministratorInvitationView.as_view()),
+    path("<uuid:establishment_id>/join-codes/", EstablishmentJoinCodeCreateView.as_view()),
+    path("<uuid:establishment_id>/memberships/", EstablishmentMembershipListView.as_view()),
+    path("<uuid:establishment_id>/", EstablishmentDetailView.as_view()),
+    path("<uuid:establishment_id>/memberships/request/", MembershipRequestView.as_view()),
+    path("<uuid:establishment_id>/memberships/<uuid:membership_id>/decision/", MembershipDecisionView.as_view()),
+    path("<uuid:establishment_id>/memberships/leave/", MembershipLeaveView.as_view()),
+    path("<uuid:establishment_id>/memberships/<uuid:membership_id>/terminate/", MembershipTerminateByEstablishmentView.as_view()),
+    path("active/", SetActiveEstablishmentView.as_view()),
+]

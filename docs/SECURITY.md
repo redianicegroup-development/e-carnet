@@ -1,0 +1,38 @@
+# Sécurité — état du dépôt au 08/10/2026
+
+Ce document décrit le code et ses limites. Il ne constitue ni une certification, ni une garantie de conformité, ni un audit indépendant.
+
+## Contrôles présents
+
+- **Données :** développement, tests, captures et pilote utilisent des données fictives. Aucune donnée clinique réelle avant les validations et le Go/No-Go.
+- **Sessions :** session serveur Django; cookie de session HttpOnly, Secure hors DEBUG; CSRF/CORS configurés; aucun JWT dans `localStorage`.
+- **Mots de passe :** `argon2-cffi` est déclaré et `Argon2PasswordHasher` est le premier `PASSWORD_HASHERS`; PBKDF2 reste dans la liste pour vérification/mise à niveau de comptes existants. Recetter la migration et la configuration en staging.
+- **OAuth :** callbacks Google/Facebook/Apple, état OAuth par session, unicité `(provider, provider_user_id)` et `(user, provider)`, conflit e-mail sans fusion silencieuse, ainsi qu’une UI de liaison/déliaison dans les paramètres. Les secrets sont configurables par environnement et doivent être fournis ; les fournisseurs réels et leur recette bout en bout ne sont pas validés. Apple dépend de credentials valides Apple Developer.
+- **Accès clinique actuel :** l’API requiert contexte professionnel actif, établissement actif, membership active dans la structure sélectionnée et AccessGrant patient actif/consenti. Il n’existe plus de gate global E‑Carnet de vérification du médecin. Le statut/rôle et la spécialité sont déclaratifs; l’établissement vérifie en interne et l’application enregistre sa décision de rattachement.
+- **AccessGrant :** professionnel et établissement sont obligatoires en base; les demandes `pending`/`active` doivent porter une échéance, et une contrainte unique interdit les doublons par patient, professionnel et établissement. Une demande pending expire après 7 jours; après un refus, une nouvelle demande attend 30 jours.
+- **Compte :** `/identity/me/` expose un UUID public stable; la clé entière reste interne aux relations Django. La connexion résout l’adresse sans tenir compte de la casse.
+- **QR :** jeton opaque, seul son SHA-256 est stocké, usage unique et expiration de 5 min (décision A9). Génération et scan/saisie du jeton sont présents ; l’UUID patient reste saisi séparément et l’ensemble est à recetter sur mobile/staging.
+- **Audit :** acceptation/refus/prolongation/révocation et lecture clinique autorisée génèrent des événements minimisés visibles au patient. La lecture est limitée au même établissement que l’AccessGrant. Les triggers PostgreSQL UPDATE/DELETE/TRUNCATE et le verrouillage CA‑13 sont couverts côté code; la recette sur PostgreSQL/staging et les privilèges runtime restent à vérifier.
+- **PWA :** les API et espaces authentifiés ne doivent pas être mis en cache.
+- **Secrets :** variables d’environnement; aucun secret de production dans le dépôt. `.env.example` est un exemple local, non une configuration sécurisée prête à déployer.
+
+## Limites importantes — bloquantes avant exposition
+
+- **SVG d’attestation :** le backend applique une allowlist stricte de primitives et attributs graphiques, refuse DTD/entités, scripts, CSS, médias, URL externes et namespaces non autorisés, puis sérialise, calcule un SHA-256 et conserve un horodatage. Les tests hostiles locaux passent ; le rendu et la recette staging restent à vérifier.
+- **OAuth :** endpoints présents ne signifient pas que Google/Facebook/Apple sont activés en production. Il faut callbacks enregistrés, secrets réels, retours UI sûrs, liaison/déliaison accessible, audit et tests bout en bout. Aucune fusion automatique sur email.
+- **Établissement :** compte nominatif, invitation hashée à usage unique/48 h et relation d’administration remplaçable présents côté API/UI. L’e-mail réel, le durcissement de la console et la recette production restent à faire ; l’accès admin établissement n’a pas de lecture clinique.
+- **Invitation et code médecin :** token/code aléatoires hashés en base, expiration 48 h, consommation unique et demande `pending` avant approbation sont présents. Le jeton brut n’est jamais renvoyé dans une réponse API ; le destinataire le reçoit par e-mail. SMTP est configurable dans Django, mais la configuration de staging et la délivrabilité/renvoi restent à valider. Les conditions médecin sont versionnées et enregistrées avant consommation du code ; le départ peut être initié par l’établissement ou le médecin sans supprimer l’historique.
+- **Vérification structure/médecin :** preuves structure reçues par e-mail et examinées hors application; pas de dépôt public. La vérification du médecin est effectuée en interne par l’établissement. Le formulaire/API médecin ne demande ni n’expose de numéro professionnel ou de justificatif. La colonne historique `professional_identifier` demeure en base uniquement pour éviter une suppression implicite de données lors du déploiement; définir une rétention et une purge contrôlée avant la mise en production.
+- **MFA/TOTP :** décision produit = V3. Les endpoints, la table contenant les secrets et les données de seed V1 ont été retirés; réintroduire le MFA uniquement avec stockage chiffré, limitation des essais et parcours de récupération conçus pour V3.
+- **Scopes :** A9 est décidé et appliqué : défaut `preconsultation` + `declarations`, `consultations` sélectionnable, `documents` hors V1. Ne pas réintroduire les scopes historiques.
+- **Dépendances :** `npm ci` du 05/10/2026 signalait cinq vulnérabilités `high` dans l’arbre d’outillage ; cette observation n’a pas été revérifiée depuis. Faire un audit daté avant publication.
+- **Authlib :** usage d’`authlib.jose` émet un avertissement de dépréciation; prévoir migration vers `joserfc` et retester les JWT Apple.
+
+## Contrôles qui restent à réaliser
+
+1. OAuth réel par fournisseur et vérification Apple séparée.
+2. Les tests hostiles SVG passent localement ; les rejouer dans le pipeline cible et effectuer une revue de sécurité indépendante.
+3. Rate limits login, codes établissement, invitations, durée/rotation de session et cookies/CSRF sur les vrais domaines.
+4. Tests inter-établissements A/B et révocation/prolongation concurrente : preuve locale PostgreSQL obtenue le 08/10 ; répéter sur staging. Compléter les privilèges DB et la protection `TRUNCATE` de l’audit.
+5. Staging, sauvegarde/restauration avec RPO/RTO approuvés, essais Android/4G et accessibilité.
+6. Stockage privé, antivirus, rétention documentaire, purge des éventuels numéros historiques, procédure d’incident et revue juridique/médicale avant toute donnée réelle.

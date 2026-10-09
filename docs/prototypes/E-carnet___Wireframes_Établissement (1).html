@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>E-carnet — Wireframes Établissement</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{--c1:#F2F5EF;--c2:#D8E2D0;--c3:#A9C4A5;--c4:#5B7F68;--c5:#2C3A33;--paper:#fff;--ink:var(--c5);--g6:rgba(44,58,51,.72);--g4:rgba(44,58,51,.55);--amber:#8A6100;--amberbg:#FFF3D6;--green:#1F8A5A;--greenbg:#E4F5EC;--font:'Plus Jakarta Sans',system-ui,sans-serif;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--c2);color:var(--ink);font:13px/1.35 var(--font);padding:32px 18px 60px}
+h1{font-size:24px;font-weight:800;margin:0 0 6px}.sub{color:var(--g6);margin:0 0 20px;max-width:70ch}
+.mono,.eyebrow{font-family:'JetBrains Mono',monospace}
+h2{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;display:inline-block;color:var(--c5);background:var(--c1);border-radius:999px;padding:6px 14px;margin:38px 0 16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:30px 20px;justify-items:center}
+.fig{display:flex;flex-direction:column;align-items:center;gap:10px}
+.cap{font-size:12px;color:var(--g6);text-align:center;max-width:290px}.cap b{color:var(--ink);font-size:13px}
+.ph{width:300px;height:620px;background:var(--c5);border-radius:42px;padding:9px;position:relative;box-shadow:0 30px 60px -28px rgba(15,40,32,.4)}
+.isl{position:absolute;top:18px;left:50%;transform:translateX(-50%);width:78px;height:20px;background:var(--c5);border-radius:12px;z-index:2}
+.scr{height:100%;background:var(--c1);border-radius:33px;overflow:hidden;display:flex;flex-direction:column}
+.sb{display:flex;justify-content:space-between;padding:14px 22px 0;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;flex:none}
+.app{display:flex;align-items:center;justify-content:space-between;padding:8px 16px 9px;border-bottom:1px solid var(--c3);flex:none}
+.brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:16px;letter-spacing:-.01em}.brand em{font-style:normal;color:var(--c4)}
+.mark{width:26px;height:26px;border-radius:8px;background:var(--c4);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px}
+.pb{width:32px;height:32px;border-radius:50%;background:var(--c4);color:#fff;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center}
+.hd{display:flex;align-items:center;gap:8px;padding:12px 16px 4px;flex:none;font-weight:800;font-size:15px}
+.hd .t{flex:1;text-align:center}.hd .s{width:20px}
+.bd{flex:1;overflow:hidden;padding:12px 16px 10px;display:flex;flex-direction:column;gap:10px}
+.nav{display:flex;justify-content:space-around;padding:9px 0 14px;border-top:1px solid var(--c3);flex:none;background:var(--c1)}
+.nav div{text-align:center;font-size:8.5px;color:var(--g4);font-weight:700}.nav i{display:block;width:16px;height:16px;margin:0 auto 2px;border-radius:5px;background:var(--c2)}
+.nav .on{color:var(--c5)}.nav .on i{background:var(--c4)}
+.img{background:var(--c2);border-radius:16px;display:flex;align-items:center;justify-content:center;color:var(--g6);font-size:10px}
+.sec{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--g4);font-weight:700;margin:2px 0 -4px}
+.row{display:flex;gap:10px;align-items:center;background:var(--paper);border:1px solid var(--c2);border-radius:10px;padding:10px 12px}
+.row .th{width:30px;height:30px;border-radius:8px;background:var(--c2);flex:none}
+.row .m{flex:1;min-width:0}.row b{display:block;font-size:12.5px;font-weight:700}.row span{font-size:11px;color:var(--g6)}
+.bg{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap;background:var(--c2);color:var(--c5)}
+.bg.d{background:var(--amberbg);color:var(--amber)}.bg.c{background:var(--greenbg);color:var(--green)}.bg.x{background:#FBE9E7;color:#A32D2D;text-decoration:line-through}
+.btn{border-radius:999px;padding:11px 14px;text-align:center;font-weight:700;font-size:12.5px;background:var(--c4);color:#fff}
+.btn.g{background:none;border:1px solid var(--c3);color:var(--ink)}.btn.k{background:none;border:1px dashed var(--c3);color:var(--g6)}
+.two{display:flex;gap:8px}.two>*{flex:1}
+.inp{border:1px solid var(--c3);border-radius:12px;padding:8px 12px;background:var(--paper)}
+.inp small{display:block;font-size:10px;color:var(--g4);margin-bottom:1px}.inp b{color:var(--ink);font-weight:600;font-size:12.5px}
+.card{background:var(--paper);border:1px solid var(--c2);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.note{font-size:11px;color:var(--g6);line-height:1.5}.c{text-align:center}.push{margin-top:auto}
+.big{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;letter-spacing:.2em;text-align:center;padding:10px;color:var(--c4);background:var(--c1);border-radius:12px}
+.tabs{display:flex;background:var(--c2);border-radius:999px;padding:3px}.tabs div{flex:1;text-align:center;padding:6px;font-size:11.5px;border-radius:999px;color:var(--g6);font-weight:600}.tabs .on{background:var(--c4);color:#fff;font-weight:700}
+.warn{background:var(--amberbg);color:var(--amber);border-radius:12px;padding:10px 12px;font-size:11px;display:flex;gap:8px;line-height:1.45}.warn i{font-style:normal;font-weight:800}
+.li{display:flex;justify-content:space-between;padding:11px 2px;border-bottom:1px solid var(--c2);font-size:13px;font-weight:600}
+.tl{border-left:2px solid var(--c3);margin-left:5px;padding-left:10px;display:flex;flex-direction:column;gap:8px}
+.leg{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 6px;font-size:12px;align-items:center}
+</style></head><body>
+<h1>Mon Carnet Numérique · Wireframes Établissement</h1>
+<p class="sub">Style de la maquette Espace Établissement : palette Sauge, Plus Jakarta Sans, JetBrains Mono. Cadrage V5 : en V1 l’établissement passe par une demande d’intérêt et un accompagnement (section A). L’espace complet de la maquette (équipe, rattachements, activité) est reporté en V2 (section B).</p>
+<div class="leg"><span class="bg">V1</span> périmètre du MVP <span class="bg d">V2</span> reporté après pilote</div>
+<div id="root"></div>
+<script>
+const D='<span class="bg d">◔ Déclaré</span>',C='<span class="bg c">✓ Confirmé</span>',X='<span class="bg d x">✕ Non confirmé</span>';
+const sec=t=>`<div class="sec">${t}</div>`,txt=t=>`<div class="note">${t}</div>`,ctr=t=>`<div class="note c">${t}</div>`;
+const img=(h,t='')=>`<div class="img" style="height:${h}px">${t}</div>`;
+const row=(a,b,r='')=>`<div class="row"><div class="th"></div><div class="m"><b>${a}</b><span>${b}</span></div>${r}</div>`;
+const btn=(t,k='')=>`<div class="btn ${k}">${t}</div>`,two=(a,b)=>`<div class="two">${a}${b}</div>`;
+const inp=(l,v)=>`<div class="inp"><small>${l}</small><b>${v}</b></div>`;
+const card=(...x)=>`<div class="card">${x.join('')}</div>`,warn=(i,t)=>`<div class="warn"><i>${i}</i><div>${t}</div></div>`;
+const li=(a,b='›')=>`<div class="li"><span>${a}</span><span>${b}</span></div>`,push=h=>`<div class="push"></div>`+h;
+const tabs=(a,i)=>`<div class="tabs">${a.map((x,j)=>`<div class="${j==i?'on':''}">${x}</div>`).join('')}</div>`;
+const APP='<div class="app"><div class="brand"><span class="mark">＋</span><span><em>E</em>-carnet</span></div><div class="pb">CP</div></div>';
+const NAV=['Accueil','Équipe','Rattach.','Activité','Moi'];
+const S=(t,o,...b)=>({t,...o,b:b.join('')});
+const bars=`<div style="display:flex;align-items:flex-end;gap:10px;height:80px">${[35,55,80,45].map((h,i)=>`<div style="flex:1;height:${h}%;background:${i==2?'var(--c4)':'var(--c3)'};border-radius:6px 6px 0 0;color:${i==2?'#fff':'var(--c5)'};font-size:10px;font-weight:700;text-align:center;padding-top:3px">${[4,7,10,6][i]}</div>`).join('')}</div>`;
+const V1='<span class="bg">V1</span>',V2='<span class="bg d">V2</span>';
+const G=[
+['A · V1 — Demande d’intérêt et accompagnement',[
+S('Présentation',{h:'Rejoindre E-carnet',c:'Point d’entrée établissement (pas de dashboard en V1)'},img(150,'illustration'),'<div class="c"><b style="font-size:15px">Le carnet du patient, entre vos murs et au-delà</b></div>',ctr('Un partenaire du système de soins : le carnet reste personnel au patient.'),push(btn('Déposer une demande')+btn('Suivre ma demande','g'))),
+S('Formulaire de demande',{back:1,h:'Demande d’intérêt',c:'Fiche minimale : nom, localisation, responsable (à confirmer avec l’équipe)'},inp('Nom de l’établissement','Clinique Les Palmiers'),inp('Type','Clinique ▾'),inp('Localisation','Cocody, Abidjan'),inp('Responsable à contacter','Nom · fonction'),inp('Téléphone / email','+225 …'),push(btn('Envoyer la demande'))),
+S('Demande envoyée',{h:'Merci',c:'Accusé de réception'},img(120,'✓'),'<div class="c"><b style="font-size:15px">Demande reçue</b></div>',ctr('Notre équipe l’examine et vous recontacte. Numéro de suivi ci-dessous.'),`<div class="big" style="font-size:16px">EST-2026-0142</div>`,push(btn('Suivre ma demande')+btn('Retour','g'))),
+S('Suivi — en cours d’examen',{back:1,h:'Ma demande',c:'Statut + étapes du processus'},card('<b>Clinique Les Palmiers</b>','<span class="bg d">En cours d’examen</span>'),`<div class="tl">${txt('✓ 1 · Intérêt déposé')}<div class="note"><b>◔ 2 · Examen de la demande</b></div>${txt('3 · Accompagnement de la configuration')}${txt('4 · Activation de l’espace')}</div>`,push(txt('Vous serez contacté au numéro indiqué. Délai indicatif à définir.'))),
+S('Informations complémentaires',{back:1,h:'Ma demande',c:'Cas : l’équipe demande un complément'},card('<b>Clinique Les Palmiers</b>','<span class="bg d">Action requise</span>'),warn('!','L’équipe demande : « nom du responsable habilité et justificatif d’existence de la structure ».'),inp('Réponse','…'),`<div class="inp"><small>Pièce jointe</small><b>+ Joindre</b></div>`,push(btn('Envoyer'))),
+S('Accompagnement',{back:1,h:'Configuration initiale',c:'Sur place ou accès technique contrôlé : dispositif à trancher'},card('<b>Clinique Les Palmiers</b>','<span class="bg">Accompagnement</span>'),`<div class="tl">${txt('✓ Intérêt déposé')}${txt('✓ Demande acceptée')}<div class="note"><b>◔ Configuration avec l’équipe</b></div>${txt('Activation')}</div>`,card(sec('Prochaine étape'),txt('Rendez-vous de configuration : à planifier avec votre référent.'))),
+S('Demande non retenue',{back:1,h:'Ma demande',c:'Refus avec motif'},card('<b>Clinique Les Palmiers</b>','<span class="bg x">Non retenue</span>'),warn('i','Motif : critères du pilote non remplis pour le moment. Vous pouvez redéposer une demande.'),push(btn('Redéposer une demande','g'))),
+S('Fiche établissement (minimale)',{back:1,h:'Fiche de la structure',c:'Ce que la maquette V1 matérialise'},card(sec('Nom'),'<b>Clinique Les Palmiers</b>',sec('Localisation'),txt('Cocody, Abidjan'),sec('Responsable'),txt('À confirmer avec l’équipe'),sec('Statut'),'<span class="bg">Accompagnement</span>'),push(btn('Modifier la fiche','g'))),
+S('Espace activé',{h:'C’est prêt',c:'Activation quand les conditions sont réunies'},img(120,'✓'),'<div class="c"><b style="font-size:15px">Votre espace est activé</b></div>',ctr('Vos médecins peuvent maintenant être rattachés à la Clinique Les Palmiers.'),push(btn('Accéder à mon espace'))),
+]],
+['B · V2 — Espace établissement complet (reprise de la maquette)',[
+S('Accueil',{n:0,c:'V2 · chiffres agrégés uniquement'},'<div class="note">Bonjour</div><b style="font-size:16px">Clinique Les Palmiers</b>',two(card('<b style="font-size:18px">4</b>',txt('Médecins rattachés')),card('<b style="font-size:18px">1</b>',txt('Rattachement en attente'))),sec('Indicateurs d’activité'),card(bars),txt('Aucun contenu médical visible depuis cet espace.')),
+S('Équipe',{n:1,c:'V2 · liste organisationnelle'},two('<b style="font-size:15px">Équipe</b>',btn('+ Inviter')),sec('Médecins rattachés'),row('Dr. Yao Bamba','Médecine générale','<span class="bg c">✓ Vérifié</span>'),row('Dr. Fatou Traoré','Pédiatrie','<span class="bg c">✓ Vérifié</span>'),row('Dr. Sekou Diallo','Cardiologie','<span class="bg d">◔ En attente</span>')),
+S('Inviter un médecin',{back:1,h:'Inviter',c:'V2 · invitation par téléphone ou email'},inp('Téléphone ou email','+225 …'),inp('Spécialité (facultatif)','…'),txt('Le médecin apparaît dans l’équipe une fois son compte créé et vérifié.'),push(btn('Envoyer l’invitation'))),
+S('Détail médecin',{back:1,h:'Dr. Yao Bamba',c:'V2 · gestion des départs et affectations'},row('Médecine générale','Rattaché depuis le 3 sept.','<span class="bg c">✓ Vérifié</span>'),card(sec('Justificatifs'),row('Diplôme / n° d’ordre','Vérifié le 3 sept.','›')),push(btn('Suspendre le rattachement','g')+btn('Retirer (départ)','g')),txt('Ses consultations passées restent attribuées à lui.')),
+S('Rattachements',{n:2,c:'V2 · demandes à traiter'},sec('Demandes en attente'),card('<b>Dr. Sekou Koffi</b>',txt('Médecine générale · Abidjan'),two(btn('Accepter'),btn('Refuser','g'))),sec('Historique'),row('Dr. Fatou Traoré','Accepté · 3 sept.','›')),
+S('Vérifier un médecin',{back:1,h:'Dr. Sekou Koffi',c:'V2 · selon la procédure écrite de vérification'},card(sec('Identité et justificatifs'),row('Carte pro / n° d’ordre','À vérifier','›'),row('Pièce d’identité','À vérifier','›')),inp('Motif (requis si refus)','…'),push(two(btn('Vérifier et rattacher'),btn('Refuser','g')))),
+S('Activité',{n:3,c:'V2 · statistiques de gestion agrégées'},'<b style="font-size:15px">Activité de la structure</b>',two(card('<b style="font-size:18px">27</b>',txt('Consultations / mois')),card('<b style="font-size:18px">2</b>',txt('Rattachements / mois'))),card(sec('Consultations / semaine'),bars),txt('Aucun contenu médical individuel.')),
+S('Dossiers de l’établissement',{n:3,c:'Consultations signées par vos médecins uniquement — jamais un autre établissement'},'<div class="inp"><small>Rechercher</small><b>Patient traité par votre établissement</b></div>',row('Awa Koné','Dr. Bamba · 3 consultations','›'),row('Moussa Diarra','Dr. Koffi · 1 consultation','›'),warn('i','Ouvrir un dossier exige un motif, journalisé et visible par le patient.')),
+S('Motif obligatoire',{back:1,h:'Avant ouverture',c:'Journalisé · visible dans l’historique du patient'},inp('Motif de la consultation du dossier','Ex. continuité de soins, médecin absent…'),push(btn('Ouvrir le dossier'))),
+S('Dossier (lecture établissement)',{back:1,h:'Awa Koné',c:'Consultations signées + pré-consultation associée uniquement'},row('Dr. Bamba','12 sept. · Diabète à suivre','<span class="bg c">✓ Validée</span>'),txt('Ni brouillon, ni document patient, ni export — accès consulté le 02/10 à 14:32, motif : continuité de soins.')),
+S('Moi',{n:4,c:'V2 · profil structure'},'<div class="row"><div class="th" style="border-radius:50%;width:44px;height:44px"></div><div class="m"><b>Clinique Les Palmiers</b><span>Cocody, Abidjan</span></div></div>',li('Informations administratives'),li('Responsable habilité'),li('Coordonnées'),li('Sécurité et connexion'),push(btn('Se déconnecter','g'))),
+S('Responsable habilité',{back:1,h:'Responsable',c:'V2 · qui peut vérifier et rattacher'},card('<b>Dr. Yao Bamba</b>',txt('Responsable habilité depuis le 3 sept.')),warn('i','Le responsable vérifie les médecins selon la procédure écrite. Il ne voit pas les dossiers cliniques.'),push(btn('Changer de responsable','g'))),
+]]];
+const root=document.getElementById('root');
+G.forEach(([g,list])=>{let n=0;root.insertAdjacentHTML('beforeend',`<h2>${g}</h2><div class="grid">${list.map(s=>`<div class="fig"><div class="ph"><div class="isl"></div><div class="scr"><div class="sb"><span>9:41</span><span>●●●</span></div>${s.n!==undefined?APP:s.back||s.h?`<div class="hd"><span>${s.back?'‹':''}</span><span class="t">${s.h||''}</span><span class="s"></span></div>`:'<div style="height:6px"></div>'}<div class="bd">${s.b}</div>${s.n!==undefined?`<div class="nav">${NAV.map((x,i)=>`<div class="${i==s.n?'on':''}"><i></i>${x}</div>`).join('')}</div>`:''}</div></div><div class="cap"><b>${s.t}</b><br>${s.c||''}</div></div>`).join('')}</div>`)});
+</script></body></html>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>E-carnet — Wireframes Médecin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{--c1:#F2F5EF;--c2:#D8E2D0;--c3:#A9C4A5;--c4:#5B7F68;--c5:#2C3A33;--paper:#fff;--ink:var(--c5);--g6:rgba(44,58,51,.72);--g4:rgba(44,58,51,.55);--amber:#8A6100;--amberbg:#FFF3D6;--green:#1F8A5A;--greenbg:#E4F5EC;--font:'Plus Jakarta Sans',system-ui,sans-serif;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--c2);color:var(--ink);font:13px/1.35 var(--font);padding:32px 18px 60px}
+h1{font-size:24px;font-weight:800;margin:0 0 6px}.sub{color:var(--g6);margin:0 0 20px;max-width:70ch}
+.mono,.eyebrow{font-family:'JetBrains Mono',monospace}
+h2{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;display:inline-block;color:var(--c5);background:var(--c1);border-radius:999px;padding:6px 14px;margin:38px 0 16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:30px 20px;justify-items:center}
+.fig{display:flex;flex-direction:column;align-items:center;gap:10px}
+.cap{font-size:12px;color:var(--g6);text-align:center;max-width:290px}.cap b{color:var(--ink);font-size:13px}
+.ph{width:300px;height:620px;background:var(--c5);border-radius:42px;padding:9px;position:relative;box-shadow:0 30px 60px -28px rgba(15,40,32,.4)}
+.isl{position:absolute;top:18px;left:50%;transform:translateX(-50%);width:78px;height:20px;background:var(--c5);border-radius:12px;z-index:2}
+.scr{height:100%;background:var(--c1);border-radius:33px;overflow:hidden;display:flex;flex-direction:column}
+.sb{display:flex;justify-content:space-between;padding:14px 22px 0;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;flex:none}
+.app{display:flex;align-items:center;justify-content:space-between;padding:8px 16px 9px;border-bottom:1px solid var(--c3);flex:none}
+.brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:16px;letter-spacing:-.01em}.brand em{font-style:normal;color:var(--c4)}
+.mark{width:26px;height:26px;border-radius:8px;background:var(--c4);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px}
+.pb{width:32px;height:32px;border-radius:50%;background:var(--c4);color:#fff;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center}
+.hd{display:flex;align-items:center;gap:8px;padding:12px 16px 4px;flex:none;font-weight:800;font-size:15px}
+.hd .t{flex:1;text-align:center}.hd .s{width:20px}
+.bd{flex:1;overflow:hidden;padding:12px 16px 10px;display:flex;flex-direction:column;gap:10px}
+.nav{display:flex;justify-content:space-around;padding:9px 0 14px;border-top:1px solid var(--c3);flex:none;background:var(--c1)}
+.nav div{text-align:center;font-size:8.5px;color:var(--g4);font-weight:700}.nav i{display:block;width:16px;height:16px;margin:0 auto 2px;border-radius:5px;background:var(--c2)}
+.nav .on{color:var(--c5)}.nav .on i{background:var(--c4)}
+.img{background:var(--c2);border-radius:16px;display:flex;align-items:center;justify-content:center;color:var(--g6);font-size:10px}
+.sec{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--g4);font-weight:700;margin:2px 0 -4px}
+.row{display:flex;gap:10px;align-items:center;background:var(--paper);border:1px solid var(--c2);border-radius:10px;padding:10px 12px}
+.row .th{width:30px;height:30px;border-radius:8px;background:var(--c2);flex:none}
+.row .m{flex:1;min-width:0}.row b{display:block;font-size:12.5px;font-weight:700}.row span{font-size:11px;color:var(--g6)}
+.bg{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap;background:var(--c2);color:var(--c5)}
+.bg.d{background:var(--amberbg);color:var(--amber)}.bg.c{background:var(--greenbg);color:var(--green)}.bg.x{background:#FBE9E7;color:#A32D2D;text-decoration:line-through}
+.btn{border-radius:999px;padding:11px 14px;text-align:center;font-weight:700;font-size:12.5px;background:var(--c4);color:#fff}
+.btn.g{background:none;border:1px solid var(--c3);color:var(--ink)}.btn.k{background:none;border:1px dashed var(--c3);color:var(--g6)}
+.two{display:flex;gap:8px}.two>*{flex:1}
+.inp{border:1px solid var(--c3);border-radius:12px;padding:8px 12px;background:var(--paper)}
+.inp small{display:block;font-size:10px;color:var(--g4);margin-bottom:1px}.inp b{color:var(--ink);font-weight:600;font-size:12.5px}
+.card{background:var(--paper);border:1px solid var(--c2);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.note{font-size:11px;color:var(--g6);line-height:1.5}.c{text-align:center}.push{margin-top:auto}
+.big{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;letter-spacing:.2em;text-align:center;padding:10px;color:var(--c4);background:var(--c1);border-radius:12px}
+.tabs{display:flex;background:var(--c2);border-radius:999px;padding:3px}.tabs div{flex:1;text-align:center;padding:6px;font-size:11.5px;border-radius:999px;color:var(--g6);font-weight:600}.tabs .on{background:var(--c4);color:#fff;font-weight:700}
+.warn{background:var(--amberbg);color:var(--amber);border-radius:12px;padding:10px 12px;font-size:11px;display:flex;gap:8px;line-height:1.45}.warn i{font-style:normal;font-weight:800}
+.li{display:flex;justify-content:space-between;padding:11px 2px;border-bottom:1px solid var(--c2);font-size:13px;font-weight:600}
+.tl{border-left:2px solid var(--c3);margin-left:5px;padding-left:10px;display:flex;flex-direction:column;gap:8px}
+.leg{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 6px;font-size:12px;align-items:center}
+</style></head><body>
+<h1>Mon Carnet Numérique · Wireframes Médecin</h1>
+<p class="sub">Style de la maquette Espace Médecin : palette Sauge, Plus Jakarta Sans, JetBrains Mono. Base : cadrage V5, 5 onglets (Accueil · Patients · Consult. · Accès · Moi). V1 : pas d’ordonnance, pas de correction d’antécédent (Confirmer / Laisser déclaré / Ne pas confirmer avec motif + signature SVG).</p>
+<div class="leg"><span class="bg d">◔ Déclaré par le patient</span><span class="bg c">✓ Confirmé par le professionnel</span><span class="bg d x">✕ Non confirmé</span><span class="bg">Actif</span><span class="bg d">En attente</span></div>
+<div id="root"></div>
+<script>
+const D='<span class="bg d">◔ Déclaré</span>',C='<span class="bg c">✓ Confirmé</span>',X='<span class="bg d x">✕ Non confirmé</span>';
+const sec=t=>`<div class="sec">${t}</div>`,txt=t=>`<div class="note">${t}</div>`,ctr=t=>`<div class="note c">${t}</div>`;
+const img=(h,t='')=>`<div class="img" style="height:${h}px">${t}</div>`;
+const row=(a,b,r='')=>`<div class="row"><div class="th"></div><div class="m"><b>${a}</b><span>${b}</span></div>${r}</div>`;
+const btn=(t,k='')=>`<div class="btn ${k}">${t}</div>`,two=(a,b)=>`<div class="two">${a}${b}</div>`;
+const inp=(l,v)=>`<div class="inp"><small>${l}</small><b>${v}</b></div>`;
+const card=(...x)=>`<div class="card">${x.join('')}</div>`,warn=(i,t)=>`<div class="warn"><i>${i}</i><div>${t}</div></div>`;
+const li=(a,b='›')=>`<div class="li"><span>${a}</span><span>${b}</span></div>`,push=h=>`<div class="push"></div>`+h;
+const tabs=(a,i)=>`<div class="tabs">${a.map((x,j)=>`<div class="${j==i?'on':''}">${x}</div>`).join('')}</div>`;
+const APP='<div class="app"><div class="brand"><span class="mark">＋</span><span><em>E</em>-carnet</span></div><div class="pb">YB</div></div>';
+const NAV=['Accueil','Patients','Consult.','Accès','Moi'];
+const S=(t,o,...b)=>({t,...o,b:b.join('')});
+const G=[
+['A · Compte et vérification',[
+S('Connexion pro',{h:'Espace médecin',c:'Méthode d’authentification pro à valider avec l’équipe'},img(90,'logo'),inp('Identifiant professionnel','…'),inp('Mot de passe / méthode retenue','••••••'),push(btn('Se connecter')+btn('Créer un compte professionnel','g'))),
+S('Inscription pro',{back:1,h:'Compte professionnel',c:'Infos professionnelles + établissement partenaire'},inp('Nom et prénoms','Dr. Yao Bamba'),inp('Spécialité','Médecine générale ▾'),inp('N° d’ordre / justificatif','…'),inp('Établissement partenaire','Clinique Les Palmiers ▾'),`<div class="inp"><small>Justificatifs</small><b>+ Joindre</b></div>`,push(btn('Envoyer pour vérification'))),
+S('Statut de vérification',{h:'Vérification',c:'C’est vous qui déclenchez la vérification'},card('<b>Dr. Yao Bamba</b>',txt('Clinique Les Palmiers'),'<span class="bg d">En attente de vérification</span>'),`<div class="tl">${txt('Compte créé')}<div class="note"><b>◔ Demander une réunion de vérification</b></div>${txt('Réunion avec l’équipe · identité et justificatifs')}${txt('Compte actif')}</div>`,warn('i','Vous ne pouvez pas ouvrir de dossier patient avant la vérification.'),push(btn('Demander ma vérification')+txt('Si refusé : motif affiché ici avec possibilité de renvoyer.'))),
+]],
+['B · Accueil, recherche et demande d’accès',[
+S('Accueil',{n:0,c:'Tableau de bord simple'},'<div class="note">Bonjour</div><b style="font-size:16px">Dr. Yao Bamba</b>',two(card('<b style="font-size:18px">4</b>',txt('Consultations du jour')),card('<b style="font-size:18px">1</b>',txt('Demande en attente'))),sec('Raccourcis'),two(btn('Scanner un QR'),btn('Rechercher','g')),sec('À traiter'),row('Moussa Diarra','Demande · en attente du patient','<span class="bg d">En attente</span>'),sec('Accès en cours'),row('Awa Koné','Expire dans 1 h 47','<span class="bg">Actif</span>')),
+S('Rechercher un patient',{n:1,c:'Recherche → demande d’accès, jamais ouverture directe'},'<div class="inp"><small>Rechercher</small><b>Identifiant ou nom + date de naissance</b></div>',sec('Résultats'),row('Awa Koné','Né(e) en 1990 · #kone…','›'),row('Moussa Diarra','Né(e) en 1985 · #diarra…','›'),warn('i','Le contenu du carnet reste invisible tant que le patient n’a pas autorisé.'),push(btn('Scanner le QR du patient','g'))),
+S('Aucun résultat',{back:1,h:'Recherche',c:'Vérifier avant de créer, pour éviter les doublons'},warn('i','Aucun dossier ne correspond. Si le patient n’a jamais utilisé E-carnet, vous pouvez créer un dossier provisoire.'),push(btn('Créer un dossier provisoire','g')+btn('Nouvelle recherche','g'))),
+S('Créer un dossier provisoire',{back:1,h:'Patient invité',c:'Cas B : portée réduite à la visite du jour, jamais les antécédents'},inp('Nom, prénom','…'),inp('Date de naissance','JJ / MM / AAAA'),warn('!','Le patient confirme sur son propre appareil (code de session) avant toute saisie clinique.'),push(btn('Envoyer le code de consentement au patient'))),
+S('Scanner un QR',{back:1,h:'Scanner',c:'Le QR ne crée qu’un AccessGrant pending'},img(300,'viseur caméra'),ctr('Placez le QR/code du patient dans le cadre'),push(btn('Saisir le code manuellement','g'))),
+S('Demander l’accès',{back:1,h:'Demande d’accès',c:'Durée et périmètre fixés par le serveur'},card('<b>Awa Koné</b>',txt('Né(e) en 1990')),card(sec('Le patient verra'),txt('Votre nom · Clinique Les Palmiers'),txt('Données concernées · durée 2 h')),push(btn('Envoyer la demande'))),
+S('Demande envoyée',{back:1,h:'En attente',c:'Statut PENDING · code affiché pour le patient sans smartphone'},card('<b>Moussa Diarra</b>','<span class="bg d">◔ En attente du patient</span>'),sec('Patient sans smartphone'),`<div class="big">4 8 2 7</div>`,ctr('Valable 15 min · usage unique · 3 essais'),txt('À communiquer au patient : il le saisira avec son identifiant sur une tablette ou le téléphone d’un proche.'),push(btn('Annuler la demande','g'))),
+S('Scanner la pré-consultation',{back:1,h:'QR patient',c:'Le QR ne contient aucune donnée — juste un lien vers une demande'},card(sec('Caméra'),txt('[ scan ]')),txt('Après le scan : une demande d’accès est envoyée, vous ne lisez rien avant l’acceptation du patient.'),push(btn('Simuler un scan'))),
+S('Pré-consultation récupérée',{back:1,h:'Moussa Diarra',c:'Accès accordé — relevé non modifiable'},card('<span class="bg d">◔ Relevé en pré-consultation, saisi par Marie</span>',txt('Non signé')),card(sec('Constantes'),txt('Poids 72 kg · Taille 1,78 m'),txt('Température 37,4 °C · Tension 128/82'),txt('Pouls 76 bpm · Saturation 98 %')),card(sec('Motif'),txt('Douleurs abdominales depuis hier')),push(btn('Ouvrir la consultation'))),
+S('Accès — hub',{n:3,c:'Demandes, actifs, terminés'},sec('Demandes envoyées'),row('Moussa Diarra','Code non saisi','<span class="bg d">En attente</span>'),sec('Autorisés'),row('Awa Koné','Expire dans 1 h 47','<span class="bg">Actif</span>'),sec('Refusés / expirés'),row('Fatou Traoré','Expiré · 12 sept.','<span class="bg x">Expiré</span>'),row('Sekou Diallo','Refusé · 5 sept.','<span class="bg x">Refusé</span>')),
+S('Accès terminé',{h:'Accès fermé',c:'Expiré ou révoqué : requêtes bloquées côté serveur'},warn('✕','<b>L’accès est terminé</b><br>Le patient a révoqué l’accès (ou la durée est écoulée). Vous ne pouvez plus consulter ce dossier.'),card(sec('Ce qui reste'),txt('Vos consultations déjà validées restent dans le carnet, attribuées à vous.')),push(btn('Demander un nouvel accès')+btn('Retour à l’accueil','g'))),
+]],
+['C · Dossier autorisé',[
+S('Résumé du dossier',{back:1,h:'Awa Koné',c:'Uniquement le périmètre autorisé'},row('Accès actif','Expire dans 1 h 47 · prolongé 0/2','<span class="bg">Actif</span>'),tabs(['Résumé','Historique'],0),sec('Allergies'),row('Pénicilline','Patient',D),sec('Antécédents'),row('Diabète type 2','Patient',D),row('Hypertension','Dr. Bamba',C),push(btn('Nouvelle consultation'))),
+S('Éléments déclarés',{back:1,h:'À traiter',c:'Déclaration originale jamais modifiée'},card('<b>Diabète type 2</b>',D,txt('Depuis 2019 · saisi le 3 sept.'),row('Analyse.pdf','Justificatif joint (pas une preuve)'),two(btn('Confirmer'),btn('Laisser déclaré','g')),btn('Ne pas confirmer','g')),card('<b>Pénicilline</b>',D,txt('Allergie · saisie le 3 sept.'),two(btn('Confirmer'),btn('Laisser déclaré','g')),btn('Ne pas confirmer','g'))),
+S('Confirmer un antécédent',{back:1,h:'Confirmer',c:'Motif requis + signature SVG (attestation d’identité pro)'},card('<b>Diabète type 2</b>',D),inp('Motif de confirmation (requis)','Glycémie à jeun 1,9 g/L…'),`<div class="img" style="height:90px">Signez ici (doigt / souris)</div>`,warn('i','Attestation d’identité professionnelle, pas une signature électronique qualifiée.'),push(two(btn('Confirmer et signer'),btn('Effacer','g')))),
+S('Ne pas confirmer',{back:1,h:'Ne pas confirmer',c:'Motif requis · la déclaration reste visible'},card('<b>Pénicilline</b>',D),inp('Motif (requis)','Aucun antécédent d’allergie retrouvé'),txt('Le patient verra « Non confirmé » avec votre nom, la date et le motif.'),push(two(btn('Enregistrer'),btn('Annuler','g')))),
+S('Ajouter un antécédent constaté',{back:1,h:'Antécédent constaté',c:'Entre directement en « Confirmé »'},inp('Type','Antécédent ▾'),inp('Intitulé','Asthme'),inp('Précisions','…'),`<div class="img" style="height:80px">Signature (SVG)</div>`,push(btn('Ajouter comme confirmé'))),
+S('Consultation antérieure',{back:1,h:'Consultation du 12 sept.',c:'Lecture seule'},row('Dr. Yao Bamba','Clinique Les Palmiers','<span class="bg c">✓ Validée</span>'),card(sec('Motif'),txt('Douleurs, fatigue'),sec('Conclusion'),txt('Diabète à suivre'),sec('Conduite à tenir'),txt('Contrôle dans 3 mois'))),
+]],
+['D · Consultation',[
+S('Mes consultations',{n:2,c:'Liste + créer'},two('<div class="btn" style="text-align:left;background:none;color:var(--ink);font-size:15px;padding:0">Mes consultations</div>',btn('+ Créer')),'<div class="inp"><small>Recherche globale</small><b>Motif, symptôme, patient…</b></div>',row('Awa Koné','Consultation générale · aujourd’hui','<span class="bg d">Brouillon</span>'),row('Moussa Diarra','Suivi · hier','<span class="bg c">✓ Validée</span>'),row('Fatou Traoré','Contrôle · 5 sept.','<span class="bg c">✓ Validée</span>')),
+S('Choix du formulaire',{back:1,h:'Nouvelle consultation',c:'Formulaire général ou configuré par le médecin'},card('<b>Awa Koné</b>',txt('Accès actif · 1 h 47')),sec('Formulaire'),row('Consultation générale','Socle commun','›'),row('Suivi diabète','Mon formulaire','›'),row('Contrôle','Mon formulaire','›'),push(btn('Configurer mes formulaires','g'))),
+S('Saisie — identification',{back:1,h:'Consultation générale',c:'Constantes reprises de la pré-consultation, non ressaisies · Bloc 1/4 · date, médecin, établissement imposés par le système'},tabs(['Contexte','Examen','Diagnostic','Prise en charge'],0),card(txt('Date/heure, médecin, établissement : automatiques')),inp('Motif de consultation','Douleurs et fatigue'),inp('Type de consultation','Première ▾'),inp('Plainte principale','…'),inp('Symptômes, début, évolution','…'),push(two(btn('Brouillon','g'),btn('Suivant')))),
+S('Saisie — examen et diagnostic',{back:1,h:'Consultation générale',c:'Champs du socle, activables selon le formulaire'},tabs(['Contexte','Examen','Diagnostic','Prise en charge'],1),inp('Constantes','TA 12/8 · T° 37,2'),inp('Observations','…'),inp('Hypothèse diagnostique','…'),inp('Actes / examens demandés','…'),push(two(btn('Brouillon','g'),btn('Suivant')))),
+S('Saisie — prise en charge',{back:1,h:'Consultation générale',c:'Conduite à tenir en texte libre, pas d’ordonnance en V1'},tabs(['Contexte','Examen','Diagnostic','Prise en charge'],3),inp('Conduite à tenir (texte libre)','Ajustement du traitement…'),inp('Recommandations / suivi','Contrôle dans 3 mois'),inp('Orientation / référence','—'),`<div class="inp"><small>Documents</small><b>+ Joindre</b></div>`,txt('Ordonnance structurée : V2.'),push(btn('Relire et valider'))),
+S('Validation signée',{back:1,h:'Valider',c:'Serveur fixe auteur, date, établissement'},card(sec('Récapitulatif'),txt('Awa Koné · Consultation générale'),txt('Dr. Yao Bamba · Les Palmiers · 28 sept. 10:20')),`<div class="img" style="height:80px">Signature (SVG)</div>`,warn('i','Après validation, toute correction sera tracée et conservera l’historique.'),push(btn('Valider la consultation'))),
+S('Configurer mon formulaire',{back:1,h:'Suivi diabète',c:'Socle de champs commun : activer, réordonner, ajouter'},sec('Blocs du socle'),li('Identification ☑'),li('Contexte ☑'),li('Symptômes ☑'),li('Examen clinique ☑'),li('Hypothèses / diagnostic ☑'),li('Actes / examens ☐'),li('Prise en charge ☑'),push(btn('+ Ajouter un champ personnalisé','g')+btn('Enregistrer le formulaire'))),
+S('Accès expiré pendant la saisie',{back:1,h:'Consultation',c:'Cas à trancher : brouillon local jusqu’à 24 h (point ouvert n° 6)'},warn('✕','<b>L’accès a expiré</b><br>Vous ne pouvez plus consulter le dossier d’Awa Koné.'),card(sec('Votre saisie'),txt('Le brouillon peut être conservé, sans lecture du dossier.')),push(btn('Enregistrer le brouillon')+btn('Demander un nouvel accès','g'))),
+]],
+['E · Moi et paramètres',[
+S('Moi',{n:4,c:'Profil professionnel'},'<div class="row"><div class="th" style="border-radius:50%;width:44px;height:44px"></div><div class="m"><b>Dr. Yao Bamba</b><span>Médecine générale · <span class="bg">Vérifié</span></span></div></div>',li('Informations professionnelles'),li('Mon établissement — Clinique Les Palmiers'),li('Mes formulaires de consultation'),li('Paramètres du compte'),li('Sécurité et connexion'),push(btn('Se déconnecter','g'))),
+S('Informations pro',{back:1,h:'Informations pro',c:'Identité pro et justificatifs'},inp('Nom','Dr. Yao Bamba'),inp('Spécialité','Médecine générale'),inp('N° d’ordre','•••••'),row('Justificatif','Envoyé · vérifié','›'),push(btn('Enregistrer'))),
+S('Mon établissement',{back:1,h:'Établissement',c:'Rattachement géré par l’établissement partenaire'},card('<b>Clinique Les Palmiers</b>',txt('Abidjan'),'<span class="bg c">✓ Rattaché</span>'),txt('Départ ou changement d’affectation : géré par le responsable de l’établissement.'),push(btn('Signaler un changement','g'))),
+S('Sécurité et connexion',{back:1,h:'Sécurité',c:'Sessions et appareils'},row('Sessions actives','1 appareil','›'),row('Journal de mes accès','Consultations et écritures tracées','›'),push(btn('Déconnecter tous les appareils','g'))),
+]]];
+const root=document.getElementById('root');
+G.forEach(([g,list])=>{let n=0;root.insertAdjacentHTML('beforeend',`<h2>${g}</h2><div class="grid">${list.map(s=>`<div class="fig"><div class="ph"><div class="isl"></div><div class="scr"><div class="sb"><span>9:41</span><span>●●●</span></div>${s.n!==undefined?APP:s.back||s.h?`<div class="hd"><span>${s.back?'‹':''}</span><span class="t">${s.h||''}</span><span class="s"></span></div>`:'<div style="height:6px"></div>'}<div class="bd">${s.b}</div>${s.n!==undefined?`<div class="nav">${NAV.map((x,i)=>`<div class="${i==s.n?'on':''}"><i></i>${x}</div>`).join('')}</div>`:''}</div></div><div class="cap"><b>${s.t}</b><br>${s.c||''}</div></div>`).join('')}</div>`)});
+</script></body></html>

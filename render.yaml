@@ -1,0 +1,52 @@
+# Blueprint Render — API Django V1
+# À connecter au dépôt depuis le tableau de bord Render.
+# Les secrets et DATABASE_URL Neon doivent rester saisis dans Render.
+services:
+  - type: web
+    name: ecarnet-api
+    runtime: python
+    plan: free
+    rootDir: .
+    buildCommand: pip install -r apps/api/requirements.txt
+    startCommand: cd apps/api && python manage.py migrate --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120
+    healthCheckPath: /api/v1/health/ready/
+    autoDeploy: true
+    envVars:
+      - key: DJANGO_DEBUG
+        value: "false"
+      - key: DJANGO_ALLOWED_HOSTS
+        sync: false
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: WEB_ORIGIN
+        sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: CSRF_TRUSTED_ORIGINS
+        sync: false
+      - key: SESSION_COOKIE_SAMESITE
+        value: "None"
+      - key: EMAIL_BACKEND
+        value: django.core.mail.backends.smtp.EmailBackend
+      - key: EMAIL_HOST
+        sync: false
+      - key: EMAIL_PORT
+        value: "587"
+      - key: EMAIL_HOST_USER
+        sync: false
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
+      - key: EMAIL_USE_TLS
+        value: "true"
+      - key: EMAIL_USE_SSL
+        value: "false"
+      - key: DEFAULT_FROM_EMAIL
+        sync: false
+      - key: ECARNET_INVITATION_BASE_URL
+        sync: false
+      - key: ECARNET_QR_TTL_SECONDS
+        value: "300"
+      - key: ECARNET_SESSION_AGE_SECONDS
+        value: "28800"

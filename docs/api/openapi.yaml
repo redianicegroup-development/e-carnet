@@ -1,0 +1,149 @@
+openapi: 3.1.0
+info:
+  title: Mon Carnet Numérique API
+  version: 0.1.0
+  description: Contrat de la tranche Fondation. Pas de données cliniques exposées.
+servers:
+  - url: http://localhost:8000/api/v1
+paths:
+  /health/:
+    get:
+      summary: Vérifier la disponibilité historique de l’API
+      security: []
+      responses:
+        '200':
+          description: API opérationnelle
+  /health/live/:
+    get:
+      summary: Vérifier que le processus API répond
+      security: []
+      responses:
+        '200':
+          description: Processus opérationnel
+  /health/ready/:
+    get:
+      summary: Vérifier que l’API peut joindre sa base
+      security: []
+      responses:
+        '200':
+          description: API prête
+        '503':
+          description: Base indisponible ; la réponse ne divulgue aucun détail de connexion
+  /csrf/:
+    get:
+      summary: Obtenir un cookie CSRF pour les requêtes navigateur
+      security: []
+      responses:
+        '200':
+          description: Jeton CSRF établi dans un cookie
+  /identity/me/theme/:
+    get:
+      summary: Charger les préférences de thème du compte authentifié
+      responses:
+        '200':
+          description: Thème du compte courant
+        '403':
+          description: Session absente ou non autorisée
+    patch:
+      summary: Modifier le thème du compte authentifié
+      description: Requiert une session et un jeton CSRF valide. Aucun identifiant de compte n'est accepté.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Theme'
+      responses:
+        '200':
+          description: Thème mis à jour
+        '400':
+          description: Police ou palette invalide
+        '403':
+          description: Session/CSRF absent ou non autorisé
+  /patient/care/professional/access-grants/:
+    get:
+      summary: Lister les demandes AccessGrant du professionnel authentifié
+      description: Retourne uniquement les demandes liées au profil professionnel de la session.
+      responses:
+        '200':
+          description: Demandes du professionnel
+        '403':
+          description: Profil professionnel absent
+    post:
+      summary: Demander un accès temporaire à un carnet
+      description: Requiert un contexte professionnel, un établissement actif et un rattachement actif. Le patient doit encore consentir. La demande expire après 7 jours; un refus bloque une nouvelle demande pendant 30 jours.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [patient_id, scope]
+              properties:
+                patient_id:
+                  type: string
+                  format: uuid
+                scope:
+                  type: array
+                  items:
+                    type: string
+                    enum: [preconsultation, declarations, consultations]
+      responses:
+        '201':
+          description: Demande créée en attente du consentement patient; demandes pending/active uniques par patient, professionnel et établissement
+        '400':
+          description: Préconditions cliniques, refus récent ou périmètre invalide
+  /patient/care/professional/consultations/:
+    get:
+      summary: Lister les consultations validées par le professionnel courant
+      responses:
+        '200':
+          description: Historique des consultations du professionnel
+    post:
+      summary: Valider une consultation à partir d’une pré-consultation autorisée
+      description: L’AccessGrant doit être actif, comporter le scope preconsultation, être lié à l’établissement actif et au professionnel courant. La pré-consultation source doit être clôturée.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [access_grant_id, source_encounter_id, attestation_svg]
+              properties:
+                access_grant_id:
+                  type: string
+                  format: uuid
+                source_encounter_id:
+                  type: string
+                  format: uuid
+                reason:
+                  type: string
+                observations:
+                  type: string
+                conclusion:
+                  type: string
+                care_plan:
+                  type: string
+                attestation_svg:
+                  type: string
+      responses:
+        '201':
+          description: Consultation validée et historisée
+        '400':
+          description: Autorisation absente, expirée, révoquée ou pré-consultation non clôturée
+components:
+  schemas:
+    Theme:
+      type: object
+      required: [font, palette]
+      properties:
+        font:
+          type: string
+          enum: [Plus Jakarta Sans, Nunito, Lexend, Manrope, Sora, Mooli, Unbounded, Quicksand, Bricolage Grotesque, Barlow, Ubuntu, Fredoka]
+        palette:
+          type: array
+          minItems: 5
+          maxItems: 5
+          items:
+            type: string
+            pattern: '^#[0-9A-Fa-f]{6}$'

@@ -1,0 +1,29 @@
+{
+  "name": "@ecarnet/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --hostname 0.0.0.0",
+    "build": "next build",
+    "start": "next start --hostname 0.0.0.0",
+    "lint": "eslint .",
+    "test": "node --experimental-strip-types --no-warnings --test tests/csrf.test.mjs tests/theme.test.mjs"
+  },
+  "dependencies": {
+    "@ecarnet/ui": "0.1.0",
+    "@zxing/browser": "^0.2.1",
+    "next": "^16.3.8",
+    "qrcode.react": "^4.2.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "^16.3.8",
+    "typescript": "^5.7.0"
+  }
+}

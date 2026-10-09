@@ -1,0 +1,31 @@
+/* Valeurs initiales du thème par défaut (Lagon). Les variables thémables sont
+   remplacées côté navigateur par applyTheme() à partir du compte connecté. */
+:root {
+  --brand-1: #E6FFF7; --brand-2: #B9F2E3; --brand-3: #7AD8C8;
+  --brand-4: #4AA1A3; --brand-5: #2A4B5D;
+  --bg: #E6FFF7; --surface: #FFFFFF; --surface-tint: #B9F2E3;
+  --border: #B9F2E3; --border-strong: #718B91;
+  --text: #2A4B5D; --text-muted: #4A6670;
+  --primary: #2A4B5D; --on-primary: #FFFFFF; --primary-text: #2A4B5D;
+  --primary-tint: #B9F2E3; --focus: #2A4B5D;
+  --font-body: var(--font-unbounded, 'Unbounded'), system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: var(--font-jetbrains-mono, 'JetBrains Mono'), ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* Statuts de provenance et danger : fixes, jamais personnalisés. */
+  --status-declared-fg: #8A6100; --status-declared-bg: #FFF3D6;
+  --status-measured-fg: #1F4E8C; --status-measured-bg: #E6EEF8;
+  --status-verified-fg: #17704A; --status-verified-bg: #E4F5EC;
+  --status-contested-fg: #A32D2D; --status-contested-bg: #FBEAE8;
+  --status-expired-fg: #4A5550; --status-expired-bg: #E8ECE9;
+  --danger: #A32D2D;
+  --r-sm: 10px; --r-md: 16px; --r-lg: 22px; --r-pill: 999px;
+  --tap-min: 44px; --fs-xs: 12px;
+  --shadow-sm: 0 1px 2px rgba(42, 75, 93, .08);
+  --shadow-md: 0 10px 30px -14px rgba(42, 75, 93, .35);
+  --nav-h: 68px;
+}
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid var(--focus); outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}

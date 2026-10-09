@@ -1,0 +1,49 @@
+/* =========================================================================
+   E-carnet — tokens globaux (extraits des maquettes Espace_*.html, palette « Sauge »)
+   - Bloc 1 : tokens THÉMABLES. Valeurs = resolveTheme(DEFAULT_THEME) (themes.ts).
+              Ne pas éditer à la main : regénérer. Un carnet personnalisé les surcharge
+              en inline (style="…" sur le conteneur) via applyTheme() / themeToStyle().
+   - Bloc 2 : tokens FIXES. Jamais surchargés par un thème client (statuts, danger, forme).
+   ========================================================================= */
+
+:root {
+  /* 1 · THÉMABLE (défaut Sauge) */
+  --brand-1: #F2F5EF; --brand-2: #D8E2D0; --brand-3: #A9C4A5; --brand-4: #5B7F68; --brand-5: #2C3A33;
+
+  --bg:            #F2F5EF;  /* fond d'écran            (ex --paper-warm) */
+  --surface:       #FFFFFF;  /* cartes, champs          (ex --paper)      */
+  --surface-tint:  #D8E2D0;  /* pastilles, sélection    (ex --teal-tint)  */
+  --border:        #D8E2D0;  /* séparateurs, cartes     (ex --grey-300)   */
+  --border-strong: #848C88;  /* bordure d'input ≥ 3:1   (nouveau)         */
+  --text:          #2C3A33;  /* texte                   (ex --ink)        */
+  --text-muted:    #636E68;  /* secondaire ≥ 4.5:1      (ex --grey-600/400, qui échouaient) */
+  --primary:       #597C66;  /* boutons, avatar         (ex --teal)       */
+  --on-primary:    #FFFFFF;  /* texte sur --primary ≥ 4.5:1               */
+  --primary-text:  #557762;  /* accent en texte ≥ 4.5:1 (ex --teal-text)  */
+  --primary-tint:  #D8E2D0;
+  --focus:         #5B7F68;  /* anneau de focus ≥ 3:1                     */
+
+  --font-body: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  /* 2 · FIXE */
+  --font-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace; /* identifiants, codes OTP/QR, durées */
+
+  /* Provenance (CDC 2.3 / 11.3) — toujours icône + libellé, la couleur n'est qu'un renfort */
+  --status-declared-fg:  #8A6100; --status-declared-bg:  #FFF3D6; /* Déclaré par le patient        5.0:1 */
+  --status-measured-fg:    #1F4E8C; --status-measured-bg:    #E6EEF8; /* Relevé en pré-consultation    7.1:1 */
+  --status-verified-fg:  #17704A; --status-verified-bg:  #E4F5EC; /* Confirmé / validé (était #1F8A5A = 3.8:1 ✗) 5.4:1 */
+  --status-contested-fg: #A32D2D; --status-contested-bg: #FBEAE8; /* Non confirmé / contesté       6.1:1 */
+  --status-expired-fg:   #4A5550; --status-expired-bg:   #E8ECE9; /* Expiré / révoqué / annulé     6.5:1 (classe .expired manquait) */
+  --danger: #A32D2D;
+
+  --r-sm: 10px; --r-md: 16px; --r-pill: 999px;
+  --tap-min: 44px;           /* cible tactile minimale */
+  --fs-xs: 12px;             /* plancher de texte : 11px max pour libellés non critiques, jamais 8.5px */
+}
+
+/* Focus visible partout (WCAG 2.4.7) */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }

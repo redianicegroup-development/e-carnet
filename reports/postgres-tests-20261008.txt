@@ -1,0 +1,11 @@
+# Preuve de tests PostgreSQL — 8 octobre 2026
+
+- Serveur : PostgreSQL 16.15 local au sandbox, base jetable `ecarnet_pg_smoke`.
+- Commande : `DJANGO_DEBUG=true DJANGO_SECRET_KEY=test-only DATABASE_URL='postgresql:///ecarnet_pg_smoke?host=/var/run/postgresql' npm run test:api -- --keepdb`.
+- Résultat : **77 tests exécutés, 77 réussis, aucun échec, aucun test ignoré** (22,692 s).
+- Couverture notable : consommation concurrente d’un code médecin à usage unique ; refus de consommation sans acceptation des conditions ; acceptation versionnée ; fin du rattachement par l’établissement et par le médecin ; conservation de la relation, révocation d’accès et audit ; invitations à usage unique/48 h sans jeton retourné par l’API.
+- Sauvegarde/restauration PostgreSQL custom exécutée séparément : voir [le rapport de restauration](postgres-restore-20261008T081823Z.txt).
+
+## Limites de la preuve
+
+Cette preuve est locale et synthétique. Elle ne démontre ni SMTP réel, ni sauvegardes automatiques Neon, ni restauration d’une sauvegarde Neon, ni restauration de fichiers ou d’un service complet. Le RPO n’a pas été mesuré ; la durée de 1 seconde du rapport associé concerne uniquement la commande de restauration locale, pas un RTO opérationnel. Le déploiement/staging doit être recetté séparément avant toute donnée de santé réelle.

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>E-carnet — Wireframes Patient</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{--c1:#F2F5EF;--c2:#D8E2D0;--c3:#A9C4A5;--c4:#5B7F68;--c5:#2C3A33;--paper:#fff;--ink:var(--c5);--g6:rgba(44,58,51,.72);--g4:rgba(44,58,51,.55);--amber:#8A6100;--amberbg:#FFF3D6;--green:#1F8A5A;--greenbg:#E4F5EC;--font:'Plus Jakarta Sans',system-ui,sans-serif;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--c2);color:var(--ink);font:13px/1.35 var(--font);padding:32px 18px 60px}
+h1{font-size:24px;font-weight:800;margin:0 0 6px}.sub{color:var(--g6);margin:0 0 20px;max-width:70ch}
+.mono,.eyebrow{font-family:'JetBrains Mono',monospace}
+h2{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;display:inline-block;color:var(--c5);background:var(--c1);border-radius:999px;padding:6px 14px;margin:38px 0 16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:30px 20px;justify-items:center}
+.fig{display:flex;flex-direction:column;align-items:center;gap:10px}
+.cap{font-size:12px;color:var(--g6);text-align:center;max-width:290px}.cap b{color:var(--ink);font-size:13px}
+.ph{width:300px;height:620px;background:var(--c5);border-radius:42px;padding:9px;position:relative;box-shadow:0 30px 60px -28px rgba(15,40,32,.4)}
+.isl{position:absolute;top:18px;left:50%;transform:translateX(-50%);width:78px;height:20px;background:var(--c5);border-radius:12px;z-index:2}
+.scr{height:100%;background:var(--c1);border-radius:33px;overflow:hidden;display:flex;flex-direction:column}
+.sb{display:flex;justify-content:space-between;padding:14px 22px 0;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;flex:none}
+.app{display:flex;align-items:center;justify-content:space-between;padding:8px 16px 9px;border-bottom:1px solid var(--c3);flex:none}
+.brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:16px;letter-spacing:-.01em}.brand em{font-style:normal;color:var(--c4)}
+.mark{width:26px;height:26px;border-radius:8px;background:var(--c4);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px}
+.pb{width:32px;height:32px;border-radius:50%;background:var(--c4);color:#fff;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center}
+.hd{display:flex;align-items:center;gap:8px;padding:12px 16px 4px;flex:none;font-weight:800;font-size:15px}
+.hd .t{flex:1;text-align:center}.hd .s{width:20px}
+.bd{flex:1;overflow:hidden;padding:12px 16px 10px;display:flex;flex-direction:column;gap:10px}
+.nav{display:flex;justify-content:space-around;padding:9px 0 14px;border-top:1px solid var(--c3);flex:none;background:var(--c1)}
+.nav div{text-align:center;font-size:8.5px;color:var(--g4);font-weight:700}.nav i{display:block;width:16px;height:16px;margin:0 auto 2px;border-radius:5px;background:var(--c2)}
+.nav .on{color:var(--c5)}.nav .on i{background:var(--c4)}
+.img{background:var(--c2);border-radius:16px;display:flex;align-items:center;justify-content:center;color:var(--g6);font-size:10px}
+.sec{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--g4);font-weight:700;margin:2px 0 -4px}
+.row{display:flex;gap:10px;align-items:center;background:var(--paper);border:1px solid var(--c2);border-radius:10px;padding:10px 12px}
+.row .th{width:30px;height:30px;border-radius:8px;background:var(--c2);flex:none}
+.row .m{flex:1;min-width:0}.row b{display:block;font-size:12.5px;font-weight:700}.row span{font-size:11px;color:var(--g6)}
+.bg{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap;background:var(--c2);color:var(--c5)}
+.bg.d{background:var(--amberbg);color:var(--amber)}.bg.c{background:var(--greenbg);color:var(--green)}.bg.x{background:#FBE9E7;color:#A32D2D;text-decoration:line-through}
+.btn{border-radius:999px;padding:11px 14px;text-align:center;font-weight:700;font-size:12.5px;background:var(--c4);color:#fff}
+.btn.g{background:none;border:1px solid var(--c3);color:var(--ink)}.btn.k{background:none;border:1px dashed var(--c3);color:var(--g6)}
+.two{display:flex;gap:8px}.two>*{flex:1}
+.inp{border:1px solid var(--c3);border-radius:12px;padding:8px 12px;background:var(--paper)}
+.inp small{display:block;font-size:10px;color:var(--g4);margin-bottom:1px}.inp b{color:var(--ink);font-weight:600;font-size:12.5px}
+.card{background:var(--paper);border:1px solid var(--c2);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.note{font-size:11px;color:var(--g6);line-height:1.5}.c{text-align:center}.push{margin-top:auto}
+.big{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;letter-spacing:.2em;text-align:center;padding:10px;color:var(--c4);background:var(--c1);border-radius:12px}
+.tabs{display:flex;background:var(--c2);border-radius:999px;padding:3px}.tabs div{flex:1;text-align:center;padding:6px;font-size:11.5px;border-radius:999px;color:var(--g6);font-weight:600}.tabs .on{background:var(--c4);color:#fff;font-weight:700}
+.warn{background:var(--amberbg);color:var(--amber);border-radius:12px;padding:10px 12px;font-size:11px;display:flex;gap:8px;line-height:1.45}.warn i{font-style:normal;font-weight:800}
+.li{display:flex;justify-content:space-between;padding:11px 2px;border-bottom:1px solid var(--c2);font-size:13px;font-weight:600}
+.tl{border-left:2px solid var(--c3);margin-left:5px;padding-left:10px;display:flex;flex-direction:column;gap:8px}
+.leg{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 6px;font-size:12px;align-items:center}
+</style></head><body>
+<h1>Mon Carnet Numérique · Wireframes Patient</h1>
+<p class="sub">Style de la maquette : palette Sauge, Plus Jakarta Sans, JetBrains Mono, boutons pilule. Base : cadrage V5 + maquette Espace Patient (5 onglets : Accueil · Carnet · Consult. · Accès · Moi). Provenance jamais par la couleur seule : icône + libellé.</p>
+<div class="leg"><span class="bg d">◔ Déclaré par le patient</span><span class="bg c">✓ Confirmé par le professionnel</span><span class="bg d x">✕ Non confirmé</span><span class="bg">Actif</span><span class="bg d">En attente</span></div>
+<div id="root"></div>
+<script>
+const D='<span class="bg d">◔ Déclaré</span>',C='<span class="bg c">✓ Confirmé</span>',X='<span class="bg d x">✕ Non confirmé</span>';
+const sec=t=>`<div class="sec">${t}</div>`,txt=t=>`<div class="note">${t}</div>`,ctr=t=>`<div class="note c">${t}</div>`;
+const img=(h,t='')=>`<div class="img" style="height:${h}px">${t}</div>`;
+const row=(a,b,r='')=>`<div class="row"><div class="th"></div><div class="m"><b>${a}</b><span>${b}</span></div>${r}</div>`;
+const btn=(t,k='')=>`<div class="btn ${k}">${t}</div>`,two=(a,b)=>`<div class="two">${a}${b}</div>`;
+const inp=(l,v)=>`<div class="inp"><small>${l}</small><b>${v}</b></div>`;
+const card=(...x)=>`<div class="card">${x.join('')}</div>`,warn=(i,t)=>`<div class="warn"><i>${i}</i><div>${t}</div></div>`;
+const li=(a,b='›')=>`<div class="li"><span>${a}</span><span>${b}</span></div>`,push=h=>`<div class="push"></div>`+h;
+const tabs=(a,i)=>`<div class="tabs">${a.map((x,j)=>`<div class="${j==i?'on':''}">${x}</div>`).join('')}</div>`;
+const APP='<div class="app"><div class="brand"><span class="mark">＋</span><span><em>E</em>-carnet</span></div><div class="pb">AK</div></div>';
+const NAV=['Accueil','Carnet','Consult.','Accès','Moi'];
+const S=(t,o,...b)=>({t,...o,b:b.join('')});
+const G=[
+['A · Entrée et connexion',[
+S('Onboarding',{c:'Promesse : « Mon carnet me suit, je décide qui le voit »'},img(230,'illustration carnet'),'<div class="c"><b style="font-size:16px">Votre carnet médical vous accompagne</b></div>',ctr('Vous gardez le contrôle de son partage.'),push(btn('Créer mon carnet')+btn('J’ai déjà un carnet','g')+btn('Je n’ai pas de smartphone','k'))),
+S('Connexion sociale',{back:1,h:'Créer mon carnet',c:'Google/Facebook uniquement, pas d’email/mot de passe en V1'},img(90,'logo'),btn('Continuer avec Google','g'),btn('Continuer avec Facebook','g'),warn('i','Vous perdez l’accès à Google/Facebook ? Une procédure de récupération existe dès la V1 (voir Sécurité).'),push(ctr('En continuant, vous acceptez les conditions et la notice de protection des données'))),
+S('Identité minimale',{back:1,h:'Vos informations',c:'Étape 2 : nom, prénom, date de naissance'},inp('Nom','Koné'),inp('Prénoms','Awa'),inp('Date de naissance','JJ / MM / AAAA'),inp('Téléphone (facultatif)','+225 …'),txt('Votre identifiant d’accès invité sera généré : #nom + date de naissance.'),push(btn('Créer mon carnet'))),
+S('Dossier provisoire trouvé',{back:1,h:'Avant de continuer',c:'Mode invité, cas B : un médecin a peut-être déjà créé une première visite pour vous'},card(sec('Visite du'),'<b>3 sept. 2026</b>',txt('Dr. Sekou Koffi · Clinique Les Palmiers'),txt('Portée limitée à cette visite, pas à vos antécédents complets')),ctr('Est-ce bien vous ?'),push(two(btn('Oui, réclamer ce dossier'),btn('Non, ce n’est pas moi','g')))),
+S('Mode invité — connexion',{back:1,h:'Sans smartphone',c:'Tablette d’accueil / téléphone d’un proche'},warn('!','Ce mode sert uniquement à répondre à une demande d’accès en attente. Il n’ouvre jamais le carnet.'),inp('Identifiant','#kone15031990'),inp('Code à 4 chiffres (affiché au médecin)','_ _ _ _'),txt('Valable 15 min · usage unique · 3 tentatives max.'),push(btn('Valider'))),
+S('Mode invité — répondre',{h:'Demande d’accès',c:'Session invitée, détruite à la déconnexion'},card('<b>Dr. Yao Bamba</b>',txt('Clinique Les Palmiers'),'<span class="bg">Vérifié</span>'),card(sec('Données partagées'),txt('Antécédents, allergies, consultations, documents autorisés'),sec('Durée'),txt('2 h (prolongeable par vous)')),push(two(btn('Autoriser'),btn('Refuser','g'))+btn('Se déconnecter et effacer','k'))),
+S('États d’erreur',{h:'Cas dégradés',c:'Code expiré · 3 essais · réseau'},warn('✕','<b>Code expiré</b><br>Demandez au médecin d’afficher un nouveau code.'),warn('✕','<b>3 tentatives atteintes</b><br>Demande bloquée. Le médecin doit en créer une nouvelle.'),warn('!','<b>Réseau indisponible</b><br>Cette action sensible nécessite une connexion.'),warn('!','<b>Session expirée</b><br>Reconnectez-vous pour continuer.'),push(btn('Réessayer'))),
+]],
+['B · Accueil et carnet',[
+S('Accueil',{n:0,c:'Tableau de bord'},'<div class="row"><div class="th" style="border-radius:50%"></div><div class="m"><b>Bonjour Awa</b><span>Votre carnet est à jour</span></div></div>',card(sec('Demande en attente'),'<b>Dr. Sekou Koffi</b>',txt('Clinique Les Palmiers'),two(btn('Voir'),btn('Refuser','g'))),two(card('<b style="font-size:18px">3</b>',txt('Antécédents')),card('<b style="font-size:18px">1</b>',txt('Accès actif'))),sec('Dernières consultations'),row('Consultation générale','Dr. Bamba · 12 sept.','›'),push(two(btn('Partager'),btn('Ajouter','g')))),
+S('Mon carnet',{n:1,c:'Vue synthèse avec provenance : les 3 statuts possibles'},tabs(['Santé','Documents'],0),sec('Antécédents'),row('Diabète type 2','Ajouté par vous',D),row('Hypertension','Dr. Bamba · 12 sept.',C),row('Asthme','Dr. Koffi · non retrouvé',X),sec('Allergies'),row('Pénicilline','Ajouté par vous',D),sec('Traitements'),row('Metformine 500 mg','Ajouté par vous',D),push(btn('+ Déclarer une information','g'))),
+S('Carnet vide (jour 1)',{n:1,c:'État vide qui explique quoi faire'},img(150,'illustration'),'<div class="c"><b>Votre carnet est vide</b></div>',ctr('Ajoutez ce que vous savez. Un médecin pourra ensuite confirmer et compléter lors d’une consultation.'),push(btn('Déclarer un antécédent')+btn('Ajouter un justificatif','g'))),
+S('Déclarer un antécédent',{back:1,h:'Nouvel antécédent',c:'Statut « Déclaré » par défaut'},inp('Type','Antécédent ▾'),inp('Intitulé','Diabète type 2'),inp('Depuis','2019'),inp('Précisions','…'),`<div class="inp"><small>Justificatif (facultatif)</small><b>+ Joindre une photo / PDF</b></div>`,warn('i','Un justificatif n’est jamais une confirmation. Seul un médecin vérifié peut confirmer.'),push(btn('Enregistrer comme déclaré'))),
+S('Détail antécédent — déclaré',{back:1,h:'Diabète type 2',c:'Le médecin ne corrige pas la déclaration originale'},'<div>'+D+'</div>',card(sec('Déclaration originale'),'<b>Diabète type 2</b>',txt('Depuis 2019 · saisi par vous le 3 sept.')),card(sec('Justificatif'),row('Analyse.pdf','PDF · 3 sept.')),sec('Historique'),`<div class="tl">${txt('3 sept. · Déclaré par vous')}</div>`,push(btn('Modifier ma déclaration','g'))),
+S('Détail antécédent — confirmé',{back:1,h:'Hypertension',c:'Confirmation / non-confirmation : motif + signature SVG tracés'},'<div>'+C+'</div>',card(sec('Confirmé par'),'<b>Dr. Yao Bamba</b>',txt('Clinique Les Palmiers · 12 sept.'),sec('Motif'),txt('Tension relevée à 2 reprises'),`<div class="img" style="height:46px">signature (SVG)</div>`),sec('Historique'),`<div class="tl">${txt('12 sept. · Confirmé')}${txt('3 sept. · Déclaré par vous')}</div>`,push(txt('Une non-confirmation apparaît avec son motif, sans effacer votre déclaration.'))),
+S('Documents',{n:1,c:'V1 : justificatifs limités aux antécédents'},tabs(['Santé','Documents'],1),row('Analyse glycémie','Justificatif · 3 sept.',D),row('Compte rendu 12 sept.','Dr. Bamba · lié consultation',C),txt('Les ordonnances structurées et documents riches arrivent en V2.'),push(btn('+ Ajouter un justificatif','g'))),
+]],
+['C · Consultations',[
+S('Chronologie',{n:2,c:'Ordre antéchronologique'},'<div class="inp"><small>Rechercher</small><b>Motif, médecin…</b></div>',sec('Septembre 2026'),row('Consultation générale','Dr. Bamba · Les Palmiers','›'),sec('Août 2026'),row('Suivi','Dr. Bamba · Les Palmiers','›'),sec('Juin 2026'),row('Vaccination','Dr. Diallo · Les Palmiers','›')),
+S('Détail consultation',{back:1,h:'Consultation générale',c:'Lecture seule pour le patient'},row('Dr. Yao Bamba','Clinique Les Palmiers · 12 sept. 10:20','<span class="bg c">✓ Validée</span>'),card(sec('Motif'),txt('Douleurs et fatigue'),sec('Observations'),txt('Tension normale, glycémie à surveiller'),sec('Conclusion'),txt('Diabète à suivre'),sec('Conduite à tenir (texte libre)'),txt('Ajustement du traitement, contrôle dans 3 mois')),sec('Documents liés'),row('Analyse.pdf','3 sept.'),push(txt('Auteur, date et établissement imposés par le serveur. Toute correction est tracée.'))),
+S('Nouvelle pré-consultation',{back:1,h:'À l’arrivée',c:'Vous remettez votre téléphone pour cette étape'},warn('i','L’infirmier·ère ne verra que le formulaire suivant — jamais votre carnet, vos documents ou vos anciennes consultations.'),push(btn('Remettre mon téléphone — commencer'))),
+S('Mode assisté — en cours',{h:'Pré-consultation',c:'Écran verrouillé sur ce formulaire uniquement'},card(sec('Constantes'),inp('Poids (kg)','…'),inp('Taille (m)','…'),inp('Température (°C)','…'),inp('Tension artérielle','…'),inp('Pouls (bpm)','…'),inp('Saturation (%)','…')),card(sec('Motif et observations'),inp('Motif de la visite','…'),inp('Douleur / EVA','…'),inp('Allergies signalées','…'),inp('Traitements déclarés','…'),inp('Observations infirmières','…')),inp('Nom de l’infirmier·ère (facultatif)','…'),push(btn('Terminer la pré-consultation'))),
+S('Pré-consultation terminée',{h:'Avant de continuer',c:'Relevé non modifiable à partir de maintenant'},card('<span class="bg d">◔ Relevé en pré-consultation, saisi par Marie</span>',txt('Non signé — un médecin le confirmera ou le complétera')),warn('!','Pour reprendre votre téléphone, confirmez que c’est bien vous.'),push(btn('Confirmer et reprendre mon téléphone'))),
+S('QR de la pré-consultation',{h:'À présenter au médecin',c:'Usage unique · aucune donnée patient dans ce code'},card(sec('QR'),txt('[ QR ]'),txt('Valable 5 min')),txt('Le médecin ne verra rien tant que vous n’avez pas accepté sa demande.'),push(btn('Terminé','g'))),
+]],
+['D · Accès et partage',[
+S('Accès — hub',{n:3,c:'Demande, actif, historique'},sec('En attente'),row('Dr. Sekou Koffi','Les Palmiers','<span class="bg d">En attente</span>'),sec('Actif'),row('Dr. Yao Bamba','Expire dans 1 h 47','<span class="bg">Actif</span>'),sec('Historique'),row('Dr. Bamba','Fermé par vous · 12 sept.','›'),push(btn('Générer un QR / code temporaire','g'))),
+S('Demande reçue',{back:1,h:'Demande d’accès',c:'Le patient ne choisit ni le médecin ni la durée'},card('<b>Dr. Sekou Koffi</b>',txt('Médecin généraliste · Clinique Les Palmiers'),'<span class="bg">✓ Professionnel vérifié</span>'),card(sec('Données partagées'),txt('Antécédents, allergies, consultations, documents autorisés'),sec('Durée'),txt('2 h, puis prolongeable (+1 h × 2)')),txt('Vous pourrez fermer l’accès à tout moment.'),push(two(btn('Autoriser'),btn('Refuser','g')))),
+S('Accès actif',{back:1,h:'Accès actif',c:'Prolongation : bouton +1 h, 2 fois max (4 h)'},card('<b>Dr. Yao Bamba</b>',txt('Clinique Les Palmiers'),`<div class="big">01:47:12</div>`,ctr('Expire à 12:20 · Prolongation 0 / 2')),card(sec('Périmètre'),txt('Antécédents, allergies, consultations')),push(btn('Prolonger de 1 h')+btn('Fermer l’accès maintenant','g')),txt('Après 2 prolongations, le bouton est désactivé avec le libellé « Limite atteinte (4 h) ».')),
+S('Confirmer la révocation',{back:1,h:'Fermer l’accès',c:'Fermeture serveur immédiate'},warn('!','Dr. Bamba ne pourra plus consulter votre carnet. La consultation en cours sera interrompue.'),push(two(btn('Fermer l’accès'),btn('Annuler','g')))),
+S('QR / code temporaire',{back:1,h:'Partager mon carnet',c:'Ne crée qu’une demande pending, jamais un lien permanent'},img(170,'QR dynamique'),`<div class="big">4 8 2 7</div>`,ctr('Expire dans 04:32 · usage unique'),warn('i','Le médecin vérifié scanne ce code. Vous devrez encore confirmer son nom.'),push(btn('Régénérer','g'))),
+S('Historique des accès',{back:1,h:'Historique',c:'Traçabilité visible'},tabs(['Tous','Écritures'],0),`<div class="tl">${row('Accès actif','Dr. Bamba · aujourd’hui 10:20','›')}${row('Prolongé +1 h','Vous · 11:20','›')}${row('Consultation ajoutée','Dr. Bamba · 12 sept.','›')}${row('Accès refusé','Dr. Koffi · 5 sept.','›')}${row('Expiré','Dr. Bamba · 12 sept.','›')}</div>`),
+]],
+['E · Moi et paramètres',[
+S('Moi',{n:4,c:'Profil et réglages'},'<div class="row"><div class="th" style="border-radius:50%;width:44px;height:44px"></div><div class="m"><b>Awa Koné</b><span>Connecté avec Google</span></div></div>',li('Mes informations personnelles'),li('Informations de santé déclaratives'),li('Consentement et confidentialité'),li('Sécurité et connexion'),li('Aide'),push(btn('Se déconnecter','g'))),
+S('Mes informations',{back:1,h:'Informations personnelles',c:'Identité et coordonnées'},inp('Nom','Koné'),inp('Prénoms','Awa'),inp('Date de naissance','15/03/1990'),inp('Téléphone','+225 07 •• •• 42'),inp('Identifiant invité','#kone15031990'),push(btn('Enregistrer'))),
+S('Consentement',{back:1,h:'Confidentialité',c:'Textes à valider par le juriste'},li('Notice de protection des données'),li('Conditions d’utilisation'),li('Ce que voit un médecin autorisé'),li('Mes demandes (accès, correction)'),warn('i','Le partage est toujours limité, temporaire et tracé.')),
+S('Sécurité et connexion',{back:1,h:'Sécurité',c:'Perte de compte : procédure de récupération dès la V1'},row('Google','Connecté','›'),row('Lier Facebook aussi','Recommandé','›'),row('Sessions actives','1 appareil','›'),push(btn('Je n’ai plus accès à mon compte','g')+btn('Déconnecter tous les appareils','g'))),
+S('Récupérer mon compte',{back:1,h:'Compte perdu',c:'Procédure indépendante de Google/Facebook'},warn('i','L’équipe vérifie votre identité avant tout rattachement. L’ancien moyen de connexion est révoqué et l’opération journalisée.'),inp('Nom, prénom, date de naissance','…'),inp('Comment vous joindre','Téléphone …'),push(btn('Envoyer ma demande'))),
+]]];
+const root=document.getElementById('root');
+G.forEach(([g,list])=>{let n=0;root.insertAdjacentHTML('beforeend',`<h2>${g}</h2><div class="grid">${list.map(s=>`<div class="fig"><div class="ph"><div class="isl"></div><div class="scr"><div class="sb"><span>9:41</span><span>●●●</span></div>${s.n!==undefined?APP:s.back||s.h?`<div class="hd"><span>${s.back?'‹':''}</span><span class="t">${s.h||''}</span><span class="s"></span></div>`:'<div style="height:6px"></div>'}<div class="bd">${s.b}</div>${s.n!==undefined?`<div class="nav">${NAV.map((x,i)=>`<div class="${i==s.n?'on':''}"><i></i>${x}</div>`).join('')}</div>`:''}</div></div><div class="cap"><b>${s.t}</b><br>${s.c||''}</div></div>`).join('')}</div>`)});
+</script></body></html>
