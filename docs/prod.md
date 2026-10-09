@@ -97,15 +97,14 @@ Le passage V3 doit remplacer les **services**, pas les contrats. Le code applica
 
 ## 3. Configuration Render — API Django
 
-Le fichier [`render.yaml`](../render.yaml) a été ajouté à la racine. Il configure :
+Le fichier [`render.yaml`](../render.yaml) configure le service Render à partir de [`apps/api/Dockerfile`](../apps/api/Dockerfile) :
 
-- runtime Python ;
-- `pip install -r apps/api/requirements.txt` ;
-- migration au démarrage ;
-- Gunicorn, et non `runserver` ;
-- bind sur `0.0.0.0:$PORT` ;
+- runtime Docker avec le contexte du dépôt ;
+- installation des dépendances Python dans l’image ;
+- migrations Django avant le démarrage de Gunicorn ;
+- bind sur le port `PORT` fourni par Render ;
 - health check `/api/v1/health/ready/` ;
-- variables non secrètes et variables à saisir dans Render.
+- variables non secrètes dans le Blueprint et secrets à saisir dans Render.
 
 ### Paramètres à vérifier dans Render
 
@@ -114,6 +113,7 @@ Le fichier [`render.yaml`](../render.yaml) a été ajouté à la racine. Il conf
 3. Vérifier que le service écoute bien sur `$PORT`.
 4. Renseigner `DATABASE_URL` avec l’URL Neon **pooled ou non pooled selon le besoin**, fournie par Neon et non copiée dans Git.
 5. Ajouter un domaine personnalisé commun avant d'ouvrir l'authentification : `app.<votre-domaine>` sur Vercel et `api.<votre-domaine>` sur Render. Suivre les valeurs DNS et la validation HTTPS fournies par chaque tableau de bord. Les URL `*.vercel.app` + `*.onrender.com` ne conviennent pas à la connexion Safari/iOS : les cookies de session tiers peuvent être bloqués.
+   Pour des tests techniques temporaires sur les URL fournisseur, le Blueprint autorise actuellement `https://e-carnetci.vercel.app` ; cela ne lève pas la restriction des cookies tiers.
 
 6. Définir `DJANGO_ALLOWED_HOSTS` avec le hostname Render **et** le domaine API personnalisé, sans protocole :
 
@@ -132,13 +132,9 @@ Le fichier [`render.yaml`](../render.yaml) a été ajouté à la racine. Il conf
 10. Configurer SMTP avant de tester les invitations établissement.
 11. Enregistrer OAuth avec le callback `https://api.mon-carnet.ci/api/v1/identity/oauth/<fournisseur>/callback/` chez chaque fournisseur.
 
-### Commandes Render
+### Configuration Docker Render
 
-```text
-Build command : pip install -r apps/api/requirements.txt
-Start command : cd apps/api && python manage.py migrate --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120
-Health check  : /api/v1/health/ready/
-```
+Dans Render, sélectionner le Blueprint depuis la racine du dépôt. Le Dockerfile lance `manage.py migrate --noinput`, puis Gunicorn sur le port `$PORT` fourni par Render. Ne pas saisir de Build Command ni de Start Command Python qui remplaceraient la configuration du conteneur.
 
 Le plan gratuit Render peut se mettre en veille. C’est acceptable pour une V1 de démonstration, pas pour une promesse de disponibilité médicale 24/7.
 
@@ -167,7 +163,7 @@ Puis vérifier que l’appel navigateur vers l’API passe bien en HTTPS avec co
 
 ## 5. Variables d’environnement
 
-Le fichier [`.env.example`](../.env.example) contient désormais les noms et exemples, sans secret réel.
+Le fichier [`.env.example`](../.env.example) contient les noms et exemples locaux, sans secret réel. [`apps/api/.env.production.example`](../apps/api/.env.production.example) est un aide-mémoire de configuration backend : ni Render ni Django ne chargent ce fichier automatiquement. Reporter les valeurs dans le tableau de bord Render ; saisir `DATABASE_URL`, les identifiants SMTP et tout autre secret uniquement dans Render.
 
 ### Variables indispensables en production API
 
