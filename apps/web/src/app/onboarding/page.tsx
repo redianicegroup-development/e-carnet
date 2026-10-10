@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { primeCsrf, readCsrfToken } from "../../infrastructure/api/client";
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API = "";
 export default function OnboardingPage() {
   const router = useRouter();
   const [message, setMessage] = useState("");

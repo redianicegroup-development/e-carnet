@@ -24,7 +24,7 @@ PROVIDERS = {
 }
 
 def callback_url(request, provider):
-    return request.build_absolute_uri(f"/api/v1/identity/oauth/{provider}/callback/")
+    return f"{settings.WEB_ORIGIN.rstrip('/')}/api/v1/identity/oauth/{provider}/callback/"
 
 def provider_config(provider):
     config = PROVIDERS[provider]; client_id = os.environ.get(config["client_id"], ""); client_secret = os.environ.get(config["client_secret"], "")
@@ -42,12 +42,15 @@ def external_profile(provider, token_payload):
         if not id_token: raise ValueError("Apple n'a pas fourni d'identité vérifiable.")
         with urllib.request.urlopen("https://appleid.apple.com/auth/keys", timeout=10) as response: keys = json.loads(response.read().decode("utf-8"))
         claims = jwt.decode(id_token, JsonWebKey.import_key_set(keys)); claims.validate()
-        return {"id": claims["sub"], "email": claims.get("email", ""), "name": "", "avatar": ""}
+        return {"id": claims["sub"], "email": claims.get("email", ""), "name": "", "first_name": claims.get("given_name", ""), "last_name": claims.get("family_name", ""), "avatar": ""}
     data = http_json(PROVIDERS[provider]["userinfo"], headers={"Authorization": f"Bearer {token_payload['access_token']}"})
     if provider == "facebook":
-        name = " ".join(filter(None, [data.get("first_name"), data.get("last_name")])); avatar = ((data.get("picture") or {}).get("data") or {}).get("url", "")
-    else: name, avatar = data.get("name", ""), data.get("picture", "")
-    return {"id": str(data.get("sub") or data.get("id")), "email": (data.get("email") or "").lower(), "name": name, "avatar": avatar}
+        first_name, last_name = data.get("first_name", ""), data.get("last_name", "")
+        name = " ".join(filter(None, [first_name, last_name])); avatar = ((data.get("picture") or {}).get("data") or {}).get("url", "")
+    else:
+        first_name, last_name = data.get("given_name", ""), data.get("family_name", "")
+        name, avatar = data.get("name", ""), data.get("picture", "")
+    return {"id": str(data.get("sub") or data.get("id")), "email": (data.get("email") or "").lower(), "name": name, "first_name": first_name, "last_name": last_name, "avatar": avatar}
 
 def split_name(name):
     parts = (name or "Utilisateur").strip().split(); return (parts[0], " ".join(parts[1:]) or "")
@@ -129,7 +132,19 @@ class OAuthCallbackView(APIView):
             if existing:
                 if link_user_id and str(existing.user_id) != link_user_id: return ui_redirect(provider, status="conflict", message="Cette méthode est déjà liée à un autre compte.")
                 stage = "existing_identity_login"
-                login(request, existing.user); existing.last_seen_at = timezone.now(); existing.save(update_fields=("last_seen_at",))
+                user = existing.user
+                first_name, last_name = split_name(profile.get("name"))
+                changed = []
+                if not user.first_name and (profile.get("first_name") or first_name):
+                    user.first_name = profile.get("first_name") or first_name; changed.append("first_name")
+                if not user.last_name and (profile.get("last_name") or last_name):
+                    user.last_name = profile.get("last_name") or last_name; changed.append("last_name")
+                if changed: user.save(update_fields=changed)
+                account_profile, _ = AccountProfile.objects.get_or_create(user=user)
+                if not account_profile.avatar_data and not account_profile.avatar_url and profile.get("avatar", "").startswith("https://"):
+                    account_profile.avatar_url = profile["avatar"]
+                    account_profile.save(update_fields=("avatar_url", "updated_at"))
+                login(request, user); existing.last_seen_at = timezone.now(); existing.save(update_fields=("last_seen_at",))
                 fallback = "/patient/parametres" if link_user_id else account_destination(existing.user)
                 destination = safe_next_path(next_path, fallback)
                 return oauth_success_redirect(destination)
@@ -149,10 +164,14 @@ class OAuthCallbackView(APIView):
                 stage = "email_lookup"
                 user = User.objects.filter(email__iexact=email).first() if email else None
                 if user: return ui_redirect(provider, status="conflict", message="Un compte existe déjà. Connectez-vous d'abord pour lier ce fournisseur.")
-                first_name, last_name = split_name(profile.get("name")); username = email or f"{provider}_{profile['id']}"
+                fallback_first, fallback_last = split_name(profile.get("name"))
+                first_name = profile.get("first_name") or fallback_first
+                last_name = profile.get("last_name") or fallback_last
+                username = email or f"{provider}_{profile['id']}"
                 stage = "account_creation"
                 user = User.objects.create_user(username=username, email=email, first_name=first_name, last_name=last_name)
-                AccountProfile.objects.create(user=user, avatar_url=profile.get("avatar", ""))
+                avatar = profile.get("avatar", "")
+                AccountProfile.objects.create(user=user, avatar_url=avatar if avatar.startswith("https://") else "")
                 AccountContext.objects.create(user=user, role="patient", is_active=True)
                 linked = False
             stage = "identity_creation"

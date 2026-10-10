@@ -10,7 +10,7 @@ type Profile = { professional_title: string; specialty: string; active_establish
 type Establishment = { id: string; name: string; status: string };
 type Account = { email: string; first_name: string; last_name: string; contexts: { role: string; is_active: boolean }[] };
 type Envelope<T> = { data?: T; message?: string; detail?: string };
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API = "";
 
 async function get<T>(path: string): Promise<T> {
   const response = await fetch(`${API}${path}`, { credentials: "include", cache: "no-store" });

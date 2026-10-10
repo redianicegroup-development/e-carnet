@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API = "";
 
 type FormState = { name: string; establishment_type: string; city: string; address: string; phone: string; email: string; responsible_name: string; responsible_email: string; responsible_first_name: string; responsible_last_name: string };
 const initial: FormState = { name: "", establishment_type: "Clinique", city: "", address: "", phone: "", email: "", responsible_name: "", responsible_email: "", responsible_first_name: "", responsible_last_name: "" };

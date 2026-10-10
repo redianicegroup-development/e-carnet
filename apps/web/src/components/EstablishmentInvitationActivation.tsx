@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API = "";
 
 export function EstablishmentInvitationActivation() {
   const params = useSearchParams();

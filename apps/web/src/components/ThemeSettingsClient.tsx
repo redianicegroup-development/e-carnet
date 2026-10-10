@@ -5,7 +5,7 @@ import { applyTheme, DEFAULT_THEME, FONTS, fontStack, PALETTES, type FontName, t
 import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
 
 type ApiEnvelope<T> = { success?: boolean; data?: T; detail?: string; message?: string };
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API = "";
 
 export function ThemeSettingsClient() {
   const [theme, setTheme] = useState<ThemeConfig>(DEFAULT_THEME);

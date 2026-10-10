@@ -22,6 +22,7 @@ class AccountProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="account_profile")
     public_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     avatar_url = models.URLField(max_length=500, blank=True)
+    avatar_data = models.TextField(blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
 

@@ -65,6 +65,27 @@ class IdentityProfileAndOAuthTests(TestCase):
         self.user.refresh_from_db()
         self.assertEqual(self.user.first_name, "Awa")
 
+    def test_uploaded_webp_avatar_is_saved_and_returned_in_profile(self):
+        import base64
+        from .models import AccountProfile
+        image = b"RIFF" + (4).to_bytes(4, "little") + b"WEBP"
+        encoded = "data:image/webp;base64," + base64.b64encode(image).decode("ascii")
+        response = self.client.patch("/api/v1/identity/me/profile/", {"avatar_data": encoded, "avatar_url": ""}, format="json")
+        self.assertEqual(response.status_code, 200)
+        avatar_path = response.data["data"]["avatar_url"]
+        self.assertTrue(avatar_path.startswith("/api/v1/identity/me/avatar/?v="))
+        profile = AccountProfile.objects.get(user=self.user)
+        self.assertEqual(profile.avatar_data, encoded)
+        self.assertEqual(profile.avatar_url, "")
+        image_response = self.client.get("/api/v1/identity/me/avatar/")
+        self.assertEqual(image_response.status_code, 200)
+        self.assertEqual(image_response["Content-Type"], "image/webp")
+        self.assertEqual(image_response.content, image)
+
+    def test_uploaded_avatar_rejects_non_webp_data(self):
+        response = self.client.patch("/api/v1/identity/me/profile/", {"avatar_data": "data:image/svg+xml;base64,PHN2Zz4="}, format="json")
+        self.assertEqual(response.status_code, 400)
+
     def test_oauth_identity_can_be_unlinked_when_password_exists(self):
         from .models import AuthIdentity
         AuthIdentity.objects.create(user=self.user, provider="google", provider_user_id="google-1", email=self.user.email)

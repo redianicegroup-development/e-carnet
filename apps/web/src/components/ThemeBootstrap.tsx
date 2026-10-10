@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { applyTheme, DEFAULT_THEME, type ThemeConfig } from "@ecarnet/ui/themes";
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API = "";
 
 export function ThemeBootstrap() {
   useEffect(() => {

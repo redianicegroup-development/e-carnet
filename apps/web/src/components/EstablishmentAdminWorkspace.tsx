@@ -5,7 +5,7 @@ import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
 
 type Establishment = { id: string; name: string; city: string; status: string };
 type Membership = { id: string; status: "pending" | "active" | "refused" | "suspended" | "terminated"; professional_name?: string; professional_email?: string };
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API = "";
 
 async function request<T>(path: string, method = "GET", body?: Record<string, unknown>): Promise<T> {
   const csrf = method === "GET" ? null : await primeCsrf();

@@ -15,7 +15,7 @@ services:
       - key: DJANGO_DEBUG
         value: "false"
       - key: DJANGO_ALLOWED_HOSTS
-        value: ecarnet-api.onrender.com
+        value: ecarnet-api.onrender.com,e-carnetci.vercel.app
       - key: DJANGO_SECRET_KEY
         generateValue: true
       - key: DATABASE_URL

@@ -1,3 +1,5 @@
+import base64
+import binascii
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from rest_framework import serializers
@@ -48,7 +50,11 @@ class AccountSerializer(serializers.Serializer):
 
     def get_avatar_url(self, obj):
         profile = getattr(obj, "account_profile", None)
-        return profile.avatar_url if profile else ""
+        if not profile:
+            return ""
+        if profile.avatar_data:
+            return f"/api/v1/identity/me/avatar/?v={int(profile.updated_at.timestamp())}"
+        return profile.avatar_url
 
     def get_auth_identities(self, obj):
         return [{"provider": identity.provider, "display_name": identity.display_name, "avatar_url": identity.avatar_url} for identity in obj.auth_identities.all()]
@@ -70,6 +76,21 @@ class AccountIdentitySerializer(serializers.Serializer):
     first_name = serializers.CharField(max_length=80, required=False)
     last_name = serializers.CharField(max_length=80, required=False)
     avatar_url = serializers.URLField(max_length=500, required=False, allow_blank=True)
+    avatar_data = serializers.CharField(max_length=350000, required=False, allow_blank=True, write_only=True)
+
+    def validate_avatar_data(self, value):
+        if not value:
+            return value
+        prefix = "data:image/webp;base64,"
+        if not value.startswith(prefix):
+            raise serializers.ValidationError("La photo doit être une image WebP valide.")
+        try:
+            image = base64.b64decode(value[len(prefix):], validate=True)
+        except (binascii.Error, ValueError):
+            raise serializers.ValidationError("La photo envoyée est invalide.")
+        if len(image) > 250 * 1024 or len(image) < 12 or image[:4] != b"RIFF" or image[8:12] != b"WEBP":
+            raise serializers.ValidationError("La photo doit être un WebP valide de 250 Ko maximum.")
+        return value
 
 
 class LinkedIdentitySerializer(serializers.ModelSerializer):

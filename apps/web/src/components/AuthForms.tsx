@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
 import { safeOAuthNext } from "../lib/auth";
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API = "";
 type AuthMode = "login" | "register";
 type Account = { contexts?: Array<{ role: string; is_active: boolean; onboarding_completed: boolean }> };
 function destinationFor(account: Account, mode: AuthMode, requested: string | null) {

@@ -1,4 +1,7 @@
+import base64
+import binascii
 from django.contrib.auth import authenticate, get_user_model, login, logout
+from django.http import HttpResponse, Http404
 from django.db import transaction
 from .throttles import IpScopedThrottle, LoginEmailThrottle
 from rest_framework import status
@@ -49,6 +52,22 @@ class CurrentAccountView(APIView):
     def get(self, request): return Response({"success": True, "data": account_payload(request.user)})
 
 
+class AccountAvatarView(APIView):
+    permission_classes = [IsAuthenticated]
+    def get(self, request):
+        profile = getattr(request.user, "account_profile", None)
+        if not profile or not profile.avatar_data:
+            raise Http404
+        try:
+            image = base64.b64decode(profile.avatar_data.split(",", 1)[1], validate=True)
+        except (IndexError, ValueError, binascii.Error):
+            raise Http404
+        response = HttpResponse(image, content_type="image/webp")
+        response["Cache-Control"] = "private, no-store"
+        response["X-Content-Type-Options"] = "nosniff"
+        return response
+
+
 class IdentityProfileView(APIView):
     permission_classes = [IsAuthenticated]
     @transaction.atomic
@@ -59,8 +78,19 @@ class IdentityProfileView(APIView):
             if field in serializer.validated_data: setattr(user, field, serializer.validated_data[field])
         if any(field in serializer.validated_data for field in ("first_name", "last_name")): user.save(update_fields=("first_name", "last_name"))
         profile, _ = AccountProfile.objects.get_or_create(user=user)
+        profile_fields = []
         if "avatar_url" in serializer.validated_data:
-            profile.avatar_url = serializer.validated_data["avatar_url"]; profile.save(update_fields=("avatar_url", "updated_at"))
+            profile.avatar_url = serializer.validated_data["avatar_url"]
+            profile.avatar_data = ""
+            profile_fields.extend(("avatar_url", "avatar_data"))
+        if "avatar_data" in serializer.validated_data:
+            profile.avatar_data = serializer.validated_data["avatar_data"]
+            if profile.avatar_data:
+                profile.avatar_url = ""
+                profile_fields.append("avatar_url")
+            profile_fields.append("avatar_data")
+        if profile_fields:
+            profile.save(update_fields=tuple(dict.fromkeys((*profile_fields, "updated_at"))))
         return Response({"success": True, "data": account_payload(user)})
 
 

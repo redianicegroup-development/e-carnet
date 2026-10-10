@@ -1,4 +1,4 @@
-export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+export const API_URL = "";
 
 export class ApiError extends Error {
   status: number;
@@ -10,9 +10,8 @@ export class ApiError extends Error {
 }
 
 /* ---------- CSRF ----------
-   Le jeton est renvoyé dans le JSON de /api/v1/csrf/ et gardé en mémoire : il reste utilisable quand l'API et le
-   web n'ont pas le même domaine (document.cookie ne montre alors jamais le cookie de l'API). Le cookie ne sert
-   que de repli quand les deux sont sur le même site. */
+   Le proxy Next.js expose l’API sur la même origine que le web. Le jeton renvoyé par /api/v1/csrf/ est gardé en
+   mémoire afin d’éviter de dépendre d’une lecture manuelle du cookie. */
 let memoryToken = "";
 const COOKIE_PREFIX = "csrftoken=";
 

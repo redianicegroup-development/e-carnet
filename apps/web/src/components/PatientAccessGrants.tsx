@@ -26,7 +26,7 @@ type AccessEvent = {
   created_at: string;
 };
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API = "";
 const statusLabels: Record<string, string> = {
   pending: "En attente de votre décision",
   active: "Accès actif",

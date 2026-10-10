@@ -10,7 +10,7 @@ from apps.establishments.models import Establishment, EstablishmentMembership
 from apps.professionals.models import ProfessionalProfile
 from .models import ThemePreference
 from .theme import DEFAULT_THEME
-from .oauth_views import safe_next_path
+from .oauth_views import callback_url, safe_next_path
 
 User = get_user_model()
 
@@ -68,21 +68,27 @@ class ThemePreferenceTests(TestCase):
 
 
 class OAuthRedirectTests(TestCase):
+    @override_settings(WEB_ORIGIN="https://frontend.example.test")
+    def test_oauth_callback_uses_same_origin_web_proxy(self):
+        self.assertEqual(callback_url(None, "google"), "https://frontend.example.test/api/v1/identity/oauth/google/callback/")
+
     @patch.dict(os.environ, {"GOOGLE_CLIENT_ID": "test-client", "GOOGLE_CLIENT_SECRET": "test-secret"})
     def test_login_intent_does_not_start_provider_link_for_authenticated_user(self):
         user = User.objects.create_user(username="already-signed-in", email="already@example.test")
-        self.client.force_authenticate(user)
-        response = self.client.get("/api/v1/identity/oauth/google/start/?intent=login")
+        client = APIClient()
+        client.force_authenticate(user)
+        response = client.get("/api/v1/identity/oauth/google/start/?intent=login")
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(self.client.session.get("oauth_link_user_id"), "")
+        self.assertEqual(client.session.get("oauth_link_user_id"), "")
 
     @patch.dict(os.environ, {"GOOGLE_CLIENT_ID": "test-client", "GOOGLE_CLIENT_SECRET": "test-secret"})
     def test_provider_start_keeps_explicit_link_context_by_default(self):
         user = User.objects.create_user(username="link-account", email="link@example.test")
-        self.client.force_authenticate(user)
-        response = self.client.get("/api/v1/identity/oauth/google/start/")
+        client = APIClient()
+        client.force_authenticate(user)
+        response = client.get("/api/v1/identity/oauth/google/start/")
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(self.client.session.get("oauth_link_user_id"), str(user.pk))
+        self.assertEqual(client.session.get("oauth_link_user_id"), str(user.pk))
 
     def test_next_path_accepts_only_safe_relative_paths(self):
         self.assertEqual(safe_next_path("/onboarding/identite", "/patient"), "/onboarding/identite")
@@ -158,7 +164,7 @@ class OAuthRedirectTests(TestCase):
         self.assertEqual(AuthIdentity.objects.filter(user=user, provider="google").count(), 1)
 
     @override_settings(WEB_ORIGIN="https://frontend.example.test")
-    @patch("apps.identity.oauth_views.external_profile", return_value={"id": "new-google-user", "email": "new-user@example.test", "name": "New User", "avatar": ""})
+    @patch("apps.identity.oauth_views.external_profile", return_value={"id": "new-google-user", "email": "new-user@example.test", "name": "New User", "first_name": "New", "last_name": "User", "avatar": "https://images.example.test/google-avatar.png"})
     @patch("apps.identity.oauth_views.http_json", return_value={"access_token": "temporary-access-token"})
     def test_new_oauth_account_redirects_directly_to_onboarding(self, _http_json, _external_profile):
         with patch.dict(os.environ, {"GOOGLE_CLIENT_ID": "test-client", "GOOGLE_CLIENT_SECRET": "test-secret"}):
@@ -173,6 +179,10 @@ class OAuthRedirectTests(TestCase):
 
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response["Location"], "https://frontend.example.test/onboarding/identite")
+        from .models import AccountProfile
+        created_user = User.objects.get(email="new-user@example.test")
+        self.assertEqual((created_user.first_name, created_user.last_name), ("New", "User"))
+        self.assertEqual(AccountProfile.objects.get(user=created_user).avatar_url, "https://images.example.test/google-avatar.png")
 
     @override_settings(WEB_ORIGIN="https://frontend.example.test")
     @patch("apps.identity.oauth_views.external_profile", return_value={"id": "existing-google-user", "email": "existing-user@example.test", "name": "Existing User", "avatar": ""})

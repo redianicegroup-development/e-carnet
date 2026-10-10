@@ -18,7 +18,7 @@ type Establishment = {
   activated_at: string | null;
 };
 type Envelope<T> = { data?: T; message?: string; detail?: string };
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API = "";
 
 function statusLabel(status: Establishment["status"]): string {
   if (status === "active") return "Espace activé";
