@@ -26,6 +26,12 @@ services:
         value: https://e-carnetci.vercel.app
       - key: CSRF_TRUSTED_ORIGINS
         value: https://e-carnetci.vercel.app
+      - key: ECARNET_INVITATION_BASE_URL
+        value: https://e-carnetci.vercel.app/etablissement/activation
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
       - key: SESSION_COOKIE_SAMESITE
         value: "None"
       - key: CSRF_COOKIE_SAMESITE
@@ -45,8 +51,6 @@ services:
       - key: EMAIL_USE_SSL
         value: "false"
       - key: DEFAULT_FROM_EMAIL
-        sync: false
-      - key: ECARNET_INVITATION_BASE_URL
         sync: false
       - key: ECARNET_QR_TTL_SECONDS
         value: "300"

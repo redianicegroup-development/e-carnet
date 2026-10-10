@@ -163,7 +163,7 @@ Puis vérifier que l’appel navigateur vers l’API passe bien en HTTPS avec co
 
 ## 5. Variables d’environnement
 
-Le fichier [`.env.example`](../.env.example) contient les noms et exemples locaux, sans secret réel. [`apps/api/.env.production.example`](../apps/api/.env.production.example) est un aide-mémoire de configuration backend : ni Render ni Django ne chargent ce fichier automatiquement. Reporter les valeurs dans le tableau de bord Render ; saisir `DATABASE_URL`, les identifiants SMTP et tout autre secret uniquement dans Render.
+Le fichier [`.env.example`](../.env.example) contient les noms et exemples locaux, sans secret réel. [`apps/web/.env.production.example`](../apps/web/.env.production.example) documente les variables publiques frontend à saisir aussi dans Vercel ; le fichier local `apps/web/.env.production.local` est ignoré par Git. [`apps/api/.env.production.example`](../apps/api/.env.production.example) aide à configurer Render : le conteneur ne charge pas ce fichier automatiquement. Pour le pilote sur les URL actuelles, l’origine web est `https://e-carnetci.vercel.app` et l’API est `https://ecarnet-api.onrender.com`. Reporter les valeurs dans les consoles ; saisir `DATABASE_URL`, les identifiants SMTP et tout autre secret uniquement dans Render.
 
 ### Variables indispensables en production API
 
