@@ -52,3 +52,6 @@ class ProfessionalOnboardingView(APIView):
         context.save(update_fields=("is_active", "onboarding_completed", "updated_at"))
         return Response({"success": True, "data": ProfessionalProfileSerializer(profile).data})
 
+    def post(self, request):
+        # Compatibilité avec les clients de l’onboarding qui soumettent en POST.
+        return self.patch(request)

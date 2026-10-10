@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { apiGet, apiPost } from "../infrastructure/api/client";
+import { apiGet, apiPatch } from "../infrastructure/api/client";
 
 type Profile = { specialty: string };
 
@@ -41,7 +41,7 @@ export function ProfessionalOnboarding() {
     setBusy(true);
     setMessage("Enregistrement du profil…");
     try {
-      await apiPost("/api/v1/professionals/onboarding/", { specialty });
+      await apiPatch("/api/v1/professionals/onboarding/", { specialty });
       setMessage("Spécialité déclarée. L’établissement vérifiera le professionnel en interne.");
       router.push("/professionnel");
     } catch (error) {
