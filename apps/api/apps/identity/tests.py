@@ -74,6 +74,27 @@ class OAuthRedirectTests(TestCase):
         self.assertEqual(safe_next_path("//example.test", "/patient"), "/patient")
         self.assertEqual(safe_next_path("/\\example.test", "/patient"), "/patient")
 
+    @patch("apps.identity.oauth_views.http_json", side_effect=RuntimeError("provider unavailable"))
+    def test_callback_logs_provider_failure_without_logging_oauth_code(self, _http_json):
+        with patch.dict(os.environ, {"GOOGLE_CLIENT_ID": "test-client", "GOOGLE_CLIENT_SECRET": "test-secret"}):
+            self._assert_callback_logs_provider_failure()
+
+    def _assert_callback_logs_provider_failure(self):
+        session = self.client.session
+        session["oauth_state_google"] = "valid-state"
+        session.save()
+
+        with self.assertLogs("apps.identity.oauth_views", level="ERROR") as captured:
+            response = self.client.get(
+                "/api/v1/identity/oauth/google/callback/",
+                {"state": "valid-state", "code": "temporary-oauth-code"},
+            )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("token_exchange", captured.output[0])
+        self.assertIn("provider=google", captured.output[0])
+        self.assertNotIn("temporary-oauth-code", "\n".join(captured.output))
+
 
 class DemoSeedCommandTests(TestCase):
     @override_settings(DEBUG=False)

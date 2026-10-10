@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import secrets
 import urllib.parse
@@ -14,6 +15,7 @@ from authlib.jose import JsonWebKey, jwt
 from apps.audit.services import record_event
 from .models import AccountContext, AccountProfile, AuthIdentity
 
+logger = logging.getLogger(__name__)
 User = get_user_model()
 PROVIDERS = {
     "google": {"authorize": "https://accounts.google.com/o/oauth2/v2/auth", "token": "https://oauth2.googleapis.com/token", "userinfo": "https://openidconnect.googleapis.com/v1/userinfo", "scope": "openid email profile", "client_id": "GOOGLE_CLIENT_ID", "client_secret": "GOOGLE_CLIENT_SECRET"},
@@ -88,11 +90,15 @@ class OAuthCallbackView(APIView):
     def _complete(self, request, provider, params):
         if provider not in PROVIDERS or not secrets.compare_digest(request.session.pop(f"oauth_state_{provider}", ""), params.get("state", "")):
             return ui_redirect(provider, status="error", message="Connexion OAuth invalide ou expirée.")
+        stage = "configuration"
         try:
             config, client_id, client_secret = provider_config(provider)
+            stage = "token_exchange"
             token = http_json(config["token"], {"code": params.get("code", ""), "client_id": client_id, "client_secret": client_secret, "redirect_uri": callback_url(request, provider), "grant_type": "authorization_code"})
+            stage = "profile_verification"
             profile = external_profile(provider, token)
         except Exception:
+            logger.exception("OAuth callback failed during %s (provider=%s)", stage, provider)
             return ui_redirect(provider, status="error", message="Impossible de vérifier cette identité OAuth.")
         existing = AuthIdentity.objects.filter(provider=provider, provider_user_id=profile["id"]).select_related("user").first()
         link_user_id = request.session.pop("oauth_link_user_id", "")
