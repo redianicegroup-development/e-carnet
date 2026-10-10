@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
 
@@ -14,7 +14,10 @@ function ProviderIcon({ provider }: { provider: string }) {
 export function AuthForms({ mode }: { mode: "login" | "register" }) {
   const router = useRouter();
   const [form, setForm] = useState({ email: "", password: "", first_name: "", last_name: "" });
-  const [message, setMessage] = useState(() => typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("message") ?? "");
+  const [message, setMessage] = useState("");
+  useEffect(() => {
+    setMessage(new URLSearchParams(window.location.search).get("message") ?? "");
+  }, []);
   async function submit(e: React.FormEvent) {
     e.preventDefault(); setMessage("Connexion sécurisée en cours…");
     const tokenResponse = await primeCsrf();
