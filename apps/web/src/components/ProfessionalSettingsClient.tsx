@@ -3,12 +3,15 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { LinkedProvidersSettingsClient } from "./LinkedProvidersSettingsClient";
+import { SettingsDirectory, type SettingsNavItem } from "./SettingsDirectory";
+import { SettingsMoreSection } from "./SettingsMoreSection";
 import { ThemeSettingsClient } from "./ThemeSettingsClient";
 import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
 
 type Profile = { professional_title: string; specialty: string; active_establishment: string | null };
 type Establishment = { id: string; name: string; status: string };
-type Account = { email: string; first_name: string; last_name: string; contexts: { role: string; is_active: boolean }[] };
+type Account = { email: string; first_name: string; last_name: string; avatar_url?: string; contexts: { role: string; is_active: boolean }[] };
 type Envelope<T> = { data?: T; message?: string; detail?: string };
 const API = "";
 
@@ -20,9 +23,7 @@ async function get<T>(path: string): Promise<T> {
   return payload.data as T;
 }
 
-function csrfToken(): string {
-  return readCsrfToken();
-}
+function initials(name: string) { return name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase() || "PR"; }
 
 export function ProfessionalSettingsClient() {
   const router = useRouter();
@@ -60,7 +61,7 @@ export function ProfessionalSettingsClient() {
     setSigningOut(true);
     try {
       const csrf = await primeCsrf();
-      const response = await fetch(`${API}/api/v1/identity/logout/`, { method: "POST", credentials: "include", headers: { "X-CSRFToken": csrfToken() } });
+      const response = await fetch(`${API}/api/v1/identity/logout/`, { method: "POST", credentials: "include", headers: { "X-CSRFToken": readCsrfToken() } });
       if (!csrf.ok || !response.ok) throw new Error("La déconnexion n’a pas abouti.");
       router.push("/connexion");
       router.refresh();
@@ -74,18 +75,53 @@ export function ProfessionalSettingsClient() {
 
   const activeEstablishment = establishments.find((item) => item.id === profile?.active_establishment);
   const fullName = `${account?.first_name ?? ""} ${account?.last_name ?? ""}`.trim() || account?.email || "Profil professionnel";
+  const navItems: SettingsNavItem[] = [
+    { id: "professionnel", title: "Informations professionnelles", description: "Profession et spécialité déclarée.", icon: "ID" },
+    { id: "etablissement", title: activeEstablishment ? `Mon établissement — ${activeEstablishment.name}` : "Mon établissement", description: "Établissement actif et rattachements.", icon: "▣" },
+    { id: "compte", title: "Paramètres du compte", description: "Personnaliser l’apparence de l’application.", icon: "◉" },
+    { id: "securite", title: "Sécurité et connexion", description: "Gérer les fournisseurs liés au compte.", icon: "▣" },
+    { id: "en-savoir-plus", title: "En savoir plus", description: "Aide, informations et documents E‑Carnet.", icon: "i" },
+  ];
 
-  return <div className="settings-page professional-settings">
-    <section className="card account-summary">
-      <div className="profile-summary"><div className="avatar avatar--large" aria-hidden="true">{fullName.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase()}</div><div><span className="eyebrow">Mon profil professionnel</span><h2>{fullName}</h2><p className="muted">{profile?.professional_title || "Profession à renseigner"} · {profile?.specialty || "Spécialité à renseigner"}</p></div></div>
-      <nav className="setting-list" aria-label="Sections de mon profil"><a className="setting-item" href="#professionnel"><span className="setting-item__meta"><span className="setting-item__icon">ID</span>Informations professionnelles</span><span>›</span></a><a className="setting-item" href="#etablissement"><span className="setting-item__meta"><span className="setting-item__icon">▣</span>Mon établissement actif</span><span>›</span></a><a className="setting-item" href="#compte"><span className="setting-item__meta"><span className="setting-item__icon">◉</span>Compte et apparence</span><span>›</span></a><a className="setting-item" href="#securite"><span className="setting-item__meta"><span className="setting-item__icon">▣</span>Sécurité et connexion</span><span>›</span></a><button type="button" className="setting-item setting-item--danger" disabled={loading || signingOut} onClick={logout}><span className="setting-item__meta"><span className="setting-item__icon">↩</span>Se déconnecter</span></button></nav>
-      <p className="notice" role="status" aria-live="polite">{loading ? "Chargement…" : message}</p>
-    </section>
-    <div className="settings-stack">
-      <section className="card" id="professionnel"><span className="eyebrow">Profil professionnel</span><h2>Informations professionnelles</h2><dl className="settings-details"><div><dt>Profession</dt><dd>{profile?.professional_title || "À renseigner"}</dd></div><div><dt>Spécialité</dt><dd>{profile?.specialty || "À renseigner"}</dd></div></dl><p className="settings-note muted">La spécialité est déclarée par vous. Les justificatifs médicaux ne sont pas collectés par E‑Carnet : leur vérification relève de l’établissement.</p></section>
-      <section className="card" id="etablissement"><span className="eyebrow">Rattachement</span><h2>Mon établissement</h2><dl className="settings-details"><div><dt>Établissement actif</dt><dd>{activeEstablishment?.name ?? (profile?.active_establishment ? "Établissement actif" : "Aucun établissement actif")}</dd></div><div><dt>Email de connexion</dt><dd>{account?.email ?? (loading ? "Chargement…" : "Non disponible")}</dd></div></dl><div className="actions"><Link className="button" href="/professionnel/etablissements">Gérer les rattachements</Link>{profile?.active_establishment && <Link className="button" href="/etablissement/parametres">Paramètres établissement</Link>}</div></section>
-      <section className="card" id="compte"><span className="eyebrow">Préférences</span><h2>Compte et apparence</h2><ThemeSettingsClient /></section>
-      <section className="card" id="securite"><span className="eyebrow">Sécurité</span><h2>Sécurité et connexion</h2><ul className="info-list"><li>Le compte est lié à cette session sécurisée.</li><li>L’établissement effectue sa vérification professionnelle en interne ; l’API contrôle le rattachement actif.</li><li>La gestion des appareils et le MFA renforcé ne sont pas disponibles dans la V1.</li></ul><button type="button" className="button setting-logout" disabled={loading || signingOut} onClick={logout}>Se déconnecter</button></section>
+  return (
+    <div className="settings-page professional-settings">
+      <section className="card account-summary">
+        <div className="profile-summary">
+          <div className="avatar avatar--large" aria-hidden="true">{account?.avatar_url ? <img src={account.avatar_url} alt="" /> : initials(fullName)}</div>
+          <div><span className="eyebrow">Espace professionnel</span><h2>{fullName}</h2><p className="muted">{profile?.professional_title || "Profession à renseigner"} · {profile?.specialty || "Spécialité à renseigner"}</p></div>
+        </div>
+        <p className="notice" role="status" aria-live="polite">{loading ? "Chargement…" : message}</p>
+      </section>
+
+      <SettingsDirectory items={navItems} onLogout={() => void logout()} logoutDisabled={loading || signingOut} />
+
+      <section className="card settings-anchor" id="professionnel">
+        <span className="eyebrow">Profil professionnel</span>
+        <h2>Informations professionnelles</h2>
+        <dl className="settings-details"><div><dt>Profession</dt><dd>{profile?.professional_title || "À renseigner"}</dd></div><div><dt>Spécialité</dt><dd>{profile?.specialty || "À renseigner"}</dd></div></dl>
+        <p className="settings-note muted">La spécialité est déclarée par vous. Les justificatifs médicaux ne sont pas collectés par E‑Carnet : leur vérification relève de l’établissement.</p>
+      </section>
+
+      <section className="card settings-anchor" id="etablissement">
+        <span className="eyebrow">Rattachement</span>
+        <h2>{activeEstablishment ? `Mon établissement — ${activeEstablishment.name}` : "Mon établissement"}</h2>
+        <dl className="settings-details"><div><dt>Établissement actif</dt><dd>{activeEstablishment?.name ?? (profile?.active_establishment ? "Établissement actif" : "Aucun établissement actif")}</dd></div><div><dt>Email de connexion</dt><dd>{account?.email ?? (loading ? "Chargement…" : "Non disponible")}</dd></div></dl>
+        <div className="actions"><Link className="button" href="/professionnel/etablissements">Gérer les rattachements</Link>{profile?.active_establishment && <Link className="button" href="/etablissement/parametres">Paramètres établissement</Link>}</div>
+      </section>
+
+      <section className="card settings-anchor" id="compte" aria-labelledby="professional-account-title">
+        <span className="eyebrow">Préférences personnelles</span><h2 id="professional-account-title">Paramètres du compte</h2>
+        <p className="muted">Responsable du compte : {fullName} · {account?.email ?? "Email non disponible"}</p>
+        <ThemeSettingsClient compact />
+      </section>
+
+      <section className="card settings-anchor" id="securite" aria-labelledby="professional-security-title">
+        <span className="eyebrow">Accès au compte</span><h2 id="professional-security-title">Sécurité et connexion</h2>
+        <p className="muted">Les autorisations professionnelles sont vérifiées côté API. Les fournisseurs ci-dessous servent uniquement à la connexion au compte.</p>
+        <LinkedProvidersSettingsClient nextPath="/professionnel/parametres" />
+      </section>
+
+      <SettingsMoreSection />
     </div>
-  </div>;
+  );
 }

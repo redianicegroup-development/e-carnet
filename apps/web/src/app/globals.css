@@ -189,9 +189,29 @@ a.setting-item:hover, button.setting-item:hover { border-color: var(--primary); 
 .setting-item__icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: var(--primary-tint); color: var(--primary-text); flex-shrink: 0; }
 .setting-item__meta { display: grid; gap: 2px; min-width: 0; flex: 1; }
 .setting-item__meta span { color: var(--text-muted); font-size: .85rem; }
+.setting-item__chevron { color: var(--text-muted); font-size: 1.3rem; line-height: 1; }
 .setting-item--danger { color: var(--danger); }
 .setting-item--danger .setting-item__icon { background: var(--status-contested-bg); color: var(--danger); }
 .setting-logout { margin-top: 6px; }
+.settings-directory { padding: 2px 0; }
+.settings-directory .setting-list { gap: 2px; }
+.settings-directory .setting-item { padding: 12px 10px; border-color: transparent; border-radius: 12px; background: transparent; }
+.settings-directory .setting-item:hover { border-color: transparent; background: var(--surface-tint); }
+.settings-directory .setting-item__icon { width: 34px; height: 34px; background: transparent; color: var(--primary-text); font-size: 1.05rem; }
+.settings-directory .setting-item__meta strong { font-size: 1rem; line-height: 1.25; }
+.settings-anchor { scroll-margin-top: 96px; }
+.settings-account-summary__copy { min-width: 0; display: grid; gap: 4px; }
+.settings-account-summary__copy h2 { overflow-wrap: anywhere; }
+.settings-form { display: grid; gap: 14px; }
+.settings-form-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); }
+.settings-form-grid__wide { grid-column: 1 / -1; }
+.settings-theme-panel { display: grid; gap: 12px; margin-top: 8px; }
+.settings-provider-list, .settings-more-list { display: grid; gap: 8px; }
+.settings-provider { align-items: center; }
+.setting-item--upcoming { cursor: default; opacity: .8; }
+.setting-item--upcoming .badge { flex-shrink: 0; }
+.settings-subsection { display: grid; gap: 12px; }
+@media (max-width: 480px) { .settings-form .auth-name-grid { grid-template-columns: 1fr; } .settings-provider { align-items: flex-start; } }
 .swatches { display: flex; flex-wrap: wrap; gap: 10px; }
 .swatch { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 12px; border: 1.5px solid var(--border-strong); background: var(--surface); cursor: pointer; font: inherit; font-weight: 600; font-size: .85rem; color: var(--text); }
 .swatch.selected, .swatch[aria-pressed="true"] { border-color: var(--primary); outline: 2px solid var(--primary); }

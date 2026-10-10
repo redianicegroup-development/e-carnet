@@ -4,5 +4,5 @@ import { PageHeader } from "../../../components/ui/PageHeader";
 export const metadata = { title: "Mon profil — Mon Carnet Numérique", robots: { index: false, follow: false } };
 
 export default function ProfessionalSettingsPage() {
-  return <div className="stack-lg"><PageHeader eyebrow="Moi" title="Mon profil professionnel" lead="Votre identité, votre profession et l’apparence de l’application. Aucun dossier patient n’est accessible depuis ici." /><ProfessionalSettingsClient /></div>;
+  return <div className="stack-lg"><PageHeader eyebrow="Espace professionnel" title="Paramètres professionnels" lead="Retrouvez votre profession, votre établissement, vos préférences et vos méthodes de connexion." /><ProfessionalSettingsClient /></div>;
 }
