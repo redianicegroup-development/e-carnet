@@ -118,6 +118,29 @@ class OAuthRedirectTests(TestCase):
         self.assertNotIn("temporary-oauth-code", log_output)
         self.assertNotIn("temporary-access-token", log_output)
 
+    @patch("apps.identity.oauth_views.external_profile", return_value={"id": "new-google-user", "email": "user@example.test", "name": "Test User", "avatar": ""})
+    @patch("apps.identity.oauth_views.http_json", return_value={"access_token": "temporary-access-token"})
+    def test_linking_second_identity_for_provider_returns_conflict(self, _http_json, _external_profile):
+        from .models import AuthIdentity
+
+        user = User.objects.create_user(username="oauth-link-user", email="user@example.test")
+        AuthIdentity.objects.create(user=user, provider="google", provider_user_id="existing-google-user")
+        self.client.force_login(user)
+        session = self.client.session
+        session["oauth_state_google"] = "valid-state"
+        session["oauth_link_user_id"] = str(user.pk)
+        session.save()
+
+        with patch.dict(os.environ, {"GOOGLE_CLIENT_ID": "test-client", "GOOGLE_CLIENT_SECRET": "test-secret"}):
+            response = self.client.get(
+                "/api/v1/identity/oauth/google/callback/",
+                {"state": "valid-state", "code": "temporary-oauth-code"},
+            )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("status=conflict", response["Location"])
+        self.assertEqual(AuthIdentity.objects.filter(user=user, provider="google").count(), 1)
+
 
 class DemoSeedCommandTests(TestCase):
     @override_settings(DEBUG=False)

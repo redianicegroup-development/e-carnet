@@ -115,6 +115,12 @@ class OAuthCallbackView(APIView):
                 stage = "linked_user_lookup"
                 user = User.objects.filter(pk=link_user_id).first()
                 if not user: return ui_redirect(provider, status="error", message="Session de liaison expirée.")
+                if AuthIdentity.objects.filter(user=user, provider=provider).exists():
+                    return ui_redirect(
+                        provider,
+                        status="conflict",
+                        message=f"Une identité {provider.capitalize()} est déjà liée à votre compte. Déliez-la avant d'en associer une autre.",
+                    )
                 linked = True
             else:
                 email = profile.get("email", "")
