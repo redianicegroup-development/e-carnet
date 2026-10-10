@@ -66,7 +66,16 @@ class AccountSerializer(serializers.Serializer):
         return {"completed": bool(profile), "id": str(profile.id) if profile else None}
 
 
+class EmptyStringAsNullDateField(serializers.DateField):
+    """Normalise une date facultative vide, comme le font les formulaires HTML."""
+    def run_validation(self, data):
+        return super().run_validation(None if data == "" else data)
+
+
 class PatientOnboardingSerializer(serializers.ModelSerializer):
+    birth_date = EmptyStringAsNullDateField(required=False, allow_null=True)
+    coverage_expiry = EmptyStringAsNullDateField(required=False, allow_null=True)
+
     class Meta:
         model = PatientProfile
         fields = ("phone", "birth_date", "address", "coverage_provider", "coverage_number", "coverage_expiry")

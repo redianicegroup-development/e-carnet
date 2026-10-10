@@ -47,7 +47,7 @@ class IdentityOnboardingTests(TestCase):
 
     def test_patient_onboarding_completes_profile(self):
         self.client.post("/api/v1/identity/register/", {"email": "patient@example.test", "password": "a-long-local-password", "first_name": "A", "last_name": "B"}, format="json")
-        response = self.client.patch("/api/v1/identity/onboarding/patient/", {"phone": "+22500000000", "coverage_provider": "Couverture fictive", "birth_date": None, "coverage_expiry": None}, format="json")
+        response = self.client.patch("/api/v1/identity/onboarding/patient/", {"phone": "+22500000000", "coverage_provider": "Couverture fictive", "birth_date": "", "coverage_expiry": ""}, format="json")
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.data["data"]["patient_profile"]["completed"])
         self.assertTrue(response.data["data"]["contexts"][0]["onboarding_completed"])
