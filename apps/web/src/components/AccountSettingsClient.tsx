@@ -7,6 +7,7 @@ import { AvatarPicker } from "./AvatarPicker";
 import { LinkedProvidersSettingsClient } from "./LinkedProvidersSettingsClient";
 import { PatientHealthSettingsClient } from "./PatientHealthSettingsClient";
 import { SettingsDirectory, type SettingsNavItem } from "./SettingsDirectory";
+import { SettingsModal } from "./SettingsModal";
 import { SettingsMoreSection } from "./SettingsMoreSection";
 import { ThemeSettingsClient } from "./ThemeSettingsClient";
 import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
@@ -20,10 +21,8 @@ const sections: SettingsNavItem[] = [
   { id: "securite", title: "Sécurité et connexion", description: "Gérer les fournisseurs liés au compte.", icon: "▣" },
   { id: "en-savoir-plus", title: "En savoir plus", description: "Aide, informations et documents E‑Carnet.", icon: "i" },
 ];
-
-function initials(account: Account) {
-  return `${account.first_name?.[0] ?? ""}${account.last_name?.[0] ?? ""}`.toUpperCase() || "EC";
-}
+function titleFor(id: string) { return sections.find((section) => section.id === id)?.title ?? "Paramètres"; }
+function initials(account: Account) { return `${account.first_name?.[0] ?? ""}${account.last_name?.[0] ?? ""}`.toUpperCase() || "EC"; }
 
 export function AccountSettingsClient() {
   const router = useRouter();
@@ -33,7 +32,7 @@ export function AccountSettingsClient() {
   const [message, setMessage] = useState("Chargement de votre profil…");
   const [busy, setBusy] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
-  const [activeSection, setActiveSection] = useState("personnel");
+  const [activeSection, setActiveSection] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -76,9 +75,7 @@ export function AccountSettingsClient() {
       setMessage("Informations personnelles enregistrées.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Enregistrement impossible.");
-    } finally {
-      setBusy(false);
-    }
+    } finally { setBusy(false); }
   }
 
   async function logout() {
@@ -86,11 +83,7 @@ export function AccountSettingsClient() {
     try {
       const csrf = await primeCsrf();
       if (!csrf.ok) throw new Error("Impossible d’établir une session sécurisée.");
-      const response = await fetch(`${API}/api/v1/identity/logout/`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "X-CSRFToken": readCsrfToken() },
-      });
+      const response = await fetch(`${API}/api/v1/identity/logout/`, { method: "POST", credentials: "include", headers: { "X-CSRFToken": readCsrfToken() } });
       if (!response.ok) throw new Error("La déconnexion n’a pas abouti.");
       router.push("/connexion");
       router.refresh();
@@ -114,35 +107,32 @@ export function AccountSettingsClient() {
 
       <SettingsDirectory items={sections} activeId={activeSection} onSelect={setActiveSection} onLogout={() => void logout()} logoutDisabled={signingOut} />
 
-      {activeSection === "personnel" && <section className="card settings-anchor" id="settings-panel-personnel" role="tabpanel" tabIndex={0} aria-labelledby="settings-tab-personnel">
-        <span className="eyebrow">Mon identité</span><h2>Mes informations personnelles</h2><p className="muted">Votre nom et votre photo sont rattachés à votre compte E‑Carnet.</p>
+      {activeSection === "personnel" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section">
+        <span className="eyebrow">Mon identité</span><p className="muted">Votre nom et votre photo sont rattachés à votre compte E‑Carnet.</p>
         <form className="settings-form" onSubmit={saveIdentity}>
           <div className="auth-name-grid"><label className="field"><span>Prénom</span><input name="first_name" required autoComplete="given-name" defaultValue={account.first_name} disabled={busy} /></label><label className="field"><span>Nom</span><input name="last_name" required autoComplete="family-name" defaultValue={account.last_name} disabled={busy} /></label></div>
           <label className="field"><span>Photo de profil</span><AvatarPicker value={avatarValue} onChange={(value) => { setAvatarValue(value); setAvatarChanged(true); }} fallback={initials(account)} disabled={busy} /><small className="muted">Touchez la photo pour en choisir une nouvelle.</small></label>
           <div className="actions"><button className="button primary" disabled={busy} type="submit">{busy ? "Enregistrement…" : "Enregistrer mes informations"}</button></div>
           <p className="status" role="status" aria-live="polite">{message}</p>
         </form>
-      </section>}
+      </div></SettingsModal>}
 
-      {activeSection === "sante" && <section className="card settings-anchor" id="settings-panel-sante" role="tabpanel" tabIndex={0} aria-labelledby="settings-tab-sante">
-        <span className="eyebrow">Déclaratif</span><h2>Informations de santé déclaratives</h2>
-        <p className="muted">Les allergies, antécédents et traitements que vous déclarez sont conservés dans votre carnet.</p>
+      {activeSection === "sante" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section">
+        <span className="eyebrow">Déclaratif</span><p className="muted">Les allergies, antécédents et traitements que vous déclarez sont conservés dans votre carnet.</p>
         <div className="actions"><Link className="button" href="/patient/carnet">Gérer mes déclarations du carnet</Link></div>
         <PatientHealthSettingsClient />
-      </section>}
+      </div></SettingsModal>}
 
-      {activeSection === "compte" && <section className="card settings-anchor" id="settings-panel-compte" role="tabpanel" tabIndex={0} aria-labelledby="settings-tab-compte">
-        <span className="eyebrow">Préférences personnelles</span><h2>Paramètres du compte</h2>
-        <p className="muted">Vos choix d’apparence sont enregistrés sur votre compte et vous suivent sur vos autres appareils.</p>
+      {activeSection === "compte" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section">
+        <span className="eyebrow">Préférences personnelles</span><p className="muted">Vos choix d’apparence sont enregistrés sur votre compte et vous suivent sur vos autres appareils.</p>
         <ThemeSettingsClient compact />
-      </section>}
+      </div></SettingsModal>}
 
-      {activeSection === "securite" && <section className="card settings-anchor" id="settings-panel-securite" role="tabpanel" tabIndex={0} aria-labelledby="settings-tab-securite">
-        <span className="eyebrow">Accès au compte</span><h2>Sécurité et connexion</h2>
-        <LinkedProvidersSettingsClient nextPath="/patient/parametres" />
-      </section>}
+      {activeSection === "securite" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section">
+        <span className="eyebrow">Accès au compte</span><LinkedProvidersSettingsClient nextPath="/patient/parametres" />
+      </div></SettingsModal>}
 
-      {activeSection === "en-savoir-plus" && <div id="settings-panel-en-savoir-plus" role="tabpanel" tabIndex={0} aria-labelledby="settings-tab-en-savoir-plus"><SettingsMoreSection /></div>}
+      {activeSection === "en-savoir-plus" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><SettingsMoreSection /></SettingsModal>}
     </div>
   );
 }

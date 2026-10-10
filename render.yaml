@@ -18,6 +18,10 @@ services:
         value: ecarnet-api.onrender.com,e-carnetci.vercel.app
       - key: DJANGO_SECRET_KEY
         generateValue: true
+      - key: DJANGO_ADMIN_EMAIL
+        sync: false
+      - key: DJANGO_ADMIN_PASSWORD
+        sync: false
       - key: DATABASE_URL
         sync: false
       - key: WEB_ORIGIN

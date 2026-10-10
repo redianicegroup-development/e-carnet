@@ -6,14 +6,11 @@ const available = [
   { href: "/securite", icon: "▣", title: "Sécurité et données", description: "Consulter les principes de sécurité du service." },
   { href: "/conditions-rattachement", icon: "✓", title: "Conditions de rattachement", description: "Lire les règles applicables aux rattachements professionnels." },
 ];
-
 const comingSoon = ["Conditions générales d’utilisation", "Confidentialité", "Mentions légales", "Crédits"];
 
 export function SettingsMoreSection() {
   return (
-    <section className="card settings-anchor" id="en-savoir-plus" aria-labelledby="settings-more-title">
-      <span className="eyebrow">Informations</span>
-      <h2 id="settings-more-title">En savoir plus</h2>
+    <section className="settings-more-content" aria-label="Ressources E-Carnet">
       <p className="muted">Les ressources disponibles et les pages d’information prévues pour E‑Carnet.</p>
       <div className="settings-more-list">
         {available.map((item) => (
