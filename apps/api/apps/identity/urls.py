@@ -2,8 +2,10 @@ from django.urls import path
 from .auth_views import AccountAvatarView, ContextSelectView, CurrentAccountView, IdentityProfileView, LoginView, LogoutView, OAuthIdentityListView, OAuthIdentityUnlinkView, PatientOnboardingView, RegisterView
 from .oauth_views import OAuthCallbackView, OAuthStartView
 from .views import CurrentAccountThemeView
+from .visitor_views import AnonymousVisitView
 urlpatterns = [
     path("register/", RegisterView.as_view()), path("login/", LoginView.as_view()), path("logout/", LogoutView.as_view()),
+    path("analytics/visits/", AnonymousVisitView.as_view(), name="anonymous-visitor-visit"),
     path("me/", CurrentAccountView.as_view()), path("me/profile/", IdentityProfileView.as_view()), path("me/avatar/", AccountAvatarView.as_view()), path("me/theme/", CurrentAccountThemeView.as_view(), name="current-account-theme"),
     path("oauth/identities/", OAuthIdentityListView.as_view()), path("oauth/identities/<str:provider>/", OAuthIdentityUnlinkView.as_view()),
     path("contexts/select/", ContextSelectView.as_view()), path("onboarding/patient/", PatientOnboardingView.as_view()),

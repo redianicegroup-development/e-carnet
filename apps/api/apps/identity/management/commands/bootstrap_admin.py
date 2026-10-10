@@ -11,10 +11,16 @@ from django.db import IntegrityError, transaction
 class Command(BaseCommand):
     help = "Crée une fois un superutilisateur à partir de DJANGO_ADMIN_EMAIL et DJANGO_ADMIN_PASSWORD."
 
+    def add_arguments(self, parser):
+        parser.add_argument("--if-configured", action="store_true", help="Ne rien faire si les deux variables admin sont absentes.")
+
     def handle(self, *args, **options):
         email = os.environ.get("DJANGO_ADMIN_EMAIL", "").strip().lower()
         password = os.environ.get("DJANGO_ADMIN_PASSWORD", "")
         if not email or not password:
+            if options.get("if_configured") and not email and not password:
+                self.stdout.write("Variables admin absentes : aucun bootstrap nécessaire.")
+                return
             raise CommandError("Définissez DJANGO_ADMIN_EMAIL et DJANGO_ADMIN_PASSWORD dans l’environnement du backend.")
         try:
             validate_email(email)

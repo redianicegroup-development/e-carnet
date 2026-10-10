@@ -14,6 +14,7 @@ from rest_framework.views import APIView
 from authlib.jose import JsonWebKey, jwt
 from apps.audit.services import record_event
 from .models import AccountContext, AccountProfile, AuthIdentity
+from .visitor_tracking import track_auth_response
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -147,7 +148,8 @@ class OAuthCallbackView(APIView):
                 login(request, user); existing.last_seen_at = timezone.now(); existing.save(update_fields=("last_seen_at",))
                 fallback = "/patient/parametres" if link_user_id else account_destination(existing.user)
                 destination = safe_next_path(next_path, fallback)
-                return oauth_success_redirect(destination)
+                response = oauth_success_redirect(destination)
+                return track_auth_response(request, response, "oauth_link" if link_user_id else "oauth_success")
             if link_user_id:
                 stage = "linked_user_lookup"
                 user = User.objects.filter(pk=link_user_id).first()
@@ -183,7 +185,8 @@ class OAuthCallbackView(APIView):
             record_event(event_type="oauth.identity_linked" if linked else "oauth.account_created", actor=user, actor_role="account", metadata={"action": "linked" if linked else "created", "provider": provider})
             fallback = "/patient/parametres" if linked else account_destination(user)
             destination = safe_next_path(next_path, fallback)
-            return oauth_success_redirect(destination)
+            response = oauth_success_redirect(destination)
+            return track_auth_response(request, response, "oauth_link" if linked else "oauth_success")
         except Exception:
             logger.exception("OAuth callback failed during %s (provider=%s)", stage, provider)
             raise

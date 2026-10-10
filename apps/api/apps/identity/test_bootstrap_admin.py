@@ -1,4 +1,5 @@
 import os
+from io import StringIO
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
@@ -12,6 +13,13 @@ PASSWORD = "K8#rQ2!vM7@pX4$sL9&zT6"
 
 @override_settings(AUTH_PASSWORD_VALIDATORS=[])
 class BootstrapAdminCommandTests(TestCase):
+    def test_startup_mode_skips_when_admin_is_not_configured(self):
+        output = StringIO()
+        with patch.dict(os.environ, {}, clear=True):
+            call_command("bootstrap_admin", "--if-configured", stdout=output)
+        self.assertIn("aucun bootstrap", output.getvalue())
+        self.assertFalse(get_user_model().objects.exists())
+
     def test_requires_both_environment_variables(self):
         with patch.dict(os.environ, {}, clear=True), self.assertRaises(CommandError):
             call_command("bootstrap_admin")

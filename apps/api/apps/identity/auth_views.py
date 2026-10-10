@@ -12,6 +12,7 @@ from apps.audit.services import record_event
 from apps.patients.models import PatientProfile
 from .auth_serializers import AccountIdentitySerializer, AccountSerializer, LinkedIdentitySerializer, LoginSerializer, PatientOnboardingSerializer, RegisterSerializer
 from .models import AccountContext, AccountProfile, AuthIdentity
+from .visitor_tracking import track_auth_response
 
 
 def account_payload(user):
@@ -26,7 +27,8 @@ class RegisterView(APIView):
     def post(self, request):
         serializer = RegisterSerializer(data=request.data); serializer.is_valid(raise_exception=True)
         user = serializer.save(); login(request, user)
-        return Response({"success": True, "data": account_payload(user)}, status=status.HTTP_201_CREATED)
+        response = Response({"success": True, "data": account_payload(user)}, status=status.HTTP_201_CREATED)
+        return track_auth_response(request, response, "registration")
 
 
 class LoginView(APIView):
@@ -38,8 +40,12 @@ class LoginView(APIView):
         matches = get_user_model().objects.filter(email__iexact=serializer.validated_data["email"])
         user = matches.first() if matches.count() == 1 else None
         user = authenticate(request, username=user.get_username(), password=serializer.validated_data["password"]) if user else None
-        if not user: return Response({"success": False, "message": "Email ou mot de passe incorrect."}, status=400)
-        login(request, user); return Response({"success": True, "data": account_payload(user)})
+        if not user:
+            response = Response({"success": False, "message": "Email ou mot de passe incorrect."}, status=400)
+            return track_auth_response(request, response, "login_failure")
+        login(request, user)
+        response = Response({"success": True, "data": account_payload(user)})
+        return track_auth_response(request, response, "login_success")
 
 
 class LogoutView(APIView):

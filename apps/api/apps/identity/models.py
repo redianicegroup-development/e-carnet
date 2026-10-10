@@ -58,3 +58,38 @@ class AuthIdentity(models.Model):
             models.UniqueConstraint(fields=("user", "provider"), name="unique_user_provider_identity"),
         ]
         indexes = [models.Index(fields=("provider", "email"))]
+
+
+class AnonymousVisitor(models.Model):
+    """Compteur agrégé associé à un UUID aléatoire, sans données directement identifiantes."""
+    PAGE_CATEGORIES = (
+        ("landing", "Accueil"), ("public", "Page publique"), ("auth", "Connexion / inscription"),
+        ("patient", "Espace patient"), ("professional", "Espace professionnel"),
+        ("establishment", "Espace établissement"), ("other", "Autre page"),
+    )
+    AUTH_EVENTS = (
+        ("auth_page", "Page de connexion consultée"), ("login_success", "Connexion réussie"),
+        ("login_failure", "Échec de connexion"), ("registration", "Inscription"),
+        ("oauth_success", "Connexion OAuth réussie"), ("oauth_link", "Fournisseur OAuth lié"),
+    )
+    visitor_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    first_seen = models.DateTimeField(auto_now_add=True)
+    last_seen = models.DateTimeField(db_index=True)
+    page_view_count = models.PositiveBigIntegerField(default=0)
+    auth_page_view_count = models.PositiveBigIntegerField(default=0)
+    login_success_count = models.PositiveIntegerField(default=0)
+    login_failure_count = models.PositiveIntegerField(default=0)
+    registration_count = models.PositiveIntegerField(default=0)
+    oauth_success_count = models.PositiveIntegerField(default=0)
+    oauth_link_count = models.PositiveIntegerField(default=0)
+    last_page_category = models.CharField(max_length=24, choices=PAGE_CATEGORIES, default="other")
+    last_auth_event = models.CharField(max_length=24, choices=AUTH_EVENTS, blank=True)
+    last_auth_event_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "visiteur anonyme"
+        verbose_name_plural = "visiteurs anonymes"
+        ordering = ("-last_seen",)
+
+    def __str__(self):
+        return f"Visiteur anonyme {self.visitor_id}"
