@@ -33,6 +33,7 @@ export function AccountSettingsClient() {
   const [message, setMessage] = useState("Chargement de votre profil…");
   const [busy, setBusy] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [activeSection, setActiveSection] = useState("personnel");
 
   useEffect(() => {
     let active = true;
@@ -106,54 +107,42 @@ export function AccountSettingsClient() {
       <section className="card account-summary settings-account-summary">
         <div className="profile-summary">
           <div className="avatar avatar--large" aria-hidden="true">{account.avatar_url ? <img src={account.avatar_url} alt="" /> : initials(account)}</div>
-          <div className="settings-account-summary__copy">
-            <span className="eyebrow">Compte patient</span>
-            <h2>{[account.first_name, account.last_name].filter(Boolean).join(" ") || "Mon compte"}</h2>
-            <p className="muted">{account.email}</p>
-          </div>
+          <div className="settings-account-summary__copy"><span className="eyebrow">Compte patient</span><h2>{[account.first_name, account.last_name].filter(Boolean).join(" ") || "Mon compte"}</h2><p className="muted">{account.email}</p></div>
         </div>
         <p className="notice" role="status" aria-live="polite">{message}</p>
       </section>
 
-      <SettingsDirectory items={sections} onLogout={() => void logout()} logoutDisabled={signingOut} />
+      <SettingsDirectory items={sections} activeId={activeSection} onSelect={setActiveSection} onLogout={() => void logout()} logoutDisabled={signingOut} />
 
-      <section className="card settings-anchor" id="personnel" aria-labelledby="personal-settings-title">
-        <span className="eyebrow">Mon identité</span>
-        <h2 id="personal-settings-title">Mes informations personnelles</h2>
-        <p className="muted">Votre nom et votre photo sont rattachés à votre compte E‑Carnet.</p>
+      {activeSection === "personnel" && <section className="card settings-anchor" id="settings-panel-personnel" role="tabpanel" tabIndex={0} aria-labelledby="settings-tab-personnel">
+        <span className="eyebrow">Mon identité</span><h2>Mes informations personnelles</h2><p className="muted">Votre nom et votre photo sont rattachés à votre compte E‑Carnet.</p>
         <form className="settings-form" onSubmit={saveIdentity}>
-          <div className="auth-name-grid">
-            <label className="field"><span>Prénom</span><input name="first_name" required autoComplete="given-name" defaultValue={account.first_name} disabled={busy} /></label>
-            <label className="field"><span>Nom</span><input name="last_name" required autoComplete="family-name" defaultValue={account.last_name} disabled={busy} /></label>
-          </div>
+          <div className="auth-name-grid"><label className="field"><span>Prénom</span><input name="first_name" required autoComplete="given-name" defaultValue={account.first_name} disabled={busy} /></label><label className="field"><span>Nom</span><input name="last_name" required autoComplete="family-name" defaultValue={account.last_name} disabled={busy} /></label></div>
           <label className="field"><span>Photo de profil</span><AvatarPicker value={avatarValue} onChange={(value) => { setAvatarValue(value); setAvatarChanged(true); }} fallback={initials(account)} disabled={busy} /><small className="muted">Touchez la photo pour en choisir une nouvelle.</small></label>
           <div className="actions"><button className="button primary" disabled={busy} type="submit">{busy ? "Enregistrement…" : "Enregistrer mes informations"}</button></div>
           <p className="status" role="status" aria-live="polite">{message}</p>
         </form>
-      </section>
+      </section>}
 
-      <section className="card settings-anchor" id="sante" aria-labelledby="health-settings-title">
-        <span className="eyebrow">Déclaratif</span>
-        <h2 id="health-settings-title">Informations de santé déclaratives</h2>
+      {activeSection === "sante" && <section className="card settings-anchor" id="settings-panel-sante" role="tabpanel" tabIndex={0} aria-labelledby="settings-tab-sante">
+        <span className="eyebrow">Déclaratif</span><h2>Informations de santé déclaratives</h2>
         <p className="muted">Les allergies, antécédents et traitements que vous déclarez sont conservés dans votre carnet.</p>
         <div className="actions"><Link className="button" href="/patient/carnet">Gérer mes déclarations du carnet</Link></div>
         <PatientHealthSettingsClient />
-      </section>
+      </section>}
 
-      <section className="card settings-anchor" id="compte" aria-labelledby="account-preferences-title">
-        <span className="eyebrow">Préférences personnelles</span>
-        <h2 id="account-preferences-title">Paramètres du compte</h2>
+      {activeSection === "compte" && <section className="card settings-anchor" id="settings-panel-compte" role="tabpanel" tabIndex={0} aria-labelledby="settings-tab-compte">
+        <span className="eyebrow">Préférences personnelles</span><h2>Paramètres du compte</h2>
         <p className="muted">Vos choix d’apparence sont enregistrés sur votre compte et vous suivent sur vos autres appareils.</p>
         <ThemeSettingsClient compact />
-      </section>
+      </section>}
 
-      <section className="card settings-anchor" id="securite" aria-labelledby="security-settings-title">
-        <span className="eyebrow">Accès au compte</span>
-        <h2 id="security-settings-title">Sécurité et connexion</h2>
+      {activeSection === "securite" && <section className="card settings-anchor" id="settings-panel-securite" role="tabpanel" tabIndex={0} aria-labelledby="settings-tab-securite">
+        <span className="eyebrow">Accès au compte</span><h2>Sécurité et connexion</h2>
         <LinkedProvidersSettingsClient nextPath="/patient/parametres" />
-      </section>
+      </section>}
 
-      <SettingsMoreSection />
+      {activeSection === "en-savoir-plus" && <div id="settings-panel-en-savoir-plus" role="tabpanel" tabIndex={0} aria-labelledby="settings-tab-en-savoir-plus"><SettingsMoreSection /></div>}
     </div>
   );
 }

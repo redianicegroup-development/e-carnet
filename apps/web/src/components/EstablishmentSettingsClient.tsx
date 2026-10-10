@@ -48,6 +48,7 @@ export function EstablishmentSettingsClient() {
   const [loading, setLoading] = useState(true);
   const [signingOut, setSigningOut] = useState(false);
   const [sessionRequired, setSessionRequired] = useState(false);
+  const [activeSection, setActiveSection] = useState("administratif");
 
   useEffect(() => {
     let active = true;
@@ -107,42 +108,39 @@ export function EstablishmentSettingsClient() {
   return (
     <div className="establishment-settings settings-page">
       <section className="card establishment-settings__profile account-summary">
-        <div className="profile-summary">
-          <div className="avatar avatar--large" aria-hidden="true">{account?.avatar_url ? <img src={account.avatar_url} alt="" /> : selected?.name.slice(0, 2).toUpperCase() ?? "ET"}</div>
-          <div><span className="eyebrow">Espace établissement</span><h2>{selected?.name ?? "Compte établissement"}</h2><p className="muted">{selected ? `${selected.city} · ${statusLabel(selected.status)}` : account?.email ?? "Aucun établissement associé"}</p></div>
-        </div>
+        <div className="profile-summary"><div className="avatar avatar--large" aria-hidden="true">{account?.avatar_url ? <img src={account.avatar_url} alt="" /> : selected?.name.slice(0, 2).toUpperCase() ?? "ET"}</div><div><span className="eyebrow">Espace établissement</span><h2>{selected?.name ?? "Compte établissement"}</h2><p className="muted">{selected ? `${selected.city} · ${statusLabel(selected.status)}` : account?.email ?? "Aucun établissement associé"}</p></div></div>
         {establishments.length > 1 && <label className="field"><span>Établissement concerné</span><select value={selected?.id ?? ""} onChange={(event) => setSelectedId(event.target.value)}>{establishments.map((item) => <option key={item.id} value={item.id}>{item.name} · {statusLabel(item.status)}</option>)}</select></label>}
         <p className="notice" role="status" aria-live="polite">{loading ? "Chargement…" : message}</p>
       </section>
 
-      <SettingsDirectory items={navItems} onLogout={() => void logout()} logoutDisabled={signingOut || loading} />
+      <SettingsDirectory items={navItems} activeId={activeSection} onSelect={setActiveSection} onLogout={() => void logout()} logoutDisabled={signingOut || loading} />
 
-      <section className="card settings-anchor" id="administratif">
+      {activeSection === "administratif" && <section className="card settings-anchor" id="settings-panel-administratif" role="tabpanel" tabIndex={0} aria-labelledby="settings-tab-administratif">
         <span className="eyebrow">Fiche établissement</span><h2>Informations administratives</h2>
         {selected ? <dl className="settings-details"><div><dt>Nom</dt><dd>{selected.name}</dd></div><div><dt>Type de structure</dt><dd>{selected.establishment_type}</dd></div><div><dt>Statut</dt><dd><span className={`badge ${selected.status === "active" ? "active" : "pending"}`}>{statusLabel(selected.status)}</span></dd></div><div><dt>Code interne</dt><dd>{selected.internal_code ?? "Attribué après activation"}</dd></div></dl> : <p className="empty">{loading ? "Chargement…" : "Aucune fiche établissement n’est liée à cette session."}</p>}
         {!selected && !loading && <Link className="button primary" href="/professionnel/etablissements">Déclarer un établissement</Link>}
         {selected && <p className="muted settings-note">La modification de la fiche sera activée avec l’endpoint de mise à jour établissement.</p>}
-      </section>
+      </section>}
 
-      <section className="card settings-anchor" id="coordonnees">
+      {activeSection === "coordonnees" && <section className="card settings-anchor" id="settings-panel-coordonnees" role="tabpanel" tabIndex={0} aria-labelledby="settings-tab-coordonnees">
         <span className="eyebrow">Contact de la structure</span><h2>Coordonnées</h2>
         {selected ? <dl className="settings-details"><div><dt>Responsable déclaré</dt><dd>{selected.responsible_name}</dd></div><div><dt>Ville</dt><dd>{selected.city}</dd></div><div><dt>Adresse</dt><dd>{selected.address}</dd></div><div><dt>Téléphone</dt><dd><a href={`tel:${selected.phone}`}>{selected.phone}</a></dd></div><div><dt>Email établissement</dt><dd><a href={`mailto:${selected.email}`}>{selected.email}</a></dd></div></dl> : <p className="muted">Les coordonnées apparaîtront après la création de la fiche établissement.</p>}
-      </section>
+      </section>}
 
-      <section className="card settings-anchor" id="compte" aria-labelledby="establishment-account-title">
-        <span className="eyebrow">Préférences personnelles</span><h2 id="establishment-account-title">Paramètres du compte</h2>
+      {activeSection === "compte" && <section className="card settings-anchor" id="settings-panel-compte" role="tabpanel" tabIndex={0} aria-labelledby="settings-tab-compte">
+        <span className="eyebrow">Préférences personnelles</span><h2>Paramètres du compte</h2>
         <dl className="settings-details"><div><dt>Responsable du compte</dt><dd>{accountName}</dd></div><div><dt>Email de connexion</dt><dd>{account?.email ?? (loading ? "Chargement…" : "Non disponible")}</dd></div><div><dt>Contexte établissement</dt><dd>{account?.contexts.find((context) => context.role === "establishment")?.is_active ? "Actif" : "Associé au compte"}</dd></div></dl>
         <ThemeSettingsClient compact />
-      </section>
+      </section>}
 
-      <section className="card settings-anchor" id="securite" aria-labelledby="establishment-security-title">
-        <span className="eyebrow">Accès au compte</span><h2 id="establishment-security-title">Sécurité et connexion</h2>
+      {activeSection === "securite" && <section className="card settings-anchor" id="settings-panel-securite" role="tabpanel" tabIndex={0} aria-labelledby="settings-tab-securite">
+        <span className="eyebrow">Accès au compte</span><h2>Sécurité et connexion</h2>
         <p className="muted">Les actions établissement sont contrôlées côté API selon votre compte et votre rôle. Gérez ci-dessous vos méthodes de connexion.</p>
         <LinkedProvidersSettingsClient nextPath="/etablissement/parametres" />
         <ul className="info-list"><li>La session est gérée par le serveur et protégée contre les requêtes intersites.</li><li>La gestion des appareils et la récupération de compte ne sont pas encore disponibles dans la V1.</li></ul>
-      </section>
+      </section>}
 
-      <SettingsMoreSection />
+      {activeSection === "en-savoir-plus" && <div id="settings-panel-en-savoir-plus" role="tabpanel" tabIndex={0} aria-labelledby="settings-tab-en-savoir-plus"><SettingsMoreSection /></div>}
     </div>
   );
 }

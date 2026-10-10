@@ -197,7 +197,11 @@ a.setting-item:hover, button.setting-item:hover { border-color: var(--primary); 
 .settings-directory .setting-list { gap: 2px; }
 .settings-directory .setting-item { padding: 12px 10px; border-color: transparent; border-radius: 12px; background: transparent; }
 .settings-directory .setting-item:hover { border-color: transparent; background: var(--surface-tint); }
+.settings-directory .setting-item--active { border-color: var(--primary); background: var(--surface-tint); }
+.settings-directory [role="tab"]:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+.settings-directory > .setting-item--danger { margin-top: 6px; border-top-color: var(--border); }
 .settings-directory .setting-item__icon { width: 34px; height: 34px; background: transparent; color: var(--primary-text); font-size: 1.05rem; }
+.settings-directory > .setting-item--danger .setting-item__icon { background: var(--status-contested-bg); color: var(--danger); }
 .settings-directory .setting-item__meta strong { font-size: 1rem; line-height: 1.25; }
 .settings-anchor { scroll-margin-top: 96px; }
 .settings-account-summary__copy { min-width: 0; display: grid; gap: 4px; }

@@ -34,6 +34,7 @@ export function ProfessionalSettingsClient() {
   const [sessionRequired, setSessionRequired] = useState(false);
   const [message, setMessage] = useState("Chargement du profil professionnel…");
   const [signingOut, setSigningOut] = useState(false);
+  const [activeSection, setActiveSection] = useState("professionnel");
 
   useEffect(() => {
     let active = true;
@@ -61,8 +62,9 @@ export function ProfessionalSettingsClient() {
     setSigningOut(true);
     try {
       const csrf = await primeCsrf();
+      if (!csrf.ok) throw new Error("Impossible d’établir une session sécurisée.");
       const response = await fetch(`${API}/api/v1/identity/logout/`, { method: "POST", credentials: "include", headers: { "X-CSRFToken": readCsrfToken() } });
-      if (!csrf.ok || !response.ok) throw new Error("La déconnexion n’a pas abouti.");
+      if (!response.ok) throw new Error("La déconnexion n’a pas abouti.");
       router.push("/connexion");
       router.refresh();
     } catch (error) {
@@ -86,42 +88,36 @@ export function ProfessionalSettingsClient() {
   return (
     <div className="settings-page professional-settings">
       <section className="card account-summary">
-        <div className="profile-summary">
-          <div className="avatar avatar--large" aria-hidden="true">{account?.avatar_url ? <img src={account.avatar_url} alt="" /> : initials(fullName)}</div>
-          <div><span className="eyebrow">Espace professionnel</span><h2>{fullName}</h2><p className="muted">{profile?.professional_title || "Profession à renseigner"} · {profile?.specialty || "Spécialité à renseigner"}</p></div>
-        </div>
+        <div className="profile-summary"><div className="avatar avatar--large" aria-hidden="true">{account?.avatar_url ? <img src={account.avatar_url} alt="" /> : initials(fullName)}</div><div><span className="eyebrow">Espace professionnel</span><h2>{fullName}</h2><p className="muted">{profile?.professional_title || "Profession à renseigner"} · {profile?.specialty || "Spécialité à renseigner"}</p></div></div>
         <p className="notice" role="status" aria-live="polite">{loading ? "Chargement…" : message}</p>
       </section>
 
-      <SettingsDirectory items={navItems} onLogout={() => void logout()} logoutDisabled={loading || signingOut} />
+      <SettingsDirectory items={navItems} activeId={activeSection} onSelect={setActiveSection} onLogout={() => void logout()} logoutDisabled={loading || signingOut} />
 
-      <section className="card settings-anchor" id="professionnel">
-        <span className="eyebrow">Profil professionnel</span>
-        <h2>Informations professionnelles</h2>
+      {activeSection === "professionnel" && <section className="card settings-anchor" id="settings-panel-professionnel" role="tabpanel" tabIndex={0} aria-labelledby="settings-tab-professionnel">
+        <span className="eyebrow">Profil professionnel</span><h2>Informations professionnelles</h2>
         <dl className="settings-details"><div><dt>Profession</dt><dd>{profile?.professional_title || "À renseigner"}</dd></div><div><dt>Spécialité</dt><dd>{profile?.specialty || "À renseigner"}</dd></div></dl>
         <p className="settings-note muted">La spécialité est déclarée par vous. Les justificatifs médicaux ne sont pas collectés par E‑Carnet : leur vérification relève de l’établissement.</p>
-      </section>
+      </section>}
 
-      <section className="card settings-anchor" id="etablissement">
-        <span className="eyebrow">Rattachement</span>
-        <h2>{activeEstablishment ? `Mon établissement — ${activeEstablishment.name}` : "Mon établissement"}</h2>
+      {activeSection === "etablissement" && <section className="card settings-anchor" id="settings-panel-etablissement" role="tabpanel" tabIndex={0} aria-labelledby="settings-tab-etablissement">
+        <span className="eyebrow">Rattachement</span><h2>{activeEstablishment ? `Mon établissement — ${activeEstablishment.name}` : "Mon établissement"}</h2>
         <dl className="settings-details"><div><dt>Établissement actif</dt><dd>{activeEstablishment?.name ?? (profile?.active_establishment ? "Établissement actif" : "Aucun établissement actif")}</dd></div><div><dt>Email de connexion</dt><dd>{account?.email ?? (loading ? "Chargement…" : "Non disponible")}</dd></div></dl>
         <div className="actions"><Link className="button" href="/professionnel/etablissements">Gérer les rattachements</Link>{profile?.active_establishment && <Link className="button" href="/etablissement/parametres">Paramètres établissement</Link>}</div>
-      </section>
+      </section>}
 
-      <section className="card settings-anchor" id="compte" aria-labelledby="professional-account-title">
-        <span className="eyebrow">Préférences personnelles</span><h2 id="professional-account-title">Paramètres du compte</h2>
-        <p className="muted">Responsable du compte : {fullName} · {account?.email ?? "Email non disponible"}</p>
-        <ThemeSettingsClient compact />
-      </section>
+      {activeSection === "compte" && <section className="card settings-anchor" id="settings-panel-compte" role="tabpanel" tabIndex={0} aria-labelledby="settings-tab-compte">
+        <span className="eyebrow">Préférences personnelles</span><h2>Paramètres du compte</h2>
+        <p className="muted">Responsable du compte : {fullName} · {account?.email ?? "Email non disponible"}</p><ThemeSettingsClient compact />
+      </section>}
 
-      <section className="card settings-anchor" id="securite" aria-labelledby="professional-security-title">
-        <span className="eyebrow">Accès au compte</span><h2 id="professional-security-title">Sécurité et connexion</h2>
+      {activeSection === "securite" && <section className="card settings-anchor" id="settings-panel-securite" role="tabpanel" tabIndex={0} aria-labelledby="settings-tab-securite">
+        <span className="eyebrow">Accès au compte</span><h2>Sécurité et connexion</h2>
         <p className="muted">Les autorisations professionnelles sont vérifiées côté API. Les fournisseurs ci-dessous servent uniquement à la connexion au compte.</p>
         <LinkedProvidersSettingsClient nextPath="/professionnel/parametres" />
-      </section>
+      </section>}
 
-      <SettingsMoreSection />
+      {activeSection === "en-savoir-plus" && <div id="settings-panel-en-savoir-plus" role="tabpanel" tabIndex={0} aria-labelledby="settings-tab-en-savoir-plus"><SettingsMoreSection /></div>}
     </div>
   );
 }
