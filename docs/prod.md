@@ -163,7 +163,7 @@ Puis vérifier que l’appel navigateur vers l’API passe bien en HTTPS avec co
 
 ## 5. Variables d’environnement
 
-Le fichier [`.env.example`](../.env.example) contient les noms et exemples locaux, sans secret réel. [`apps/web/.env.production.example`](../apps/web/.env.production.example) documente les variables publiques frontend à saisir aussi dans Vercel ; le fichier local `apps/web/.env.production.local` est ignoré par Git. [`apps/api/.env.production.example`](../apps/api/.env.production.example) aide à configurer Render : le conteneur ne charge pas ce fichier automatiquement. Pour le pilote sur les URL actuelles, l’origine web est `https://e-carnetci.vercel.app` et l’API est `https://ecarnet-api.onrender.com`. Reporter les valeurs dans les consoles ; saisir `DATABASE_URL`, les identifiants SMTP et tout autre secret uniquement dans Render.
+Le fichier [`.env.example`](../.env.example) contient les noms locaux, sans secret réel. [`apps/web/.env.production.example`](../apps/web/.env.production.example) documente les seules variables publiques frontend à saisir aussi dans Vercel ; le fichier local `apps/web/.env.production.local` est ignoré par Git. `NEXT_PUBLIC_*` est intégré au JavaScript envoyé au navigateur : n’y placer aucun secret. [`apps/api/.env.production.example`](../apps/api/.env.production.example) aide à configurer Render : le conteneur ne charge pas ce fichier automatiquement. Pour le pilote sur les URL actuelles, l’origine web est `https://e-carnetci.vercel.app` et l’API est `https://ecarnet-api.onrender.com`. Saisir `DATABASE_URL`, `DJANGO_SECRET_KEY`, les mots de passe SMTP et les identifiants OAuth uniquement dans les variables sécurisées de Render.
 
 ### Variables indispensables en production API
 
