@@ -68,6 +68,22 @@ class ThemePreferenceTests(TestCase):
 
 
 class OAuthRedirectTests(TestCase):
+    @patch.dict(os.environ, {"GOOGLE_CLIENT_ID": "test-client", "GOOGLE_CLIENT_SECRET": "test-secret"})
+    def test_login_intent_does_not_start_provider_link_for_authenticated_user(self):
+        user = User.objects.create_user(username="already-signed-in", email="already@example.test")
+        self.client.force_authenticate(user)
+        response = self.client.get("/api/v1/identity/oauth/google/start/?intent=login")
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(self.client.session.get("oauth_link_user_id"), "")
+
+    @patch.dict(os.environ, {"GOOGLE_CLIENT_ID": "test-client", "GOOGLE_CLIENT_SECRET": "test-secret"})
+    def test_provider_start_keeps_explicit_link_context_by_default(self):
+        user = User.objects.create_user(username="link-account", email="link@example.test")
+        self.client.force_authenticate(user)
+        response = self.client.get("/api/v1/identity/oauth/google/start/")
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(self.client.session.get("oauth_link_user_id"), str(user.pk))
+
     def test_next_path_accepts_only_safe_relative_paths(self):
         self.assertEqual(safe_next_path("/onboarding/identite", "/patient"), "/onboarding/identite")
         self.assertEqual(safe_next_path("https://example.test", "/patient"), "/patient")

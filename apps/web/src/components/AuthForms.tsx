@@ -44,7 +44,7 @@ export function AuthForms() {
     finally { setBusy(false); }
   }
   const requested = typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("next");
-  const oauthNext = requested ? `?next=${encodeURIComponent(safeOAuthNext(requested))}` : "";
+  const oauthNext = `?intent=login${requested ? `&next=${encodeURIComponent(safeOAuthNext(requested))}` : ""}`;
   return <div className="auth-card">
     <div className="auth-card__header"><p className="brand brand--compact"><span className="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M10 3v18M13 9h2"/></svg></span> E-carnet</p></div>
     <span className="eyebrow">Un accès unique à votre carnet</span>

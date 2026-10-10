@@ -95,7 +95,11 @@ class OAuthStartView(APIView):
         except ValueError as exc: return ui_redirect(provider, status="error", message=str(exc))
         state = secrets.token_urlsafe(32)
         request.session[f"oauth_state_{provider}"] = state
-        request.session["oauth_link_user_id"] = str(request.user.pk) if request.user.is_authenticated else ""
+        request.session["oauth_link_user_id"] = (
+            str(request.user.pk)
+            if request.user.is_authenticated and request.GET.get("intent") != "login"
+            else ""
+        )
         request.session["oauth_next"] = request.GET.get("next", "")
         query = urllib.parse.urlencode({"client_id": client_id, "redirect_uri": callback_url(request, provider), "response_type": "code", "scope": config["scope"], "state": state, **({"response_mode": "form_post"} if provider == "apple" else {})})
         return HttpResponseRedirect(f"{config['authorize']}?{query}")
