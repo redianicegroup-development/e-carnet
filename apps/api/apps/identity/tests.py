@@ -95,6 +95,29 @@ class OAuthRedirectTests(TestCase):
         self.assertIn("provider=google", captured.output[0])
         self.assertNotIn("temporary-oauth-code", "\n".join(captured.output))
 
+    @patch("apps.identity.oauth_views.AuthIdentity.objects.filter", side_effect=RuntimeError("database unavailable"))
+    @patch("apps.identity.oauth_views.external_profile", return_value={"id": "google-user", "email": "user@example.test", "name": "Test User", "avatar": ""})
+    @patch("apps.identity.oauth_views.http_json", return_value={"access_token": "temporary-access-token"})
+    def test_callback_logs_account_phase_failure_and_returns_server_error(self, _http_json, _external_profile, _identity_filter):
+        with patch.dict(os.environ, {"GOOGLE_CLIENT_ID": "test-client", "GOOGLE_CLIENT_SECRET": "test-secret"}):
+            session = self.client.session
+            session["oauth_state_google"] = "valid-state"
+            session.save()
+            self.client.raise_request_exception = False
+
+            with self.assertLogs("apps.identity.oauth_views", level="ERROR") as captured:
+                response = self.client.get(
+                    "/api/v1/identity/oauth/google/callback/",
+                    {"state": "valid-state", "code": "temporary-oauth-code"},
+                )
+
+        self.assertEqual(response.status_code, 500)
+        log_output = "\n".join(captured.output)
+        self.assertIn("identity_lookup", log_output)
+        self.assertIn("database unavailable", log_output)
+        self.assertNotIn("temporary-oauth-code", log_output)
+        self.assertNotIn("temporary-access-token", log_output)
+
 
 class DemoSeedCommandTests(TestCase):
     @override_settings(DEBUG=False)

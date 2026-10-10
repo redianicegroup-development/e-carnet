@@ -100,31 +100,43 @@ class OAuthCallbackView(APIView):
         except Exception:
             logger.exception("OAuth callback failed during %s (provider=%s)", stage, provider)
             return ui_redirect(provider, status="error", message="Impossible de vérifier cette identité OAuth.")
-        existing = AuthIdentity.objects.filter(provider=provider, provider_user_id=profile["id"]).select_related("user").first()
-        link_user_id = request.session.pop("oauth_link_user_id", "")
-        next_path = request.session.pop("oauth_next", "")
-        if existing:
-            if link_user_id and str(existing.user_id) != link_user_id: return ui_redirect(provider, status="conflict", message="Cette méthode est déjà liée à un autre compte.")
-            login(request, existing.user); existing.last_seen_at = timezone.now(); existing.save(update_fields=("last_seen_at",))
-            destination = safe_next_path(next_path, "/patient/parametres" if link_user_id else "/patient")
-            return ui_redirect(provider, status="success", message="Connexion réussie.", next=destination)
-        if link_user_id:
-            user = User.objects.filter(pk=link_user_id).first()
-            if not user: return ui_redirect(provider, status="error", message="Session de liaison expirée.")
-            linked = True
-        else:
-            email = profile.get("email", "")
-            user = User.objects.filter(email__iexact=email).first() if email else None
-            if user: return ui_redirect(provider, status="conflict", message="Un compte existe déjà. Connectez-vous d'abord pour lier ce fournisseur.")
-            first_name, last_name = split_name(profile.get("name")); username = email or f"{provider}_{profile['id']}"
-            user = User.objects.create_user(username=username, email=email, first_name=first_name, last_name=last_name)
-            AccountProfile.objects.create(user=user, avatar_url=profile.get("avatar", ""))
-            AccountContext.objects.create(user=user, role="patient", is_active=True)
-            linked = False
-        AuthIdentity.objects.create(user=user, provider=provider, provider_user_id=profile["id"], email=profile.get("email", ""), display_name=profile.get("name", ""), avatar_url=profile.get("avatar", ""))
-        if not getattr(user, "account_profile", None): AccountProfile.objects.create(user=user, avatar_url=profile.get("avatar", ""))
-        login(request, user)
-        record_event(event_type="oauth.identity_linked" if linked else "oauth.account_created", actor=user, actor_role="account", metadata={"action": "linked" if linked else "created", "provider": provider})
-        fallback = "/patient/parametres" if linked else "/onboarding/identite"
-        destination = safe_next_path(next_path, fallback)
-        return ui_redirect(provider, status="success", message="Fournisseur lié à votre compte." if linked else "Compte créé avec OAuth.", next=destination)
+        stage = "identity_lookup"
+        try:
+            existing = AuthIdentity.objects.filter(provider=provider, provider_user_id=profile["id"]).select_related("user").first()
+            link_user_id = request.session.pop("oauth_link_user_id", "")
+            next_path = request.session.pop("oauth_next", "")
+            if existing:
+                if link_user_id and str(existing.user_id) != link_user_id: return ui_redirect(provider, status="conflict", message="Cette méthode est déjà liée à un autre compte.")
+                stage = "existing_identity_login"
+                login(request, existing.user); existing.last_seen_at = timezone.now(); existing.save(update_fields=("last_seen_at",))
+                destination = safe_next_path(next_path, "/patient/parametres" if link_user_id else "/patient")
+                return ui_redirect(provider, status="success", message="Connexion réussie.", next=destination)
+            if link_user_id:
+                stage = "linked_user_lookup"
+                user = User.objects.filter(pk=link_user_id).first()
+                if not user: return ui_redirect(provider, status="error", message="Session de liaison expirée.")
+                linked = True
+            else:
+                email = profile.get("email", "")
+                stage = "email_lookup"
+                user = User.objects.filter(email__iexact=email).first() if email else None
+                if user: return ui_redirect(provider, status="conflict", message="Un compte existe déjà. Connectez-vous d'abord pour lier ce fournisseur.")
+                first_name, last_name = split_name(profile.get("name")); username = email or f"{provider}_{profile['id']}"
+                stage = "account_creation"
+                user = User.objects.create_user(username=username, email=email, first_name=first_name, last_name=last_name)
+                AccountProfile.objects.create(user=user, avatar_url=profile.get("avatar", ""))
+                AccountContext.objects.create(user=user, role="patient", is_active=True)
+                linked = False
+            stage = "identity_creation"
+            AuthIdentity.objects.create(user=user, provider=provider, provider_user_id=profile["id"], email=profile.get("email", ""), display_name=profile.get("name", ""), avatar_url=profile.get("avatar", ""))
+            if not getattr(user, "account_profile", None): AccountProfile.objects.create(user=user, avatar_url=profile.get("avatar", ""))
+            stage = "session_login"
+            login(request, user)
+            stage = "audit_event"
+            record_event(event_type="oauth.identity_linked" if linked else "oauth.account_created", actor=user, actor_role="account", metadata={"action": "linked" if linked else "created", "provider": provider})
+            fallback = "/patient/parametres" if linked else "/onboarding/identite"
+            destination = safe_next_path(next_path, fallback)
+            return ui_redirect(provider, status="success", message="Fournisseur lié à votre compte." if linked else "Compte créé avec OAuth.", next=destination)
+        except Exception:
+            logger.exception("OAuth callback failed during %s (provider=%s)", stage, provider)
+            raise
