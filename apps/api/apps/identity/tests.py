@@ -10,6 +10,7 @@ from apps.establishments.models import Establishment, EstablishmentMembership
 from apps.professionals.models import ProfessionalProfile
 from .models import ThemePreference
 from .theme import DEFAULT_THEME
+from .oauth_views import safe_next_path
 
 User = get_user_model()
 
@@ -44,8 +45,11 @@ class ThemePreferenceTests(TestCase):
         response = self.client.patch("/api/v1/identity/me/theme/", invalid, format="json")
         self.assertEqual(response.status_code, 400)
 
-    def test_anonymous_user_cannot_read_or_write_theme(self):
-        self.assertEqual(self.client.get("/api/v1/identity/me/theme/").status_code, 403)
+    def test_anonymous_user_gets_default_theme_but_cannot_write(self):
+        response = self.client.get("/api/v1/identity/me/theme/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["data"], DEFAULT_THEME)
+        self.assertFalse(ThemePreference.objects.exists())
         self.assertEqual(self.client.patch("/api/v1/identity/me/theme/", DEFAULT_THEME, format="json").status_code, 403)
 
     def test_session_write_requires_csrf_token(self):
@@ -61,6 +65,14 @@ class ThemePreferenceTests(TestCase):
         accepted = client.patch(url, data=json.dumps(payload), content_type="application/json", HTTP_ORIGIN="http://localhost:3000", HTTP_X_CSRFTOKEN=token)
         self.assertEqual(accepted.status_code, 200)
         self.assertEqual(ThemePreference.objects.get(user=self.user_a).theme, payload)
+
+
+class OAuthRedirectTests(TestCase):
+    def test_next_path_accepts_only_safe_relative_paths(self):
+        self.assertEqual(safe_next_path("/onboarding/identite", "/patient"), "/onboarding/identite")
+        self.assertEqual(safe_next_path("https://example.test", "/patient"), "/patient")
+        self.assertEqual(safe_next_path("//example.test", "/patient"), "/patient")
+        self.assertEqual(safe_next_path("/\\example.test", "/patient"), "/patient")
 
 
 class DemoSeedCommandTests(TestCase):

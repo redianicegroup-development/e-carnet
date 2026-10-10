@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
+import { safeOAuthNext } from "../lib/auth";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -16,8 +17,27 @@ export function AuthForms({ mode }: { mode: "login" | "register" }) {
   const [form, setForm] = useState({ email: "", password: "", first_name: "", last_name: "" });
   const [message, setMessage] = useState("");
   useEffect(() => {
-    setMessage(new URLSearchParams(window.location.search).get("message") ?? "");
-  }, []);
+    let active = true;
+    const params = new URLSearchParams(window.location.search);
+    const oauthStatus = params.get("status");
+    if (params.has("oauth") && oauthStatus === "success") {
+      setMessage("Connexion réussie, ouverture de votre espace…");
+      fetch(`${API}/api/v1/identity/me/`, { credentials: "include", cache: "no-store" })
+        .then((response) => {
+          if (!response.ok) {
+            if (active) setMessage("Google a confirmé la connexion, mais la session API n’est pas accessible. Vérifiez les cookies de session et les domaines Vercel/Render.");
+            return;
+          }
+          if (active) router.replace(safeOAuthNext(params.get("next")));
+        })
+        .catch(() => {
+          if (active) setMessage("Google a confirmé la connexion, mais l’API ne répond pas. Réessayez ou vérifiez le déploiement backend.");
+        });
+    } else {
+      setMessage(params.get("message") ?? "");
+    }
+    return () => { active = false; };
+  }, [router]);
   async function submit(e: React.FormEvent) {
     e.preventDefault(); setMessage("Connexion sécurisée en cours…");
     const tokenResponse = await primeCsrf();
