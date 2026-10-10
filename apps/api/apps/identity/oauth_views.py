@@ -56,6 +56,23 @@ def ui_redirect(provider, **params):
     query = urllib.parse.urlencode({"oauth": provider, **params})
     return HttpResponseRedirect(f"{settings.WEB_ORIGIN}/connexion?{query}")
 
+def account_destination(user):
+    context = (
+        user.account_contexts.filter(is_active=True).first()
+        or user.account_contexts.filter(role="patient").first()
+        or user.account_contexts.first()
+    )
+    if context is None:
+        return "/patient"
+    if context.role == "patient":
+        return "/patient" if context.onboarding_completed else "/onboarding/identite"
+    if context.role == "professional":
+        return "/professionnel" if context.onboarding_completed else "/professionnel/onboarding"
+    return "/etablissement"
+
+def oauth_success_redirect(destination):
+    return HttpResponseRedirect(f"{settings.WEB_ORIGIN}{safe_next_path(destination, '/patient')}")
+
 def safe_next_path(value, fallback):
     value = value or ""
     parsed = urllib.parse.urlsplit(value)
@@ -109,8 +126,9 @@ class OAuthCallbackView(APIView):
                 if link_user_id and str(existing.user_id) != link_user_id: return ui_redirect(provider, status="conflict", message="Cette méthode est déjà liée à un autre compte.")
                 stage = "existing_identity_login"
                 login(request, existing.user); existing.last_seen_at = timezone.now(); existing.save(update_fields=("last_seen_at",))
-                destination = safe_next_path(next_path, "/patient/parametres" if link_user_id else "/patient")
-                return ui_redirect(provider, status="success", message="Connexion réussie.", next=destination)
+                fallback = "/patient/parametres" if link_user_id else account_destination(existing.user)
+                destination = safe_next_path(next_path, fallback)
+                return oauth_success_redirect(destination)
             if link_user_id:
                 stage = "linked_user_lookup"
                 user = User.objects.filter(pk=link_user_id).first()
@@ -140,9 +158,9 @@ class OAuthCallbackView(APIView):
             login(request, user)
             stage = "audit_event"
             record_event(event_type="oauth.identity_linked" if linked else "oauth.account_created", actor=user, actor_role="account", metadata={"action": "linked" if linked else "created", "provider": provider})
-            fallback = "/patient/parametres" if linked else "/onboarding/identite"
+            fallback = "/patient/parametres" if linked else account_destination(user)
             destination = safe_next_path(next_path, fallback)
-            return ui_redirect(provider, status="success", message="Fournisseur lié à votre compte." if linked else "Compte créé avec OAuth.", next=destination)
+            return oauth_success_redirect(destination)
         except Exception:
             logger.exception("OAuth callback failed during %s (provider=%s)", stage, provider)
             raise
