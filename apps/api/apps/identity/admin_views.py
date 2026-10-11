@@ -1,6 +1,7 @@
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 
 from django.db.models import Avg, Count, Sum
+from django.db.models.functions import TruncDate
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework.permissions import BasePermission
@@ -61,6 +62,41 @@ class AdminDashboardView(APIView):
             item["submitted_at"] = item["submitted_at"].isoformat()
         survey_average = round(float(survey_aggregate["average"]), 1) if survey_aggregate["average"] is not None else None
 
+        # Les compteurs de vues/clics sont cumulatifs et ne conservent pas d’événements bruts.
+        # Les courbes ci-dessous ne tracent donc que les événements réellement horodatés.
+        today = timezone.localdate(now)
+        first_day = today - timedelta(days=29)
+        first_moment = timezone.make_aware(datetime.combine(first_day, time.min), timezone.get_current_timezone())
+        visitor_by_day = {
+            row["day"]: row["total"]
+            for row in queryset.filter(first_seen__gte=first_moment)
+            .annotate(day=TruncDate("first_seen"))
+            .values("day").annotate(total=Count("visitor_id"))
+        }
+        feedback_by_day = {
+            row["day"]: row["total"]
+            for row in SiteFeedback.objects.filter(submitted_at__gte=first_moment)
+            .annotate(day=TruncDate("submitted_at"))
+            .values("day").annotate(total=Count("id"))
+        }
+        survey_by_day = {
+            row["day"]: row
+            for row in survey_queryset.filter(submitted_at__gte=first_moment)
+            .annotate(day=TruncDate("submitted_at"))
+            .values("day").annotate(total=Count("id"), average=Avg("rating"))
+        }
+        daily_activity = []
+        for offset in range(30):
+            day = first_day + timedelta(days=offset)
+            survey_day = survey_by_day.get(day)
+            daily_activity.append({
+                "date": day.isoformat(),
+                "new_visitors": visitor_by_day.get(day, 0),
+                "feedback_submissions": feedback_by_day.get(day, 0),
+                "survey_responses": survey_day["total"] if survey_day else 0,
+                "average_rating": round(float(survey_day["average"]), 1) if survey_day and survey_day["average"] is not None else None,
+            })
+
         data = {
             "generated_at": now.isoformat(),
             "visitors_total": queryset.count(),
@@ -76,6 +112,7 @@ class AdminDashboardView(APIView):
             "survey_completion_rate": round(survey_total * 100 / survey_prompted_total, 1) if survey_prompted_total else 0,
             "survey_average_rating": survey_average,
             "survey_distribution": survey_distribution,
+            "daily_activity": daily_activity,
             "visitors": visitors,
             "feedback": feedback_items,
             "survey_responses": survey_responses,

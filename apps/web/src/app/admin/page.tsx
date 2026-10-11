@@ -3,6 +3,7 @@
 import { FormEvent, KeyboardEvent, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { ApiError, apiGet, apiPatch, apiPost } from "../../infrastructure/api/client";
+import { AdminActivityCharts, type DailyActivityPoint } from "../../components/AdminActivityCharts";
 
 type Visitor = {
   visitor_id: string; first_seen: string; last_seen: string; page_view_count: number;
@@ -23,6 +24,7 @@ type Dashboard = {
   login_failures_total: number; feedback_total: number; feedback_new_total: number;
   survey_prompted_total: number; survey_responses_total: number; survey_completion_rate: number;
   survey_average_rating: number | null; survey_distribution: Record<string, number>;
+  daily_activity: DailyActivityPoint[];
   visitors: Visitor[]; feedback: Feedback[]; survey_responses: SurveyResponse[];
 };
 type AdminTab = "overview" | "activity" | "feedback" | "survey" | "establishments";
@@ -195,6 +197,7 @@ export default function AdminPage() {
         <article className="card admin-metric"><span className="muted">Retours reçus</span><strong>{dashboard.feedback_total}</strong><small>{dashboard.feedback_new_total} nouveaux</small></article>
         <article className="card admin-metric"><span className="muted">Note moyenne — enquête UX</span>{dashboard.survey_average_rating !== null ? <><StarRating value={dashboard.survey_average_rating} label={`Note moyenne ${dashboard.survey_average_rating.toFixed(1)} sur 5`} /><strong>{dashboard.survey_average_rating.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}<small className="admin-metric-inline">/5</small></strong></> : <strong>—</strong>}<small>{dashboard.survey_responses_total} réponse(s)</small></article>
       </div>
+      <AdminActivityCharts data={dashboard.daily_activity} />
       <section className="card admin-table-card"><div className="admin-table-title"><div><span className="eyebrow">Résumé</span><h2>Activité récente</h2></div><div className="admin-inline-actions"><button className="button small" onClick={() => setActiveTab("activity")}>Voir les visites et clics</button><button className="button small" onClick={() => setActiveTab("survey")}>Voir l’enquête UX</button></div></div><p className="muted">Les détails par visiteur pseudonyme, la recherche et les dernières catégories de clic sont disponibles dans l’onglet Visites & clics.</p></section>
     </section>}
 
