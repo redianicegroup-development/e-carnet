@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PublicShell } from "../components/public/PublicShell";
+import { LandingFeedbackWidget } from "../components/LandingFeedbackWidget";
 import { Icon, type IconName } from "../components/ui/Icon";
 import "./landing.css";
 
@@ -130,6 +131,7 @@ export default function HomePage() {
         <p>Créez votre compte avec Google, Facebook, Apple ou votre email, puis préparez votre première consultation.</p>
         <div className="actions"><Link className="button primary" href="/inscription">Créer mon carnet</Link><Link className="button" href="/connexion">J’ai déjà un compte</Link></div>
       </section>
+      <LandingFeedbackWidget />
     </PublicShell>
   );
 }

@@ -4,13 +4,15 @@
 
 La console personnalisée est servie par le frontend E‑Carnet : **https://e-carnetci.vercel.app/admin/**. Elle utilise la session de connexion habituelle, puis l’API n’autorise le dashboard qu’aux comptes dont `is_superuser=True`. Les comptes simplement `is_staff` ne peuvent pas l’ouvrir.
 
-Le tableau présente les compteurs agrégés des visiteurs pseudonymes : visiteurs récents, activité 24 h, pages consultées, authentifications et échecs de connexion. La console ne donne pas accès aux dossiers patients et n’affiche pas d’emails, d’adresses IP, d’user-agents, de mots de passe ou d’URL complètes. La route `/admin/` de Django Admin n’est plus exposée par l’API.
+La console comporte quatre sections : **Vue d’ensemble** (KPI globaux), **Visites & clics** (recherche parmi les 200 visiteurs récents), **Feedback** (recherche et suivi du statut des retours) et **Établissements** (création et invitation du responsable). Les données sont rechargées discrètement toutes les deux minutes lorsque la page admin est visible. La console ne donne pas accès aux dossiers patients. La route `/admin/` de Django Admin n’est plus exposée par l’API.
+
+Les statistiques pseudonymes n’affichent pas d’emails, d’adresses IP, d’user-agents, de mots de passe, de textes de boutons ou d’URL complètes. Les messages de feedback sont une donnée distincte : ils sont visibles par les superadministrateurs; le formulaire ne demande pas d’email et avertit de ne pas inclure de données personnelles ou médicales.
 
 ## Données visiteurs
 
-Le cookie `ecarnet_visitor` dure 30 jours. Il est `HttpOnly` et `Secure` en production; `SameSite=None` permet les retours OAuth POST. Le serveur garde une catégorie de page et des compteurs agrégés, pas une ligne détaillée par clic. L’identifiant est pseudonyme, pas une preuve d’identité. Les agrégats inactifs depuis 90 jours sont purgés au prochain démarrage du service.
+Le cookie `ecarnet_visitor` dure 30 jours. Il est `HttpOnly` et `Secure` en production; `SameSite=None` permet les retours OAuth POST. Le serveur garde des catégories de page et de clic autorisées, des compteurs par visiteur pseudonyme et uniquement la dernière catégorie de clic — pas d’historique brut des clics. Les clics sont mesurés sur les pages publiques et d’authentification; ils sont ignorés dans les espaces patient, professionnel, établissement, onboarding, staff et admin. Les agrégats inactifs depuis 90 jours sont purgés au prochain démarrage du service.
 
-Le tracker envoie sa requête en arrière-plan sur chaque route, y compris l’accueil, les espaces, la connexion et l’inscription. Il ne bloque pas l’affichage du site. Une visite réelle envoie une requête à Render et peut réveiller l’API endormie; l’offre Free peut ensuite se remettre en veille.
+Le tracker envoie sa requête de visite en arrière-plan sur chaque route, y compris l’accueil, les espaces, la connexion et l’inscription. Il ne bloque pas l’affichage du site. Une visite réelle envoie une requête à Render et peut réveiller l’API endormie; l’offre Free peut ensuite se remettre en veille. Le formulaire de feedback public est limité à cinq envois par heure et par cookie visiteur.
 
 ## Création du compte superadministrateur sans Shell Render
 
@@ -18,12 +20,12 @@ Les Web Services gratuits Render n’offrent pas de Shell/SSH. Ce service étant
 
 1. Dans le service **ecarnet-api** sur Render, ajoutez dans **Environment** :
    - `DJANGO_ADMIN_EMAIL` : une adresse dédiée à l’administration;
-   - `DJANGO_ADMIN_PASSWORD` : un mot de passe aléatoire d’au moins 20 caractères, sans ressemblance avec l’email ou une phrase courante. Utilise un gestionnaire de mots de passe pour le générer; ne le partage pas dans un message.
+   - `DJANGO_ADMIN_PASSWORD` : un mot de passe aléatoire d’au moins 20 caractères, sans ressemblance avec l’email ou une phrase courante. Utilisez un gestionnaire de mots de passe pour le générer; ne le partagez pas dans un message.
 2. Enregistrez les variables et déployez cette version du dépôt. Au démarrage, le bootstrap crée le compte superadministrateur avant Gunicorn.
 3. Ouvrez **https://e-carnetci.vercel.app/admin/** et connectez-vous avec ces identifiants.
 4. Après la création, retirez **les deux variables** de Render et redéployez. Le compte reste enregistré en base.
 
-La commande ne réinitialise pas un superadmin déjà présent et refuse de promouvoir un compte ordinaire. Si Django refuse le mot de passe, les journaux indiquent maintenant le motif de validation sans afficher le secret. Si les variables sont invalides ou si l’adresse correspond à un compte ordinaire, le service démarre sans créer un nouvel administrateur. N’inscrivez jamais les vrais identifiants dans Git, dans le frontend, une variable `NEXT_PUBLIC_*` ou un message.
+La commande ne réinitialise pas un superadmin déjà présent et refuse de promouvoir un compte ordinaire. Si Django refuse le mot de passe, les journaux indiquent le motif de validation sans afficher le secret. Si les variables sont invalides ou si l’adresse correspond à un compte ordinaire, le service démarre sans créer un nouvel administrateur. N’inscrivez jamais les vrais identifiants dans Git, dans le frontend, une variable `NEXT_PUBLIC_*` ou un message.
 
 ## Documentation Render
 

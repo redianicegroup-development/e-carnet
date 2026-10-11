@@ -361,3 +361,29 @@ a.setting-item:hover, button.setting-item:hover { border-color: var(--primary); 
   .admin-actions { justify-content: flex-start; }
   .admin-actions .button { flex: 1; }
 }
+
+/* ---------- Console admin : onglets, feedback et recherche ---------- */
+.admin-tabs { display: flex; gap: 6px; overflow-x: auto; border-bottom: 1px solid var(--border); scrollbar-width: thin; }
+.admin-tab { position: relative; display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto; border: 0; border-bottom: 3px solid transparent; margin-bottom: -1px; padding: 12px 14px; background: transparent; color: var(--text-muted); font: inherit; font-weight: 700; cursor: pointer; }
+.admin-tab:hover { color: var(--text); background: var(--surface-tint); }
+.admin-tab[aria-selected="true"] { color: var(--primary-text); border-bottom-color: var(--primary); }
+.admin-tab:focus-visible { outline: 3px solid var(--primary); outline-offset: -3px; border-radius: 8px 8px 0 0; }
+.admin-tab-badge { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 99px; background: var(--danger); color: white; font-size: .75rem; }
+.admin-metrics--compact .admin-metric { min-height: 108px; }
+.admin-management-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); }
+.admin-management-grid .card { align-content: start; gap: 12px; }
+.admin-management-grid .button { justify-self: start; }
+.admin-checklist { margin: 0; padding-left: 1.2rem; display: grid; gap: 8px; color: var(--text-muted); }
+.admin-search { width: min(100%, 520px); }
+.admin-refresh-note { margin: 0; color: var(--text-muted); font-size: .86rem; }
+.admin-feedback-list { display: grid; gap: 12px; }
+.admin-feedback-item { min-width: 0; display: grid; gap: 12px; padding: 16px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
+.admin-feedback-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.admin-feedback-head > div { display: flex; gap: 6px; flex-wrap: wrap; }
+.admin-feedback-head small { color: var(--text-muted); }
+.admin-feedback-status--new { background: var(--status-declared-bg); color: var(--status-declared-fg); }
+.admin-feedback-status--in_progress { background: var(--primary-tint); color: var(--primary-text); }
+.admin-feedback-status--resolved { background: var(--status-verified-bg); color: var(--status-verified-fg); }
+.admin-feedback-message { white-space: pre-wrap; overflow-wrap: anywhere; }
+.admin-feedback-select { width: min(100%, 240px); }
+@media (max-width: 600px) { .admin-tab { padding: 10px 11px; font-size: .9rem; } .admin-feedback-item { padding: 13px; } }

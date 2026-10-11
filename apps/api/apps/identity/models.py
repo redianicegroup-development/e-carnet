@@ -72,6 +72,13 @@ class AnonymousVisitor(models.Model):
         ("login_failure", "Échec de connexion"), ("registration", "Inscription"),
         ("oauth_success", "Connexion OAuth réussie"), ("oauth_link", "Fournisseur OAuth lié"),
     )
+    CLICK_CATEGORIES = tuple((value, label) for value, label in (
+        ("signup", "Inscription"), ("professional_signup", "Inscription professionnel"),
+        ("login", "Connexion"), ("establishment_contact", "Contact établissement"),
+        ("faq", "FAQ"), ("security", "Sécurité"), ("about", "À propos"),
+        ("navigation", "Navigation interne"), ("external", "Lien externe"),
+        ("feedback_open", "Ouverture feedback"), ("action", "Action"), ("other", "Autre"),
+    ))
     visitor_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     first_seen = models.DateTimeField(auto_now_add=True)
     last_seen = models.DateTimeField(db_index=True)
@@ -85,6 +92,10 @@ class AnonymousVisitor(models.Model):
     last_page_category = models.CharField(max_length=24, choices=PAGE_CATEGORIES, default="other")
     last_auth_event = models.CharField(max_length=24, choices=AUTH_EVENTS, blank=True)
     last_auth_event_at = models.DateTimeField(null=True, blank=True)
+    click_count = models.PositiveBigIntegerField(default=0)
+    last_click_category = models.CharField(max_length=32, choices=CLICK_CATEGORIES, blank=True)
+    last_click_page_category = models.CharField(max_length=24, choices=PAGE_CATEGORIES, default="other")
+    last_click_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         verbose_name = "visiteur anonyme"
@@ -93,3 +104,24 @@ class AnonymousVisitor(models.Model):
 
     def __str__(self):
         return f"Visiteur anonyme {self.visitor_id}"
+
+
+class SiteFeedback(models.Model):
+    CATEGORY_CHOICES = (("bug", "Problème"), ("idea", "Suggestion"), ("question", "Question"), ("other", "Autre"))
+    STATUS_CHOICES = (("new", "Nouveau"), ("in_progress", "En cours"), ("resolved", "Traité"))
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default="idea")
+    message = models.TextField(max_length=2000)
+    page_category = models.CharField(max_length=24, choices=AnonymousVisitor.PAGE_CATEGORIES, default="landing")
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="new", db_index=True)
+    submitted_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-submitted_at",)
+        verbose_name = "retour utilisateur"
+        verbose_name_plural = "retours utilisateurs"
+
+    def __str__(self):
+        return f"Feedback {self.category} · {self.submitted_at:%Y-%m-%d %H:%M}"

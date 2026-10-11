@@ -55,7 +55,7 @@ def _visitor_identity(request):
         return uuid.uuid4(), True
 
 
-def _touch(visitor_id, *, page_category=None, auth_event=None):
+def _touch(visitor_id, *, page_category=None, auth_event=None, click_category=None, click_page_category=None):
     now = timezone.now()
     visitor, _ = AnonymousVisitor.objects.get_or_create(visitor_id=visitor_id, defaults={"last_seen": now})
     updates = {"last_seen": now}
@@ -74,6 +74,14 @@ def _touch(visitor_id, *, page_category=None, auth_event=None):
         updates["last_page_category"] = "auth"
         updates["last_auth_event"] = auth_event
         updates["last_auth_event_at"] = now
+    if click_category is not None:
+        allowed_clicks = dict(AnonymousVisitor.CLICK_CATEGORIES)
+        if click_category not in allowed_clicks:
+            click_category = "other"
+        updates["click_count"] = F("click_count") + 1
+        updates["last_click_category"] = click_category
+        updates["last_click_page_category"] = click_page_category or "other"
+        updates["last_click_at"] = now
     AnonymousVisitor.objects.filter(visitor_id=visitor.visitor_id).update(**updates)
     return visitor_id
 
@@ -87,6 +95,16 @@ def record_page_view(request, raw_path):
 def record_auth_event(request, event):
     visitor_id, set_cookie = _visitor_identity(request)
     _touch(visitor_id, auth_event=event)
+    return visitor_id, set_cookie
+
+
+def record_click(request, category, raw_path):
+    visitor_id, set_cookie = _visitor_identity(request)
+    _touch(
+        visitor_id,
+        click_category=category,
+        click_page_category=normalize_page_category(raw_path),
+    )
     return visitor_id, set_cookie
 
 
