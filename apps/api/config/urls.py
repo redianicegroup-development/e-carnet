@@ -1,4 +1,3 @@
-from django.contrib import admin
 from django.db import DatabaseError, connections
 from django.http import JsonResponse
 from django.urls import include, path
@@ -28,7 +27,7 @@ def csrf_token(request):
 
 
 urlpatterns = [
-    path(settings.ADMIN_URL, admin.site.urls), path("api/v1/health/", health_live), path("api/v1/health/live/", health_live),
+    path("api/v1/health/", health_live), path("api/v1/health/live/", health_live),
     path("api/v1/health/ready/", health_ready), path("api/v1/csrf/", csrf_token),
     path("api/v1/identity/", include("apps.identity.urls")), path("api/v1/patient/", include("apps.patients.urls")),
     path("api/v1/patient/care/", include("apps.care.urls")), path("api/v1/establishments/", include("apps.establishments.urls")),
