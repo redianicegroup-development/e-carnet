@@ -6,3 +6,4 @@ psycopg[binary]>=3.2,<4
 django-cors-headers>=4.4,<5
 argon2-cffi>=23.1,<26
 Authlib>=1.3,<2
+whitenoise>=6.8,<7
