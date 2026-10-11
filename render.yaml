@@ -1,4 +1,4 @@
-# Blueprint Render — API Django V1
+# Blueprint Render — API Django
 # À connecter au dépôt depuis le tableau de bord Render.
 # Les secrets et DATABASE_URL Neon doivent rester saisis dans Render.
 services:

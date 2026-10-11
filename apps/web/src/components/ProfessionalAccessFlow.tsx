@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
+import { notifyProductActionCompleted, primeCsrf, readCsrfToken } from "../infrastructure/api/client";
 
 type Grant = {
   id: string;
@@ -39,6 +39,7 @@ async function post<T>(path: string, body: Record<string, unknown>): Promise<T> 
 
   const payload = await response.json();
   if (!csrfResponse.ok || !response.ok) throw new Error(payload.message ?? "Action impossible.");
+  notifyProductActionCompleted(path, "POST");
   return payload.data as T;
 }
 
@@ -92,11 +93,9 @@ export function ProfessionalAccessFlow() {
 
   return (
     <section className="hero-page">
-      <span className="eyebrow">AccessGrant · V1</span>
+      <span className="eyebrow">Accès au carnet</span>
       <h1>Demander un accès au dossier patient</h1>
-      <p className="muted">
-        Avant consentement, aucune donnée médicale n’est renvoyée. Le patient valide ou refuse la demande, avec durée et périmètre visibles.
-      </p>
+      <p className="muted">Le patient choisit le périmètre et la durée de chaque accès.</p>
       <p className="notice" role="status" aria-live="polite">{message}</p>
 
       <form className="card" onSubmit={requestAccess} style={{ marginTop: 20 }}>

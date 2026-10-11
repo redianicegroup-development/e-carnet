@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
+import { notifyProductActionCompleted, primeCsrf, readCsrfToken } from "../infrastructure/api/client";
+import { useConfirm } from "./modal/ConfirmProvider";
 
 type Grant = {
   id: string;
@@ -63,6 +64,7 @@ export function PatientAccessGrants() {
   const [qrToken, setQrToken] = useState<string | null>(null);
   const [qrExpiresAt, setQrExpiresAt] = useState<number | null>(null);
   const [qrBusy, setQrBusy] = useState(false);
+  const confirm = useConfirm();
 
   async function refresh() {
     const [grants, history] = await Promise.all([
@@ -104,6 +106,7 @@ export function PatientAccessGrants() {
       });
       const payload = await response.json();
       if (!csrf.ok || !response.ok) throw new Error(payload.message ?? "Action impossible.");
+      notifyProductActionCompleted(`/api/v1/patient/care/access-grants/${id}/${action}/`, "POST");
       await refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Action impossible.");
@@ -120,6 +123,7 @@ export function PatientAccessGrants() {
       const response = await fetch(`${API}/api/v1/patient/care/access-qr/`, { method: "POST", credentials: "include", headers: { "X-CSRFToken": token } });
       const payload = await response.json();
       if (!csrf.ok || !response.ok) throw new Error(payload.message ?? "QR indisponible.");
+      notifyProductActionCompleted("/api/v1/patient/care/access-qr/", "POST");
       setQrToken(payload.data.token);
       setQrExpiresAt(Date.now() + payload.data.expires_in_seconds * 1000);
       setMessage("QR temporaire généré. Il expire automatiquement dans 5 minutes.");
@@ -169,7 +173,7 @@ export function PatientAccessGrants() {
                   </>}
                   {item.status === "active" && <>
                     <button type="button" className="button" disabled={busyId === item.id || item.extension_count >= 2} onClick={() => act(item.id, "extend")}>Prolonger 1 h ({Math.max(0, 2 - item.extension_count)} restante{item.extension_count === 1 ? "" : "s"})</button>
-                    <button type="button" className="button" disabled={busyId === item.id} onClick={() => act(item.id, "revoke")}>Révoquer maintenant</button>
+                    <button type="button" className="button" disabled={busyId === item.id} onClick={() => void confirm({ title: "Révoquer cet accès maintenant ?", message: `${item.professional_name} perdra immédiatement l’accès à votre carnet.`, note: "L’autorisation apparaîtra comme « Révoquée » dans votre liste.", confirmLabel: "Révoquer l’accès", cancelLabel: "Garder l’accès", tone: "danger", mood: "question" }).then((ok) => { if (ok) void act(item.id, "revoke"); })}>Révoquer maintenant</button>
                   </>}
                 </div>
               </article>

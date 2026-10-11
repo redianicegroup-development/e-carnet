@@ -99,6 +99,11 @@ class AnonymousVisitor(models.Model):
     last_click_at = models.DateTimeField(null=True, blank=True)
     survey_prompted_at = models.DateTimeField(null=True, blank=True)
     survey_completed_at = models.DateTimeField(null=True, blank=True)
+    visitor_survey_prompted_at = models.DateTimeField(null=True, blank=True)
+    visitor_survey_completed_at = models.DateTimeField(null=True, blank=True)
+    first_product_action_at = models.DateTimeField(null=True, blank=True)
+    product_survey_prompted_at = models.DateTimeField(null=True, blank=True)
+    product_survey_completed_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         verbose_name = "visiteur anonyme"
@@ -162,3 +167,61 @@ class ProductSurveyResponse(models.Model):
 
     def __str__(self):
         return f"Avis produit {self.rating}/5 · {self.submitted_at:%Y-%m-%d %H:%M}"
+
+
+class VisitorDiscoverySurveyResponse(models.Model):
+    PERSONA_CHOICES = (
+        ("patient", "Patient"), ("professional", "Professionnel de santé"),
+        ("establishment", "Établissement"), ("discovery", "Je découvre E-Carnet"),
+    )
+    FOUND_CHOICES = (("yes", "Oui"), ("partly", "En partie"), ("no", "Non"))
+    BARRIER_CHOICES = (
+        ("purpose", "Je ne vois pas encore à quoi ça sert"),
+        ("health_privacy", "La confidentialité de mes données m’inquiète"),
+        ("pricing", "Le prix n’est pas clair"),
+        ("steps", "Les démarches me semblent trop longues"),
+        ("none", "Rien pour le moment"),
+        ("other", "Autre raison"),
+    )
+
+    visitor = models.OneToOneField(AnonymousVisitor, on_delete=models.CASCADE, related_name="discovery_survey")
+    persona = models.CharField(max_length=24, choices=PERSONA_CHOICES)
+    found_what = models.CharField(max_length=12, choices=FOUND_CHOICES)
+    barriers = models.JSONField(default=list)
+    missing = models.TextField(max_length=1200, blank=True)
+    submitted_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ("-submitted_at",)
+        verbose_name = "réponse au questionnaire visiteurs"
+        verbose_name_plural = "réponses au questionnaire visiteurs"
+
+
+class ProductExperienceSurveyResponse(models.Model):
+    APPRECIATED_CHOICES = (
+        ("organized_carnet", "Carnet clair et bien organisé"),
+        ("consultation_preparation", "Préparation des consultations"),
+        ("access_control", "Contrôle des accès et confidentialité"),
+        ("history_traceability", "Historique et traçabilité"),
+        ("health_content", "Qualité des informations du carnet"),
+    )
+    PAIN_POINT_CHOICES = (
+        ("navigation", "Navigation difficile"),
+        ("form_fields", "Champs à revoir"),
+        ("features", "Fonctionnalité difficile à utiliser"),
+        ("clarity", "Libellés peu clairs"),
+        ("performance", "Lenteur ou problème technique"),
+        ("none", "Aucun point bloquant"),
+    )
+
+    visitor = models.OneToOneField(AnonymousVisitor, on_delete=models.CASCADE, related_name="product_experience_survey")
+    ease_rating = models.PositiveSmallIntegerField()
+    appreciated = models.JSONField(default=list)
+    pain_points = models.JSONField(default=list)
+    improvement_suggestion = models.TextField(max_length=1200, blank=True)
+    submitted_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ("-submitted_at",)
+        verbose_name = "réponse à l’enquête d’expérience produit"
+        verbose_name_plural = "réponses à l’enquête d’expérience produit"

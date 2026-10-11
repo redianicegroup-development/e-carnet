@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
+import { useConfirm } from "./modal/ConfirmProvider";
 
 type Provider = "google" | "facebook" | "apple";
 type Identity = { provider: Provider; display_name: string; avatar_url: string };
@@ -20,6 +21,7 @@ export function LinkedProvidersSettingsClient({ nextPath }: Props) {
   const [loading, setLoading] = useState(true);
   const [busyProvider, setBusyProvider] = useState<Provider | null>(null);
   const [message, setMessage] = useState("Chargement des méthodes de connexion…");
+  const confirm = useConfirm();
 
   async function load() {
     const response = await fetch(`${API}/api/v1/identity/me/`, { credentials: "include", cache: "no-store" });
@@ -64,6 +66,12 @@ export function LinkedProvidersSettingsClient({ nextPath }: Props) {
     }
   }
 
+  async function askUnlink(provider: Provider) {
+    const label = providers.find((item) => item.id === provider)?.label ?? provider;
+    const ok = await confirm({ title: `Délier ${label} ?`, message: `Vous ne pourrez plus vous connecter à E‑Carnet avec ${label}.`, note: "Votre compte et vos données ne sont pas supprimés. Si c’est votre dernière méthode de connexion, ajoutez d’abord un mot de passe.", confirmLabel: "Délier", cancelLabel: "Garder", tone: "danger", mood: "decision" });
+    if (ok) await unlink(provider);
+  }
+
   const linked = new Set(identities.map((identity) => identity.provider));
   return (
     <div className="settings-subsection">
@@ -73,7 +81,7 @@ export function LinkedProvidersSettingsClient({ nextPath }: Props) {
           <div className="record settings-provider" key={provider.id}>
             <div><strong>{provider.label}</strong><p className="muted">{loading ? "Vérification…" : linked.has(provider.id) ? "Lié à ce compte" : provider.hint}</p></div>
             {loading ? <span className="muted">Chargement…</span> : linked.has(provider.id) ? (
-              <button type="button" className="button small" disabled={loading || busyProvider !== null} onClick={() => void unlink(provider.id)}>
+              <button type="button" className="button small" disabled={loading || busyProvider !== null} onClick={() => void askUnlink(provider.id)}>
                 {busyProvider === provider.id ? "Déliaison…" : "Délier"}
               </button>
             ) : (

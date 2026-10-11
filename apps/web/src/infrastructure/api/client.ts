@@ -57,15 +57,41 @@ export async function apiGet<T>(path: string): Promise<T> {
   return parse<T>(await fetch(`${API_URL}${path}`, { credentials: "include", cache: "no-store" }));
 }
 
+const PRODUCT_ACTION_EXCLUSIONS = [
+  "/api/v1/professionals/onboarding/",
+  "/api/v1/establishments/active/",
+  "/api/v1/establishments/join-codes/redeem/",
+];
+
+function isProductAction(path: string) {
+  const route = path.split("?")[0];
+  if (PRODUCT_ACTION_EXCLUSIONS.some((prefix) => route.startsWith(prefix))) return false;
+  return route.startsWith("/api/v1/patient/declarations/")
+    || route.startsWith("/api/v1/patient/profile/")
+    || route.startsWith("/api/v1/patient/care/")
+    || route.startsWith("/api/v1/professionals/")
+    || (route.startsWith("/api/v1/establishments/") && (route.includes("/join-codes/") || route.includes("/memberships/")));
+}
+
+/** Notify the global tracker after a successful, user-visible product mutation. */
+export function notifyProductActionCompleted(path: string, method: string) {
+  if (typeof window !== "undefined" && method !== "GET" && isProductAction(path)) {
+    window.dispatchEvent(new Event("ecarnet:product-action-completed"));
+  }
+}
+
 export async function apiSend<T>(method: "POST" | "PATCH" | "PUT" | "DELETE", path: string, body?: unknown): Promise<T> {
   const csrf = await primeCsrf();
   if (!csrf.ok) throw new ApiError("Impossible d’établir la session de sécurité.", csrf.status);
-  return parse<T>(await fetch(`${API_URL}${path}`, {
+  const response = await fetch(`${API_URL}${path}`, {
     method,
     credentials: "include",
     headers: { "Content-Type": "application/json", "X-CSRFToken": readCsrfToken() },
     body: body === undefined ? undefined : JSON.stringify(body),
-  }));
+  });
+  const result = await parse<T>(response);
+  notifyProductActionCompleted(path, method);
+  return result;
 }
 
 export const apiPost = <T,>(path: string, body: unknown = {}) => apiSend<T>("POST", path, body);

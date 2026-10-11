@@ -43,7 +43,7 @@ def normalize_page_category(raw_path):
         return "professional"
     if path == "/etablissement" or path.startswith("/etablissement/"):
         return "establishment"
-    return "public" if path in {"/faq", "/a-propos", "/securite", "/conditions-rattachement", "/v1"} else "other"
+    return "public" if path in {"/aide", "/faq", "/a-propos", "/securite", "/conditions-rattachement"} else "other"
 
 
 def _visitor_identity(request):

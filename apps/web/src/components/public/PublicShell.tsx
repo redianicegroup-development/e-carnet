@@ -13,11 +13,11 @@ export function PublicHeader() {
         <Link href="/#parcours">Comment ça marche</Link>
         <Link href="/#profils">Pour qui</Link>
         <Link href="/securite">Sécurité</Link>
-        <Link href="/faq">FAQ</Link>
+        <Link href="/aide">Aide</Link>
       </nav>
       <div className="pub-actions">
         <Link className="button ghost small" href="/connexion">Se connecter</Link>
-        <Link className="button primary small" href="/inscription">Créer mon carnet</Link>
+        <Link className="button primary small" href="/connexion?mode=register">Créer mon carnet</Link>
       </div>
     </header>
   );
@@ -33,10 +33,10 @@ export function PublicFooter() {
       <nav aria-label="Pied de page">
         <Link href="/a-propos">À propos</Link>
         <Link href="/securite">Sécurité</Link>
-        <Link href="/faq">FAQ</Link>
+        <Link href="/aide">Aide</Link>
         <Link href="/connexion">Connexion</Link>
       </nav>
-      <p className="pub-footer__note">Pilote en cours : l’application ne contient aucune donnée de santé réelle. Ce site ne remplace pas un avis médical.</p>
+      <p className="pub-footer__note">Utilisez uniquement des données fictives pour le moment. E‑Carnet ne remplace pas un avis médical.</p>
     </footer>
   );
 }

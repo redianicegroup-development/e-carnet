@@ -20,6 +20,8 @@ import "./globals.css";
 import { ThemeBootstrap } from "../components/ThemeBootstrap";
 import { PwaRegister } from "../components/PwaRegister";
 import { AnonymousVisitorTracker } from "../components/AnonymousVisitorTracker";
+import { LandingFeedbackWidget } from "../components/LandingFeedbackWidget";
+import { ConfirmProvider } from "../components/modal/ConfirmProvider";
 
 // Les fichiers sont intégrés au build puis servis localement. preload=false
 // évite de précharger les 12 familles : seul le thème sélectionné est demandé.
@@ -51,5 +53,5 @@ export const metadata: Metadata = {
 export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#E6FFF7" };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
-  return <html lang="fr" className={localFontClasses}><body><ThemeBootstrap /><AnonymousVisitorTracker /><PwaRegister />{children}</body></html>;
+  return <html lang="fr" className={localFontClasses}><body><ThemeBootstrap /><AnonymousVisitorTracker /><PwaRegister /><ConfirmProvider>{children}</ConfirmProvider><LandingFeedbackWidget /></body></html>;
 }

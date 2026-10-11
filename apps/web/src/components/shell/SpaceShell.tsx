@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { ApiError, apiGet } from "../../infrastructure/api/client";
 import { SPACES, type SpaceId } from "../../lib/spaces";
+import { GreetingModal } from "../modal/GreetingModal";
 import { Icon } from "../ui/Icon";
 
 export type SpaceAccount = {
@@ -13,6 +14,7 @@ export type SpaceAccount = {
   first_name: string;
   last_name: string;
   avatar_url: string;
+  date_joined?: string;
   contexts: { role: string; is_active: boolean; onboarding_completed: boolean }[];
   patient_profile: { completed: boolean; id: string | null };
 };
@@ -40,7 +42,6 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
   const config = SPACES[space];
   const [state, setState] = useState<State>({ status: "loading" });
   const bare = config.bare.some((path) => pathname === path || pathname.startsWith(`${path}/`));
-  const pilot = process.env.NEXT_PUBLIC_PILOT_NOTICE !== "off";
 
   useEffect(() => {
     let active = true;
@@ -110,8 +111,9 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
         {(state.status === "ready" || bare) && (
           <AccountContext.Provider value={state.status === "ready" ? state.account : null}>{children}</AccountContext.Provider>
         )}
-        {pilot && !bare && <p className="space-footer">Pilote · données fictives uniquement. Aucune donnée de santé réelle.</p>}
+        {!bare && <p className="space-footer">Données fictives uniquement pour le moment · <Link href="/aide#confidentialite">Aide</Link></p>}
       </main>
+      {state.status === "ready" && !bare && <GreetingModal account={state.account} space={space} />}
     </div>
   );
 }

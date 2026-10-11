@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { apiGet, apiPost } from "../infrastructure/api/client";
 import { AvatarBadge, displayName, useSpaceAccount } from "./shell/SpaceShell";
+import { useConfirm } from "./modal/ConfirmProvider";
 import { Icon } from "./ui/Icon";
 import { PageHeader } from "./ui/PageHeader";
 
@@ -40,8 +41,8 @@ function NoEstablishment() {
     <section className="card establishment-empty">
       <span className="establishment-welcome__icon"><Icon name="building" size={26} /></span>
       <h2>Aucun établissement n’est rattaché à ce compte</h2>
-      <p className="muted">L’espace établissement est ouvert par notre équipe, sur demande. Écrivez-nous avec le nom, le type, la ville, l’adresse, le téléphone et l’email de l’établissement ainsi que le nom du responsable : nous créons l’accès et vous envoyons une invitation personnelle.</p>
-      <div className="actions"><Link className="button" href="/">Retour à l’accueil</Link></div>
+      <p className="muted">L’ouverture est gérée par l’équipe E‑Carnet. Consultez le guide pour préparer votre demande et connaître les étapes.</p>
+      <div className="actions"><Link className="button" href="/aide#etablissements">Guide établissement</Link><Link className="button" href="/">Retour à l’accueil</Link></div>
     </section>
   );
 }
@@ -61,6 +62,7 @@ export function EstablishmentConsole({ view }: { view: "home" | "requests" | "do
   const [code, setCode] = useState<{ value: string; expires_at: string } | null>(null);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const confirm = useConfirm();
 
   if (error) return <p className="notice" role="alert">{error}</p>;
   if (!data) return <div className="skeleton" role="status"><span className="sr-only">Chargement…</span><i /><i /></div>;
@@ -97,7 +99,7 @@ export function EstablishmentConsole({ view }: { view: "home" | "requests" | "do
           {pending.map((item) => (
             <article className="record" key={item.id}>
               <div><strong>{item.professional_name ?? "Médecin"}</strong><p className="muted">{item.professional_email ?? "Email non communiqué"}</p>
-                <div className="actions"><button type="button" className="button small primary" disabled={busy} onClick={() => void decide(item.id, "approve")}>Confirmer</button><button type="button" className="button small danger" disabled={busy} onClick={() => void decide(item.id, "refuse")}>Refuser</button></div></div>
+                <div className="actions"><button type="button" className="button small primary" disabled={busy} onClick={() => void decide(item.id, "approve")}>Confirmer</button><button type="button" className="button small danger" disabled={busy} onClick={() => void confirm({ title: "Refuser cette demande ?", message: `${item.professional_name ?? "Ce médecin"} ne sera pas rattaché à votre établissement.`, confirmLabel: "Refuser la demande", cancelLabel: "Revenir", tone: "danger", mood: "decision" }).then((ok) => { if (ok) void decide(item.id, "refuse"); })}>Refuser</button></div></div>
               <span className="badge pending">En attente</span>
             </article>
           ))}

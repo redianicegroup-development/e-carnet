@@ -1,7 +1,5 @@
-import { EstablishmentHelp } from "../../../components/EstablishmentHelp";
-
-export const metadata = { title: "Aide — Mon Carnet Numérique", robots: { index: false, follow: false } };
+import { redirect } from "next/navigation";
 
 export default function EstablishmentHelpPage() {
-  return <EstablishmentHelp />;
+  redirect("/aide#etablissements");
 }

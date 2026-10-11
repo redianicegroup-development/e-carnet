@@ -9,7 +9,7 @@ export default function ConditionsRattachementPage() {
   return (
     <main className="hero-page">
       <Link className="button" href="/professionnel/acces">← Retour au rattachement</Link>
-      <span className="eyebrow">Projet de conditions · version 2026-10-08-v1</span>
+      <span className="eyebrow">Rattachement professionnel</span>
       <h1>Engagement de rattachement médecin</h1>
       <p className="notice">Projet fonctionnel à faire valider par un conseil juridique avant tout usage contractuel réel. Ce texte ne remplace pas le contrat complet entre l’établissement et le médecin.</p>
       <section className="card">

@@ -1,13 +1,20 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { PublicShell } from "../../components/public/PublicShell";
 
-export const metadata: Metadata = { title: "Sécurité — Mon Carnet Numérique", description: "Les principes de sécurité et les limites du pilote fictif de Mon Carnet Numérique.", robots: { index: true, follow: true } };
+export const metadata: Metadata = { title: "Sécurité — Mon Carnet Numérique", description: "Accès au carnet, consentement patient et protection des données.", robots: { index: true, follow: true } };
 
 export default function SecurityPage() {
-  return <PublicShell><article className="hero-page"><span className="eyebrow">Transparence</span><h1>La sécurité ne repose jamais sur l’interface seule.</h1><p className="lead">Chaque demande sensible est contrôlée côté serveur avec la session, le contexte, l’établissement, l’AccessGrant, le scope et l’expiration.</p><div className="stack">
-    <section className="card"><h2>Ce qui est prévu</h2><ul><li>Sessions serveur et cookies protégés.</li><li>MFA TOTP professionnel prévu en V3, sans blocage du parcours V1.</li><li>Isolation entre établissements.</li><li>Audit append-only des transitions sensibles.</li><li>Aucun cache hors ligne de données médicales.</li></ul></section>
-    <section className="card"><h2>Mesure de fréquentation</h2><p className="muted">E‑Carnet utilise le cookie de première partie <code>ecarnet_visitor</code>, un identifiant aléatoire conservé 30 jours, pour compter les visites, des catégories de clics sur les pages publiques et les événements de connexion. Les clics dans les espaces patient, professionnel, établissement, onboarding et administration ne sont pas mesurés. L’administration voit des compteurs agrégés par visiteur. Aucun texte de bouton, URL complète, adresse IP, navigateur, email ou mot de passe n’est enregistré dans ces statistiques; les catégories de page et compteurs sont supprimés après 90 jours d’inactivité. Cet identifiant est pseudonyme et ne révèle pas à lui seul l’identité d’une personne.</p></section>
-    <section className="card"><h2>Votre feedback</h2><p className="muted">Le formulaire de retour est facultatif et ne demande pas d’adresse email. Le message et sa catégorie sont conservés pour traitement et visibles par les superadministrateurs E‑Carnet. N’y saisissez aucun nom, identifiant, renseignement médical ou autre donnée sensible.</p><p className="muted">Un questionnaire UX facultatif est proposé une fois par navigateur après cinq pages publiques. Il recueille une note de 1 à 5, des choix sur les points appréciés ou à améliorer et, facultativement, une suggestion libre. Les réponses détaillées sont accessibles aux superadministrateurs sans afficher l’identifiant du visiteur; sur l’accueil, seule la moyenne agrégée et le nombre de réponses sont publics. N’y inscrivez aucune donnée personnelle ou de santé.</p></section>
-    <section className="card"><h2>Ce qui n’est pas une promesse</h2><p className="muted">La V1 reste un pilote sur données fictives. L’hébergement ivoirien, la revue juridique, la restauration testée et les contrôles indépendants sont obligatoires avant toute donnée réelle.</p></section>
-  </div></article></PublicShell>;
+  return <PublicShell><article className="hero-page">
+    <span className="eyebrow">Sécurité et confidentialité</span>
+    <h1>Le patient garde la maîtrise des accès.</h1>
+    <p className="lead">Un professionnel doit être rattaché à son établissement et recevoir l’autorisation du patient avant de consulter le carnet.</p>
+    <div className="grid">
+      <section className="card"><h2>Accès limités</h2><p className="muted">Le patient voit le périmètre et la durée, et peut retirer son autorisation.</p></section>
+      <section className="card"><h2>Historique</h2><p className="muted">Les demandes et décisions d’accès sont conservées dans le carnet.</p></section>
+      <section className="card"><h2>Suivi du site</h2><p className="muted">Les statistiques utilisent des catégories de page et des clics publics, sans conserver les URL complètes ni les adresses IP.</p></section>
+    </div>
+    <aside className="notice help-data-note"><strong>Pour le moment :</strong> utilisez uniquement des données fictives. E‑Carnet ne remplace pas un avis médical ni les services d’urgence.</aside>
+    <p className="actions"><Link className="button" href="/aide#confidentialite">Détails sur les données</Link><Link className="button" href="/aide">Centre d’aide</Link></p>
+  </article></PublicShell>;
 }

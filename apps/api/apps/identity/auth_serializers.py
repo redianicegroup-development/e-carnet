@@ -40,6 +40,7 @@ class AccountSerializer(serializers.Serializer):
     email = serializers.EmailField()
     first_name = serializers.CharField()
     last_name = serializers.CharField()
+    date_joined = serializers.DateTimeField(read_only=True)  # sert au message d'accueil du front (« Bienvenue » pour un compte récent)
     avatar_url = serializers.SerializerMethodField()
     auth_identities = serializers.SerializerMethodField()
     contexts = serializers.SerializerMethodField()

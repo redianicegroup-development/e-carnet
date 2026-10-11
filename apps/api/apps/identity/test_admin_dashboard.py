@@ -5,7 +5,7 @@ from django.test import TestCase
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from .models import AnonymousVisitor, ProductSurveyResponse, SiteFeedback
+from .models import AnonymousVisitor, ProductExperienceSurveyResponse, SiteFeedback, VisitorDiscoverySurveyResponse
 
 
 class AdminDashboardTests(TestCase):
@@ -51,7 +51,10 @@ class AdminDashboardTests(TestCase):
         )
         visitor = AnonymousVisitor.objects.create(visitor_id=uuid.uuid4(), last_seen=timezone.now())
         SiteFeedback.objects.create(category="idea", message="Améliorer les graphiques.")
-        ProductSurveyResponse.objects.create(visitor=visitor, rating=4)
+        ProductExperienceSurveyResponse.objects.create(visitor=visitor, ease_rating=4)
+        visitor.visitor_survey_prompted_at = timezone.now()
+        visitor.save(update_fields=("visitor_survey_prompted_at",))
+        VisitorDiscoverySurveyResponse.objects.create(visitor=visitor, persona="patient", found_what="yes")
         client = APIClient()
         client.force_authenticate(user)
 
@@ -64,4 +67,6 @@ class AdminDashboardTests(TestCase):
         self.assertEqual(current_day["new_visitors"], 1)
         self.assertEqual(current_day["feedback_submissions"], 1)
         self.assertEqual(current_day["survey_responses"], 1)
+        self.assertEqual(current_day["visitor_survey_responses"], 1)
+        self.assertEqual(current_day["product_survey_responses"], 1)
         self.assertEqual(current_day["average_rating"], 4.0)

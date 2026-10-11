@@ -23,6 +23,14 @@ class IdentityOnboardingTests(TestCase):
         self.assertEqual(current.status_code, 200)
         self.assertEqual(current.data["data"]["id"], account_id)
 
+    def test_me_exposes_date_joined_for_the_welcome_greeting(self):
+        self.client.post("/api/v1/identity/register/", {"email": "bienvenue@example.test", "password": "a-long-local-password", "first_name": "Awa", "last_name": "Koné"}, format="json")
+        current = self.client.get("/api/v1/identity/me/")
+        self.assertEqual(current.status_code, 200)
+        joined = current.data["data"]["date_joined"]
+        self.assertTrue(joined)
+        self.assertEqual(joined[:10], User.objects.get(email="bienvenue@example.test").date_joined.date().isoformat())
+
     def test_login_email_is_case_insensitive_for_existing_accounts(self):
         User.objects.create_user(
             username="Foo@Example.com",

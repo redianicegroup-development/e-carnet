@@ -8,7 +8,13 @@ from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import AnonymousVisitor, ProductSurveyResponse, SiteFeedback
+from .models import (
+    AnonymousVisitor,
+    ProductExperienceSurveyResponse,
+    ProductSurveyResponse,
+    SiteFeedback,
+    VisitorDiscoverySurveyResponse,
+)
 
 
 class IsSuperuserOnly(BasePermission):
@@ -30,11 +36,12 @@ class AdminDashboardView(APIView):
             "login_success_count", "login_failure_count", "registration_count", "oauth_success_count",
             "oauth_link_count", "last_page_category", "last_auth_event", "last_auth_event_at",
             "click_count", "last_click_category", "last_click_page_category", "last_click_at",
-            "public_page_view_count", "survey_prompted_at", "survey_completed_at",
+            "public_page_view_count", "visitor_survey_prompted_at", "visitor_survey_completed_at",
+            "first_product_action_at", "product_survey_prompted_at", "product_survey_completed_at",
         )[:200])
         for visitor in visitors:
             visitor["visitor_id"] = str(visitor["visitor_id"])
-            for field in ("first_seen", "last_seen", "last_auth_event_at", "last_click_at", "survey_prompted_at", "survey_completed_at"):
+            for field in ("first_seen", "last_seen", "last_auth_event_at", "last_click_at", "visitor_survey_prompted_at", "visitor_survey_completed_at", "first_product_action_at", "product_survey_prompted_at", "product_survey_completed_at"):
                 visitor[field] = visitor[field].isoformat() if visitor[field] else None
         totals = queryset.aggregate(
             page_views=Sum("page_view_count"), clicks=Sum("click_count"),
@@ -49,18 +56,36 @@ class AdminDashboardView(APIView):
             item["submitted_at"] = item["submitted_at"].isoformat()
             item["updated_at"] = item["updated_at"].isoformat()
 
-        survey_queryset = ProductSurveyResponse.objects.all()
-        survey_aggregate = survey_queryset.aggregate(average=Avg("rating"), count=Count("id"))
-        survey_total = survey_aggregate["count"]
-        survey_prompted_total = queryset.filter(survey_prompted_at__isnull=False).count()
-        survey_distribution = {str(star): survey_queryset.filter(rating=star).count() for star in range(1, 6)}
-        survey_responses = list(survey_queryset.order_by("-submitted_at").values(
-            "id", "rating", "appreciated", "pain_points", "improvement_suggestion", "submitted_at",
+        visitor_survey_queryset = VisitorDiscoverySurveyResponse.objects.all()
+        visitor_survey_prompted = queryset.filter(visitor_survey_prompted_at__isnull=False).count()
+        visitor_survey_responses = list(visitor_survey_queryset.order_by("-submitted_at").values(
+            "id", "persona", "found_what", "barriers", "missing", "submitted_at",
         )[:200])
-        for item in survey_responses:
+        for item in visitor_survey_responses:
             item["id"] = str(item["id"])
             item["submitted_at"] = item["submitted_at"].isoformat()
-        survey_average = round(float(survey_aggregate["average"]), 1) if survey_aggregate["average"] is not None else None
+
+        product_survey_queryset = ProductExperienceSurveyResponse.objects.all()
+        product_survey_aggregate = product_survey_queryset.aggregate(average=Avg("ease_rating"), count=Count("id"))
+        product_survey_total = product_survey_aggregate["count"]
+        product_survey_prompted = queryset.filter(product_survey_prompted_at__isnull=False).count()
+        product_survey_distribution = {str(star): product_survey_queryset.filter(ease_rating=star).count() for star in range(1, 6)}
+        product_survey_responses = list(product_survey_queryset.order_by("-submitted_at").values(
+            "id", "ease_rating", "appreciated", "pain_points", "improvement_suggestion", "submitted_at",
+        )[:200])
+        for item in product_survey_responses:
+            item["id"] = str(item["id"])
+            item["rating"] = item["ease_rating"]
+            item["submitted_at"] = item["submitted_at"].isoformat()
+
+        # Preserve and label responses from the previous survey version instead of mixing them in new metrics.
+        legacy_survey_responses = list(ProductSurveyResponse.objects.order_by("-submitted_at").values(
+            "id", "rating", "appreciated", "pain_points", "improvement_suggestion", "submitted_at",
+        )[:200])
+        for item in legacy_survey_responses:
+            item["id"] = str(item["id"])
+            item["submitted_at"] = item["submitted_at"].isoformat()
+        product_survey_average = round(float(product_survey_aggregate["average"]), 1) if product_survey_aggregate["average"] is not None else None
 
         # Les compteurs de vues/clics sont cumulatifs et ne conservent pas d’événements bruts.
         # Les courbes ci-dessous ne tracent donc que les événements réellement horodatés.
@@ -79,22 +104,31 @@ class AdminDashboardView(APIView):
             .annotate(day=TruncDate("submitted_at"))
             .values("day").annotate(total=Count("id"))
         }
-        survey_by_day = {
+        visitor_survey_by_day = {
             row["day"]: row
-            for row in survey_queryset.filter(submitted_at__gte=first_moment)
+            for row in visitor_survey_queryset.filter(submitted_at__gte=first_moment)
             .annotate(day=TruncDate("submitted_at"))
-            .values("day").annotate(total=Count("id"), average=Avg("rating"))
+            .values("day").annotate(total=Count("id"))
+        }
+        product_survey_by_day = {
+            row["day"]: row
+            for row in product_survey_queryset.filter(submitted_at__gte=first_moment)
+            .annotate(day=TruncDate("submitted_at"))
+            .values("day").annotate(total=Count("id"), average=Avg("ease_rating"))
         }
         daily_activity = []
         for offset in range(30):
             day = first_day + timedelta(days=offset)
-            survey_day = survey_by_day.get(day)
+            visitor_survey_day = visitor_survey_by_day.get(day)
+            product_survey_day = product_survey_by_day.get(day)
             daily_activity.append({
                 "date": day.isoformat(),
                 "new_visitors": visitor_by_day.get(day, 0),
                 "feedback_submissions": feedback_by_day.get(day, 0),
-                "survey_responses": survey_day["total"] if survey_day else 0,
-                "average_rating": round(float(survey_day["average"]), 1) if survey_day and survey_day["average"] is not None else None,
+                "visitor_survey_responses": visitor_survey_day["total"] if visitor_survey_day else 0,
+                "product_survey_responses": product_survey_day["total"] if product_survey_day else 0,
+                "survey_responses": product_survey_day["total"] if product_survey_day else 0,
+                "average_rating": round(float(product_survey_day["average"]), 1) if product_survey_day and product_survey_day["average"] is not None else None,
             })
 
         data = {
@@ -107,15 +141,27 @@ class AdminDashboardView(APIView):
             "login_failures_total": totals["login_failures"] or 0,
             "feedback_total": SiteFeedback.objects.count(),
             "feedback_new_total": SiteFeedback.objects.filter(status="new").count(),
-            "survey_prompted_total": survey_prompted_total,
-            "survey_responses_total": survey_total,
-            "survey_completion_rate": round(survey_total * 100 / survey_prompted_total, 1) if survey_prompted_total else 0,
-            "survey_average_rating": survey_average,
-            "survey_distribution": survey_distribution,
+            "visitor_survey_prompted_total": visitor_survey_prompted,
+            "visitor_survey_responses_total": visitor_survey_queryset.count(),
+            "visitor_survey_completion_rate": round(visitor_survey_queryset.count() * 100 / visitor_survey_prompted, 1) if visitor_survey_prompted else 0,
+            "visitor_survey_responses": visitor_survey_responses,
+            "product_survey_prompted_total": product_survey_prompted,
+            "product_survey_responses_total": product_survey_total,
+            "product_survey_completion_rate": round(product_survey_total * 100 / product_survey_prompted, 1) if product_survey_prompted else 0,
+            "product_survey_average_rating": product_survey_average,
+            "product_survey_distribution": product_survey_distribution,
+            "product_survey_responses": product_survey_responses,
+            "legacy_survey_responses_total": ProductSurveyResponse.objects.count(),
+            "legacy_survey_responses": legacy_survey_responses,
+            "survey_prompted_total": product_survey_prompted,
+            "survey_responses_total": product_survey_total,
+            "survey_completion_rate": round(product_survey_total * 100 / product_survey_prompted, 1) if product_survey_prompted else 0,
+            "survey_average_rating": product_survey_average,
+            "survey_distribution": product_survey_distribution,
+            "survey_responses": product_survey_responses,
             "daily_activity": daily_activity,
             "visitors": visitors,
             "feedback": feedback_items,
-            "survey_responses": survey_responses,
         }
         return Response({"success": True, "data": data})
 

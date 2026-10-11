@@ -58,6 +58,7 @@ export function PatientOnboarding() {
     <span className="eyebrow">Étape 1 · votre espace patient</span>
     <h1>Préparer votre carnet.</h1>
     <p className="muted">Vous pourrez modifier ces informations depuis votre profil. Les données médicales restent sous votre contrôle.</p>
+    <p className="notice" role="note">Utilisez uniquement des données fictives pour le moment.</p>
     <label className="field"><span>Téléphone</span><input autoComplete="tel" value={form.phone} onChange={event => update("phone", event.target.value)} /></label>
     <label className="field"><span>Date de naissance (facultative)</span><input type="date" value={form.birth_date} onChange={event => update("birth_date", event.target.value)} /></label>
     <label className="field"><span>Adresse (facultative)</span><input value={form.address} onChange={event => update("address", event.target.value)} /></label>
