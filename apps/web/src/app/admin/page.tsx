@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { ApiError, apiGet, apiPost } from "../../infrastructure/api/client";
 
 type Visitor = {
@@ -86,6 +87,10 @@ export default function AdminPage() {
       <article className="card admin-metric"><span className="muted">Pages consultées</span><strong>{dashboard.page_views_total}</strong><small>total des visiteurs affichés</small></article>
       <article className="card admin-metric"><span className="muted">Connexions / inscriptions</span><strong>{dashboard.auth_successes_total}</strong><small>succès cumulés affichés</small></article>
       <article className="card admin-metric"><span className="muted">Échecs de connexion</span><strong>{dashboard.login_failures_total}</strong><small>compteurs agrégés</small></article>
+    </section>
+    <section className="grid admin-management-grid" aria-label="Gestion de la plateforme">
+      <article className="card"><span className="eyebrow">Gestion des établissements</span><h2>Créer un établissement vérifié</h2><p className="muted">Après réception des justificatifs par le canal officiel et vérification manuelle, créez l’entité puis envoyez au responsable une invitation nominative, à usage unique et valable 48 heures. Aucun mot de passe temporaire n’est envoyé.</p><Link className="button primary" href="/staff/etablissements">Créer l’établissement et inviter son responsable</Link></article>
+      <article className="card"><span className="eyebrow">Règles V1</span><h2>Vérification hors application</h2><p className="muted">Ne demandez pas de création publique ni de dépôt de pièces dans l’application. La vérification des médecins et les décisions de rattachement relèvent ensuite de l’établissement, pas du staff E‑Carnet. Le compte établissement n’accède jamais aux dossiers médicaux.</p></article>
     </section>
     <section className="card admin-table-card"><div className="admin-table-title"><div><span className="eyebrow">Activité récente</span><h2>Visiteurs pseudonymes</h2></div><span className="muted">Jusqu’à 100 entrées récentes</span></div>
       {dashboard.visitors.length === 0 ? <p className="empty">Aucun visiteur enregistré pour le moment.</p> : <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Visiteur</th><th>Dernière page</th><th>Pages</th><th>Connexions</th><th>Échecs</th><th>Dernier événement</th><th>Vu pour la dernière fois</th></tr></thead><tbody>{dashboard.visitors.map((visitor) => <tr key={visitor.visitor_id}><td><code>{visitor.visitor_id.slice(0, 8)}…</code><small>Depuis {formatDate(visitor.first_seen)}</small></td><td>{categoryLabel[visitor.last_page_category] ?? "Autre"}</td><td>{visitor.page_view_count}</td><td>{visitor.login_success_count + visitor.registration_count + visitor.oauth_success_count}</td><td>{visitor.login_failure_count}</td><td>{eventLabel[visitor.last_auth_event] ?? "—"}<small>{formatDate(visitor.last_auth_event_at)}</small></td><td>{formatDate(visitor.last_seen)}</td></tr>)}</tbody></table></div>}
