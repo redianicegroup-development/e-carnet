@@ -27,10 +27,13 @@ export function AuthForms() {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("mode") === "register") setMode("register");
-    if (params.has("oauth") && params.get("status") === "success") setMessage("Connexion réussie, ouverture de votre espace…");
-    else setMessage(params.get("message") ?? "");
+    const timer = window.setTimeout(() => {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("mode") === "register") setMode("register");
+      if (params.has("oauth") && params.get("status") === "success") setMessage("Connexion réussie, ouverture de votre espace…");
+      else setMessage(params.get("message") ?? "");
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
   async function submit(e: React.FormEvent) {
     e.preventDefault(); setBusy(true); setMessage(mode === "login" ? "Connexion sécurisée en cours…" : "Création de votre compte…");

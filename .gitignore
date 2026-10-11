@@ -33,6 +33,7 @@ playwright-report/
 .vercel/
 .netlify/
 *.log
+*.modal/
 npm-debug.log*
 yarn-debug.log*
 pnpm-debug.log*

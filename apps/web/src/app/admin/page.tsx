@@ -10,23 +10,28 @@ type Visitor = {
   registration_count: number; oauth_success_count: number; oauth_link_count: number;
   last_page_category: string; last_auth_event: string; last_auth_event_at: string | null;
   click_count: number; last_click_category: string; last_click_page_category: string; last_click_at: string | null;
+  public_page_view_count: number; survey_prompted_at: string | null; survey_completed_at: string | null;
 };
 type Feedback = {
   id: string; category: string; message: string; page_category: string;
   status: "new" | "in_progress" | "resolved"; submitted_at: string; updated_at: string;
 };
+type SurveyResponse = { id: string; rating: number; appreciated: string[]; pain_points: string[]; improvement_suggestion: string; submitted_at: string };
 type Dashboard = {
   generated_at: string; visitors_total: number; visitors_active_24h: number;
   page_views_total: number; clicks_total: number; auth_successes_total: number;
   login_failures_total: number; feedback_total: number; feedback_new_total: number;
-  visitors: Visitor[]; feedback: Feedback[];
+  survey_prompted_total: number; survey_responses_total: number; survey_completion_rate: number;
+  survey_average_rating: number | null; survey_distribution: Record<string, number>;
+  visitors: Visitor[]; feedback: Feedback[]; survey_responses: SurveyResponse[];
 };
-type AdminTab = "overview" | "activity" | "feedback" | "establishments";
+type AdminTab = "overview" | "activity" | "feedback" | "survey" | "establishments";
 
 const tabs: { id: AdminTab; label: string }[] = [
   { id: "overview", label: "Vue d’ensemble" },
   { id: "activity", label: "Visites & clics" },
   { id: "feedback", label: "Feedback" },
+  { id: "survey", label: "Enquête UX" },
   { id: "establishments", label: "Établissements" },
 ];
 const categoryLabel: Record<string, string> = {
@@ -44,8 +49,14 @@ const eventLabel: Record<string, string> = {
 };
 const feedbackLabel: Record<string, string> = { bug: "Problème", idea: "Suggestion", question: "Question", other: "Autre" };
 const feedbackStatusLabel: Record<Feedback["status"], string> = { new: "Nouveau", in_progress: "En cours", resolved: "Traité" };
+const appreciatedLabel: Record<string, string> = { organized_carnet: "Carnet organisé", consultation_preparation: "Préparation consultations", access_control: "Contrôle des accès", history_traceability: "Historique / traçabilité", design: "Interface / design", health_content: "Contenu du carnet" };
+const painPointLabel: Record<string, string> = { navigation: "Navigation / ergonomie", form_fields: "Champs", features: "Fonctionnalités", clarity: "Clarté des libellés", performance: "Lenteur / bugs", none: "Aucun point bloquant" };
 const dateFormat = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" });
 const formatDate = (value: string | null) => value ? dateFormat.format(new Date(value)) : "—";
+
+function StarRating({ value, label }: { value: number; label: string }) {
+  return <span className="admin-stars" role="img" aria-label={label}>{[1, 2, 3, 4, 5].map((star) => <span key={star} className={star <= Math.round(value) ? "is-filled" : ""} aria-hidden="true">★</span>)}</span>;
+}
 
 export default function AdminPage() {
   const [email, setEmail] = useState("");
@@ -59,6 +70,7 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<AdminTab>("overview");
   const [visitorSearch, setVisitorSearch] = useState("");
   const [feedbackSearch, setFeedbackSearch] = useState("");
+  const [surveySearch, setSurveySearch] = useState("");
   const [busyFeedbackId, setBusyFeedbackId] = useState("");
 
   const loadDashboard = useCallback(async (silent = false, manual = false) => {
@@ -84,11 +96,11 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
-    void loadDashboard();
+    const initialLoad = window.setTimeout(() => void loadDashboard(), 0);
     const timer = window.setInterval(() => {
       if (document.visibilityState === "visible") void loadDashboard(true);
     }, 120_000);
-    return () => window.clearInterval(timer);
+    return () => { window.clearTimeout(initialLoad); window.clearInterval(timer); };
   }, [loadDashboard]);
 
   async function signIn(event: FormEvent<HTMLFormElement>) {
@@ -158,6 +170,12 @@ export default function AdminPage() {
     const query = feedbackSearch.trim().toLowerCase();
     return !query || [item.message, item.category, item.page_category, item.status].some((value) => value.toLowerCase().includes(query));
   });
+  const filteredSurveyResponses = dashboard.survey_responses.filter((item) => {
+    const query = surveySearch.trim().toLowerCase();
+    if (!query) return true;
+    return [item.improvement_suggestion, ...item.appreciated.map((value) => appreciatedLabel[value] ?? value), ...item.pain_points.map((value) => painPointLabel[value] ?? value), String(item.rating)]
+      .some((value) => value.toLowerCase().includes(query));
+  });
 
   return <main className="shell admin-shell stack-lg">
     <header className="admin-heading"><div><span className="eyebrow">Console privée</span><h1>Administration E‑Carnet</h1><p className="muted">Données actualisées {formatDate(dashboard.generated_at)} · synchronisation automatique toutes les 2 min</p></div><div className="admin-actions"><button className="button secondary" onClick={() => void loadDashboard(true, true)} disabled={manualRefreshing}>{manualRefreshing ? "Actualisation…" : "Actualiser"}</button><button className="button ghost" onClick={() => void signOut()}>Déconnexion</button></div></header>
@@ -175,8 +193,9 @@ export default function AdminPage() {
         <article className="card admin-metric"><span className="muted">Connexions / inscriptions</span><strong>{dashboard.auth_successes_total}</strong><small>succès cumulés</small></article>
         <article className="card admin-metric"><span className="muted">Échecs de connexion</span><strong>{dashboard.login_failures_total}</strong><small>compteurs agrégés</small></article>
         <article className="card admin-metric"><span className="muted">Retours reçus</span><strong>{dashboard.feedback_total}</strong><small>{dashboard.feedback_new_total} nouveaux</small></article>
+        <article className="card admin-metric"><span className="muted">Note moyenne — enquête UX</span>{dashboard.survey_average_rating !== null ? <><StarRating value={dashboard.survey_average_rating} label={`Note moyenne ${dashboard.survey_average_rating.toFixed(1)} sur 5`} /><strong>{dashboard.survey_average_rating.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}<small className="admin-metric-inline">/5</small></strong></> : <strong>—</strong>}<small>{dashboard.survey_responses_total} réponse(s)</small></article>
       </div>
-      <section className="card admin-table-card"><div className="admin-table-title"><div><span className="eyebrow">Résumé</span><h2>Activité récente</h2></div><button className="button small" onClick={() => setActiveTab("activity")}>Voir les visites et clics</button></div><p className="muted">Les détails par visiteur pseudonyme, la recherche et les dernières catégories de clic sont disponibles dans l’onglet Visites & clics.</p></section>
+      <section className="card admin-table-card"><div className="admin-table-title"><div><span className="eyebrow">Résumé</span><h2>Activité récente</h2></div><div className="admin-inline-actions"><button className="button small" onClick={() => setActiveTab("activity")}>Voir les visites et clics</button><button className="button small" onClick={() => setActiveTab("survey")}>Voir l’enquête UX</button></div></div><p className="muted">Les détails par visiteur pseudonyme, la recherche et les dernières catégories de clic sont disponibles dans l’onglet Visites & clics.</p></section>
     </section>}
 
     {activeTab === "activity" && <section id="admin-panel-activity" role="tabpanel" aria-labelledby="admin-tab-activity" className="stack-lg">
@@ -194,6 +213,21 @@ export default function AdminPage() {
         <label className="field admin-search"><span>Rechercher dans les retours</span><input type="search" value={feedbackSearch} onChange={(event) => setFeedbackSearch(event.target.value)} placeholder="Mot, catégorie, statut…" /></label>
         {filteredFeedback.length === 0 ? <p className="empty">Aucun retour ne correspond à cette recherche.</p> : <div className="admin-feedback-list">{filteredFeedback.map((item) => <article className="admin-feedback-item" key={item.id}><div className="admin-feedback-head"><div><span className="badge">{feedbackLabel[item.category] ?? item.category}</span><span className={`badge admin-feedback-status admin-feedback-status--${item.status}`}>{feedbackStatusLabel[item.status]}</span></div><small>{categoryLabel[item.page_category] ?? "Autre"} · {formatDate(item.submitted_at)}</small></div><p className="admin-feedback-message">{item.message}</p><label className="field admin-feedback-select"><span>Statut</span><select value={item.status} disabled={busyFeedbackId === item.id} onChange={(event) => void updateFeedback(item.id, event.target.value as Feedback["status"])}><option value="new">Nouveau</option><option value="in_progress">En cours</option><option value="resolved">Traité</option></select></label></article>)}</div>}
         <p className="admin-privacy-note">Les retours sont anonymes; le formulaire ne demande pas d’adresse email. Il demande aux visiteurs de ne pas inclure de données de santé ou d’identifiants.</p>
+      </section>
+    </section>}
+
+    {activeTab === "survey" && <section id="admin-panel-survey" role="tabpanel" aria-labelledby="admin-tab-survey" className="stack-lg">
+      <div className="admin-metrics admin-metrics--compact">
+        <article className="card admin-metric"><span className="muted">Invitations envoyées</span><strong>{dashboard.survey_prompted_total}</strong><small>après cinq pages publiques</small></article>
+        <article className="card admin-metric"><span className="muted">Réponses reçues</span><strong>{dashboard.survey_responses_total}</strong><small>visiteurs anonymes</small></article>
+        <article className="card admin-metric"><span className="muted">Taux de réponse</span><strong>{dashboard.survey_completion_rate.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}%</strong><small>réponses / invitations</small></article>
+        <article className="card admin-metric"><span className="muted">Note moyenne</span>{dashboard.survey_average_rating !== null ? <><StarRating value={dashboard.survey_average_rating} label={`Note moyenne ${dashboard.survey_average_rating.toFixed(1)} sur 5`} /><strong>{dashboard.survey_average_rating.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}/5</strong></> : <strong>—</strong>}<small>sur l’ensemble des avis</small></article>
+      </div>
+      <section className="card admin-survey-summary"><div><span className="eyebrow">Répartition des notes</span><h2>Évaluation globale</h2><p className="muted">La moyenne affichée publiquement sur la page d’accueil est calculée à partir de ces mêmes réponses.</p></div><div className="admin-survey-distribution">{[5, 4, 3, 2, 1].map((star) => { const count = dashboard.survey_distribution[String(star)] ?? 0; const percent = dashboard.survey_responses_total ? count * 100 / dashboard.survey_responses_total : 0; return <div className="admin-survey-distribution-row" key={star}><span>{star} ★</span><div className="admin-survey-bar" aria-label={`${percent.toFixed(0)} %`}><span style={{ width: `${percent}%` }} /></div><strong>{count}</strong></div>; })}</div></section>
+      <section className="card admin-table-card"><div className="admin-table-title"><div><span className="eyebrow">Réponses anonymes</span><h2>Ce que les visiteurs apprécient et souhaitent améliorer</h2></div><span className="muted">{filteredSurveyResponses.length} résultat(s) · maximum 200 chargés</span></div>
+        <label className="field admin-search"><span>Rechercher dans l’enquête</span><input type="search" value={surveySearch} onChange={(event) => setSurveySearch(event.target.value)} placeholder="Note, ergonomie, suggestion…" /></label>
+        {filteredSurveyResponses.length === 0 ? <p className="empty">Aucune réponse ne correspond à cette recherche.</p> : <div className="admin-feedback-list">{filteredSurveyResponses.map((item) => <article className="admin-feedback-item" key={item.id}><div className="admin-feedback-head"><div className="admin-survey-response-rating"><StarRating value={item.rating} label={`Note ${item.rating} sur 5`} /><strong>{item.rating}/5</strong></div><small>{formatDate(item.submitted_at)}</small></div><div><strong>Apprécié</strong><div className="admin-survey-tags">{item.appreciated.length ? item.appreciated.map((value) => <span className="badge" key={value}>{appreciatedLabel[value] ?? value}</span>) : <span className="muted">Aucun choix indiqué</span>}</div></div><div><strong>À améliorer</strong><div className="admin-survey-tags">{item.pain_points.length ? item.pain_points.map((value) => <span className="badge" key={value}>{painPointLabel[value] ?? value}</span>) : <span className="muted">Aucun point signalé</span>}</div></div>{item.improvement_suggestion && <div><strong>Suggestion libre</strong><p className="admin-feedback-message">{item.improvement_suggestion}</p></div>}</article>)}</div>}
+        <p className="admin-privacy-note">Ces réponses sont anonymes : aucun email ni identifiant visiteur n’est affiché. Les statistiques publiques ne montrent que la moyenne et le nombre de réponses.</p>
       </section>
     </section>}
 

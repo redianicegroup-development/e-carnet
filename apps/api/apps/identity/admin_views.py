@@ -1,13 +1,13 @@
 from datetime import timedelta
 
-from django.db.models import Sum
+from django.db.models import Avg, Count, Sum
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import AnonymousVisitor, SiteFeedback
+from .models import AnonymousVisitor, ProductSurveyResponse, SiteFeedback
 
 
 class IsSuperuserOnly(BasePermission):
@@ -29,10 +29,11 @@ class AdminDashboardView(APIView):
             "login_success_count", "login_failure_count", "registration_count", "oauth_success_count",
             "oauth_link_count", "last_page_category", "last_auth_event", "last_auth_event_at",
             "click_count", "last_click_category", "last_click_page_category", "last_click_at",
+            "public_page_view_count", "survey_prompted_at", "survey_completed_at",
         )[:200])
         for visitor in visitors:
             visitor["visitor_id"] = str(visitor["visitor_id"])
-            for field in ("first_seen", "last_seen", "last_auth_event_at", "last_click_at"):
+            for field in ("first_seen", "last_seen", "last_auth_event_at", "last_click_at", "survey_prompted_at", "survey_completed_at"):
                 visitor[field] = visitor[field].isoformat() if visitor[field] else None
         totals = queryset.aggregate(
             page_views=Sum("page_view_count"), clicks=Sum("click_count"),
@@ -47,6 +48,19 @@ class AdminDashboardView(APIView):
             item["submitted_at"] = item["submitted_at"].isoformat()
             item["updated_at"] = item["updated_at"].isoformat()
 
+        survey_queryset = ProductSurveyResponse.objects.all()
+        survey_aggregate = survey_queryset.aggregate(average=Avg("rating"), count=Count("id"))
+        survey_total = survey_aggregate["count"]
+        survey_prompted_total = queryset.filter(survey_prompted_at__isnull=False).count()
+        survey_distribution = {str(star): survey_queryset.filter(rating=star).count() for star in range(1, 6)}
+        survey_responses = list(survey_queryset.order_by("-submitted_at").values(
+            "id", "rating", "appreciated", "pain_points", "improvement_suggestion", "submitted_at",
+        )[:200])
+        for item in survey_responses:
+            item["id"] = str(item["id"])
+            item["submitted_at"] = item["submitted_at"].isoformat()
+        survey_average = round(float(survey_aggregate["average"]), 1) if survey_aggregate["average"] is not None else None
+
         data = {
             "generated_at": now.isoformat(),
             "visitors_total": queryset.count(),
@@ -57,8 +71,14 @@ class AdminDashboardView(APIView):
             "login_failures_total": totals["login_failures"] or 0,
             "feedback_total": SiteFeedback.objects.count(),
             "feedback_new_total": SiteFeedback.objects.filter(status="new").count(),
+            "survey_prompted_total": survey_prompted_total,
+            "survey_responses_total": survey_total,
+            "survey_completion_rate": round(survey_total * 100 / survey_prompted_total, 1) if survey_prompted_total else 0,
+            "survey_average_rating": survey_average,
+            "survey_distribution": survey_distribution,
             "visitors": visitors,
             "feedback": feedback_items,
+            "survey_responses": survey_responses,
         }
         return Response({"success": True, "data": data})
 

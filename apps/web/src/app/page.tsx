@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PublicShell } from "../components/public/PublicShell";
 import { LandingFeedbackWidget } from "../components/LandingFeedbackWidget";
+import { SurveyRatingSummary } from "../components/SurveyRatingSummary";
 import { Icon, type IconName } from "../components/ui/Icon";
 import "./landing.css";
 
@@ -119,6 +120,8 @@ export default function HomePage() {
         <ul className="lp-safeguards">{SAFEGUARDS.map((item) => <li key={item}><Icon name="shield" size={18} />{item}</li>)}</ul>
         <p className="lp-trust__note">Nous préférons être clairs : l’application est un pilote. Elle ne sera ouverte à de vraies données de santé qu’après validation complète de la sécurité, de l’hébergement et du cadre juridique. <Link href="/securite">Lire notre approche de la sécurité</Link></p>
       </section>
+
+      <SurveyRatingSummary />
 
       <section className="lp-section" aria-labelledby="faq-title">
         <div className="lp-heading"><span className="eyebrow">Questions fréquentes</span><h2 id="faq-title">Les réponses courtes</h2></div>

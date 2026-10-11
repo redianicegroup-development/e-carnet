@@ -62,6 +62,8 @@ def _touch(visitor_id, *, page_category=None, auth_event=None, click_category=No
     if page_category:
         updates["last_page_category"] = page_category
         updates["page_view_count"] = F("page_view_count") + 1
+        if page_category in {"landing", "public"}:
+            updates["public_page_view_count"] = F("public_page_view_count") + 1
         if page_category == "auth":
             updates["auth_page_view_count"] = F("auth_page_view_count") + 1
             updates["last_auth_event"] = "auth_page"

@@ -387,3 +387,21 @@ a.setting-item:hover, button.setting-item:hover { border-color: var(--primary); 
 .admin-feedback-message { white-space: pre-wrap; overflow-wrap: anywhere; }
 .admin-feedback-select { width: min(100%, 240px); }
 @media (max-width: 600px) { .admin-tab { padding: 10px 11px; font-size: .9rem; } .admin-feedback-item { padding: 13px; } }
+
+/* Résultats de l’enquête UX et notes étoilées */
+.admin-stars { display: inline-flex; gap: 2px; color: var(--border-strong, #cbd5e1); font-size: 1.2rem; line-height: 1; }
+.admin-stars .is-filled { color: #e5a900; }
+.admin-metric-inline { display: inline !important; margin-left: 3px !important; font-size: .72em !important; color: var(--text-muted) !important; }
+.admin-inline-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.admin-survey-summary { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, .8fr); gap: 28px; align-items: center; padding: 22px; }
+.admin-survey-summary h2 { margin: 6px 0; }
+.admin-survey-distribution { display: grid; gap: 10px; }
+.admin-survey-distribution-row { display: grid; grid-template-columns: 40px minmax(80px, 1fr) 34px; align-items: center; gap: 10px; }
+.admin-survey-distribution-row > span { color: var(--text-muted); font-weight: 700; }
+.admin-survey-distribution-row > strong { text-align: right; }
+.admin-survey-bar { height: 10px; overflow: hidden; border-radius: 999px; background: var(--surface-tint); }
+.admin-survey-bar > span { display: block; height: 100%; border-radius: inherit; background: var(--primary); }
+.admin-survey-response-rating { display: inline-flex; align-items: center; gap: 8px; }
+.admin-survey-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 7px; }
+.admin-survey-tags .badge { white-space: normal; }
+@media (max-width: 680px) { .admin-survey-summary { grid-template-columns: 1fr; gap: 18px; padding: 16px; } .admin-inline-actions { width: 100%; } }

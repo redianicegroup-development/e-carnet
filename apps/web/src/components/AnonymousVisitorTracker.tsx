@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+import { ProductSurveyModal } from "./ProductSurveyModal";
 
 const VISIT_ENDPOINT = "/api/v1/identity/analytics/visits/";
 const CLICK_ENDPOINT = "/api/v1/identity/analytics/clicks/";
@@ -34,8 +35,10 @@ function categorizeClick(element: Element) {
 
 export function AnonymousVisitorTracker() {
   const pathname = usePathname();
+  const [surveyOpen, setSurveyOpen] = useState(false);
   const lastPathSent = useRef<string | null>(null);
   const visitorCookieReady = useRef(false);
+  const closeSurvey = useCallback(() => setSurveyOpen(false), []);
 
   useEffect(() => {
     if (!pathname || lastPathSent.current === pathname) return;
@@ -52,7 +55,11 @@ export function AnonymousVisitorTracker() {
             headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: pathname }),
           });
           const isApiJson = response.headers.get("content-type")?.includes("application/json") ?? false;
-          if (response.ok && isApiJson) visitorCookieReady.current = true;
+          const payload = isApiJson ? await response.json().catch(() => null) : null;
+          if (response.ok && isApiJson) {
+            visitorCookieReady.current = true;
+            if (payload?.data?.survey_due === true) setSurveyOpen(true);
+          }
           if ((response.ok && isApiJson) || (response.status >= 400 && response.status < 500) || attempt === RETRY_DELAYS_MS.length - 1) return;
         } catch {
           if (attempt === RETRY_DELAYS_MS.length - 1) return;
@@ -80,5 +87,5 @@ export function AnonymousVisitorTracker() {
     return () => document.removeEventListener("click", onClick, true);
   }, [pathname]);
 
-  return null;
+  return <ProductSurveyModal open={surveyOpen} onClose={closeSurvey} />;
 }
