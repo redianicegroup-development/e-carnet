@@ -30,6 +30,15 @@ class BootstrapAdminCommandTests(TestCase):
             call_command("bootstrap_admin")
         self.assertFalse(get_user_model().objects.exists())
 
+    @override_settings(AUTH_PASSWORD_VALIDATORS=[{"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 30}}])
+    def test_password_validator_error_is_explained_without_echoing_secret(self):
+        secret = "Safe-random-secret-2026!"
+        with patch.dict(os.environ, {"DJANGO_ADMIN_EMAIL": EMAIL, "DJANGO_ADMIN_PASSWORD": secret}):
+            with self.assertRaises(CommandError) as captured:
+                call_command("bootstrap_admin")
+        self.assertIn("30", str(captured.exception))
+        self.assertNotIn(secret, str(captured.exception))
+
     def test_creates_superuser_using_email_as_login(self):
         with patch.dict(os.environ, {"DJANGO_ADMIN_EMAIL": EMAIL, "DJANGO_ADMIN_PASSWORD": PASSWORD}):
             call_command("bootstrap_admin")

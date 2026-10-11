@@ -18,12 +18,12 @@ Les Web Services gratuits Render n’offrent pas de Shell/SSH. Ce service étant
 
 1. Dans le service **ecarnet-api** sur Render, ajoutez dans **Environment** :
    - `DJANGO_ADMIN_EMAIL` : une adresse dédiée à l’administration;
-   - `DJANGO_ADMIN_PASSWORD` : un mot de passe robuste d’au moins 20 caractères.
+   - `DJANGO_ADMIN_PASSWORD` : un mot de passe aléatoire d’au moins 20 caractères, sans ressemblance avec l’email ou une phrase courante. Utilise un gestionnaire de mots de passe pour le générer; ne le partage pas dans un message.
 2. Enregistrez les variables et déployez cette version du dépôt. Au démarrage, le bootstrap crée le compte superadministrateur avant Gunicorn.
 3. Ouvrez **https://e-carnetci.vercel.app/admin/** et connectez-vous avec ces identifiants.
 4. Après la création, retirez **les deux variables** de Render et redéployez. Le compte reste enregistré en base.
 
-La commande ne réinitialise pas un superadmin déjà présent et refuse de promouvoir un compte ordinaire. Si les variables sont invalides ou si l’adresse correspond à un compte ordinaire, l’erreur apparaît dans les journaux et le service démarre sans créer un nouvel administrateur. N’inscrivez jamais les vrais identifiants dans Git, dans le frontend, une variable `NEXT_PUBLIC_*` ou un message.
+La commande ne réinitialise pas un superadmin déjà présent et refuse de promouvoir un compte ordinaire. Si Django refuse le mot de passe, les journaux indiquent maintenant le motif de validation sans afficher le secret. Si les variables sont invalides ou si l’adresse correspond à un compte ordinaire, le service démarre sans créer un nouvel administrateur. N’inscrivez jamais les vrais identifiants dans Git, dans le frontend, une variable `NEXT_PUBLIC_*` ou un message.
 
 ## Documentation Render
 

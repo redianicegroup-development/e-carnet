@@ -34,7 +34,8 @@ class Command(BaseCommand):
         try:
             validate_password(password, user=candidate)
         except ValidationError as exc:
-            raise CommandError("DJANGO_ADMIN_PASSWORD ne satisfait pas les règles de robustesse Django.") from exc
+            reasons = "; ".join(str(message) for message in exc.messages)
+            raise CommandError(f"DJANGO_ADMIN_PASSWORD refusé par les validateurs Django : {reasons}") from exc
 
         try:
             with transaction.atomic():
