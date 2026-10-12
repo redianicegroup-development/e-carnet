@@ -54,6 +54,22 @@ test("les trois espaces paramètres utilisent des icônes SVG sémantiques, sans
   assert.match(read("src/components/SettingsDirectory.tsx"), /Icon name=\{item\.icon\}/);
 });
 
+test("la connexion conserve son animation GSAP/Lenis et les styles de mouvement réduit", () => {
+  const page = read("src/app/connexion/page.tsx");
+  const motion = read("src/components/motion/AuthMotion.tsx");
+  const styles = read("src/app/connexion/auth-immersive.css");
+  const pkg = JSON.parse(read("package.json"));
+  assert.match(page, /AuthMotion/);
+  assert.match(page, /PulseLine/);
+  assert.match(page, /auth-immersive\.css/);
+  assert.match(motion, /useSmoothScroll\(\)/);
+  assert.match(motion, /useGSAP/);
+  assert.match(motion, /prefers-reduced-motion: no-preference/);
+  assert.match(styles, /auth-shell--immersive/);
+  assert.equal(pkg.dependencies.gsap, "^3.15.0");
+  assert.equal(pkg.dependencies.lenis, "^1.3.26");
+});
+
 test("favicon, ICO et icônes PWA : les fichiers déclarés existent et sont valides", () => {
   const layout = read("src/app/layout.tsx");
   const urls = [...layout.matchAll(/url:\s*"([^"]+)"/g)].map((m) => m[1]).concat(["/favicon.ico"]);
