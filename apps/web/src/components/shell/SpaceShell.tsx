@@ -76,39 +76,35 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
 
   return (
     <div className={`space space--${space}${bare ? " space--bare" : ""}${navCollapsed ? " space--nav-collapsed" : ""}`}>
-      <header className="space-header">
-        <Link className="brand" href={bare || state.status !== "ready" ? "/" : config.home} aria-label="Mon Carnet Numérique, retour à l’accueil de l’espace">
-          <BrandMark />
-          <span className="brand-text"><strong>E-carnet</strong><small>{config.label}</small></span>
-        </Link>
-        {state.status === "ready" && (
-          <Link className="space-header__me" href={moi.href} aria-label={`${displayName(state.account)} — ouvrir ${moi.long.toLowerCase()}`}>
-            <span className="space-header__name">{displayName(state.account)}</span>
-            <AvatarBadge account={state.account} size={38} />
+      <nav className={`space-nav space-nav--workspace${navCollapsed ? " is-collapsed" : ""}${bare ? " is-bare" : ""}`} aria-label={`Navigation de l’${config.label.toLowerCase()}`}>
+        <div className="space-sidebar-brand">
+          <Link className="brand" href={bare || state.status !== "ready" ? "/" : config.home} aria-label="Mon Carnet Numérique, retour à l’accueil de l’espace">
+            <BrandMark />
+            <span className="brand-text"><strong>E-carnet</strong><small>{config.label}</small></span>
           </Link>
-        )}
-      </header>
-
-      {!bare && (
-        <nav className={`space-nav${showAdminLink ? " space-nav--admin" : ""}`} aria-label={`Navigation de l’${config.label.toLowerCase()}`}>
-          <button type="button" className="space-nav__toggle" onClick={toggleNav} aria-expanded={!navCollapsed} aria-label={navCollapsed ? "Déplier la navigation" : "Replier la navigation"}><Icon name="chevron" size={18} /><span>{navCollapsed ? "Déplier" : "Réduire"}</span></button>
-          <ul>
-            {config.tabs.map((tab) => {
-              const active = tab.match(pathname);
-              return (
-                <li key={tab.id}>
-                  <Link href={tab.href} className={active ? "space-nav__link is-active" : "space-nav__link"} aria-label={tab.long} title={tab.long} aria-current={active ? "page" : undefined}>
-                    <Icon name={tab.icon} size={22} />
-                    <span className="space-nav__label">{tab.label}</span>
-                    <span className="space-nav__long">{tab.long}</span>
-                  </Link>
-                </li>
-              );
-            })}
-            {showAdminLink && <li><a href="https://e-carnetci.vercel.app/admin/" target="_blank" rel="noopener noreferrer" className="space-nav__link" aria-label="Administration" title="Administration"><Icon name="shield" size={22} /><span className="space-nav__label">Admin</span><span className="space-nav__long">Administration</span></a></li>}
-          </ul>
-        </nav>
-      )}
+          <button type="button" className="space-nav__toggle" onClick={toggleNav} aria-expanded={!navCollapsed} aria-label={navCollapsed ? "Déplier la navigation" : "Replier la navigation"} title={navCollapsed ? "Déplier la navigation" : "Réduire la navigation"}><Icon name="chevron" size={18} /><span>{navCollapsed ? "Déplier" : "Réduire"}</span></button>
+        </div>
+        {!bare && <ul>
+          {config.tabs.map((tab) => {
+            const active = tab.match(pathname);
+            return (
+              <li key={tab.id}>
+                <Link href={tab.href} className={active ? "space-nav__link is-active" : "space-nav__link"} aria-label={tab.long} title={tab.long} aria-current={active ? "page" : undefined}>
+                  <Icon name={tab.icon} size={22} />
+                  <span className="space-nav__label">{tab.label}</span>
+                  <span className="space-nav__long">{tab.long}</span>
+                </Link>
+              </li>
+            );
+          })}
+          {showAdminLink && <li><a href="https://e-carnetci.vercel.app/admin/" target="_blank" rel="noopener noreferrer" className="space-nav__link" aria-label="Administration" title="Administration"><Icon name="shield" size={22} /><span className="space-nav__label">Admin</span><span className="space-nav__long">Administration</span></a></li>}
+        </ul>}
+        {state.status === "ready" && <Link className={`space-sidebar-profile${moi.match(pathname) ? " is-active" : ""}`} href={moi.href} aria-label={`${displayName(state.account)} — ouvrir ${moi.long.toLowerCase()}`} aria-current={moi.match(pathname) ? "page" : undefined} title={displayName(state.account)}>
+          <AvatarBadge account={state.account} size={38} />
+          <span className="space-sidebar-profile__copy"><strong>{displayName(state.account)}</strong><small>Profil et paramètres</small></span>
+          <Icon name="chevron" size={17} />
+        </Link>}
+      </nav>
 
       <main className="space-main" id="contenu">
         {state.status === "loading" && <ScreenLoader label={`Chargement de votre espace ${config.label.toLowerCase()}…`} />}

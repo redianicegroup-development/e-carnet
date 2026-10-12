@@ -37,13 +37,21 @@ test("les salutations d’accueil sont des toasts illustrés, accessibles, non b
   assert.match(styles, /@media \(max-width: 520px\)[\s\S]*\.greeting-toast/);
   assert.match(styles, /prefers-reduced-motion: reduce/);
 });
-test("les contenus des espaces se recentrent dans la colonne libre et le header connecté est transparent", () => {
+test("les espaces connectés partagent une sidebar responsive avec logo et avatar, sans header séparé", () => {
+  const shell = read("src/components/shell/SpaceShell.tsx");
   const styles = read("src/app/globals.css");
-  assert.match(styles, /\.space-header \{[^}]*background: transparent;/);
-  assert.doesNotMatch(styles.match(/\.space-header \{[^}]*\}/)?.[0] ?? "", /backdrop-filter/);
-  assert.match(styles, /\.space-main \{[^}]*grid-column: 2;[^}]*margin-inline: auto;/);
+  assert.match(shell, /space-nav--workspace/);
+  assert.match(shell, /space-sidebar-brand[\s\S]*BrandMark/);
+  assert.match(shell, /space-sidebar-profile[\s\S]*AvatarBadge/);
+  assert.doesNotMatch(shell, /space-header|space-header__me/);
+  for (const layout of ["patient", "professionnel", "etablissement"]) {
+    assert.match(read(`src/app/${layout}/layout.tsx`), /<SpaceShell space=/, `${layout} doit utiliser la sidebar partagée`);
+  }
+  assert.match(styles, /\.space-main \{[^}]*grid-row: 1;[^}]*grid-column: 2;[^}]*margin-inline: auto;/);
   assert.match(styles, /\.admin-space-main \{[^}]*margin-inline: auto;/);
   assert.match(styles, /\.space\.space--nav-collapsed \{ grid-template-columns: 82px minmax\(0,1fr\);/);
+  assert.match(styles, /\.space-nav--workspace \{[^}]*position: sticky/);
+  assert.match(styles, /\.space-nav--workspace \.space-sidebar-profile/);
 });
 test("visiteurs : le pied de page public renvoie vers les trois pages légales", () => {
   const footer = read("src/components/public/PublicShell.tsx");
@@ -114,7 +122,7 @@ test("le lien admin est dans la navigation patient et la gestion du compte dans 
   const css = read("src/app/globals.css");
   assert.doesNotMatch(settings, /gestion-compte|id: "administration"|e-carnetci\.vercel\.app\/admin/);
   assert.match(shell, /space === "patient" && state\.status === "ready" && state\.account\.is_admin === true/);
-  assert.match(shell, /space-nav--admin/);
+  assert.match(shell, /space-nav--workspace/);
   assert.match(shell, /href="https:\/\/e-carnetci\.vercel\.app\/admin\/"/);
   assert.match(css, /\.space-nav--admin ul \{ grid-template-columns: repeat\(6/);
   assert.match(settings, /activeSection === "securite"[\s\S]*AccountActionRequestsSettingsClient/);
