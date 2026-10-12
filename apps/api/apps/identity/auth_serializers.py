@@ -40,6 +40,7 @@ class AccountSerializer(serializers.Serializer):
     email = serializers.EmailField()
     first_name = serializers.CharField()
     last_name = serializers.CharField()
+    is_admin = serializers.SerializerMethodField()
     date_joined = serializers.DateTimeField(read_only=True)  # sert au message d'accueil du front (« Bienvenue » pour un compte récent)
     avatar_url = serializers.SerializerMethodField()
     auth_identities = serializers.SerializerMethodField()
@@ -48,6 +49,9 @@ class AccountSerializer(serializers.Serializer):
     def get_id(self, obj):
         profile, _ = AccountProfile.objects.get_or_create(user=obj)
         return str(profile.public_id)
+
+    def get_is_admin(self, obj):
+        return bool(obj.is_authenticated and obj.is_superuser)
 
     def get_avatar_url(self, obj):
         profile = getattr(obj, "account_profile", None)

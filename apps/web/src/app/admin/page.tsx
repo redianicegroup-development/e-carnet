@@ -4,6 +4,7 @@ import { FormEvent, KeyboardEvent, useCallback, useEffect, useState } from "reac
 import Link from "next/link";
 import { ApiError, apiGet, apiPatch, apiPost } from "../../infrastructure/api/client";
 import { AdminActivityCharts, type DailyActivityPoint } from "../../components/AdminActivityCharts";
+import { AdminAccountActionRequestsClient } from "../../components/AdminAccountActionRequestsClient";
 import { useConfirm } from "../../components/modal/ConfirmProvider";
 
 type Visitor = {
@@ -35,7 +36,7 @@ type Dashboard = {
   daily_activity: DailyActivityPoint[];
   visitors: Visitor[]; feedback: Feedback[]; survey_responses: SurveyResponse[];
 };
-type AdminTab = "overview" | "activity" | "feedback" | "survey" | "establishments";
+type AdminTab = "overview" | "activity" | "feedback" | "survey" | "establishments" | "account-requests";
 
 const tabs: { id: AdminTab; label: string }[] = [
   { id: "overview", label: "Vue d’ensemble" },
@@ -43,6 +44,7 @@ const tabs: { id: AdminTab; label: string }[] = [
   { id: "feedback", label: "Feedback" },
   { id: "survey", label: "Enquête UX" },
   { id: "establishments", label: "Établissements" },
+  { id: "account-requests", label: "Demandes de compte" },
 ];
 const categoryLabel: Record<string, string> = {
   landing: "Accueil", public: "Pages publiques", auth: "Connexion / inscription",
@@ -269,5 +271,6 @@ export default function AdminPage() {
       <article className="card"><span className="eyebrow">Création après validation</span><h2>Créer un établissement et inviter son responsable</h2><p className="muted">L’établissement transmet ses justificatifs par le canal officiel. Après vérification manuelle hors application, créez l’entité et envoyez une invitation nominative au responsable principal.</p><ul className="admin-checklist"><li>Invitation à usage unique, valable 48 heures.</li><li>Le responsable définit son propre mot de passe; aucun secret temporaire n’est envoyé.</li><li>Aucun dépôt public de justificatifs et aucune création libre par un établissement.</li></ul><Link className="button primary" href="/staff/etablissements">Ouvrir le formulaire de création</Link></article>
       <article className="card"><span className="eyebrow">Limites du rôle</span><h2>Contrôle administratif, pas clinique</h2><p className="muted">Le staff E‑Carnet ne vérifie pas les justificatifs personnels du médecin dans ce parcours. L’établissement vérifie ses médecins, émet un code temporaire et décide des demandes de rattachement. L’espace établissement n’accède jamais aux dossiers médicaux.</p></article>
     </section>}
+    {activeTab === "account-requests" && <section id="admin-panel-account-requests" role="tabpanel" aria-labelledby="admin-tab-account-requests"><AdminAccountActionRequestsClient /></section>}
   </main>;
 }

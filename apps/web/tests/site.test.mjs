@@ -70,6 +70,21 @@ test("la connexion conserve son animation GSAP/Lenis et les styles de mouvement 
   assert.equal(pkg.dependencies.lenis, "^1.3.26");
 });
 
+test("les demandes de gestion du compte sont reliées aux paramètres patient et visibles dans l’admin protégé", () => {
+  const settings = read("src/components/AccountSettingsClient.tsx");
+  const patientForm = read("src/components/AccountActionRequestsSettingsClient.tsx");
+  const adminPanel = read("src/components/AdminAccountActionRequestsClient.tsx");
+  const adminPage = read("src/app/admin/page.tsx");
+  assert.match(settings, /section\.id !== "administration" \|\| account\.is_admin/);
+  assert.match(settings, /account\.is_admin &&/);
+  assert.match(settings, /https:\/\/e-carnetci\.vercel\.app\/admin\//);
+  assert.match(patientForm, /request_type: requestType/);
+  assert.match(patientForm, /value="other"/);
+  assert.match(patientForm, /account-requests/);
+  assert.match(adminPanel, /admin\/account-requests/);
+  assert.match(adminPage, /AdminAccountActionRequestsClient/);
+});
+
 test("favicon, ICO et icônes PWA : les fichiers déclarés existent et sont valides", () => {
   const layout = read("src/app/layout.tsx");
   const urls = [...layout.matchAll(/url:\s*"([^"]+)"/g)].map((m) => m[1]).concat(["/favicon.ico"]);

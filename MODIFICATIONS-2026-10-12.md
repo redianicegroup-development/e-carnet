@@ -14,10 +14,14 @@ Le footer public comprend le watermark E‑CARNET, des liens d’aide et légaux
 
 Les crédits précisent que **Redianice est une startup qui a contacté AKATech Studio pour proposer une collaboration**. Le thème et les autres réglages par défaut ne sont pas remplacés. Les salutations restent en mémoire de l’application uniquement.
 
+Les paramètres patient comprennent désormais des demandes de **suspension temporaire** (durée au choix : 1, 7, 14, 30, 60 ou 90 jours) et de **suppression de compte** (motif dans une liste ; le choix « Autre » demande une précision). Ces formulaires créent des demandes persistées, reliées au compte et visibles dans l’onglet « Demandes de compte » de la console superadmin. L’administration peut suivre et mettre à jour leur statut. Par sécurité, l’envoi ne suspend pas la connexion et ne supprime aucun compte ou dossier automatiquement ; un administrateur doit examiner et traiter chaque demande.
+
+L’entrée « Administration » est ajoutée au répertoire des paramètres patient uniquement lorsque l’API confirme que le compte connecté est superadministrateur ; elle mène à `https://e-carnetci.vercel.app/admin/`. Les endpoints de consultation et de revue des demandes sont eux aussi réservés au superadministrateur.
+
 ## Vérifications
 
-- Tests web, légaux et site : **28 réussis, 0 échec**.
-- Tests API Django : **132 réussis, 0 échec, 3 ignorés** (incluant la lecture du thème depuis une seconde session/appareil simulé).
+- Tests web, légaux et site : **31 réussis, 0 échec**.
+- Tests API Django : **138 réussis, 0 échec, 3 ignorés** (incluant les demandes de compte et leur accès admin).
 - Build de production Next.js : réussi.
 - ESLint : aucune erreur ; quatre avertissements d’images d’avatar préexistants.
 - Contrôle des dépendances : les versions déclarées de GSAP et Lenis sont inchangées.

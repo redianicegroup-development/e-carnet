@@ -225,3 +225,39 @@ class ProductExperienceSurveyResponse(models.Model):
         ordering = ("-submitted_at",)
         verbose_name = "réponse à l’enquête d’expérience produit"
         verbose_name_plural = "réponses à l’enquête d’expérience produit"
+
+
+class AccountActionRequest(models.Model):
+    REQUEST_TYPES = (("suspension", "Suspension temporaire"), ("deletion", "Suppression du compte"))
+    REASONS = (
+        ("not_needed", "Je n’ai plus besoin du compte"),
+        ("duplicate", "J’ai un autre compte"),
+        ("privacy", "Motif lié à la confidentialité"),
+        ("experience", "Mon expérience ne correspond pas à mes besoins"),
+        ("other", "Autre motif"),
+    )
+    STATUSES = (
+        ("new", "Nouvelle"), ("in_review", "En cours d’examen"),
+        ("resolved", "Traitée"), ("rejected", "Refusée"),
+    )
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="account_action_requests")
+    request_type = models.CharField(max_length=16, choices=REQUEST_TYPES)
+    suspension_days = models.PositiveSmallIntegerField(null=True, blank=True)
+    reason = models.CharField(max_length=24, choices=REASONS, blank=True)
+    details = models.TextField(max_length=1200, blank=True)
+    status = models.CharField(max_length=16, choices=STATUSES, default="new", db_index=True)
+    submitted_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    reviewed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="reviewed_account_action_requests")
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ("-submitted_at",)
+        indexes = [models.Index(fields=("status", "submitted_at"), name="identity_acctreq_status_dt")]
+        verbose_name = "demande de gestion de compte"
+        verbose_name_plural = "demandes de gestion de compte"
+
+    def __str__(self):
+        return f"{self.get_request_type_display()} · {self.user_id} · {self.get_status_display()}"
