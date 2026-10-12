@@ -11,7 +11,10 @@
   },
   "dependencies": {
     "@ecarnet/ui": "0.1.0",
+    "@gsap/react": "^2.1.2",
     "@zxing/browser": "^0.2.1",
+    "gsap": "^3.15.0",
+    "lenis": "^1.3.26",
     "next": "^16.3.8",
     "qrcode.react": "^4.2.0",
     "react": "^19.0.0",

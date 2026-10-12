@@ -20,6 +20,8 @@ export function LandingFeedbackWidget() {
 
   useEffect(() => {
     if (!open) return;
+    const previousOverflow = document.body.style.overflow; // même verrouillage que les autres fenêtres : la page derrière ne défile pas
+    document.body.style.overflow = "hidden";
     textarea.current?.focus();
     if (!textarea.current) dialog.current?.querySelector<HTMLAnchorElement>("a[href]")?.focus();
     const onKeyDown = (event: KeyboardEvent) => {
@@ -35,7 +37,7 @@ export function LandingFeedbackWidget() {
       }
     };
     document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
+    return () => { document.removeEventListener("keydown", onKeyDown); document.body.style.overflow = previousOverflow; };
   }, [open, busy]);
 
   function close() {

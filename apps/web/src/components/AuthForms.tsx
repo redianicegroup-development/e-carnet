@@ -48,10 +48,10 @@ export function AuthForms() {
   }
   const requested = typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("next");
   const oauthNext = `?intent=login${requested ? `&next=${encodeURIComponent(safeOAuthNext(requested))}` : ""}`;
-  return <div className="auth-card">
+  return <div className="auth-card" data-mode={mode}>
     <div className="auth-card__header"><p className="brand brand--compact"><span className="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M10 3v18M13 9h2"/></svg></span> E-carnet</p></div>
     <span className="eyebrow">Un accès unique à votre carnet</span>
-    <h1>{mode === "login" ? "Bon retour parmi nous" : "Créer mon carnet"}</h1>
+    <h2 className="auth-card__title">{mode === "login" ? "Bon retour parmi nous" : "Créer mon carnet"}</h2>
     <p className="auth-subtitle">{mode === "login" ? "Connectez-vous ou créez votre compte pour continuer." : "Votre compte sera prêt en quelques étapes."}</p>
     <div className="auth-mode-switch" role="group" aria-label="Type de compte">
       <button type="button" className={mode === "login" ? "is-selected" : ""} aria-pressed={mode === "login"} onClick={() => { setMode("login"); setMessage(""); }}>J’ai déjà un compte</button>

@@ -1,0 +1,99 @@
+/* Landing immersive — « le fil de santé ». Tout est scopé (.lp-root / classes lp-*) pour ne pas toucher aux autres pages publiques.
+   Couleurs : uniquement les variables du thème choisi (palette + police) ; aucune image distante. */
+
+.split-mask { padding-block: .1em; margin-block: -.1em; }
+.lp-root { display: grid; gap: clamp(52px, 9vw, 108px); }
+
+/* Avant que le JavaScript ne prenne la main, ce qui va être animé est masqué ; sans JS, tout réapparaît après 3 s. */
+@media (prefers-reduced-motion: no-preference) {
+  .lp-root[data-motion="pending"] #hero-title,
+  .lp-root[data-motion="pending"] [data-hero-item],
+  .lp-root[data-motion="pending"] .lp-phone { opacity: 0; animation: lp-failsafe .01s 3s forwards; }
+}
+@keyframes lp-failsafe { to { opacity: 1; } }
+
+.pub-header { transition: box-shadow .3s ease, background-color .3s ease; }
+.pub-header.is-scrolled { box-shadow: 0 10px 30px -22px color-mix(in srgb, var(--text) 60%, transparent); }
+
+/* ---------- Hero ---------- */
+.lp-root .lp-hero { position: relative; isolation: isolate; overflow: hidden; border: 1px solid var(--border); border-radius: 30px; padding: clamp(26px, 5vw, 64px); min-height: clamp(560px, 82svh, 780px); padding-bottom: clamp(70px, 12vw, 138px); align-content: center; background: linear-gradient(155deg, var(--surface) 0%, var(--surface-tint) 62%, color-mix(in srgb, var(--brand-3) 30%, var(--surface-tint)) 100%); }
+.lp-hero__copy, .lp-phone { position: relative; z-index: 1; }
+.lp-hero__glow { position: absolute; z-index: 0; border-radius: 50%; pointer-events: none; will-change: transform; width: min(72vw, 640px); aspect-ratio: 1; }
+.lp-hero__glow--a { right: -14%; top: -24%; opacity: .8; background: radial-gradient(closest-side, color-mix(in srgb, var(--brand-3) 62%, transparent), transparent); }
+.lp-hero__glow--b { left: -16%; bottom: -34%; opacity: .55; background: radial-gradient(closest-side, color-mix(in srgb, var(--primary) 36%, transparent), transparent); }
+.lp-hero__pulse { position: absolute; z-index: 0; left: 0; right: 0; bottom: -22px; height: clamp(110px, 20vw, 160px); opacity: .5; pointer-events: none; }
+.lp-root .lp-hero h1 { font-size: clamp(1.9rem, 5.6vw, 3.4rem); line-height: 1.06; letter-spacing: -.035em; text-wrap: balance; }
+.lp-hero .lead { font-size: clamp(1rem, 2.2vw, 1.15rem); }
+.lp-root .lp-phone { box-shadow: 0 50px 80px -34px color-mix(in srgb, var(--text) 62%, transparent), 0 0 0 1px color-mix(in srgb, var(--text) 30%, transparent); will-change: transform; }
+
+/* ---------- Engagements : trois lignes séparées par un filet qui se trace ---------- */
+.lp-root .lp-promises { gap: 0; }
+.lp-root .lp-promise { position: relative; border: 0; border-radius: 0; background: none; padding: 30px 26px 10px 0; gap: 12px; }
+.lp-promise__rule { position: absolute; top: 0; left: 0; right: 22px; height: 2px; border-radius: 2px; background: var(--primary); transform-origin: left; }
+.lp-root .lp-promise h2 { font-size: clamp(1.1rem, 2.4vw, 1.3rem); letter-spacing: -.015em; }
+
+/* ---------- Parcours : un fil vertical qui s'allume étape par étape ---------- */
+.lp-flow { gap: 30px; }
+.lp-flow__intro { display: grid; gap: 12px; align-content: start; max-width: 46ch; }
+.lp-flow__intro h2 { font-size: clamp(1.35rem, 4.4vw, 2.2rem); line-height: 1.12; letter-spacing: -.025em; text-wrap: balance; }
+.lp-steps-wrap { position: relative; }
+.lp-steps__rail { position: absolute; z-index: 0; left: 37px; top: 34px; bottom: 34px; width: 3px; border-radius: 3px; background: var(--border); overflow: hidden; }
+.lp-steps__rail i { display: block; width: 100%; height: 100%; background: linear-gradient(var(--primary), var(--brand-3)); transform-origin: top; will-change: transform; }
+.lp-root .lp-steps { position: relative; z-index: 1; grid-template-columns: 1fr; gap: 12px; }
+.lp-root .lp-step { grid-template-columns: 46px 1fr auto; align-items: start; gap: 2px 16px; padding: 16px 18px 16px 14px; border-radius: 22px; transition: opacity .45s ease, background-color .45s ease, border-color .45s ease, transform .45s ease; }
+.lp-step__marker { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; border: 2px solid var(--border); background: var(--surface); color: var(--text-muted); transition: background-color .4s ease, color .4s ease, border-color .4s ease, box-shadow .4s ease; }
+.lp-step__body { display: grid; gap: 4px; padding-top: 2px; }
+.lp-root .lp-step__num { position: static; align-self: start; padding-top: 6px; }
+.lp-root .lp-step.is-active { border-color: color-mix(in srgb, var(--primary) 45%, var(--border)); }
+.lp-step.is-active .lp-step__marker { border-color: var(--primary); background: var(--primary); color: var(--on-primary); box-shadow: 0 0 0 7px color-mix(in srgb, var(--primary) 18%, transparent); }
+.lp-root[data-motion="ready"] .lp-step:not(.is-active) { background: color-mix(in srgb, var(--surface) 45%, transparent); border-color: color-mix(in srgb, var(--border) 70%, transparent); }
+.lp-root[data-motion="ready"] .lp-step:not(.is-active) .lp-step__body p { color: var(--text-muted); }
+
+/* ---------- Rôles : le premier (patients) prend l'avantage, la grille n'est pas symétrique ---------- */
+.lp-root .lp-heading h2 { font-size: clamp(1.35rem, 4.4vw, 2.2rem); line-height: 1.12; letter-spacing: -.025em; text-wrap: balance; }
+.lp-profile--lead { border-color: var(--primary); background: linear-gradient(165deg, var(--surface) 30%, var(--surface-tint) 100%); }
+
+/* ---------- Consentement : démonstration illustrée, pilotée par le défilement ---------- */
+.lp-root .lp-trust { display: grid; gap: 34px; align-items: center; overflow: hidden; }
+.lp-trust__copy { display: grid; gap: 18px; align-content: start; }
+.lp-root .lp-trust .lp-safeguards { grid-template-columns: 1fr; gap: 14px; }
+.lp-trust h2 { font-size: clamp(1.35rem, 4.4vw, 2.2rem); line-height: 1.12; letter-spacing: -.025em; text-wrap: balance; }
+.lp-consent { --ink: var(--text); justify-self: center; width: min(100%, 380px); display: grid; gap: 16px; padding: 22px; border-radius: 24px; background: var(--surface); color: var(--text); box-shadow: 0 40px 70px -34px rgba(0, 0, 0, .55); }
+.lp-consent__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-weight: 800; }
+.lp-consent__tag { display: inline-grid; font-size: .75rem; }
+.lp-consent__tag b, .lp-consent__btn b { grid-area: 1 / 1; font-weight: 800; opacity: 0; transition: opacity .35s ease; text-align: center; }
+.lp-consent__tag b { justify-self: end; padding: 4px 10px; border-radius: 999px; background: var(--status-declared-bg); color: var(--status-declared-fg); white-space: nowrap; }
+.lp-consent__tag .t-granted { background: var(--status-verified-bg); color: var(--status-verified-fg); }
+.lp-consent__tag .t-revoked { background: var(--status-contested-bg); color: var(--status-contested-fg); }
+.lp-consent__rows { display: grid; gap: 10px; }
+.lp-consent__rows div { display: flex; justify-content: space-between; gap: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border); font-size: .9rem; }
+.lp-consent__rows dt { color: var(--text-muted); font-weight: 600; }
+.lp-consent__rows dd { margin: 0; font-weight: 700; text-align: right; }
+.lp-consent__meter { height: 8px; border-radius: 99px; background: var(--border); overflow: hidden; }
+.lp-consent__bar { display: block; width: 100%; height: 100%; transform-origin: left; transform: scaleX(0); background: var(--primary); transition: transform 1s cubic-bezier(.2, .8, .2, 1), background-color .4s ease; }
+.lp-consent__actions { display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px; }
+.lp-consent__btn { display: inline-grid; place-items: center; min-height: 44px; padding: 8px 12px; border: 1.5px solid var(--border-strong); border-radius: 14px; font-size: .9rem; font-weight: 800; transition: background-color .35s ease, border-color .35s ease, color .35s ease, transform .35s ease; }
+.lp-consent__btn--main { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+.lp-consent__foot { margin: 0; color: var(--text-muted); font-size: .78rem; text-align: center; }
+.lp-consent[data-state="pending"] .t-pending, .lp-consent[data-state="granted"] .t-granted, .lp-consent[data-state="revoked"] .t-revoked { opacity: 1; }
+.lp-consent[data-state="granted"] .lp-consent__bar { transform: scaleX(.72); }
+.lp-consent[data-state="granted"] .lp-consent__btn--main { background: var(--surface); color: var(--danger); border-color: var(--danger); transform: scale(.98); }
+.lp-consent[data-state="revoked"] .lp-consent__bar { transform: scaleX(0); background: var(--danger); }
+.lp-consent[data-state="revoked"] .lp-consent__btn--main { background: var(--border); border-color: var(--border); color: var(--text-muted); }
+
+/* ---------- Final ---------- */
+.lp-root .lp-final { position: relative; isolation: isolate; overflow: hidden; }
+.lp-final > *:not(.pulse) { position: relative; z-index: 1; }
+.lp-final__pulse { position: absolute; z-index: 0; left: 0; right: 0; bottom: -16px; height: clamp(90px, 14vw, 130px); color: var(--on-primary); opacity: .22; pointer-events: none; }
+
+@media (min-width: 720px) {
+  .lp-root .lp-promises { grid-template-columns: repeat(3, 1fr); }
+  .lp-root .lp-profiles { grid-template-columns: 1.3fr 1fr 1fr; }
+}
+@media (min-width: 920px) {
+  .lp-root .lp-hero { grid-template-columns: 1.15fr .85fr; gap: 56px; }
+  .lp-root .lp-flow { grid-template-columns: minmax(260px, .8fr) 1.2fr; gap: 72px; align-items: start; }
+  .lp-flow__intro { position: sticky; top: 112px; }
+  .lp-root .lp-trust { grid-template-columns: 1.05fr .95fr; gap: 56px; }
+  .lp-consent { justify-self: end; }
+}

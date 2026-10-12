@@ -1,0 +1,7 @@
+/* Ligne de rythme cardiaque (PulseLine) : partagée par la landing et la page connexion. Couleur = currentColor (suit la palette). */
+.pulse { display: block; width: 100%; height: 100%; overflow: visible; color: var(--primary); --pulse-w: 5; }
+.pulse path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.pulse__track { stroke: currentColor; stroke-width: var(--pulse-w); opacity: .16; }
+.pulse__trace { stroke: currentColor; stroke-width: calc(var(--pulse-w) * 1.1); }
+.pulse__spark { stroke: var(--brand-3, currentColor); stroke-width: calc(var(--pulse-w) * 2); stroke-dasharray: .05 .95; stroke-dashoffset: 0; opacity: 0; filter: drop-shadow(0 0 8px color-mix(in srgb, var(--primary) 75%, transparent)); }
+@media (min-width: 720px) { .pulse { --pulse-w: 2.6; } }

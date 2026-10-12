@@ -1,0 +1,50 @@
+/* Page connexion / inscription immersive. Une scène sombre aux couleurs de la palette (le pouls, la respiration) et la carte claire du formulaire.
+   Tout est exprimé avec les variables du thème choisi. Corrige aussi l'espacement de la carte (le gap n'était pas appliqué) et l'icône noire du logo. */
+
+.split-mask { padding-block: .1em; margin-block: -.1em; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .auth-root[data-motion="pending"] #auth-title,
+  .auth-root[data-motion="pending"] [data-auth-item],
+  .auth-root[data-motion="pending"] .auth-landing__panel { opacity: 0; animation: auth-failsafe .01s 3s forwards; }
+}
+@keyframes auth-failsafe { to { opacity: 1; } }
+
+.auth-root { min-height: 100dvh; display: grid; }
+.auth-shell--immersive { width: min(100% - 24px, 1180px); min-height: 100dvh; padding: clamp(12px, 3vw, 28px) 0; align-content: center; gap: 0; }
+.auth-shell--immersive .auth-landing { grid-template-columns: 1fr; gap: 0; align-items: stretch; }
+
+/* ---------- Scène ---------- */
+.auth-stage { position: relative; isolation: isolate; overflow: hidden; display: grid; align-content: center; border-radius: 30px; padding: clamp(22px, 5vw, 56px); padding-bottom: clamp(64px, 14vw, 96px); color: var(--bg); background: linear-gradient(160deg, color-mix(in srgb, var(--text) 86%, var(--primary)) 0%, var(--text) 78%); }
+.auth-stage__glow { position: absolute; z-index: 0; border-radius: 50%; pointer-events: none; will-change: transform; width: min(80vw, 560px); aspect-ratio: 1; }
+.auth-stage__glow--a { right: -18%; top: -34%; opacity: .55; background: radial-gradient(closest-side, color-mix(in srgb, var(--brand-3) 70%, transparent), transparent); }
+.auth-stage__glow--b { left: -20%; bottom: -40%; opacity: .5; background: radial-gradient(closest-side, color-mix(in srgb, var(--primary) 60%, transparent), transparent); }
+.auth-stage__pulse { position: absolute; z-index: 0; left: 0; right: 0; bottom: -18px; height: clamp(86px, 16vw, 150px); color: var(--brand-3); opacity: .6; pointer-events: none; }
+.auth-stage__copy { position: relative; z-index: 1; display: grid; gap: 16px; max-width: 52ch; }
+.auth-stage .brand { color: var(--bg); }
+.auth-stage h1 { font-size: clamp(1.6rem, 5vw, 2.9rem); line-height: 1.07; letter-spacing: -.035em; text-wrap: balance; color: var(--bg); }
+.auth-stage__lead { display: none; color: color-mix(in srgb, var(--bg) 82%, transparent); line-height: 1.55; }
+.auth-stage__list { display: none; list-style: none; padding: 0; margin: 0; gap: 12px; }
+.auth-stage__list li { display: flex; gap: 12px; align-items: center; font-size: .95rem; color: color-mix(in srgb, var(--bg) 90%, transparent); }
+.auth-stage__icon { display: inline-grid; place-items: center; flex: none; width: 36px; height: 36px; border-radius: 12px; background: color-mix(in srgb, var(--bg) 14%, transparent); color: var(--brand-3); }
+.auth-stage .actions .button { min-height: 40px; background: transparent; color: var(--bg); border-color: color-mix(in srgb, var(--bg) 45%, transparent); }
+.auth-stage .actions .button:hover { background: color-mix(in srgb, var(--bg) 14%, transparent); border-color: var(--bg); }
+
+/* ---------- Carte du formulaire ---------- */
+.auth-landing__panel { position: relative; z-index: 2; margin: -28px 12px 0; }
+.auth-root .auth-card { display: grid; gap: 14px; align-content: start; padding: clamp(20px, 4vw, 32px); border: 1px solid var(--border); border-radius: 26px; background: var(--surface); box-shadow: 0 30px 60px -34px color-mix(in srgb, var(--text) 55%, transparent); }
+.auth-root .auth-card__header { display: none; }
+.auth-card__title { font-size: clamp(1.35rem, 3.6vw, 1.8rem); line-height: 1.15; letter-spacing: -.02em; }
+.auth-card .brand-mark svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; }
+.auth-root .auth-card .field input:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-color: var(--primary); }
+@media (prefers-reduced-motion: no-preference) {
+  .auth-name-grid { animation: auth-field-in .5s cubic-bezier(.2, .8, .2, 1) both; }
+}
+@keyframes auth-field-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+
+@media (min-width: 920px) {
+  .auth-shell--immersive .auth-landing { grid-template-columns: 1.08fr .92fr; gap: 0; align-items: center; }
+  .auth-stage { min-height: min(720px, calc(100dvh - 56px)); padding-right: clamp(88px, 8vw, 120px); padding-bottom: 130px; }
+  .auth-stage__lead, .auth-stage__list { display: grid; }
+  .auth-landing__panel { margin: 0 0 0 -64px; }
+}
