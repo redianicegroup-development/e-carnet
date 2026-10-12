@@ -1,0 +1,209 @@
+{
+  "name": "E-carnet — Sauge & encre",
+  "version": "4.0.0",
+  "status": "proposé — non appliqué au code",
+  "date": "2026-10-10",
+  "note": "Les valeurs « resolved » sont celles que produit resolveTheme() de packages/ui/src/themes.ts pour la palette Sauge à action #597C66. Statuts de provenance : fixes, copiés de tokens.css.",
+  "color": {
+    "brand": {
+      "sauge-action": "#597C66",
+      "encre": "#2C3A33",
+      "brume": "#F2F5EF",
+      "sauge-pale": "#D8E2D0",
+      "sauge-clair": "#A9C4A5"
+    },
+    "palette5": [
+      "#F2F5EF",
+      "#D8E2D0",
+      "#A9C4A5",
+      "#597C66",
+      "#2C3A33"
+    ],
+    "resolved": {
+      "--bg": "#F2F5EF",
+      "--surface": "#FFFFFF",
+      "--surface-tint": "#D8E2D0",
+      "--border": "#D8E2D0",
+      "--border-strong": "#848C88",
+      "--text": "#2C3A33",
+      "--text-muted": "#636E68",
+      "--primary": "#597C66",
+      "--on-primary": "#FFFFFF",
+      "--primary-text": "#557762",
+      "--focus": "#597C66"
+    },
+    "status": {
+      "declared": {
+        "fg": "#8A6100",
+        "bg": "#FFF3D6"
+      },
+      "measured": {
+        "fg": "#1F4E8C",
+        "bg": "#E6EEF8"
+      },
+      "verified": {
+        "fg": "#17704A",
+        "bg": "#E4F5EC"
+      },
+      "contested": {
+        "fg": "#A32D2D",
+        "bg": "#FBEAE8"
+      },
+      "expired": {
+        "fg": "#4A5550",
+        "bg": "#E8ECE9"
+      }
+    },
+    "danger": "#A32D2D",
+    "logo": {
+      "on-light": {
+        "cover": "#597C66",
+        "spine": "#2C3A33",
+        "knob": "#597C66",
+        "word": "#2C3A33"
+      },
+      "on-dark": {
+        "cover": "#A9C4A5",
+        "spine": "#F2F5EF",
+        "knob": "#A9C4A5",
+        "word": "#F2F5EF"
+      },
+      "mono-ink": "#2C3A33",
+      "mono-white": "#FFFFFF"
+    }
+  },
+  "contrast": {
+    "text/bg": 10.84,
+    "text-muted/bg": 4.82,
+    "text-muted/white": 5.3,
+    "on-primary/primary": 4.67,
+    "primary-text/bg": 4.54,
+    "focus/bg": 4.24,
+    "border-strong/bg": 3.13,
+    "interdit: blanc/sauge-clair": 1.89
+  },
+  "typography": {
+    "family": {
+      "body": "Plus Jakarta Sans",
+      "display": "Unbounded",
+      "mono": "JetBrains Mono",
+      "fallback": "system-ui, -apple-system, 'Segoe UI', sans-serif"
+    },
+    "weights-to-load": {
+      "Plus Jakarta Sans": [
+        400,
+        500,
+        600,
+        700,
+        800
+      ],
+      "Unbounded": [
+        600,
+        800
+      ],
+      "JetBrains Mono": [
+        500
+      ]
+    },
+    "scale": {
+      "h1": {
+        "size": "clamp(1.3rem, 4.8vw, 2rem)",
+        "weight": 800,
+        "lh": 1.15,
+        "ls": "-0.02em"
+      },
+      "h2": {
+        "size": "1.05rem",
+        "weight": 800,
+        "lh": 1.25,
+        "ls": "-0.01em"
+      },
+      "h3": {
+        "size": "1rem",
+        "weight": 700,
+        "lh": 1.3
+      },
+      "body": {
+        "size": "1rem",
+        "weight": 400,
+        "lh": 1.55
+      },
+      "lead": {
+        "size": "1.05rem",
+        "weight": 400
+      },
+      "label": {
+        "size": "0.8125rem",
+        "weight": 700
+      },
+      "caption": {
+        "size": "0.875rem",
+        "min": "14px"
+      },
+      "eyebrow": {
+        "family": "mono",
+        "size": "11px",
+        "transform": "uppercase"
+      },
+      "stat": {
+        "size": "1.9rem",
+        "weight": 800,
+        "lh": 1
+      }
+    },
+    "rules": [
+      "Corps 16 px minimum, texte secondaire 14 px minimum.",
+      "Unbounded : grands titres et chiffres clés seulement.",
+      "Pas de capitales sur du texte long."
+    ]
+  },
+  "spacing": {
+    "base": "4px",
+    "scale": [
+      4,
+      8,
+      12,
+      16,
+      24,
+      32,
+      48,
+      64
+    ],
+    "tap-min": "44px"
+  },
+  "radius": {
+    "sm": "10px",
+    "md": "16px",
+    "lg": "22px",
+    "pill": "999px"
+  },
+  "shadow": {
+    "sm": "0 1px 2px rgba(44,58,51,.08)",
+    "md": "0 10px 30px -14px rgba(44,58,51,.35)"
+  },
+  "motion": {
+    "fast": "120ms",
+    "base": "200ms",
+    "slow": "320ms",
+    "easing": "cubic-bezier(.2,.8,.2,1)",
+    "reduced-motion": "déjà géré dans tokens.css (durées ramenées à 0,01 ms)"
+  },
+  "icon": {
+    "style": "trait 1,8 px, extrémités et jointures arrondies, grille 16 px, toujours accompagné d’un libellé",
+    "status-icons": {
+      "declared": "personne",
+      "measured": "barres",
+      "verified": "coche",
+      "contested": "triangle d’alerte",
+      "expired": "horloge"
+    }
+  },
+  "assets": {
+    "logo": "apps/web/public/brand/",
+    "min-size": {
+      "symbol": "16px",
+      "horizontal-height": "24px"
+    },
+    "clear-space": "1 b (diamètre du bouton, 14 unités sur 72 × 76)"
+  }
+}

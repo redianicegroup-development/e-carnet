@@ -26,6 +26,7 @@ class ThemePreferenceTests(TestCase):
         response = self.client.get("/api/v1/identity/me/theme/")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["data"], DEFAULT_THEME)
+        self.assertEqual(response.data["account_id"], str(self.user_a.pk))
         self.assertEqual(ThemePreference.objects.get(user=self.user_a).theme, DEFAULT_THEME)
 
     def test_theme_is_private_to_each_account(self):
@@ -33,10 +34,17 @@ class ThemePreferenceTests(TestCase):
         self.client.force_authenticate(self.user_a)
         response = self.client.patch("/api/v1/identity/me/theme/", custom, format="json")
         self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["account_id"], str(self.user_a.pk))
         self.assertEqual(ThemePreference.objects.get(user=self.user_a).theme, custom)
+        another_device = APIClient()
+        another_device.force_authenticate(self.user_a)
+        response_from_another_device = another_device.get("/api/v1/identity/me/theme/")
+        self.assertEqual(response_from_another_device.data["data"], custom)
+        self.assertEqual(response_from_another_device.data["account_id"], str(self.user_a.pk))
         self.client.force_authenticate(self.user_b)
         response_b = self.client.get("/api/v1/identity/me/theme/")
         self.assertEqual(response_b.data["data"], DEFAULT_THEME)
+        self.assertEqual(response_b.data["account_id"], str(self.user_b.pk))
         self.assertNotEqual(response_b.data["data"], custom)
 
     def test_invalid_font_or_palette_is_rejected(self):
@@ -49,6 +57,7 @@ class ThemePreferenceTests(TestCase):
         response = self.client.get("/api/v1/identity/me/theme/")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["data"], DEFAULT_THEME)
+        self.assertIsNone(response.data["account_id"])
         self.assertFalse(ThemePreference.objects.exists())
         self.assertEqual(self.client.patch("/api/v1/identity/me/theme/", DEFAULT_THEME, format="json").status_code, 403)
 

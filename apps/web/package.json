@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start --hostname 0.0.0.0",
     "lint": "eslint .",
-    "test": "node --experimental-strip-types --no-warnings --test tests/auth.test.mjs tests/csrf.test.mjs tests/theme.test.mjs tests/greeting.test.mjs"
+    "test": "node --experimental-strip-types --no-warnings --test tests/auth.test.mjs tests/csrf.test.mjs tests/theme.test.mjs tests/greeting.test.mjs tests/legal.test.mjs tests/site.test.mjs"
   },
   "dependencies": {
     "@ecarnet/ui": "0.1.0",

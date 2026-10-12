@@ -7,7 +7,9 @@ import { LinkedProvidersSettingsClient } from "./LinkedProvidersSettingsClient";
 import { SettingsDirectory, type SettingsNavItem } from "./SettingsDirectory";
 import { SettingsModal } from "./SettingsModal";
 import { SettingsMoreSection } from "./SettingsMoreSection";
+import { LandingFeedbackWidget } from "./LandingFeedbackWidget";
 import { ThemeSettingsClient } from "./ThemeSettingsClient";
+import { Icon } from "./ui/Icon";
 import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
 
 type Account = { email: string; first_name: string; last_name: string; avatar_url?: string; contexts: { role: string; is_active: boolean }[] };
@@ -65,16 +67,17 @@ export function EstablishmentSettingsClient() {
     } catch (error) { setMessage(error instanceof Error ? error.message : "La déconnexion n’a pas abouti."); setSigningOut(false); }
   }
 
-  if (sessionRequired) return <section className="card settings-auth-gate" aria-labelledby="establishment-auth-title"><span className="setting-item__icon" aria-hidden="true">▣</span><h2 id="establishment-auth-title">Connexion requise</h2><p className="muted">Les coordonnées de la structure et les paramètres du compte sont réservés aux membres autorisés. Connectez-vous pour continuer.</p><div className="actions"><Link className="button primary" href="/connexion?next=%2Fetablissement%2Fparametres">Se connecter</Link><Link className="button" href="/">Retour à l’accueil</Link></div></section>;
+  if (sessionRequired) return <section className="card settings-auth-gate" aria-labelledby="establishment-auth-title"><span className="setting-item__icon" aria-hidden="true"><Icon name="building" size={20} /></span><h2 id="establishment-auth-title">Connexion requise</h2><p className="muted">Les coordonnées de la structure et les paramètres du compte sont réservés aux membres autorisés. Connectez-vous pour continuer.</p><div className="actions"><Link className="button primary" href="/connexion?next=%2Fetablissement%2Fparametres">Se connecter</Link><Link className="button" href="/">Retour à l’accueil</Link></div></section>;
 
   const selected = establishments.find((item) => item.id === selectedId) ?? establishments[0] ?? null;
   const accountName = `${account?.first_name ?? ""} ${account?.last_name ?? ""}`.trim() || account?.email || "Compte établissement";
   const navItems: SettingsNavItem[] = [
-    { id: "administratif", title: "Informations administratives", description: "Identité et statut de la structure.", icon: "ID" },
-    { id: "coordonnees", title: "Coordonnées", description: "Adresse, contacts et responsable.", icon: "⌖" },
-    { id: "compte", title: "Paramètres du compte", description: "Personnaliser l’apparence de l’application.", icon: "◉" },
-    { id: "securite", title: "Sécurité et connexion", description: "Gérer les fournisseurs liés au compte.", icon: "▣" },
-    { id: "en-savoir-plus", title: "En savoir plus", description: "Aide, informations et documents E‑Carnet.", icon: "i" },
+    { id: "administratif", title: "Informations administratives", description: "Identité et statut de la structure.", icon: "building" },
+    { id: "coordonnees", title: "Coordonnées", description: "Adresse, contacts et responsable.", icon: "pin" },
+    { id: "compte", title: "Paramètres du compte", description: "Personnaliser l’apparence de l’application.", icon: "sparkle" },
+    { id: "securite", title: "Sécurité et connexion", description: "Gérer les fournisseurs liés au compte.", icon: "lock" },
+    { id: "en-savoir-plus", title: "En savoir plus", description: "Aide, informations et documents E‑Carnet.", icon: "help" },
+    { id: "avis", title: "Votre avis", description: "Partager une suggestion ou signaler un problème.", icon: "pencil" },
   ];
   const titleFor = (id: string) => navItems.find((item) => item.id === id)?.title ?? "Paramètres";
 
@@ -105,6 +108,7 @@ export function EstablishmentSettingsClient() {
       </div></SettingsModal>}
 
       {activeSection === "en-savoir-plus" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><SettingsMoreSection /></SettingsModal>}
+      {activeSection === "avis" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Amélioration continue</span><p className="muted">Votre retour aide l’équipe E‑Carnet à améliorer l’application. N’indiquez aucune information personnelle ou médicale.</p><LandingFeedbackWidget inline /></div></SettingsModal>}
     </div>
   );
 }

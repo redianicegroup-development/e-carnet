@@ -2,12 +2,13 @@
 
 import { useConfirm } from "./modal/ConfirmProvider";
 import { clearGreetingSession } from "./modal/greeting";
+import { Icon, type IconName } from "./ui/Icon";
 
 export type SettingsNavItem = {
   id: string;
   title: string;
   description: string;
-  icon: string;
+  icon: IconName;
 };
 
 type Props = {
@@ -43,7 +44,7 @@ export function SettingsDirectory({ items, activeId, onSelect, onLogout, logoutD
               aria-controls="settings-modal"
               onClick={() => onSelect(item.id)}
             >
-              <span className="setting-item__icon" aria-hidden="true">{item.icon}</span>
+              <span className="setting-item__icon" aria-hidden="true"><Icon name={item.icon} size={20} /></span>
               <span className="setting-item__meta"><strong>{item.title}</strong><span>{item.description}</span></span>
               <span className="setting-item__chevron" aria-hidden="true">›</span>
             </button>
@@ -52,7 +53,7 @@ export function SettingsDirectory({ items, activeId, onSelect, onLogout, logoutD
       </div>
       {onLogout && (
         <button type="button" className="setting-item setting-item--danger" onClick={() => void askLogout()} disabled={logoutDisabled}>
-          <span className="setting-item__icon" aria-hidden="true">↪</span>
+          <span className="setting-item__icon" aria-hidden="true"><Icon name="logout" size={20} /></span>
           <span className="setting-item__meta"><strong>Se déconnecter</strong></span>
           <span className="setting-item__chevron" aria-hidden="true">›</span>
         </button>

@@ -2,11 +2,15 @@
 
 import { FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Icon } from "./ui/Icon";
 import { ModalIllustration } from "./modal/ModalIllustration";
 
 type FeedbackCategory = "bug" | "idea" | "question" | "other";
 
-export function LandingFeedbackWidget() {
+export function LandingFeedbackWidget({ inline = false }: { inline?: boolean }) {
+  const pathname = usePathname();
+  const inWorkspace = /^\/(patient|professionnel|etablissement|admin|staff)(\/|$)/.test(pathname);
   const [open, setOpen] = useState(false);
   const [category, setCategory] = useState<FeedbackCategory>("idea");
   const [message, setMessage] = useState("");
@@ -67,9 +71,9 @@ export function LandingFeedbackWidget() {
   }
 
   return <>
-    <button ref={opener} type="button" className="feedback-fab" aria-label="Donner votre avis" aria-haspopup="dialog" aria-expanded={open} data-track="feedback_open" onClick={() => { setOpen(true); setCategory("idea"); setSent(false); setNotice(""); }}>
-      <span aria-hidden="true">✎</span><span>Votre avis</span>
-    </button>
+    {(inline || !inWorkspace) && <button ref={opener} type="button" className={inline ? "button primary feedback-inline-trigger" : "feedback-fab"} aria-label="Donner votre avis" aria-haspopup="dialog" aria-expanded={open} data-track="feedback_open" onClick={() => { setOpen(true); setCategory("idea"); setSent(false); setNotice(""); }}>
+      <Icon name="pencil" size={18} /><span>Donner votre avis</span>
+    </button>}
     {open && <div className="feedback-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) close(); }}>
       <section ref={dialog} className="feedback-dialog" role="dialog" aria-modal="true" aria-labelledby="feedback-title" aria-describedby={category === "question" ? undefined : "feedback-privacy"}>
         <header className="feedback-dialog__header"><ModalIllustration mood={category === "question" ? "question" : failed ? "oops" : "listening"} size="sm" /><div><span className="eyebrow">E‑Carnet</span><h2 id="feedback-title">Votre avis</h2></div><button className="feedback-dialog__close" type="button" aria-label="Fermer le formulaire" disabled={busy} onClick={close}>×</button></header>

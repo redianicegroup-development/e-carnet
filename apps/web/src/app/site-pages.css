@@ -1,0 +1,103 @@
+/* Pages du site (juridiques, crédits, aide) — chargé par layout.tsx.
+   Pages juridiques — uniquement des variables de tokens.css (thème personnalisable respecté).
+   Repères « à compléter » et bandeau provisoire : couleurs fixes de statut « Déclaré » (contraste 5,02:1). */
+.legal { display: grid; gap: 18px; max-width: 820px; margin-inline: auto; }
+.legal__head { display: grid; gap: 8px; }
+.legal__meta { color: var(--text-muted); font-size: .9rem; }
+.legal__draft { display: grid; gap: 6px; padding: 14px 16px; border-radius: var(--r-md); background: var(--status-declared-bg); color: var(--status-declared-fg); border: 1.5px solid var(--status-declared-fg); font-size: .925rem; }
+.legal__draft strong { font-weight: 800; }
+.legal__summary ul { display: grid; gap: 6px; }
+.legal__toc h2 { font-size: .95rem; }
+.legal__toc ol { columns: 1; column-gap: 28px; }
+.legal__toc a { display: inline-block; padding-block: 4px; min-height: 28px; }
+.legal__section { display: grid; gap: 10px; scroll-margin-top: 88px; padding-top: 6px; }
+.legal__section h2 { font-size: 1.15rem; }
+.legal__section h3 { font-size: 1rem; margin-top: 6px; }
+.legal__section p, .legal__section li { line-height: 1.6; max-width: 72ch; }
+.legal__section ul, .legal__section ol { display: grid; gap: 4px; }
+.legal__section dl { display: grid; gap: 10px; }
+.legal__section dl > div { display: grid; gap: 2px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--surface); }
+.legal__section dt { font-weight: 800; font-size: .85rem; color: var(--text-muted); }
+.legal__section dd { margin: 0; overflow-wrap: anywhere; }
+.legal-fill { background: var(--status-declared-bg); color: var(--status-declared-fg); border-bottom: 2px dashed var(--status-declared-fg); border-radius: 4px; padding: 1px 5px; font-weight: 600; }
+.legal__table { border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--surface); overflow: hidden; }
+.legal__table table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+.legal__table th, .legal__table td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--border); line-height: 1.5; }
+.legal__table thead th { background: var(--surface-tint); font-size: .8rem; white-space: nowrap; }
+.legal__table tbody th { font-weight: 700; min-width: 150px; }
+.legal__table tr:last-child > * { border-bottom: 0; }
+.legal__tag { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: var(--r-pill); font-size: .72rem; font-weight: 700; background: var(--status-measured-bg); color: var(--status-measured-fg); vertical-align: middle; }
+.legal__others { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; padding-top: 14px; border-top: 1px solid var(--border); font-size: .9rem; }
+.legal__others span { color: var(--text-muted); }
+@media (min-width: 720px) { .legal__toc ol { columns: 2; } }
+@media (max-width: 719px) {
+  .legal__table { border: 0; background: transparent; overflow: visible; }
+  .legal__table table, .legal__table tbody, .legal__table tr { display: block; }
+  .legal__table thead { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .legal__table tr { margin-bottom: 12px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--surface); overflow: hidden; }
+  .legal__table tbody th { display: block; min-width: 0; background: var(--surface-tint); }
+  .legal__table td { display: grid; gap: 2px; }
+  .legal__table td::before { content: attr(data-label); font-size: .75rem; font-weight: 800; color: var(--text-muted); }
+  .legal__table tr:last-child > * { border-bottom: 1px solid var(--border); }
+  .legal__table tr > *:last-child { border-bottom: 0 !important; }
+}
+@media print {
+  .pub-header, .pub-footer, .legal__toc, .legal__others, .skip-link { display: none !important; }
+  .legal { max-width: none; }
+  .legal__table { overflow: visible; }
+}
+
+/* =====================================================================================================================
+   Marque : le signe remplace l'ancienne tuile « + » (voir components/ui/BrandMark.tsx). Chargé après globals.css.
+   ===================================================================================================================== */
+.brand-mark.brand-mark--logo { width: auto; height: 34px; border-radius: 0; background: none; color: inherit; display: inline-flex; align-items: center; }
+.brand--compact .brand-mark.brand-mark--logo { height: 28px; }
+.brand-mark--logo svg { display: block; height: 100%; width: auto; }
+.pub-footer__brand .brand-mark.brand-mark--logo { height: 40px; }
+.brand-logo { display: block; max-width: 100%; width: auto; }
+
+/* Retour (pages légales, crédits, aide ouvertes depuis les paramètres) */
+.back-link { display: inline-flex; align-items: center; gap: 6px; width: fit-content; min-height: 44px; padding: 0 6px; margin-left: -6px; border-radius: 10px; color: var(--primary-text); font-weight: 700; text-decoration: none; }
+.back-link:hover { text-decoration: underline; }
+
+/* Inscription et connexion : information et liens légaux */
+.auth-legal { font-size: .85rem; line-height: 1.5; }
+.auth-legal-links { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 8px; font-size: .85rem; }
+.auth-legal-links a { display: inline-flex; align-items: center; min-height: 32px; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px; }
+
+/* Paramètres › En savoir plus : groupes */
+.settings-more-group { display: grid; gap: 8px; }
+.settings-more-group h3 { font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted); margin: 6px 0 0; }
+
+/* Crédits et remerciements */
+.credits { display: grid; gap: 24px; max-width: 820px; margin-inline: auto; }
+.credits__head { display: grid; gap: 12px; justify-items: start; }
+.credits__grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+.credits__card h3 { font-size: 1.1rem; }
+.credits__role { display: inline-block; width: fit-content; padding: 3px 10px; border-radius: var(--r-pill); background: var(--primary-tint); color: var(--primary-text); font-size: .78rem; font-weight: 700; }
+.credits__list { display: grid; gap: 6px; padding-left: 20px; }
+.credits__updated { font-size: .85rem; }
+.credits section > p, .credits .stack > p { max-width: 70ch; line-height: 1.6; }
+
+/* Aide */
+.help { max-width: 860px; margin-inline: auto; }
+.help__head { display: grid; gap: 8px; }
+.help__profiles { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+.help__profile { align-items: flex-start; }
+.help__guide { display: grid; gap: 10px; scroll-margin-top: 88px; }
+.help__steps { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.help__step { align-items: flex-start; }
+.help__faq { display: grid; gap: 22px; }
+.help__faq h3 { font-size: .95rem; color: var(--text-muted); }
+.help__q summary { cursor: pointer; min-height: 28px; }
+.help__q[open] summary { margin-bottom: 6px; }
+.help__trouble, .help__glossary { display: grid; gap: 8px; margin: 0; }
+.help__trouble > div, .help__glossary > div { display: grid; gap: 2px; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--surface); }
+.help__trouble dt, .help__glossary dt { font-weight: 800; }
+.help__trouble dd, .help__glossary dd { margin: 0; color: var(--text-muted); line-height: 1.55; }
+.help h2, .help__guide h2 { scroll-margin-top: 88px; }
+@media (min-width: 720px) { .help__glossary { grid-template-columns: repeat(2, 1fr); } }
+
+/* Cibles tactiles : liens du pied de page public et « À lire aussi » (24 px minimum recommandé, 32 px visé) */
+.pub-footer nav a, .legal__others a { display: inline-flex; align-items: center; min-height: 32px; }
+.help__notice { display: grid; gap: 6px; }

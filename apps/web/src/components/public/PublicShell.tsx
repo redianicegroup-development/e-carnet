@@ -1,12 +1,15 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { BrandMark } from "../ui/BrandMark";
 import { Icon } from "../ui/Icon";
+import { PwaInstallButton } from "../PwaInstallButton";
+import { LEGAL_DOCS } from "../../lib/legal/config";
 
 export function PublicHeader() {
   return (
     <header className="pub-header">
       <Link className="brand" href="/" aria-label="Mon Carnet Numérique, accueil">
-        <span className="brand-mark" aria-hidden="true"><Icon name="plus" size={16} strokeWidth={2.4} /></span>
+        <BrandMark />
         <span className="brand-text"><strong>E-carnet</strong><small>Mon Carnet Numérique</small></span>
       </Link>
       <nav className="pub-nav" aria-label="Navigation principale">
@@ -25,18 +28,27 @@ export function PublicHeader() {
 
 export function PublicFooter() {
   return (
-    <footer className="pub-footer">
-      <div className="pub-footer__brand">
-        <span className="brand-mark" aria-hidden="true"><Icon name="plus" size={16} strokeWidth={2.4} /></span>
-        <div><strong>Mon Carnet Numérique</strong><p>Un carnet de santé personnel, contrôlé par le patient.</p></div>
+    <footer className="pub-footer" data-footer-zone="true">
+      <div className="pub-footer__panel">
+        <div className="pub-footer__top">
+          <div className="pub-footer__brand">
+            <Link className="brand" href="/" aria-label="E-Carnet, accueil"><BrandMark /><span className="brand-text"><strong>E‑Carnet</strong><small>Mon Carnet Numérique</small></span></Link>
+            <p>Un carnet de santé personnel, organisé selon vos choix.</p>
+            <PwaInstallButton />
+          </div>
+          <div className="pub-footer__columns">
+            <div><h3>Découvrir</h3><nav aria-label="Découvrir"><Link href="/#parcours">Comment ça marche</Link><Link href="/#profils">Pour qui</Link><Link href="/securite">Sécurité</Link><Link href="/a-propos">À propos</Link></nav></div>
+            <div><h3>Ressources</h3><nav aria-label="Ressources"><Link href="/faq">Centre d’aide</Link><Link href="/aide">Guides et aide</Link><Link href="/credits">Crédits</Link><Link href="/connexion">Se connecter</Link></nav></div>
+          </div>
+        </div>
+        <div aria-hidden="true" className="pub-footer__watermark">E‑CARNET</div>
+        <div className="pub-footer__bottom">
+          <span>© 2026 E‑Carnet</span>
+          <p>Utilisez uniquement des données fictives pour le moment.</p>
+          <nav aria-label="Informations légales"><Link href={LEGAL_DOCS.privacy.path}>{LEGAL_DOCS.privacy.short}</Link><Link href={LEGAL_DOCS.terms.path}>{LEGAL_DOCS.terms.short}</Link><Link href={LEGAL_DOCS.mentions.path}>{LEGAL_DOCS.mentions.short}</Link></nav>
+          <a href="#contenu">Retour en haut <Icon name="chevron" size={14} /></a>
+        </div>
       </div>
-      <nav aria-label="Pied de page">
-        <Link href="/a-propos">À propos</Link>
-        <Link href="/securite">Sécurité</Link>
-        <Link href="/aide">Aide</Link>
-        <Link href="/connexion">Connexion</Link>
-      </nav>
-      <p className="pub-footer__note">Utilisez uniquement des données fictives pour le moment. E‑Carnet ne remplace pas un avis médical.</p>
     </footer>
   );
 }

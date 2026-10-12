@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>E-carnet — Planche de marque (proposition V4)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Unbounded:wght@600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F2F5EF;--surface:#fff;--tint:#D8E2D0;--ink:#2C3A33;--muted:{{TEXT_MUTED}};--sage:#597C66;--clear:#A9C4A5;--ptext:{{PRIMARY_TEXT}};--strong:{{BORDER_STRONG}};--r:16px}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:16px;line-height:1.55}
+.wrap{max-width:1080px;margin:0 auto;padding:20px 20px 64px}
+h1,h2,h3{font-family:"Unbounded","Plus Jakarta Sans",system-ui,sans-serif;line-height:1.2;margin:0}
+h1{font-size:clamp(1.4rem,4vw,2rem);font-weight:800;letter-spacing:-.02em}
+h2{font-size:1.15rem;font-weight:800;letter-spacing:-.01em;margin:44px 0 6px}
+h3{font-size:.95rem;font-weight:600;margin:0 0 8px}
+p{margin:6px 0;max-width:70ch} .lead{color:var(--muted)} code{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:.78rem}
+.top{display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between;padding:8px 0 18px;border-bottom:1px solid var(--tint)}
+.pill{display:inline-block;padding:4px 12px;border-radius:999px;background:#FFF3D6;color:#8A6100;font-weight:700;font-size:.8rem}
+.grid{display:grid;gap:14px}.g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}.g3{grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}.g5{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.card{background:var(--surface);border:1px solid var(--tint);border-radius:var(--r);padding:18px;display:grid;gap:10px;align-content:start}
+.stage{border-radius:12px;padding:22px;display:grid;place-items:center;min-height:130px}
+.lg{display:block;max-width:100%}.lg--h{height:56px;width:auto}.lg--v{height:130px;width:auto}.lg--s{height:84px;width:auto}.lg--xs{height:28px;width:auto}.lg--w{height:36px;width:auto}
+.cap{font-size:.82rem;color:var(--muted)}
+.min24 .lg--h{height:24px}.min16 .lg--xs{height:16px}
+.clear{position:relative;display:inline-block;padding:28px;border:1.5px dashed var(--sage);border-radius:6px}
+.clear .lg--s{height:152px}
+.clear i{position:absolute;font:600 .72rem "JetBrains Mono",monospace;color:var(--ptext);font-style:normal;background:var(--bg);padding:0 4px}
+.sw{margin:0;background:var(--surface);border:1px solid var(--tint);border-radius:var(--r);overflow:hidden}
+.sw__c{height:84px}.sw figcaption{padding:12px;display:grid;gap:3px;font-size:.84rem}.sw code{color:var(--muted)}
+.chip{display:inline-block;margin-top:4px;padding:2px 8px;border-radius:999px;background:var(--bg);border:1px solid var(--tint);font-size:.74rem;font-weight:600;width:fit-content}
+.tw{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:.88rem;background:var(--surface);border:1px solid var(--tint);border-radius:12px;overflow:hidden}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--tint);vertical-align:top}th{background:var(--bg);font-size:.78rem}tr:last-child td{border-bottom:0}
+.status{list-style:none;padding:0;margin:0;display:grid;gap:8px}.status li{display:grid;grid-template-columns:130px 1fr auto;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--tint);border-radius:12px;padding:8px 12px;font-size:.88rem}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-weight:700;font-size:.78rem;width:fit-content}
+.no{position:relative}.no::after{content:"✗";position:absolute;top:6px;right:10px;color:#A32D2D;font-weight:800;font-size:1.1rem}
+.apps{display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap}.appicon{width:64px;height:64px;border-radius:15px;display:block}.appicon--b{width:84px;height:84px;border-radius:20px}
+.tab{display:flex;gap:8px;align-items:center;background:#fff;border:1px solid var(--tint);border-bottom:0;border-radius:10px 10px 0 0;padding:7px 12px;width:fit-content;font-size:.8rem}.fav{width:16px;height:16px}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff;border:1px solid var(--tint);border-radius:0 12px 12px 12px;padding:10px 14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:12px;font-weight:700;border:1.5px solid var(--sage);background:var(--sage);color:#fff;font-size:.92rem}.btn--o{background:#fff;color:var(--ptext)}
+.phones{display:flex;max-width:100%;gap:22px;flex-wrap:wrap;align-items:flex-start}
+.phone{width:290px;max-width:100%;border:7px solid var(--ink);border-radius:34px;background:var(--bg);overflow:hidden}
+.phone__h{display:flex;align-items:center;gap:8px;padding:12px 14px;background:#fff;border-bottom:1px solid var(--tint);font-weight:800;font-size:.9rem}
+.phone__b{padding:14px;display:grid;gap:10px;font-size:.86rem}
+.pc{background:#fff;border:1px solid var(--tint);border-radius:14px;padding:12px;display:grid;gap:6px}
+.chk{display:flex;gap:8px;align-items:center;min-height:30px}.chk b{display:grid;place-items:center;width:20px;height:20px;border-radius:6px;border:2px solid var(--sage);font-size:.7rem;color:#fff;background:var(--sage)}.chk b.off{background:#fff;color:transparent;border-color:var(--strong)}
+.small{font-size:.78rem;color:var(--muted)}
+.type{display:grid;gap:4px}.t1{font:800 1.9rem/1.1 "Unbounded",system-ui,sans-serif;letter-spacing:-.02em}.t2{font:800 1.25rem/1.2 "Plus Jakarta Sans",system-ui,sans-serif}.t3{font:700 1rem/1.3 "Plus Jakarta Sans",system-ui,sans-serif}.t4{font:400 1rem/1.55 "Plus Jakarta Sans",system-ui,sans-serif}.t5{font:500 .72rem "JetBrains Mono",monospace;text-transform:uppercase;letter-spacing:.06em;color:var(--ptext)}
+svg text{font-family:"Plus Jakarta Sans",system-ui,sans-serif}
+@media (max-width:560px){.status li{grid-template-columns:1fr}.lg--h{height:44px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  {{LOGO_H}}
+  <div><span class="pill">Proposition V4 — à valider, non appliquée au code</span></div>
+</header>
+<h1 style="margin-top:22px">Planche de marque E-carnet</h1>
+<p class="lead">Direction « Sauge &amp; encre ». Le signe est un carnet relié dont la couverture porte un interrupteur : <strong>c’est mon carnet, et c’est moi qui décide.</strong> Aucune croix médicale, aucun cadenas : le brief V3 les écarte pour ne pas promettre une protection absolue.</p>
+
+<h2>1 · Le signe et sa construction</h2>
+<div class="grid g2">
+  <div class="card">
+    <h3>Zone de protection</h3>
+    <div class="stage" style="background:var(--bg)">
+      <div class="clear">{{SYMBOL}}<i style="top:-9px;left:50%">b</i><i style="left:-9px;top:50%">b</i></div>
+    </div>
+    <p class="cap"><strong>b</strong> = diamètre du bouton de l’interrupteur (14 unités sur une grille où le signe mesure 72 × 76). Garder au moins <strong>1 b</strong> de vide autour du signe, sur les quatre côtés.</p>
+  </div>
+  <div class="card">
+    <h3>Ce que dit chaque élément</h3>
+    <p><strong>Dos encre</strong> : la reliure du carnet, repère immédiat à toute taille (même à 16 px).</p>
+    <p><strong>Charnière</strong> : le petit jeu entre dos et couverture garde le signe lisible en une seule couleur.</p>
+    <p><strong>Interrupteur évidé, bouton à droite</strong> : l’accès est décidé par le patient. Le bouton est <em>ouvert</em> : il ne dit pas « sécurisé », il dit « vous choisissez ».</p>
+    <p><strong>Logotype « e-carnet »</strong> : tracé au trait (épaisseur constante, bouts ronds), sans police : rien à installer, rien à licencier.</p>
+    <div class="stage" style="background:var(--bg);min-height:70px">{{WORDMARK}}</div>
+  </div>
+</div>
+
+<h2>2 · Déclinaisons</h2>
+<div class="grid g3">
+  <div class="card"><div class="stage" style="background:var(--bg)">{{LOGO_H}}</div><p class="cap">Principal, fond brume ou blanc</p></div>
+  <div class="card"><div class="stage" style="background:var(--ink)">{{LOGO_H_DARK}}</div><p class="cap">Fond encre : dos brume, couverture sauge clair</p></div>
+  <div class="card"><div class="stage" style="background:var(--sage)">{{LOGO_MONO_WHITE}}</div><p class="cap">Monochrome blanc sur sauge ou photo sombre</p></div>
+  <div class="card"><div class="stage" style="background:#fff;border:1px solid var(--tint)">{{LOGO_MONO_INK}}</div><p class="cap">Monochrome encre : tampon, fax, impression noir et blanc</p></div>
+  <div class="card"><div class="stage" style="background:var(--bg)">{{LOGO_V}}</div><p class="cap">Vertical : écran de lancement, documents</p></div>
+  <div class="card"><div class="stage apps" style="background:var(--tint);justify-content:center">{{APP_ICON}}<span class="tab" style="border-radius:10px;border:1px solid var(--tint)">{{FAVICON}} E-carnet</span></div><p class="cap">Icône d’application (zone sûre « maskable » respectée) et favicon</p></div>
+</div>
+<div class="grid g2" style="margin-top:14px">
+  <div class="card"><h3>Tailles minimales</h3>
+    <div style="display:flex;gap:26px;align-items:flex-end;flex-wrap:wrap"><div class="min16">{{SYMBOL_SM}}<div class="small">signe 16 px mini</div></div><div><svg viewBox="0 0 1 1" width="0" height="0"></svg><div class="min24">{{LOGO_H}}</div><div class="small">horizontal 24 px de haut mini</div></div></div>
+    <p class="cap">En dessous de 24 px de haut, utiliser le signe seul. Le favicon est le même signe, cadré serré.</p></div>
+  <div class="card"><h3>À ne pas faire</h3>
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <div class="stage no" style="background:var(--bg);width:104px;min-height:90px;padding:8px"><div style="transform:scaleX(1.5)">{{SYMBOL_SM}}</div></div>
+      <div class="stage no" style="background:var(--bg);width:104px;min-height:90px;padding:8px"><div style="transform:rotate(-12deg)">{{SYMBOL_SM}}</div></div>
+      <div class="stage no" style="background:var(--clear);width:104px;min-height:90px;padding:8px">{{SYMBOL_SM}}</div>
+      <div class="stage no" style="background:var(--bg);width:104px;min-height:90px;padding:8px"><div style="filter:hue-rotate(160deg) saturate(2)">{{SYMBOL_SM}}</div></div>
+    </div>
+    <p class="cap">Ni étiré, ni incliné, ni sur un fond de faible contraste (sauge sur sauge clair), ni recoloré hors palette. Pas d’ombre portée ni de contour ajouté.</p></div>
+</div>
+
+<h2>3 · Palette</h2>
+<p class="lead">Cinq couleurs de marque, tous les contrastes calculés avec l’algorithme du code (<code>resolveTheme</code>). Le texte courant ne descend jamais sous 4,5:1.</p>
+<div class="grid g5">{{SWATCHES}}</div>
+<div class="tw" style="margin-top:14px"><table>
+<caption class="cap" style="text-align:left;padding:0 0 6px;caption-side:top">Rôles dérivés et contrastes mesurés sur le fond brume #F2F5EF</caption>
+<thead><tr><th>Rôle</th><th>Valeur</th><th>Contraste</th><th>Usage</th></tr></thead><tbody>
+<tr><td>Texte secondaire</td><td><code>{{TEXT_MUTED}}</code></td><td>{{C_MUTED}}:1</td><td>Légendes, aides ; jamais sous 14 px en gris clair</td></tr>
+<tr><td>Texte de lien</td><td><code>{{PRIMARY_TEXT}}</code></td><td>{{C_PTEXT}}:1</td><td>Liens dans le texte (sauge un peu assombri)</td></tr>
+<tr><td>Bordure de champ</td><td><code>{{BORDER_STRONG}}</code></td><td>{{C_BSTRONG}}:1</td><td>Contour des champs : graphisme actif, 3:1 requis</td></tr>
+<tr><td>Anneau de focus</td><td><code>#597C66</code></td><td>{{C_FOCUS}}:1</td><td>Contour 3 px, décalé de 2 px (déjà dans le code)</td></tr>
+<tr><td>Sauge clair + texte blanc</td><td><code>#A9C4A5</code></td><td>1,89:1</td><td><strong>Interdit</strong> : accent décoratif uniquement</td></tr>
+</tbody></table></div>
+
+<h2>4 · Statuts de provenance</h2>
+<p class="lead">Fixes, jamais personnalisés. Chaque statut combine pictogramme, texte et couleur : la couleur seule ne porte jamais le sens.</p>
+<ul class="status">{{STATUS}}</ul>
+
+<h2>5 · Typographie</h2>
+<div class="grid g2">
+  <div class="card type"><span class="t5">Titres d’écran · Unbounded 800</span><div class="t1">Mon carnet</div><span class="t5">Sous-titres · Plus Jakarta Sans 800</span><div class="t2">Demande d’accès</div><span class="t5">Titre de carte · 700</span><div class="t3">Allergie : pénicilline</div><span class="t5">Texte courant · 400, 16 px</span><div class="t4">Le médecin ne voit que ce que vous avez autorisé, pendant une durée limitée.</div></div>
+  <div class="card"><h3>Règles</h3>
+    <p><strong>Corps de texte : Plus Jakarta Sans</strong> (lisible, large jeu de caractères, variable). <strong>Unbounded</strong> seulement pour les grands titres et les chiffres clés : très large, elle fatigue en texte long (c’est pourtant la police par défaut du code aujourd’hui).</p>
+    <p><strong>Mono (JetBrains Mono)</strong> : étiquettes courtes en capitales, identifiants.</p>
+    <p><strong>Gras réels</strong> : charger les graisses 400, 500, 600, 700 et 800 de Plus Jakarta Sans. Aujourd’hui seule la 400 est chargée : le navigateur fabrique un faux gras, au rendu irrégulier.</p>
+    <p>Corps 16 px minimum ; texte secondaire 14 px minimum ; zones tactiles 44 px.</p></div>
+</div>
+
+<h2>6 · Mise en situation</h2>
+<div class="card" style="gap:0">
+  <div class="tab">{{FAVICON}} E-carnet — Mon Carnet Numérique</div>
+  <div class="bar">{{LOGO_H}}<span class="btn" style="min-height:40px">Créer mon carnet</span></div>
+  <div class="apps" style="margin-top:18px"><div>{{APP_ICON}}</div><div class="cap">Écran d’accueil du téléphone — le <code>manifest.webmanifest</code> actuel ne déclare aucune icône : l’installation PWA n’affiche pas la marque.</div></div>
+</div>
+
+<div class="phones" style="margin-top:18px">
+  <div class="phone" aria-label="Maquette : écran d’autorisation du patient">
+    <div class="phone__h">{{SYMBOL_SM}} Demande d’accès</div>
+    <div class="phone__b">
+      <div class="pc"><strong>Dr Awa Exemple</strong><span class="small">Médecine générale · Clinique Exemple</span>{{B_VERIFIE}}<span class="small">souhaite consulter votre carnet</span></div>
+      <div class="pc"><strong>Ce qu’elle verra</strong>
+        <div class="chk"><b>✓</b>Pré-consultation</div><div class="chk"><b>✓</b>Déclarations de santé</div><div class="chk"><b class="off">✓</b>Consultations passées</div></div>
+      <div class="pc"><strong>Durée</strong><span>2 heures · prolongeable 2 fois 1 h</span></div>
+      <span class="btn">Autoriser pour 2 h</span><span class="btn btn--o">Refuser</span>
+      <span class="small">Vous pourrez révoquer cet accès depuis votre espace. Version de test : données fictives.</span>
+    </div>
+  </div>
+  <div class="phone" aria-label="Maquette : vue du professionnel avec provenance">
+    <div class="phone__h">{{SYMBOL_SM}} Carnet de Aminata Fictive</div>
+    <div class="phone__b">
+      <div class="pc"><span class="badge" style="background:#D8E2D0;color:#2C3A33">Accès actif · il reste 1 h 42</span><span class="small">Autorisé par la patiente · périmètre : pré-consultation, déclarations</span></div>
+      <div class="pc"><strong>Allergie : pénicilline</strong>{{B_DECLARE}}<span class="small">Dit par la patiente</span></div>
+      <div class="pc"><strong>Tension 12/8</strong>{{B_MESURE}}<span class="small">Relevé au dispensaire, 14 h 05</span></div>
+      <div class="pc"><strong>Traitement : paracétamol</strong>{{B_CONTESTE}}<span class="small">Le patient et le professionnel ne sont pas d’accord</span></div>
+    </div>
+  </div>
+</div>
+
+<h2>7 · Schéma du parcours d’autorisation</h2>
+<p class="lead">Les trois couleurs distinguent qui agit. L’accès n’existe qu’après la décision du patient.</p>
+<div class="card" style="overflow-x:auto">
+<svg viewBox="0 0 1000 214" width="1000" style="min-width:900px;max-width:100%" role="img" aria-labelledby="pt pd">
+<title id="pt">Parcours d’autorisation</title><desc id="pd">Le patient présente un QR code, le professionnel demande l’accès, le patient décide, l’accès limité s’ouvre, puis il expire ou est révoqué. Chaque étape sensible est enregistrée.</desc>
+<defs><marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 L8 4.5 L0 9 Z" fill="#2C3A33"/></marker></defs>
+<g font-size="13" fill="#2C3A33">
+<g><rect x="6" y="38" width="170" height="92" rx="14" fill="#D8E2D0" stroke="#597C66" stroke-width="2"/><text x="20" y="62" font-weight="800" font-size="11" fill="#557762">1 · PATIENT</text><text x="20" y="84">Je présente mon</text><text x="20" y="102">QR code</text><text x="20" y="120" font-size="11" fill="#636E68">valable 5 minutes</text></g>
+<g><rect x="206" y="38" width="170" height="92" rx="14" fill="#fff" stroke="#2C3A33" stroke-width="2"/><text x="220" y="62" font-weight="800" font-size="11" fill="#2C3A33">2 · PROFESSIONNEL</text><text x="220" y="84">Je fais une demande</text><text x="220" y="102">d’accès</text><text x="220" y="120" font-size="11" fill="#636E68">l’accès n’existe pas encore</text></g>
+<g><rect x="406" y="38" width="170" height="92" rx="14" fill="#D8E2D0" stroke="#597C66" stroke-width="2"/><text x="420" y="62" font-weight="800" font-size="11" fill="#557762">3 · PATIENT</text><text x="420" y="84">Je choisis ce qu’il</text><text x="420" y="102">voit, puis je décide</text><text x="420" y="120" font-size="11" fill="#636E68">autoriser ou refuser</text></g>
+<g><rect x="606" y="38" width="170" height="92" rx="14" fill="#fff" stroke="#2C3A33" stroke-width="2"/><text x="620" y="62" font-weight="800" font-size="11" fill="#2C3A33">4 · PROFESSIONNEL</text><text x="620" y="84">Accès limité</text><text x="620" y="102">au périmètre choisi</text><text x="620" y="120" font-size="11" fill="#636E68">2 h, + 2 × 1 h maximum</text></g>
+<g><rect x="806" y="38" width="188" height="92" rx="14" fill="#D8E2D0" stroke="#597C66" stroke-width="2"/><text x="820" y="62" font-weight="800" font-size="11" fill="#557762">5 · PATIENT OU TEMPS</text><text x="820" y="84">Je révoque, ou</text><text x="820" y="102">l’accès expire</text><text x="820" y="120" font-size="11" fill="#636E68">les notes validées restent</text></g>
+</g>
+<g stroke="#2C3A33" stroke-width="2" marker-end="url(#ar)"><path d="M178 84 H202"/><path d="M378 84 H402"/><path d="M578 84 H602"/><path d="M778 84 H802"/></g>
+<rect x="6" y="156" width="988" height="42" rx="12" fill="#A9C4A5"/><text x="500" y="182" font-size="13" font-weight="700" text-anchor="middle" fill="#2C3A33">Chaque étape sensible est enregistrée dans le journal d’audit, sans le contenu médical.</text>
+</svg></div>
+
+<h2>8 · Décisions à valider</h2>
+<div class="tw"><table><thead><tr><th>#</th><th>Décision</th><th>Proposition</th></tr></thead><tbody>
+<tr><td>1</td><td>Territoire et signe</td><td>« Carnet à bouton » (dos relié + interrupteur). Alternatives étudiées dans le document DA.</td></tr>
+<tr><td>2</td><td>Écriture du nom</td><td>Logotype en minuscules « e-carnet » ; « E-carnet » avec majuscule dans les textes.</td></tr>
+<tr><td>3</td><td>Thème par défaut</td><td>Passer de Lagon à Sauge ; corriger le preset (#5B7F68 → #597C66).</td></tr>
+<tr><td>4</td><td>Police du corps de texte</td><td>Plus Jakarta Sans ; Unbounded réservée aux grands titres.</td></tr>
+<tr><td>5</td><td>Droits sur le logo</td><td>Cession écrite AKATech → éditeur, à signer avant publication.</td></tr>
+</tbody></table></div>
+
+</div>
+</body>
+</html>

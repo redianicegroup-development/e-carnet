@@ -7,6 +7,7 @@ import { ApiError, apiGet } from "../../infrastructure/api/client";
 import { SPACES, type SpaceId } from "../../lib/spaces";
 import { GreetingModal } from "../modal/GreetingModal";
 import { Icon } from "../ui/Icon";
+import { BrandMark } from "../ui/BrandMark";
 
 export type SpaceAccount = {
   id: string;
@@ -41,6 +42,8 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
   const pathname = usePathname();
   const config = SPACES[space];
   const [state, setState] = useState<State>({ status: "loading" });
+  const [navCollapsed, setNavCollapsed] = useState(false);
+  function toggleNav() { setNavCollapsed((current) => !current); }
   const bare = config.bare.some((path) => pathname === path || pathname.startsWith(`${path}/`));
 
   useEffect(() => {
@@ -62,10 +65,10 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
   const moi = config.tabs[config.tabs.length - 1];
 
   return (
-    <div className={`space space--${space}${bare ? " space--bare" : ""}`}>
+    <div className={`space space--${space}${bare ? " space--bare" : ""}${navCollapsed ? " space--nav-collapsed" : ""}`}>
       <header className="space-header">
         <Link className="brand" href={bare || state.status !== "ready" ? "/" : config.home} aria-label="Mon Carnet Numérique, retour à l’accueil de l’espace">
-          <span className="brand-mark" aria-hidden="true"><Icon name="plus" size={16} strokeWidth={2.4} /></span>
+          <BrandMark />
           <span className="brand-text"><strong>E-carnet</strong><small>{config.label}</small></span>
         </Link>
         {state.status === "ready" && (
@@ -78,12 +81,13 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
 
       {!bare && (
         <nav className="space-nav" aria-label={`Navigation de l’${config.label.toLowerCase()}`}>
+          <button type="button" className="space-nav__toggle" onClick={toggleNav} aria-expanded={!navCollapsed} aria-label={navCollapsed ? "Déplier la navigation" : "Replier la navigation"}><Icon name="chevron" size={18} /><span>{navCollapsed ? "Déplier" : "Réduire"}</span></button>
           <ul>
             {config.tabs.map((tab) => {
               const active = tab.match(pathname);
               return (
                 <li key={tab.id}>
-                  <Link href={tab.href} className={active ? "space-nav__link is-active" : "space-nav__link"} aria-current={active ? "page" : undefined}>
+                  <Link href={tab.href} className={active ? "space-nav__link is-active" : "space-nav__link"} aria-label={tab.long} title={tab.long} aria-current={active ? "page" : undefined}>
                     <Icon name={tab.icon} size={22} />
                     <span className="space-nav__label">{tab.label}</span>
                     <span className="space-nav__long">{tab.long}</span>

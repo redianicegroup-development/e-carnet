@@ -7,6 +7,7 @@ import { LinkedProvidersSettingsClient } from "./LinkedProvidersSettingsClient";
 import { SettingsDirectory, type SettingsNavItem } from "./SettingsDirectory";
 import { SettingsModal } from "./SettingsModal";
 import { SettingsMoreSection } from "./SettingsMoreSection";
+import { LandingFeedbackWidget } from "./LandingFeedbackWidget";
 import { ThemeSettingsClient } from "./ThemeSettingsClient";
 import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
 
@@ -67,11 +68,12 @@ export function ProfessionalSettingsClient() {
   const activeEstablishment = establishments.find((item) => item.id === profile?.active_establishment);
   const fullName = `${account?.first_name ?? ""} ${account?.last_name ?? ""}`.trim() || account?.email || "Profil professionnel";
   const navItems: SettingsNavItem[] = [
-    { id: "professionnel", title: "Informations professionnelles", description: "Profession et spécialité déclarée.", icon: "ID" },
-    { id: "etablissement", title: activeEstablishment ? `Mon établissement — ${activeEstablishment.name}` : "Mon établissement", description: "Établissement actif et rattachements.", icon: "▣" },
-    { id: "compte", title: "Paramètres du compte", description: "Personnaliser l’apparence de l’application.", icon: "◉" },
-    { id: "securite", title: "Sécurité et connexion", description: "Gérer les fournisseurs liés au compte.", icon: "▣" },
-    { id: "en-savoir-plus", title: "En savoir plus", description: "Aide, informations et documents E‑Carnet.", icon: "i" },
+    { id: "professionnel", title: "Informations professionnelles", description: "Profession et spécialité déclarée.", icon: "stethoscope" },
+    { id: "etablissement", title: activeEstablishment ? `Mon établissement — ${activeEstablishment.name}` : "Mon établissement", description: "Établissement actif et rattachements.", icon: "building" },
+    { id: "compte", title: "Paramètres du compte", description: "Personnaliser l’apparence de l’application.", icon: "sparkle" },
+    { id: "securite", title: "Sécurité et connexion", description: "Gérer les fournisseurs liés au compte.", icon: "lock" },
+    { id: "en-savoir-plus", title: "En savoir plus", description: "Aide, informations et documents E‑Carnet.", icon: "help" },
+    { id: "avis", title: "Votre avis", description: "Partager une suggestion ou signaler un problème.", icon: "pencil" },
   ];
   const titleFor = (id: string) => navItems.find((item) => item.id === id)?.title ?? "Paramètres";
 
@@ -89,6 +91,7 @@ export function ProfessionalSettingsClient() {
       {activeSection === "securite" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Accès au compte</span><p className="muted">Les autorisations professionnelles sont vérifiées côté API. Les fournisseurs ci-dessous servent uniquement à la connexion au compte.</p><LinkedProvidersSettingsClient nextPath="/professionnel/parametres" /></div></SettingsModal>}
 
       {activeSection === "en-savoir-plus" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><SettingsMoreSection /></SettingsModal>}
+      {activeSection === "avis" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Amélioration continue</span><p className="muted">Votre retour aide l’équipe E‑Carnet à améliorer l’application. N’indiquez aucune information personnelle ou médicale.</p><LandingFeedbackWidget inline /></div></SettingsModal>}
     </div>
   );
 }

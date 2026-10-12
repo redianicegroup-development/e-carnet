@@ -17,9 +17,9 @@ class CurrentAccountThemeView(APIView):
 
     def get(self, request):
         if not request.user.is_authenticated:
-            return Response({"success": True, "data": DEFAULT_THEME})
+            return Response({"success": True, "data": DEFAULT_THEME, "account_id": None})
         preference, _ = ThemePreference.objects.get_or_create(user=request.user, defaults={"theme": DEFAULT_THEME})
-        return Response({"success": True, "data": preference.theme})
+        return Response({"success": True, "data": preference.theme, "account_id": str(request.user.pk)})
 
     def patch(self, request):
         serializer = ThemeSerializer(data=request.data)
@@ -27,4 +27,4 @@ class CurrentAccountThemeView(APIView):
         preference, _ = ThemePreference.objects.get_or_create(user=request.user, defaults={"theme": DEFAULT_THEME})
         preference.theme = serializer.validated_data
         preference.save(update_fields=["theme", "updated_at"])
-        return Response({"success": True, "data": preference.theme})
+        return Response({"success": True, "data": preference.theme, "account_id": str(request.user.pk)})

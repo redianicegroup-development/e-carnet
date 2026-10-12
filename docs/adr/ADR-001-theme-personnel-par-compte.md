@@ -16,14 +16,14 @@ Valeur par défaut pour les nouveaux comptes :
 - Police : `Unbounded` (la mention « Unbounded8 » est interprétée comme la famille Unbounded et une graisse de titre 800 ; ce n'est pas une famille de police distincte).
 - Palette : `Lagon · 5 couleurs` : `#E6FFF7`, `#B9F2E3`, `#7AD8C8`, `#4AA1A3`, `#2A4B5D`.
 
-L'API authentifie le compte avec la session et ne prend aucun identifiant de compte dans les paramètres d'écriture. La palette est validée (exactement cinq codes `#RRGGBB`, fond clair et encre foncée) et la police appartient à la liste autorisée. Les statuts de provenance et les couleurs danger restent indépendants du thème. Aucun stockage de thème dans `localStorage`.
+L'API authentifie le compte avec la session et ne prend aucun identifiant de compte dans les paramètres d'écriture. La palette est validée (exactement cinq codes `#RRGGBB`, fond clair et encre foncée) et la police appartient à la liste autorisée. Les statuts de provenance et les couleurs danger restent indépendants du thème. Le thème est enregistré en base par compte ; une copie locale non sensible, indexée par compte, est gardée dans `localStorage` pour éviter un flash du thème par défaut au chargement. La base reste la source de vérité et resynchronise la préférence entre appareils. Aucun jeton de connexion ni donnée de santé n'est stocké dans cette copie.
 
 Les 12 polices des maquettes sont déclarées via `next/font/google`, intégrées aux fichiers produits au build puis servies localement. `preload: false` évite de précharger les 12 : le navigateur ne demande que la famille effectivement utilisée. L'application ne requiert donc pas de connexion à Google Fonts à l'exécution.
 
 ## Alternatives
 
 - Thème par carnet/établissement : rejeté, car l'utilisateur demande une préférence personnelle par compte.
-- Thème stocké uniquement dans le navigateur : rejeté, car il n'est pas synchronisé entre appareils et ne garantit pas l'isolation par compte.
+- Thème stocké uniquement dans le navigateur : rejeté, car il n'est pas synchronisé entre appareils. Le cache local est seulement une copie de confort et reste isolé par compte.
 - Thème global « Sauge » uniquement : rejeté au regard de la nouvelle demande.
 
 ## Conséquences
