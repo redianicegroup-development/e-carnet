@@ -97,3 +97,29 @@
   .lp-root .lp-trust { grid-template-columns: 1.05fr .95fr; gap: 56px; }
   .lp-consent { justify-self: end; }
 }
+
+/* Conversion et animation : battement doux des tracés, sans mouvement si l’utilisateur l’a demandé. */
+@keyframes lp-heartbeat-glow {
+  0%, 100% { filter: drop-shadow(0 0 0 transparent); opacity: .42; }
+  9% { filter: drop-shadow(0 0 10px color-mix(in srgb, var(--brand-3) 70%, transparent)); opacity: .78; }
+  17% { opacity: .5; }
+  28% { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--primary) 62%, transparent)); opacity: .7; }
+  42%, 70% { filter: drop-shadow(0 0 0 transparent); opacity: .42; }
+}
+.lp-faq-section { gap: 20px; }
+.lp-faq-section .lp-heading { gap: 10px; }
+.lp-faq-section .lp-heading > p { color: var(--text-muted); }
+.lp-faq details { transition: border-color .22s ease, background-color .22s ease, transform .22s ease; }
+.lp-faq details[open] { border-color: color-mix(in srgb, var(--primary) 45%, var(--border)); background: color-mix(in srgb, var(--surface) 82%, var(--primary-tint)); }
+.lp-faq summary { min-height: 48px; display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.lp-faq summary:focus-visible, .lp-more:focus-visible { outline: 3px solid var(--primary); outline-offset: 4px; border-radius: 8px; }
+.lp-more { display: inline-flex; align-items: center; gap: 7px; width: fit-content; }
+.lp-root .lp-final .actions .button, .lp-root .lp-hero .actions .button, .lp-root .lp-profile .button { transition: transform .2s ease, box-shadow .2s ease, background-color .2s ease; }
+.lp-root .lp-final .actions .button:hover, .lp-root .lp-hero .actions .button:hover, .lp-root .lp-profile .button:hover { transform: translateY(-2px); box-shadow: 0 10px 24px -14px color-mix(in srgb, var(--text) 55%, transparent); }
+@media (prefers-reduced-motion: no-preference) {
+  .lp-hero__pulse, .lp-final__pulse { animation: lp-heartbeat-glow 2.8s ease-in-out infinite; }
+  .lp-final__pulse { animation-duration: 3.2s; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-faq details, .lp-root .lp-final .actions .button, .lp-root .lp-hero .actions .button, .lp-root .lp-profile .button { transition: none; }
+}

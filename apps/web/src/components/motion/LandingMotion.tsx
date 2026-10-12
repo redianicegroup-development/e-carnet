@@ -25,6 +25,7 @@ export function LandingMotion({ children }: { children: ReactNode }) {
 
       /* --- Ouverture : le titre est masqué par CSS (data-motion="pending") jusqu'à ce que tout soit prêt --- */
       const title = q("#hero-title")[0];
+      const heroTrace = q(".lp-hero .pulse__trace")[0];
       gsap.set(title, { visibility: "hidden" });
       gsap.set(q("[data-hero-item]"), { autoAlpha: 0, y: 18 });
       gsap.set(q(".lp-phone"), { autoAlpha: 0, y: 70, rotate: 4 });
@@ -36,12 +37,15 @@ export function LandingMotion({ children }: { children: ReactNode }) {
         onSplit: (self) => { gsap.set(title, { visibility: "visible" }); return gsap.from(self.lines, { yPercent: 115, duration: 0.95, ease: "power4.out", stagger: 0.12, delay: 0.1 }); },
       });
       gsap.delayedCall(2.5, () => { gsap.set(title, { visibility: "visible" }); }); // filet de sécurité si les polices tardent
+      const tracePulse = heroTrace ? gsap.fromTo(heroTrace, { strokeDashoffset: 1, opacity: 0.28 }, { strokeDashoffset: 0, opacity: 1, duration: 1.35, repeat: -1, repeatDelay: 1.15, ease: "power2.inOut", paused: true, immediateRender: false }) : null;
+      if (tracePulse) loops.push(tracePulse);
 
       const intro = gsap.timeline({ defaults: { ease: "power3.out" } });
       intro
         .to(q(".lp-hero .pulse__trace"), { strokeDashoffset: 0, duration: 2.2, ease: "power2.inOut" }, 0)
         .to(q("[data-hero-item]"), { autoAlpha: 1, y: 0, duration: 0.7, stagger: 0.1 }, 0.4)
-        .to(q(".lp-phone"), { autoAlpha: 1, y: 0, rotate: 0, duration: 1.2, ease: "power4.out" }, 0.3);
+        .to(q(".lp-phone"), { autoAlpha: 1, y: 0, rotate: 0, duration: 1.2, ease: "power4.out" }, 0.3)
+        .call(() => tracePulse?.play());
 
       /* --- Respiration et étincelle : boucles lentes, mises en pause dès que le hero sort de l'écran --- */
       loops.push(gsap.to(q(".lp-hero__glow"), { scale: 1.14, duration: 4.6, yoyo: true, repeat: -1, ease: "sine.inOut", stagger: 1.2 }));

@@ -23,15 +23,19 @@ test("une session expirée redirige vers la connexion et les erreurs de connexio
   assert.match(auth, /role="alertdialog" aria-modal="true"/);
 });
 
-test("les salutations d’accueil sont des notifications de 3 secondes sans description ni bouton", () => {
+test("les salutations d’accueil sont des toasts illustrés, accessibles, non bloquants et responsive", () => {
   const greeting = read("src/components/modal/GreetingModal.tsx");
   const styles = read("src/components/modal/modal.css");
-  assert.match(greeting, /setTimeout\(\(\) => setKind\(null\), 3000\)/);
+  assert.match(greeting, /setTimeout\(\(\) => setKind\(null\), 4200\)/);
   assert.match(greeting, /role="status" aria-live="polite"/);
   assert.match(greeting, /<h2[^>]*>\{titleFor\(kind/);
-  assert.doesNotMatch(greeting, /WELCOME_TEXT|cta:|<button|<p/);
+  assert.match(greeting, /(?:<img src=|<Image src=)"?\/answer\.svg/);
+  assert.match(greeting, /Votre espace personnel est prêt/);
+  assert.doesNotMatch(greeting, /WELCOME_TEXT|cta:|<button|aria-modal="true"/);
   assert.doesNotMatch(greeting, /useDialogBehavior|aria-modal="true"/);
-  assert.match(styles, /modal-backdrop--greeting \{[^}]*background: transparent; pointer-events: none;/);
+  assert.match(styles, /\.greeting-toast \{[^}]*position: fixed/);
+  assert.match(styles, /@media \(max-width: 520px\)[\s\S]*\.greeting-toast/);
+  assert.match(styles, /prefers-reduced-motion: reduce/);
 });
 test("les contenus des espaces se recentrent dans la colonne libre et le header connecté est transparent", () => {
   const styles = read("src/app/globals.css");
@@ -167,4 +171,44 @@ test("aide : aucune promesse ni terme que la revue juridique déconseille", () =
   assert.equal(new Set(questions).size, questions.length, "questions en double");
   assert.ok(questions.length >= 12, "FAQ trop courte pour une aide enrichie");
   assert.match(source, /données fictives/, "l'aide doit rappeler la version de test");
+});
+
+test("landing : FAQ visible et structurée, métadonnées indexables et liens canoniques publics", () => {
+  const home = read("src/app/page.tsx");
+  const sitemap = read("public/sitemap.xml");
+  const robots = read("public/robots.txt");
+  const llms = read("public/llms.txt");
+  assert.match(home, /FAQPage/);
+  assert.match(home, /<section className="lp-section lp-faq-section"/);
+  assert.match(home, /metadataBase: new URL\(SITE_URL\)/);
+  assert.match(home, /alternates: \{ canonical: "\/" \}/);
+  assert.match(home, /données fictives/);
+  assert.doesNotMatch(sitemap, /localhost/);
+  for (const route of ["/", "/a-propos", "/securite", "/faq", "/aide"]) assert.ok(sitemap.includes(`https://e-carnetci.vercel.app${route === "/" ? "/" : route}`), `sitemap : route ${route} absente`);
+  assert.match(robots, /Disallow: \/admin\n/);
+  assert.match(robots, /Disallow: \/patient\n/);
+  assert.match(robots, /Sitemap: https:\/\/e-carnetci\.vercel\.app\/sitemap\.xml/);
+  assert.match(llms, /^# Mon Carnet Numérique/m);
+  assert.match(llms, /uniquement des données fictives/);
+  assert.match(llms, /ne remplace pas un avis médical/);
+  assert.doesNotMatch(llms, /localhost/);
+});
+
+test("landing animée : le pouls respire et respecte le mouvement réduit", () => {
+  const motion = read("src/components/motion/LandingMotion.tsx");
+  const styles = read("src/app/landing-immersive.css");
+  assert.match(motion, /repeat: -1, repeatDelay: 1\.15/);
+  assert.match(motion, /loops\.push\(tracePulse\)/);
+  assert.match(motion, /prefers-reduced-motion: no-preference/);
+  assert.match(styles, /@media \(prefers-reduced-motion: no-preference\)/);
+  assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
+});
+
+test("admin : les nouveaux retours sont annoncés dans la navigation et les indicateurs mieux hiérarchisés", () => {
+  const admin = read("src/app/admin/page.tsx");
+  const styles = read("src/app/globals.css");
+  assert.match(admin, /admin-nav-badge/);
+  assert.match(admin, /aria-label=\{tab\.id === "feedback"[\s\S]*dashboard\.feedback_new_total/);
+  assert.match(styles, /\.admin-nav-badge/);
+  assert.match(styles, /\.space--admin \.admin-metric::before/);
 });

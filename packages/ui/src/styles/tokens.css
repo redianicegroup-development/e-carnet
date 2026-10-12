@@ -1,14 +1,14 @@
-/* Valeurs initiales du thème par défaut (Lagon). Les variables thémables sont
-   remplacées côté navigateur par applyTheme() à partir du compte connecté. */
+/* Valeurs initiales du thème par défaut (Miel + Bricolage Grotesque). Les variables
+   thémables sont remplacées côté navigateur par applyTheme() à partir du compte connecté. */
 :root {
-  --brand-1: #E6FFF7; --brand-2: #B9F2E3; --brand-3: #7AD8C8;
-  --brand-4: #4AA1A3; --brand-5: #2A4B5D;
-  --bg: #E6FFF7; --surface: #FFFFFF; --surface-tint: #B9F2E3;
-  --border: #B9F2E3; --border-strong: #718B91;
-  --text: #2A4B5D; --text-muted: #4A6670;
-  --primary: #2A4B5D; --on-primary: #FFFFFF; --primary-text: #2A4B5D;
-  --primary-tint: #B9F2E3; --focus: #2A4B5D;
-  --font-body: var(--font-unbounded, 'Unbounded'), system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --brand-1: #FFF7E6; --brand-2: #FFE3B3; --brand-3: #FFC857;
+  --brand-4: #4BAA8B; --brand-5: #1E3A34;
+  --bg: #FFF7E6; --surface: #FFFFFF; --surface-tint: #FFE3B3;
+  --border: #FFE3B3; --border-strong: #81908E;
+  --text: #1E3A34; --text-muted: #5D6F66;
+  --primary: #3B826C; --on-primary: #FFFFFF; --primary-text: #397D68;
+  --primary-tint: #FFE3B3; --focus: #469D81;
+  --font-body: var(--font-bricolage-grotesque, 'Bricolage Grotesque'), system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: var(--font-jetbrains-mono, 'JetBrains Mono'), ui-monospace, SFMono-Regular, Menlo, monospace;
   /* Statuts de provenance et danger : fixes, jamais personnalisés. */
   --status-declared-fg: #8A6100; --status-declared-bg: #FFF3D6;
@@ -19,8 +19,8 @@
   --danger: #A32D2D;
   --r-sm: 10px; --r-md: 16px; --r-lg: 22px; --r-pill: 999px;
   --tap-min: 44px; --fs-xs: 12px;
-  --shadow-sm: 0 1px 2px rgba(42, 75, 93, .08);
-  --shadow-md: 0 10px 30px -14px rgba(42, 75, 93, .35);
+  --shadow-sm: 0 1px 2px rgba(30, 58, 52, .08);
+  --shadow-md: 0 10px 30px -14px rgba(30, 58, 52, .35);
   --nav-h: 68px;
 }
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {

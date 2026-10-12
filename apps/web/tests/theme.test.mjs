@@ -1,12 +1,12 @@
-// Le thème par défaut (palette Lagon, police Unbounded) est un choix produit : tout changement doit être délibéré.
+// Le thème par défaut (palette Miel, police Bricolage Grotesque) est un choix produit : tout changement doit être délibéré.
 import assert from "node:assert/strict";
 import test from "node:test";
 
 const themes = await import("../../../packages/ui/src/themes.ts");
 
-test("le thème par défaut reste Lagon + Unbounded", () => {
-  assert.deepEqual([...themes.DEFAULT_THEME.palette], ["#E6FFF7", "#B9F2E3", "#7AD8C8", "#4AA1A3", "#2A4B5D"]);
-  assert.equal(themes.DEFAULT_THEME.font, "Unbounded");
+test("le thème par défaut est Miel + Bricolage Grotesque", () => {
+  assert.deepEqual([...themes.DEFAULT_THEME.palette], ["#FFF7E6", "#FFE3B3", "#FFC857", "#4BAA8B", "#1E3A34"]);
+  assert.equal(themes.DEFAULT_THEME.font, "Bricolage Grotesque");
 });
 
 test("toutes les palettes et toutes les polices restent proposées à la personnalisation", () => {

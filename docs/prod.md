@@ -165,6 +165,8 @@ Puis vérifier que l’appel navigateur vers l’API passe bien en HTTPS avec co
 
 Le fichier [`.env.example`](../.env.example) contient les noms locaux, sans secret réel. [`apps/web/.env.production.example`](../apps/web/.env.production.example) documente les seules variables publiques frontend à saisir aussi dans Vercel ; le fichier local `apps/web/.env.production.local` est ignoré par Git. `NEXT_PUBLIC_*` est intégré au JavaScript envoyé au navigateur : n’y placer aucun secret. [`apps/api/.env.production.example`](../apps/api/.env.production.example) aide à configurer Render : le conteneur ne charge pas ce fichier automatiquement. Pour le pilote sur les URL actuelles, l’origine web est `https://e-carnetci.vercel.app` et l’API est `https://ecarnet-api.onrender.com`. Saisir `DATABASE_URL`, `DJANGO_SECRET_KEY`, les mots de passe SMTP et les identifiants OAuth uniquement dans les variables sécurisées de Render.
 
+Pour les métadonnées canoniques, les cartes de partage et le sitemap, définir `NEXT_PUBLIC_SITE_URL` dans Vercel sur l’origine publique stable du frontend (actuellement l’URL pilote documentée ci-dessus). Remplacer cette valeur par le domaine personnalisé du projet lorsqu’il sera configuré, puis redéployer le frontend. Le fichier `apps/web/public/llms.txt` contient aussi l’URL pilote : mettre à jour ses liens lors du changement de domaine.
+
 ### Variables indispensables en production API
 
 | Variable | Valeur attendue |

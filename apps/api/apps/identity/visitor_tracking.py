@@ -9,6 +9,7 @@ from django.utils import timezone
 from .models import AnonymousVisitor
 
 VISITOR_COOKIE = "ecarnet_visitor"
+ANALYTICS_CONSENT_COOKIE = "ecarnet_analytics_consent"
 VISITOR_COOKIE_AGE = 60 * 60 * 24 * 30
 AUTH_COUNTERS = {
     "login_success": "login_success_count",
@@ -21,6 +22,11 @@ AUTH_PAGE_PREFIXES = (
     "/connexion", "/inscription", "/onboarding", "/patient/acces",
     "/professionnel/acces", "/etablissement/activation",
 )
+
+
+def has_analytics_consent(request):
+    """Only collect product analytics after the user's explicit, browser-held opt-in."""
+    return request.COOKIES.get(ANALYTICS_CONSENT_COOKIE) == "accepted"
 
 
 def normalize_page_category(raw_path):
@@ -89,18 +95,24 @@ def _touch(visitor_id, *, page_category=None, auth_event=None, click_category=No
 
 
 def record_page_view(request, raw_path):
+    if not has_analytics_consent(request):
+        return None, False
     visitor_id, set_cookie = _visitor_identity(request)
     _touch(visitor_id, page_category=normalize_page_category(raw_path))
     return visitor_id, set_cookie
 
 
 def record_auth_event(request, event):
+    if not has_analytics_consent(request):
+        return None, False
     visitor_id, set_cookie = _visitor_identity(request)
     _touch(visitor_id, auth_event=event)
     return visitor_id, set_cookie
 
 
 def record_click(request, category, raw_path):
+    if not has_analytics_consent(request):
+        return None, False
     visitor_id, set_cookie = _visitor_identity(request)
     _touch(
         visitor_id,
@@ -111,7 +123,9 @@ def record_click(request, category, raw_path):
 
 
 def track_auth_response(request, response, event):
-    """Best-effort login audit that never stores credentials or blocks authentication."""
+    """Best-effort analytics event after opt-in; never store credentials or block authentication."""
+    if not has_analytics_consent(request):
+        return response
     try:
         visitor_id, set_cookie = record_auth_event(request, event)
         return attach_visitor_cookie(request, response, visitor_id, set_cookie)
@@ -120,7 +134,7 @@ def track_auth_response(request, response, event):
 
 
 def attach_visitor_cookie(request, response, visitor_id, set_cookie):
-    if set_cookie:
+    if has_analytics_consent(request) and visitor_id and set_cookie:
         secure_cookie = not settings.DEBUG or request.is_secure()
         response.set_cookie(
             VISITOR_COOKIE,

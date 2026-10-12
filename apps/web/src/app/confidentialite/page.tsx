@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Fill, LegalDocument, LegalTable, type LegalSectionDef } from "../../components/public/LegalDocument";
+import { CookiePreferencesLink } from "../../components/CookieConsentBanner";
 import { COOKIES, HOSTS, TECH_VALIDITY } from "../../lib/legal/config";
 
 export const metadata: Metadata = {
@@ -218,9 +219,10 @@ const sections: LegalSectionDef[] = [
           head={["Nom", "Type", "Finalité", "Durée", "Attributs"]}
           rows={COOKIES.map((cookie) => [cookie.name, cookie.essential ? "Strictement nécessaire" : "Mesure de fréquentation", cookie.purpose, cookie.duration, cookie.attributes])}
         />
-        <p>Les cookies <code>sessionid</code> et <code>csrftoken</code> sont strictement nécessaires au fonctionnement du service. Le cookie <code>ecarnet_visitor</code> sert uniquement à mesurer la fréquentation : il est déposé dès la première visite, <strong>sans demander de choix préalable</strong>. Les noms, durées et attributs seront confirmés sur le domaine de production avant ouverture.</p>
+        <p>Les cookies <code>sessionid</code> et <code>csrftoken</code> sont strictement nécessaires au fonctionnement du service. Le cookie <code>ecarnet_visitor</code> sert à mesurer la fréquentation uniquement après votre accord explicite ; si vous refusez, les visites, clics et événements d’authentification ne sont pas envoyés à l’outil interne. Votre choix est conservé sur cet appareil et peut être modifié à tout moment.</p>
+        <p><CookiePreferencesLink /></p>
         <ul>
-          <li><strong>Mesure de fréquentation :</strong> elle est réalisée par un outil interne, sans service tiers. Le caractère obligatoire ou non d’une information ou d’un choix préalable (bandeau, opposition ou consentement) est soumis à validation juridique ; la version actuelle n’affiche aucun bandeau. <strong>Publicité et suivi par des tiers :</strong> aucun outil de ce type n’est utilisé à ce jour.</li>
+          <li><strong>Mesure de fréquentation :</strong> facultative, elle n’est activée qu’après avoir choisi « Accepter la mesure ». Vous pouvez la refuser ou retirer votre choix depuis ce bandeau ou cette rubrique. Elle est réalisée par un outil interne, sans service tiers. <strong>Publicité et suivi par des tiers :</strong> aucun outil de ce type n’est utilisé à ce jour.</li>
           <li><strong>Stockage local :</strong> <code>localStorage</code> conserve une copie du thème d’apparence choisi (palette et police), propre au compte actif sur cet appareil, pour l’appliquer rapidement. Le thème enregistré sur votre compte dans la base du service reste la référence et se synchronise lorsque vous utilisez un autre appareil. Cette copie locale ne contient ni donnée de santé ni secret d’authentification ; effacer les données du navigateur la supprime sans effacer votre préférence enregistrée sur le compte. L’application n’utilise pas <code>sessionStorage</code> ni <code>IndexedDB</code>. Un service worker conserve quelques pages publiques pour l’affichage sans connexion ; il ne conserve ni donnée de santé ni réponse de l’API.</li>
           <li><strong>Polices :</strong> elles sont servies par le site lui-même et ne sont pas demandées à un service de polices tiers à l’affichage.</li>
           <li><strong>Fournisseurs de connexion :</strong> si vous choisissez Google, Facebook ou Apple, ces fournisseurs déposent leurs propres cookies sur leurs domaines, selon leurs règles.</li>

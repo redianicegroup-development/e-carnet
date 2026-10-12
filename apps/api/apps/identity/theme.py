@@ -1,8 +1,8 @@
 import re
 
 DEFAULT_THEME = {
-    "font": "Unbounded",
-    "palette": ["#E6FFF7", "#B9F2E3", "#7AD8C8", "#4AA1A3", "#2A4B5D"],
+    "font": "Bricolage Grotesque",
+    "palette": ["#FFF7E6", "#FFE3B3", "#FFC857", "#4BAA8B", "#1E3A34"],
 }
 
 

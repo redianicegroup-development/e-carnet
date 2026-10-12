@@ -11,6 +11,7 @@ from .models import AnonymousVisitor, SiteFeedback
 class AnonymousClickAndFeedbackTests(TestCase):
     def setUp(self):
         self.client = APIClient()
+        self.client.cookies["ecarnet_analytics_consent"] = "accepted"
 
     def test_clicks_store_only_allowlisted_category_and_coarse_page(self):
         response = self.client.post(
@@ -25,6 +26,13 @@ class AnonymousClickAndFeedbackTests(TestCase):
         self.assertEqual(visitor.last_click_page_category, "auth")
         self.assertFalse(hasattr(visitor, "last_path"))
         self.assertNotIn("private@example.test", str(visitor.__dict__))
+
+    def test_refused_analytics_click_is_not_stored(self):
+        client = APIClient()
+        client.cookies["ecarnet_analytics_consent"] = "denied"
+        response = client.post("/api/v1/identity/analytics/clicks/", {"category": "signup", "path": "/"}, format="json")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(AnonymousVisitor.objects.count(), 0)
 
     def test_unrecognized_click_category_is_stored_as_other(self):
         response = self.client.post(

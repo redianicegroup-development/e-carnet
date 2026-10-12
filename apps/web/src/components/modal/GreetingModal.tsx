@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
+import Image from "next/image";
 import type { SpaceId } from "../../lib/spaces";
 import { decideGreeting, firstNameOf, markGreeted, readGreetingFlags, type GreetingKind } from "./greeting";
-import { ModalIllustration } from "./ModalIllustration";
 
 type Props = { account: { id: string; first_name: string; date_joined?: string }; space: SpaceId };
 
@@ -13,7 +13,12 @@ function titleFor(kind: GreetingKind, firstName: string) {
   return firstName ? `Bonsoir ${firstName}` : "Bonsoir";
 }
 
-/* Notification d'accueil non bloquante : affichée brièvement, sans action à confirmer ni description. */
+function messageFor(kind: GreetingKind) {
+  if (kind === "welcome") return "Votre espace personnel est prêt. Vous gardez la main sur votre carnet.";
+  return "Ravi de vous retrouver dans votre espace E‑Carnet.";
+}
+
+/* Accueil bref et non modal : aucune prise de focus, aucun fond bloquant et aucune action requise. */
 export function GreetingModal({ account }: Props) {
   const [kind, setKind] = useState<GreetingKind | null>(() => {
     const flags = readGreetingFlags(account.id);
@@ -22,21 +27,18 @@ export function GreetingModal({ account }: Props) {
   });
   const titleId = useId();
 
-  // Marquer dès l'affichage évite de répéter le salut lors d'un rechargement ou dans un autre onglet.
   useEffect(() => { if (kind) markGreeted(account.id, kind); }, [account.id, kind]);
   useEffect(() => {
     if (!kind) return;
-    const timer = window.setTimeout(() => setKind(null), 3000);
+    const timer = window.setTimeout(() => setKind(null), 4200);
     return () => window.clearTimeout(timer);
   }, [kind]);
 
   if (!kind) return null;
-  return (
-    <div className="modal-backdrop modal-backdrop--greeting" role="presentation">
-      <section className="modal-dialog modal-greeting" data-kind={kind} role="status" aria-live="polite" aria-atomic="true" aria-labelledby={titleId}>
-        <ModalIllustration mood={kind} size="md" />
-        <div className="modal-copy"><h2 id={titleId}>{titleFor(kind, firstNameOf(account.first_name))}</h2></div>
-      </section>
-    </div>
-  );
+  return <div className="greeting-toast" data-kind={kind} role="status" aria-live="polite" aria-atomic="true" aria-labelledby={titleId}>
+    <span className="greeting-toast__halo" aria-hidden="true" />
+    <div className="greeting-toast__character" aria-hidden="true"><Image src="/answer.svg" alt="" width={78} height={78} unoptimized /></div>
+    <div className="greeting-toast__copy"><span className="greeting-toast__eyebrow">Votre espace E‑Carnet</span><h2 id={titleId}>{titleFor(kind, firstNameOf(account.first_name))}</h2><p>{messageFor(kind)}</p></div>
+    <span className="greeting-toast__spark greeting-toast__spark--one" aria-hidden="true">✦</span><span className="greeting-toast__spark greeting-toast__spark--two" aria-hidden="true">✦</span>
+  </div>;
 }

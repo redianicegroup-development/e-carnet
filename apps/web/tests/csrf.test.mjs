@@ -35,7 +35,12 @@ test("aucun composant ne relit lui-même le cookie CSRF", async () => {
   }
   const offenders = [];
   for (const file of (await walk(fileURLToPath(new URL("../src", import.meta.url)))).filter((name) => /\.tsx?$/.test(name))) {
-    if (file.replaceAll("\\", "/").endsWith("infrastructure/api/client.ts")) continue;
+    const normalized = file.replaceAll("\\", "/");
+    if (normalized.endsWith("infrastructure/api/client.ts")) continue;
+    if (normalized.endsWith("lib/analytics-consent.ts")) {
+      assert.doesNotMatch(await readFile(file, "utf8"), /csrftoken/i, "le cookie d’opt-in ne doit pas être confondu avec le jeton CSRF");
+      continue;
+    }
     if (/document\.cookie/.test(await readFile(file, "utf8"))) offenders.push(file);
   }
   assert.deepEqual(offenders, []);

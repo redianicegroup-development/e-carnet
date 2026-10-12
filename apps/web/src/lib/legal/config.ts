@@ -138,6 +138,13 @@ export const COOKIES = [
     attributes: "Secure ; SameSite=None en configuration de test ; lisible par le script de l’application (non HttpOnly)",
   },
   {
+    name: "ecarnet_analytics_consent",
+    essential: true,
+    purpose: "Mémoriser votre choix concernant la mesure d’audience facultative.",
+    duration: "180 jours",
+    attributes: "SameSite=Lax ; Secure en HTTPS ; lisible par le script de l’application",
+  },
+  {
     name: "ecarnet_visitor",
     essential: false,
     purpose: "Mesurer la fréquentation du service : identifiant aléatoire de visiteur, sans lien avec un compte.",

@@ -1,6 +1,6 @@
 /**
  * Thème d'un carnet : 5 couleurs source (c1→c5) + 1 police.
- * Source : maquettes Espace_*.html (palette Lagon par défaut, 9 presets, 12 polices).
+ * Source : maquettes Espace_*.html (palette Miel par défaut, 9 presets, 12 polices).
  * Règle : le thème ne touche JAMAIS aux couleurs sémantiques (statuts de provenance, danger) — voir tokens.css.
  * resolveTheme() garantit WCAG 2.1 AA (CDC 13.6) quelle que soit la palette cliente.
  */
@@ -31,7 +31,7 @@ export const PALETTES = {
   argile:  { label: "Argile",  colors: ["#FFF4EC", "#F6D8C3", "#DDA57A", "#4D8F86", "#1D2F33"] },
 } as const satisfies Record<string, { label: string; colors: Palette5 }>;
 
-export const DEFAULT_THEME: ThemeConfig = { palette: PALETTES.lagon.colors, font: "Unbounded" };
+export const DEFAULT_THEME: ThemeConfig = { palette: PALETTES.miel.colors, font: "Bricolage Grotesque" };
 
 /* ---------- couleur ---------- */
 const WHITE = "#FFFFFF";

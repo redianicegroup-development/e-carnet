@@ -16,7 +16,7 @@ export const CREDITS_ORIGINS: { id: string; name: string; role: string; icon: Ic
     name: "AKATech Studio",
     role: "Conception et réalisation d’E‑Carnet",
     icon: "sparkle",
-    text: "Studio de conception du projet E‑Carnet et de son identité visuelle. Le thème turquoise Lagon reste la palette par défaut de l’application.",
+    text: "Studio de conception du projet E‑Carnet et de son identité visuelle. La palette Miel et la police Bricolage Grotesque sont les choix par défaut de l’application.",
   },
 ];
 

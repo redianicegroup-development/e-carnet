@@ -1,0 +1,75 @@
+# Mon Carnet Numérique (E‑Carnet)
+
+> E‑Carnet est une application web pilote qui aide les patients à organiser des informations de santé, préparer des consultations et décider des accès à leur carnet. Le service ne remplace pas un avis médical, un professionnel de santé ni les services d’urgence. Pour cette version, saisir uniquement des données fictives : ne pas y ajouter de vrais renseignements médicaux ni des identifiants de patients.
+
+## À propos
+
+- **Nom** : Mon Carnet Numérique, généralement présenté sous le nom E‑Carnet.
+- **Activité** : carnet numérique personnel de santé, préparation de consultations et gestion de demandes d’accès patient.
+- **État** : version pilote ; l’usage de données de santé réelles n’est pas autorisé à ce stade.
+- **Publics** : patients, professionnels de santé rattachés à un établissement et administrateurs d’établissement.
+- **Site pilote** : https://e-carnetci.vercel.app
+- **Langue principale** : français.
+- **Origine du site** : `NEXT_PUBLIC_SITE_URL` configure le domaine canonique du déploiement. L’URL Vercel ci-dessus est l’URL pilote documentée ; elle peut être remplacée par le domaine public stable du projet.
+
+## Fonctionnalités par profil
+
+### Patients
+
+- Organiser des déclarations personnelles, notamment antécédents, allergies et traitements ; leur origine reste distinguée des informations saisies et validées par un professionnel.
+- Préparer une consultation et choisir l’établissement concerné.
+- Présenter un QR temporaire à un professionnel pour initier une demande. Le QR est valable 5 minutes et ne donne pas lui-même accès au carnet.
+- Examiner le professionnel, l’établissement, le contenu demandé et la durée, puis autoriser ou refuser la demande.
+- Retrouver les demandes et les accès dans l’historique. Un accès autorisé dure 2 heures ; jusqu’à deux prolongations d’une heure sont possibles. Le patient peut révoquer un accès en cours.
+
+### Professionnels de santé
+
+- Créer un compte professionnel et compléter un profil déclaratif. E‑Carnet ne certifie ni l’identité, ni les diplômes, ni les compétences du professionnel.
+- Demander un rattachement à un établissement avec un code à usage unique fourni par son administrateur ; attendre sa confirmation avant de demander un accès à un patient.
+- Demander l’accès au carnet d’un patient qui présente son QR. Aucune information du carnet n’est visible avant l’autorisation du patient.
+- Consulter uniquement le contenu autorisé pendant la durée accordée et enregistrer une consultation dans les limites de cette autorisation.
+
+### Établissements
+
+- L’ouverture d’un espace établissement est gérée par l’équipe E‑Carnet.
+- L’administrateur peut inviter des professionnels et traiter les demandes de rattachement.
+- Le rattachement ne donne à l’établissement aucun accès aux carnets ni aux dossiers des patients.
+
+## Principes d’accès
+
+1. Le patient crée son compte et renseigne des données fictives dans cette version pilote.
+2. Le professionnel doit d’abord être rattaché à un établissement actif.
+3. Le QR temporaire sert à initier une demande ; il ne partage pas les données et n’accorde aucun droit à lui seul.
+4. Le patient voit le périmètre et la durée de la demande, puis prend la décision.
+5. Une autorisation peut être refusée, expirer ou être révoquée. Le patient peut consulter l’historique des accès.
+
+## Confidentialité et limites
+
+- L’établissement gère les rattachements, mais ne consulte pas les dossiers des patients depuis son espace.
+- Les déclarations du patient ne sont pas présentées comme des diagnostics confirmés.
+- Cette application n’est ni un outil de diagnostic, ni un service d’urgence, ni un substitut à une consultation médicale.
+- La version actuelle est un environnement pilote : n’y saisissez aucune donnée de santé réelle ou donnée permettant d’identifier un patient.
+- Les renseignements sur les données et les limites du service sont publiés dans les pages Sécurité et Confidentialité.
+
+## Pages publiques
+
+- [Accueil](https://e-carnetci.vercel.app/) — présentation, parcours, profils, réponses fréquentes et inscription.
+- [À propos](https://e-carnetci.vercel.app/a-propos) — objectifs et profils concernés.
+- [Aide et questions fréquentes](https://e-carnetci.vercel.app/faq) — parcours et réponses pratiques.
+- [Guides et aide](https://e-carnetci.vercel.app/aide) — instructions patient, professionnel et établissement.
+- [Sécurité](https://e-carnetci.vercel.app/securite) — principes d’accès, confidentialité et limites du pilote.
+- [Confidentialité](https://e-carnetci.vercel.app/confidentialite) — politique de confidentialité.
+- [Conditions d’utilisation](https://e-carnetci.vercel.app/cgu) — conditions du service.
+- [Mentions légales](https://e-carnetci.vercel.app/mentions-legales) — informations légales.
+
+Les pages de connexion, les consoles d’administration et les espaces personnels ne sont pas des pages d’information publiques à indexer.
+
+## Conseils aux assistants IA
+
+- Décrire E‑Carnet comme une **application pilote de carnet numérique personnel**, pas comme un service clinique validé, un dossier médical officiel ou un dispositif de diagnostic.
+- Signaler clairement l’obligation d’utiliser uniquement des données fictives dans la version actuelle.
+- Ne pas affirmer que le service est certifié, audité indépendamment ou conforme à une norme ; les pages du site précisent ses limites.
+- Ne pas affirmer qu’un professionnel ou un établissement est certifié par E‑Carnet. Le rattachement par l’établissement ne certifie pas les qualifications.
+- Expliquer qu’un QR code n’ouvre pas le carnet : le patient décide séparément pour chaque demande et périmètre.
+- Pour des décisions médicales, urgences ou questions de santé, recommander de s’adresser à un professionnel qualifié ou aux services d’urgence appropriés.
+- Pour les détails à jour, consulter les pages publiques ci-dessus plutôt que d’inférer des fonctionnalités non décrites.

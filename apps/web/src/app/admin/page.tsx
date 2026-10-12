@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, KeyboardEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ApiError, apiGet, apiPatch, apiPost } from "../../infrastructure/api/client";
 import { AdminActivityCharts, type DailyActivityPoint } from "../../components/AdminActivityCharts";
@@ -9,6 +9,7 @@ import { AdminSettingsClient } from "../../components/AdminSettingsClient";
 import { useConfirm } from "../../components/modal/ConfirmProvider";
 import { Icon, type IconName } from "../../components/ui/Icon";
 import { BrandMark } from "../../components/ui/BrandMark";
+import { ScreenLoader } from "../../components/ui/ScreenLoader";
 
 type Visitor = {
   visitor_id: string; first_seen: string; last_seen: string; page_view_count: number;
@@ -39,6 +40,7 @@ type Dashboard = {
   daily_activity: DailyActivityPoint[];
   visitors: Visitor[]; feedback: Feedback[]; survey_responses: SurveyResponse[];
 };
+type AdminProfile = { email: string; first_name: string; last_name: string; avatar_url?: string };
 type AdminTab = "overview" | "activity" | "feedback" | "survey" | "establishments" | "account-requests" | "settings";
 
 const tabs: { id: AdminTab; label: string; short: string; icon: IconName }[] = [
@@ -93,6 +95,8 @@ export default function AdminPage() {
   const [surveySearch, setSurveySearch] = useState("");
   const [busyFeedbackId, setBusyFeedbackId] = useState("");
   const [navCollapsed, setNavCollapsed] = useState(false);
+  const [adminProfile, setAdminProfile] = useState<AdminProfile | null>(null);
+  const profileRequested = useRef(false);
 
   const loadDashboard = useCallback(async (silent = false, manual = false) => {
     if (!silent) setLoading(true);
@@ -100,6 +104,10 @@ export default function AdminPage() {
     try {
       const data = await apiGet<Dashboard>("/api/v1/identity/admin/dashboard/");
       setDashboard(data);
+      if (!profileRequested.current) {
+        profileRequested.current = true;
+        void apiGet<AdminProfile>("/api/v1/identity/me/").then(setAdminProfile).catch(() => undefined);
+      }
       setMessage("");
       setRefreshMessage("");
     } catch (error) {
@@ -136,7 +144,7 @@ export default function AdminPage() {
 
   async function signOut() {
     try { await apiPost("/api/v1/identity/logout/"); } catch { /* la session peut déjà être expirée */ }
-    setDashboard(null); setMessage("Session administrateur fermée.");
+    setDashboard(null); setAdminProfile(null); profileRequested.current = false; setMessage("Session administrateur fermée.");
   }
 
   async function askSignOut() {
@@ -173,7 +181,7 @@ export default function AdminPage() {
     document.getElementById(`admin-tab-${tabs[next].id}`)?.focus();
   }
 
-  if (loading && !dashboard) return <main className="shell admin-shell"><section className="card"><p className="muted">Vérification de la session…</p></section></main>;
+  if (loading && !dashboard) return <main className="admin-loader"><ScreenLoader label="Vérification de la session administrateur…" /></main>;
 
   if (!dashboard) return <main className="shell admin-shell"><section className="admin-login card">
     <span className="eyebrow">E‑Carnet · Administration</span><h1>Console d’administration</h1>
@@ -211,13 +219,22 @@ export default function AdminPage() {
     return !query || [item.improvement_suggestion, ...item.appreciated.map((value) => appreciatedLabel[value] ?? value), ...item.pain_points.map((value) => painPointLabel[value] ?? value), String(item.rating)].some((value) => value.toLowerCase().includes(query));
   });
 
+  const adminName = [adminProfile?.first_name, adminProfile?.last_name].filter(Boolean).join(" ") || adminProfile?.email || "Administrateur";
+  const adminInitials = `${adminProfile?.first_name?.[0] ?? ""}${adminProfile?.last_name?.[0] ?? ""}`.toUpperCase() || adminProfile?.email?.[0]?.toUpperCase() || "A";
+
   return <div className={`space space--admin${navCollapsed ? " space--nav-collapsed" : ""}`}>
-    <header className="space-header admin-space-header"><a className="brand" href="/admin/" aria-label="E-Carnet, administration"><BrandMark /><span className="brand-text"><strong>E-carnet</strong><small>Administration</small></span></a><div className="admin-heading"><div><span className="eyebrow">Console privée</span><h1>Administration E‑Carnet</h1><p className="muted">Données actualisées {formatDate(dashboard.generated_at)} · synchronisation automatique toutes les 2 min</p></div><div className="admin-actions"><button className="button secondary" onClick={() => void loadDashboard(true, true)} disabled={manualRefreshing}>{manualRefreshing ? "Actualisation…" : "Actualiser"}</button><button className="button ghost" onClick={() => void askSignOut()}>Déconnexion</button></div></div></header>
     <nav className="space-nav space-nav--admin" aria-label="Navigation de l’administration">
+      <div className="admin-sidebar-brand"><a className="brand" href="/admin/" aria-label="E‑Carnet, administration"><BrandMark /><span className="brand-text"><strong>E-carnet</strong><small>Console admin</small></span></a></div>
       <button type="button" className="space-nav__toggle" onClick={() => setNavCollapsed((collapsed) => !collapsed)} aria-expanded={!navCollapsed} aria-label={navCollapsed ? "Déplier la navigation" : "Replier la navigation"}><Icon name="chevron" size={18} /><span>{navCollapsed ? "Déplier" : "Réduire"}</span></button>
-      <ul role="tablist" aria-label="Sections de l’administration" onKeyDown={onTabKeyDown}>{tabs.map((tab) => <li key={tab.id}><button id={`admin-tab-${tab.id}`} type="button" role="tab" aria-selected={activeTab === tab.id} aria-controls={`admin-panel-${tab.id}`} tabIndex={activeTab === tab.id ? 0 : -1} className={`space-nav__link admin-nav-link${activeTab === tab.id ? " is-active" : ""}`} aria-label={tab.label} title={tab.label} onClick={() => setActiveTab(tab.id)}><Icon name={tab.icon} size={22} /><span className="space-nav__label">{tab.short}</span><span className="space-nav__long">{tab.label}{tab.id === "feedback" && dashboard.feedback_new_total > 0 ? ` · ${dashboard.feedback_new_total} nouveau(x)` : ""}</span></button></li>)}</ul>
+      <ul role="tablist" aria-label="Sections de l’administration" onKeyDown={onTabKeyDown}>{tabs.map((tab) => <li key={tab.id}><button id={`admin-tab-${tab.id}`} type="button" role="tab" aria-selected={activeTab === tab.id} aria-controls={`admin-panel-${tab.id}`} tabIndex={activeTab === tab.id ? 0 : -1} className={`space-nav__link admin-nav-link${activeTab === tab.id ? " is-active" : ""}`} aria-label={tab.id === "feedback" && dashboard.feedback_new_total > 0 ? `${tab.label}, ${dashboard.feedback_new_total} nouveau(x)` : tab.label} title={tab.label} onClick={() => setActiveTab(tab.id)}><Icon name={tab.icon} size={22} /><span className="space-nav__label">{tab.short}</span><span className="space-nav__long">{tab.label}</span>{tab.id === "feedback" && dashboard.feedback_new_total > 0 && <span className="admin-nav-badge" aria-hidden="true">{dashboard.feedback_new_total > 99 ? "99+" : dashboard.feedback_new_total}</span>}</button></li>)}</ul>
+      <button type="button" className={`admin-sidebar-profile${activeTab === "settings" ? " is-active" : ""}`} onClick={() => setActiveTab("settings")} aria-label={`Ouvrir les paramètres du compte ${adminName}`} title={adminName}>
+        <span className="admin-sidebar-avatar" aria-hidden="true" style={adminProfile?.avatar_url ? { backgroundImage: `url(${JSON.stringify(adminProfile.avatar_url)})` } : undefined}>{adminProfile?.avatar_url ? null : adminInitials}</span>
+        <span className="admin-sidebar-profile__copy"><strong>{adminName}</strong><small>Profil et paramètres</small></span>
+        <Icon name="chevron" size={17} />
+      </button>
     </nav>
     <main className="space-main admin-space-main">
+      <header className="admin-page-heading"><div><span className="eyebrow">Console privée</span><h1>Administration E‑Carnet</h1><p className="muted">Actualisé {formatDate(dashboard.generated_at)} · synchronisation automatique toutes les 2 min</p></div><button type="button" className={`admin-refresh-icon${manualRefreshing ? " is-refreshing" : ""}`} aria-label="Actualiser les données" title="Actualiser les données" aria-busy={manualRefreshing} disabled={manualRefreshing} onClick={() => void loadDashboard(true, true)}><Icon name="refresh" size={20} /></button></header>
       {refreshMessage && <p className="admin-refresh-note" role="status">{refreshMessage}</p>}
       <div className="admin-workspace__content">
 
@@ -280,7 +297,7 @@ export default function AdminPage() {
       <article className="card"><span className="eyebrow">Limites du rôle</span><h2>Contrôle administratif, pas clinique</h2><p className="muted">Le staff E‑Carnet ne vérifie pas les justificatifs personnels du médecin dans ce parcours. L’établissement vérifie ses médecins, émet un code temporaire et décide des demandes de rattachement. L’espace établissement n’accède jamais aux dossiers médicaux.</p></article>
     </section>}
     {activeTab === "account-requests" && <section id="admin-panel-account-requests" role="tabpanel" aria-labelledby="admin-tab-account-requests"><AdminAccountActionRequestsClient /></section>}
-    {activeTab === "settings" && <section id="admin-panel-settings" role="tabpanel" aria-labelledby="admin-tab-settings"><AdminSettingsClient /></section>}
+    {activeTab === "settings" && <section id="admin-panel-settings" role="tabpanel" aria-labelledby="admin-tab-settings"><AdminSettingsClient onLogout={() => void askSignOut()} /></section>}
       </div>
     </main>
   </div>;

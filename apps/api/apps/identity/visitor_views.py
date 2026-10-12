@@ -19,6 +19,7 @@ from .visitor_tracking import (
     VISITOR_COOKIE,
     _visitor_identity,
     attach_visitor_cookie,
+    has_analytics_consent,
     normalize_page_category,
     record_click,
     record_page_view,
@@ -37,8 +38,8 @@ class VisitorCookieThrottle(SimpleRateThrottle):
         try:
             visitor_id = str(uuid.UUID(raw_cookie))
         except (ValueError, TypeError, AttributeError):
-            # Let the first request through; it installs the random cookie used to limit repeats.
-            return None
+            # Until an opted-in cookie exists, throttle transiently by IP.
+            return self.cache_format % {"scope": self.scope, "ident": self.get_ident(request)}
         return self.cache_format % {"scope": self.scope, "ident": visitor_id}
 
 
@@ -75,6 +76,8 @@ class AnonymousVisitView(APIView):
     throttle_classes = [VisitorCookieThrottle]
 
     def post(self, request):
+        if not has_analytics_consent(request):
+            return Response({"success": True, "data": {"survey_due": False}})
         raw_path = request.data.get("path", "/")
         if not isinstance(raw_path, str) or len(raw_path) > 512:
             return Response({"success": False, "message": "Chemin invalide."}, status=400)
@@ -95,6 +98,8 @@ class AnonymousClickView(APIView):
     throttle_classes = [VisitorClickThrottle]
 
     def post(self, request):
+        if not has_analytics_consent(request):
+            return Response({"success": True})
         category = request.data.get("category", "other")
         raw_path = request.data.get("path", "/")
         if not isinstance(category, str) or len(category) > 40 or not isinstance(raw_path, str) or len(raw_path) > 512:
@@ -158,6 +163,8 @@ class ProductSurveySubmitView(APIView):
     throttle_classes = [VisitorSurveyThrottle]
 
     def post(self, request):
+        if not has_analytics_consent(request):
+            return Response({"success": False, "message": "La mesure d’audience n’est pas activée."}, status=403)
         try:
             visitor_id = uuid.UUID(request.COOKIES.get(VISITOR_COOKIE, ""))
         except (ValueError, TypeError, AttributeError):
@@ -201,6 +208,8 @@ class ProductActionSurveyTriggerView(APIView):
     throttle_classes = [VisitorSurveyThrottle]
 
     def post(self, request):
+        if not has_analytics_consent(request):
+            return Response({"success": True, "data": {"survey_due": False}})
         visitor_id, set_cookie = _visitor_identity(request)
         now = timezone.now()
         AnonymousVisitor.objects.get_or_create(visitor_id=visitor_id, defaults={"last_seen": now})
@@ -231,6 +240,8 @@ class ProductExperienceSurveySubmitView(APIView):
     throttle_classes = [VisitorSurveyThrottle]
 
     def post(self, request):
+        if not has_analytics_consent(request):
+            return Response({"success": False, "message": "La mesure d’audience n’est pas activée."}, status=403)
         try:
             visitor_id = uuid.UUID(request.COOKIES.get(VISITOR_COOKIE, ""))
         except (ValueError, TypeError, AttributeError):

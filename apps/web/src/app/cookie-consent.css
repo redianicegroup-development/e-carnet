@@ -1,0 +1,31 @@
+.cookie-consent { position: fixed; z-index: 1500; left: max(18px, env(safe-area-inset-left)); bottom: max(18px, env(safe-area-inset-bottom)); display: grid; grid-template-columns: 76px minmax(0, 1fr); align-items: center; gap: 15px; width: min(510px, calc(100vw - 36px)); max-height: min(82dvh, 620px); overflow: auto; padding: 18px; border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--border)); border-radius: 22px; background: var(--surface); color: var(--text); box-shadow: 0 22px 70px rgba(14, 31, 28, .2); }
+.cookie-consent__illustration { display: grid; place-items: center; width: 76px; height: 76px; border-radius: 22px; background: color-mix(in srgb, var(--primary) 12%, var(--surface)); color: var(--primary-text); }
+.cookie-consent__illustration img { width: 60px; height: 60px; object-fit: contain; }
+.cookie-consent__copy { display: grid; gap: 8px; min-width: 0; }
+.cookie-consent__eyebrow { color: var(--primary-text); font-size: .68rem; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; }
+.cookie-consent__copy h2 { font-size: 1.12rem; line-height: 1.22; }
+.cookie-consent__copy p { color: var(--text-muted); font-size: .82rem; line-height: 1.45; }
+.cookie-consent__copy > a { width: fit-content; color: var(--primary-text); font-size: .8rem; font-weight: 700; text-decoration-thickness: 1px; }
+.cookie-consent__actions { display: grid; grid-template-columns: 1.2fr .8fr; gap: 8px; margin-top: 2px; }
+.cookie-consent__actions button { min-height: 42px; padding: 8px 12px; border: 1.5px solid var(--border-strong); border-radius: 12px; background: var(--surface); color: var(--text); font: inherit; font-size: .82rem; font-weight: 750; cursor: pointer; transition: transform .16s ease, background-color .16s ease, border-color .16s ease; }
+.cookie-consent__actions button:hover { transform: translateY(-1px); border-color: var(--primary); background: var(--surface-tint); }
+.cookie-consent__actions .cookie-consent__accept { border-color: var(--primary); background: var(--primary); color: var(--on-primary); }
+.cookie-consent__actions .cookie-consent__accept:hover { filter: brightness(.94); background: var(--primary); }
+.cookie-consent__actions button:focus-visible, .cookie-preferences-link:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.cookie-preferences-link { min-height: 36px; padding: 4px 0; border: 0; background: transparent; color: var(--primary-text); font: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+@media (max-width: 600px) {
+  .cookie-consent { left: max(10px, env(safe-area-inset-left)); right: max(10px, env(safe-area-inset-right)); bottom: max(10px, env(safe-area-inset-bottom)); grid-template-columns: 52px minmax(0, 1fr); gap: 11px; width: auto; max-height: min(78dvh, 560px); padding: 14px; border-radius: 20px; }
+  .cookie-consent__illustration { width: 52px; height: 52px; border-radius: 16px; }
+  .cookie-consent__illustration img { width: 44px; height: 44px; }
+  .cookie-consent__copy { gap: 6px; }
+  .cookie-consent__copy h2 { font-size: .99rem; }
+  .cookie-consent__copy p { font-size: .76rem; }
+  .cookie-consent__copy > a { font-size: .76rem; }
+  .cookie-consent__actions { grid-template-columns: 1fr 1fr; }
+  .cookie-consent__actions button { font-size: .76rem; padding-inline: 8px; }
+}
+@media (max-width: 370px) { .cookie-consent { grid-template-columns: 42px minmax(0,1fr); gap: 8px; padding: 12px; } .cookie-consent__illustration { width: 42px; height: 42px; } .cookie-consent__illustration img { width: 36px; height: 36px; } }
+@media (prefers-reduced-motion: no-preference) { .cookie-consent { animation: cookie-consent-in .38s cubic-bezier(.2,.8,.2,1) both; } .cookie-consent__illustration img { animation: cookie-wiggle 3.6s ease-in-out infinite; transform-origin: 55% 65%; } }
+@keyframes cookie-consent-in { from { opacity: 0; transform: translateY(16px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes cookie-wiggle { 0%, 78%, 100% { transform: rotate(0) translateY(0); } 84% { transform: rotate(-7deg) translateY(-2px); } 90% { transform: rotate(6deg) translateY(-1px); } 96% { transform: rotate(-3deg); } }
+@media (prefers-reduced-motion: reduce) { .cookie-consent, .cookie-consent__illustration img, .cookie-consent__actions button { animation: none; transition: none; } }

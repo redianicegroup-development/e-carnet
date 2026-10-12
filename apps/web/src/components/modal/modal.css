@@ -54,3 +54,42 @@
 @keyframes modal-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes modal-rise { from { opacity: 0; transform: translateY(14px) scale(.98); } to { opacity: 1; transform: none; } }
 @keyframes modal-pop { from { opacity: 0; transform: scale(.7); } to { opacity: 1; transform: none; } }
+
+/* Confirmation : boîte plus confortable, conséquences lisibles et actions à distance suffisante. */
+.modal-dialog.modal-confirm { width: min(100%, 580px); gap: 20px; padding: clamp(24px, 4vw, 36px); border-radius: 24px; }
+.modal-confirm .modal-copy { gap: 10px; }
+.modal-confirm .modal-copy h2 { font-size: clamp(1.3rem, 2vw, 1.55rem); }
+.modal-confirm .modal-message { max-width: 52ch; }
+.modal-confirm .modal-note { width: 100%; text-align: left; }
+@media (min-width: 640px) {
+  .modal-dialog.modal-confirm { grid-template-columns: 88px minmax(0, 1fr); justify-items: stretch; align-items: center; text-align: left; }
+  .modal-confirm .modal-illustration { justify-self: center; }
+  .modal-confirm .modal-copy { justify-items: start; }
+  .modal-confirm .modal-actions { grid-column: 1 / -1; justify-content: flex-end; }
+  .modal-confirm .modal-actions .button { flex: 0 0 auto; min-width: 150px; }
+}
+@media (max-width: 600px) { .modal-dialog.modal-confirm { padding: 24px 20px calc(24px + env(safe-area-inset-bottom)); } }
+
+/* Bienvenue : toast visuel, accessible et totalement non bloquant. */
+.greeting-toast { position: fixed; z-index: 1300; top: max(18px, env(safe-area-inset-top)); right: max(18px, env(safe-area-inset-right)); display: grid; grid-template-columns: 88px minmax(0, 1fr); align-items: center; gap: 14px; width: min(460px, calc(100vw - 36px)); overflow: hidden; padding: 15px 20px 15px 14px; border: 1px solid color-mix(in srgb, var(--primary) 26%, var(--border)); border-radius: 24px; background: color-mix(in srgb, var(--surface) 94%, var(--primary)); color: var(--text); box-shadow: 0 20px 60px rgba(10, 31, 28, .18); pointer-events: none; }
+.greeting-toast__halo { position: absolute; right: -32px; top: -56px; width: 150px; aspect-ratio: 1; border-radius: 50%; background: color-mix(in srgb, var(--primary) 13%, transparent); }
+.greeting-toast__character { position: relative; display: grid; place-items: center; width: 88px; height: 88px; border-radius: 22px; background: color-mix(in srgb, var(--primary) 11%, var(--surface)); }
+.greeting-toast__character img { width: 78px; height: 78px; object-fit: contain; }
+.greeting-toast__copy { position: relative; display: grid; gap: 4px; min-width: 0; }
+.greeting-toast__eyebrow { color: var(--primary-text); font-size: .65rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.greeting-toast__copy h2 { font-size: clamp(1.1rem, 2.2vw, 1.38rem); line-height: 1.16; }
+.greeting-toast__copy p { color: var(--text-muted); font-size: .83rem; line-height: 1.4; }
+.greeting-toast__spark { position: absolute; color: var(--primary); font-size: 1.2rem; }
+.greeting-toast__spark--one { top: 8px; left: 14px; }
+.greeting-toast__spark--two { right: 14px; bottom: 9px; font-size: .88rem; opacity: .7; }
+@media (max-width: 520px) { .greeting-toast { top: max(12px, env(safe-area-inset-top)); right: 12px; left: 12px; grid-template-columns: 66px minmax(0, 1fr); gap: 10px; width: auto; padding: 12px; border-radius: 20px; } .greeting-toast__character { width: 66px; height: 66px; border-radius: 18px; } .greeting-toast__character img { width: 60px; height: 60px; } .greeting-toast__copy p { font-size: .76rem; } }
+@media (prefers-reduced-motion: no-preference) {
+  .greeting-toast { animation: greeting-arrive .62s cubic-bezier(.2,.8,.2,1) both; }
+  .greeting-toast__character img { animation: greeting-wave 2.5s ease-in-out .2s 2; transform-origin: 58% 76%; }
+  .greeting-toast__spark--one { animation: greeting-spark 1.5s ease-in-out .4s both; }
+  .greeting-toast__spark--two { animation: greeting-spark 1.5s ease-in-out .65s both; }
+}
+@keyframes greeting-arrive { from { opacity: 0; transform: translateY(-18px) scale(.96); } 70% { opacity: 1; transform: translateY(3px) scale(1.01); } to { opacity: 1; transform: none; } }
+@keyframes greeting-wave { 0%, 100% { transform: rotate(0) translateY(0); } 20% { transform: rotate(-5deg) translateY(-2px); } 40% { transform: rotate(6deg) translateY(-3px); } 60% { transform: rotate(-4deg) translateY(-1px); } 80% { transform: rotate(2deg); } }
+@keyframes greeting-spark { 0% { opacity: 0; transform: scale(.3) rotate(-30deg); } 45% { opacity: 1; transform: scale(1.2) rotate(18deg); } 100% { opacity: .8; transform: scale(1) rotate(0); } }
+@media (prefers-reduced-motion: reduce) { .greeting-toast, .greeting-toast * { animation: none !important; } }

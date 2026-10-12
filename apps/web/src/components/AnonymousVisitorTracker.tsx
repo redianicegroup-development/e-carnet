@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
 import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
 import { ProductExperienceSurveyModal } from "./ProductExperienceSurveyModal";
 import { ProductSurveyModal } from "./ProductSurveyModal";
+import { getAnalyticsConsent, subscribeAnalyticsConsent } from "../lib/analytics-consent";
 
 const VISIT_ENDPOINT = "/api/v1/identity/analytics/visits/";
 const CLICK_ENDPOINT = "/api/v1/identity/analytics/clicks/";
@@ -40,6 +41,7 @@ function categorizeClick(element: Element) {
 
 export function AnonymousVisitorTracker() {
   const pathname = usePathname();
+  const analyticsConsent = useSyncExternalStore(subscribeAnalyticsConsent, getAnalyticsConsent, () => null);
   const [visitorSurveyOpen, setVisitorSurveyOpen] = useState(false);
   const [productSurveyOpen, setProductSurveyOpen] = useState(false);
   const lastPathSent = useRef<string | null>(null);
@@ -63,7 +65,7 @@ export function AnonymousVisitorTracker() {
   }, []);
 
   useEffect(() => {
-    if (!pathname || lastPathSent.current === pathname) return;
+    if (analyticsConsent !== "accepted" || !pathname || lastPathSent.current === pathname) return;
     lastPathSent.current = pathname;
     let cancelled = false;
 
@@ -93,7 +95,7 @@ export function AnonymousVisitorTracker() {
     })();
 
     return () => { cancelled = true; };
-  }, [pathname]);
+  }, [pathname, analyticsConsent]);
 
   useEffect(() => {
     async function claimProductSurvey() {
@@ -111,13 +113,13 @@ export function AnonymousVisitorTracker() {
         else { productSurveyOpenRef.current = true; setProductSurveyOpen(true); }
       } catch { /* Le questionnaire ne doit jamais bloquer une action produit. */ }
     }
-    const onProductAction = () => { void claimProductSurvey(); };
+    const onProductAction = () => { if (analyticsConsent === "accepted") void claimProductSurvey(); };
     window.addEventListener("ecarnet:product-action-completed", onProductAction);
     return () => window.removeEventListener("ecarnet:product-action-completed", onProductAction);
-  }, []);
+  }, [analyticsConsent]);
 
   useEffect(() => {
-    if (!pathname || isPrivateRoute(pathname)) return;
+    if (analyticsConsent !== "accepted" || !pathname || isPrivateRoute(pathname)) return;
     function onClick(event: MouseEvent) {
       if (!visitorCookieReady.current || !(event.target instanceof Element)) return;
       const element = event.target.closest("a, button, [role='button']");
@@ -131,7 +133,7 @@ export function AnonymousVisitorTracker() {
     }
     document.addEventListener("click", onClick, true);
     return () => document.removeEventListener("click", onClick, true);
-  }, [pathname]);
+  }, [pathname, analyticsConsent]);
 
   return <>
     <ProductSurveyModal open={visitorSurveyOpen} onClose={closeVisitorSurvey} />

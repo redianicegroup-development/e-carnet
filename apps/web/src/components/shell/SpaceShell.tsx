@@ -8,6 +8,7 @@ import { SPACES, type SpaceId } from "../../lib/spaces";
 import { GreetingModal } from "../modal/GreetingModal";
 import { Icon } from "../ui/Icon";
 import { BrandMark } from "../ui/BrandMark";
+import { ScreenLoader } from "../ui/ScreenLoader";
 
 export type SpaceAccount = {
   id: string;
@@ -110,7 +111,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
       )}
 
       <main className="space-main" id="contenu">
-        {state.status === "loading" && <div className="skeleton" role="status" aria-live="polite"><span className="sr-only">Chargement de votre espace…</span><i /><i /><i /></div>}
+        {state.status === "loading" && <ScreenLoader label={`Chargement de votre espace ${config.label.toLowerCase()}…`} />}
         {state.status === "anonymous" && !bare && <div className="skeleton" role="status" aria-live="polite"><span className="sr-only">Redirection vers la connexion…</span><i /><i /><i /></div>}
         {state.status === "error" && !bare && (
           <section className="card gate" role="alert"><h1>Service momentanément indisponible</h1><p className="muted">{state.message}</p><div className="actions"><button type="button" className="button primary" onClick={() => window.location.reload()}>Réessayer</button></div></section>

@@ -23,6 +23,10 @@ import { PwaRegister } from "../components/PwaRegister";
 import { AnonymousVisitorTracker } from "../components/AnonymousVisitorTracker";
 import { LandingFeedbackWidget } from "../components/LandingFeedbackWidget";
 import { ConfirmProvider } from "../components/modal/ConfirmProvider";
+import { CookieConsentBanner } from "../components/CookieConsentBanner";
+import "./cookie-consent.css";
+import "./screen-loader.css";
+import "../components/modal/modal.css";
 
 // Les fichiers sont intégrés au build puis servis localement. preload=false
 // évite de précharger les 12 familles : seul le thème sélectionné est demandé.
@@ -51,8 +55,8 @@ export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
 };
 
-export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#E6FFF7" };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#FFF7E6" };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
-  return <html lang="fr" className={localFontClasses}><body><ThemeBootstrap /><AnonymousVisitorTracker /><PwaRegister /><ConfirmProvider>{children}</ConfirmProvider><LandingFeedbackWidget /></body></html>;
+  return <html lang="fr" className={localFontClasses}><body><ThemeBootstrap /><AnonymousVisitorTracker /><PwaRegister /><ConfirmProvider>{children}</ConfirmProvider><CookieConsentBanner /><LandingFeedbackWidget /></body></html>;
 }

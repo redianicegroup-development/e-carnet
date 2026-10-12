@@ -8,6 +8,7 @@ from .models import AnonymousVisitor
 class AnonymousVisitorAnalyticsTests(TestCase):
     def setUp(self):
         self.client = APIClient(enforce_csrf_checks=True)
+        self.client.cookies["ecarnet_analytics_consent"] = "accepted"
         self.visit_url = "/api/v1/identity/analytics/visits/"
 
     def test_first_page_view_sets_http_only_anonymous_cookie(self):
@@ -22,6 +23,14 @@ class AnonymousVisitorAnalyticsTests(TestCase):
         self.assertEqual(str(visitor.visitor_id), cookie.value)
         self.assertEqual(visitor.page_view_count, 1)
         self.assertEqual(visitor.last_page_category, "landing")
+
+    def test_refused_analytics_does_not_create_visitor_or_tracking_cookie(self):
+        client = APIClient()
+        client.cookies["ecarnet_analytics_consent"] = "denied"
+        response = client.post(self.visit_url, {"path": "/"}, format="json")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(AnonymousVisitor.objects.count(), 0)
+        self.assertNotIn("ecarnet_visitor", response.cookies)
 
     def test_routes_aggregate_and_auth_page_is_counted_without_raw_url(self):
         self.client.post(self.visit_url, {"path": "/connexion?next=%2Fpatient%2Fcarnet"}, format="json")
@@ -48,6 +57,7 @@ class AnonymousVisitorAnalyticsTests(TestCase):
         self.assertEqual(visitor.login_success_count, 1)
 
         failure_client = APIClient()
+        failure_client.cookies["ecarnet_analytics_consent"] = "accepted"
         failure_client.cookies["ecarnet_visitor"] = visitor_id
         failure = failure_client.post("/api/v1/identity/login/", {"email": user.email, "password": "wrong-password"}, format="json")
         self.assertEqual(failure.status_code, 400)

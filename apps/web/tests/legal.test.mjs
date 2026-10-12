@@ -31,8 +31,8 @@ test("la publication est bloquée tant qu'un champ reste à compléter", () => {
 });
 
 test("les données techniques déclarées correspondent à l'inventaire du code", () => {
-  assert.deepEqual(legal.COOKIES.map((c) => c.name), ["sessionid", "csrftoken", "ecarnet_visitor"]);
-  assert.deepEqual(legal.COOKIES.filter((c) => c.essential).map((c) => c.name), ["sessionid", "csrftoken"]);
+  assert.deepEqual(legal.COOKIES.map((c) => c.name), ["sessionid", "csrftoken", "ecarnet_analytics_consent", "ecarnet_visitor"]);
+  assert.deepEqual(legal.COOKIES.filter((c) => c.essential).map((c) => c.name), ["sessionid", "csrftoken", "ecarnet_analytics_consent"]);
   assert.deepEqual(legal.HOSTS.map((h) => h.name), ["Vercel", "Render", "Neon"]);
   assert.ok(!legal.HOSTS.some((h) => /hodi/i.test(h.name)), "Hodi ne doit pas figurer tant que contrat et déploiement n'existent pas");
 });
