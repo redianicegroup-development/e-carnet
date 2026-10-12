@@ -99,6 +99,14 @@ test("le lien admin est dans la navigation patient et la gestion du compte dans 
   assert.match(adminPage, /AdminAccountActionRequestsClient/);
   assert.match(adminPage, /admin-sidebar/);
   assert.match(adminPage, /Gestion des comptes/);
+  assert.match(adminPage, /id: "settings", label: "Paramètres"/);
+  assert.match(adminPage, /admin-nav-toggle/);
+  assert.match(adminPage, /mobileNavOpen/);
+  assert.match(adminPage, /admin-panel-settings/);
+  assert.match(adminPage, /refreshIntervalSeconds/);
+  assert.match(adminPage, /setMobileNavOpen\(false\)/);
+  assert.match(read("src/app/globals.css"), /@media \(min-width: 901px\)[\s\S]*\.admin-workspace \{ grid-template-columns/);
+  assert.match(read("src/app/globals.css"), /@media \(max-width: 900px\)[\s\S]*\.admin-nav-toggle \{ display: inline-flex/);
 });
 
 test("favicon, ICO et icônes PWA : les fichiers déclarés existent et sont valides", () => {

@@ -366,6 +366,10 @@ a.setting-item:hover, button.setting-item:hover { border-color: var(--primary); 
 
 /* ---------- Console admin : onglets, feedback et recherche ---------- */
 .admin-tabs { display: flex; gap: 6px; overflow-x: auto; border-bottom: 1px solid var(--border); scrollbar-width: thin; }
+.admin-sidebar__heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.admin-nav-toggle { display: none; align-items: center; justify-content: center; gap: 10px; min-height: 44px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--text); padding: 0 14px; font: inherit; font-weight: 700; cursor: pointer; }
+.admin-nav-toggle__icon { display: grid; gap: 4px; width: 18px; }
+.admin-nav-toggle__icon i { display: block; height: 2px; border-radius: 2px; background: currentColor; }
 .admin-tab { position: relative; display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto; border: 0; border-bottom: 3px solid transparent; margin-bottom: -1px; padding: 12px 14px; background: transparent; color: var(--text-muted); font: inherit; font-weight: 700; cursor: pointer; }
 .admin-tab:hover { color: var(--text); background: var(--surface-tint); }
 .admin-tab[aria-selected="true"] { color: var(--primary-text); border-bottom-color: var(--primary); }
@@ -388,7 +392,7 @@ a.setting-item:hover, button.setting-item:hover { border-color: var(--primary); 
 .admin-feedback-status--resolved { background: var(--status-verified-bg); color: var(--status-verified-fg); }
 .admin-feedback-message { white-space: pre-wrap; overflow-wrap: anywhere; }
 .admin-feedback-select { width: min(100%, 240px); }
-@media (max-width: 600px) { .admin-tab { padding: 10px 11px; font-size: .9rem; } .admin-feedback-item { padding: 13px; } }
+@media (max-width: 600px) { .admin-feedback-item { padding: 13px; } }
 .admin-workspace { min-width: 0; display: grid; grid-template-columns: minmax(190px, 248px) minmax(0, 1fr); align-items: start; gap: 20px; }
 .admin-sidebar { position: sticky; top: 16px; display: grid; gap: 10px; padding: 12px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); }
 .admin-workspace__content { min-width: 0; }
@@ -396,7 +400,8 @@ a.setting-item:hover, button.setting-item:hover { border-color: var(--primary); 
 .admin-workspace .admin-tab { width: 100%; justify-content: flex-start; border: 1px solid transparent; border-radius: 10px; margin: 0; padding: 11px 12px; text-align: left; }
 .admin-workspace .admin-tab[aria-selected="true"] { border-color: var(--border); border-bottom-color: var(--border); background: var(--surface-tint); }
 .admin-workspace .admin-tab:focus-visible { outline-offset: 0; border-radius: 10px; }
-@media (max-width: 900px) { .admin-workspace { grid-template-columns: minmax(0, 1fr); gap: 14px; } .admin-sidebar { position: static; padding: 9px; } .admin-workspace .admin-tabs { display: flex; gap: 4px; overflow-x: auto; border: 0; } .admin-workspace .admin-tab { width: auto; flex: 0 0 auto; border: 0; border-bottom: 3px solid transparent; border-radius: 8px 8px 0 0; margin-bottom: -1px; text-align: center; } .admin-workspace .admin-tab[aria-selected="true"] { border: 0; border-bottom: 3px solid var(--primary); border-radius: 8px 8px 0 0; } }
+@media (min-width: 901px) { .admin-workspace { grid-template-columns: minmax(220px, 270px) minmax(0, 1fr); gap: 24px; } .admin-sidebar { position: sticky; top: 18px; min-height: min(680px, calc(100dvh - 36px)); align-content: start; padding: 16px; } .admin-workspace .admin-tabs { grid-template-columns: 1fr; } }
+@media (max-width: 900px) { .admin-workspace { grid-template-columns: minmax(0, 1fr); gap: 14px; } .admin-sidebar { position: relative; padding: 10px; } .admin-nav-toggle { display: inline-flex; } .admin-workspace .admin-tabs { display: none; gap: 4px; overflow: visible; border: 0; } .admin-workspace .admin-tabs.is-open { display: grid; } .admin-workspace .admin-tab { width: 100%; justify-content: flex-start; border: 1px solid transparent; border-radius: 10px; margin: 0; padding: 11px 12px; text-align: left; } .admin-workspace .admin-tab[aria-selected="true"] { border-color: var(--border); border-bottom-color: var(--border); background: var(--surface-tint); } }
 
 /* Résultats de l’enquête UX et notes étoilées */
 .admin-stars { display: inline-flex; gap: 2px; color: var(--border-strong, #cbd5e1); font-size: 1.2rem; line-height: 1; }
