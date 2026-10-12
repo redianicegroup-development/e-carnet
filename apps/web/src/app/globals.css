@@ -545,3 +545,32 @@ a.setting-item:hover, button.setting-item:hover { border-color: var(--primary); 
   .space--nav-collapsed .space-nav__link::after { content: attr(aria-label); position: absolute; left: 72px; z-index: 60; display: none; width: max-content; border-radius: 8px; background: var(--text); padding: 6px 9px; color: var(--surface); font-size: .75rem; }
   .space--nav-collapsed .space-nav__link:hover::after,.space--nav-collapsed .space-nav__link:focus-visible::after { display: block; }
 }
+
+/* La console admin réutilise le shell commun des espaces. */
+.admin-space-header { grid-column: 1 / -1; gap: 20px; }
+.admin-space-header .admin-heading { min-width: 0; flex: 1; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.admin-space-header .admin-heading h1 { font-size: clamp(1.15rem, 2.6vw, 1.65rem); }
+.admin-space-header .admin-heading p { margin: 3px 0 0; font-size: .82rem; }
+.space-nav--admin ul { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.admin-nav-link { width: 100%; border: 0; background: transparent; font: inherit; cursor: pointer; }
+.admin-nav-link:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+.admin-space-main { width: min(100%, 1280px); }
+.admin-workspace__content { min-width: 0; width: 100%; }
+.admin-workspace__content > [role="tabpanel"] { min-width: 0; }
+.admin-settings-page { display: grid; gap: 16px; }
+@media (max-width: 900px) {
+  .admin-space-header { display: grid; grid-template-columns: 1fr; }
+  .admin-space-header .admin-heading { display: grid; }
+  .admin-space-header .admin-actions { justify-content: flex-start; }
+  .admin-space-main { padding-bottom: calc(var(--nav-h) + 34px + env(safe-area-inset-bottom)); }
+  .space-nav--admin ul { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; }
+  .space-nav--admin .space-nav__link { font-size: clamp(8px, 2.2vw, 10px); }
+}
+@media (min-width: 920px) {
+  .space--admin { grid-template-columns: 252px minmax(0, 1fr); grid-template-rows: auto 1fr; transition: grid-template-columns .18s ease; }
+  .space--admin.space--nav-collapsed { grid-template-columns: 82px minmax(0, 1fr); }
+  .space--admin .space-nav { grid-row: 2; grid-column: 1; }
+  .space--admin .space-nav--admin ul { grid-template-columns: 1fr; }
+  .space--admin .admin-space-main { grid-row: 2; grid-column: 2; }
+  .space--admin .space-nav__toggle { display: flex; }
+}
