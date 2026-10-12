@@ -283,7 +283,7 @@ a.setting-item:hover, button.setting-item:hover { border-color: var(--primary); 
    Shell d'espace : en-tête + barre basse à 5 entrées (mobile) / rail latéral (bureau)
    ===================================================================================================== */
 .space { min-height: 100dvh; display: grid; grid-template-rows: auto 1fr; }
-.space-header { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: max(10px, env(safe-area-inset-top)) 16px 10px; background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); }
+.space-header { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: max(10px, env(safe-area-inset-top)) 16px 10px; background: transparent; border-bottom: 1px solid var(--border); }
 .space-header__me { display: inline-flex; align-items: center; gap: 10px; color: var(--text); text-decoration: none; min-width: 0; }
 .space-header__name { display: none; font-weight: 700; font-size: .9rem; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .space-main { width: min(100%, 720px); margin-inline: auto; padding: 18px 16px calc(var(--nav-h) + 30px + env(safe-area-inset-bottom)); display: grid; gap: 16px; align-content: start; }
@@ -314,7 +314,7 @@ a.setting-item:hover, button.setting-item:hover { border-color: var(--primary); 
   .space-nav__link { grid-auto-flow: column; justify-content: start; justify-items: start; align-items: center; gap: 12px; min-height: 48px; padding: 10px 14px; font-size: .95rem; text-align: left; }
   .space-nav__label { display: none; }
   .space-nav__long { display: inline; }
-  .space-main { grid-row: 2; grid-column: 2; width: min(100%, 980px); padding: 30px 32px 56px; margin-inline: 0; }
+  .space-main { grid-row: 2; grid-column: 2; width: min(100%, 980px); padding: 30px 32px 56px; margin-inline: auto; }
   .space--bare { display: block; }
   .space--bare .space-main { margin-inline: auto; }
   .grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); }
@@ -554,7 +554,7 @@ a.setting-item:hover, button.setting-item:hover { border-color: var(--primary); 
 .space-nav--admin ul { grid-template-columns: repeat(7, minmax(0, 1fr)); }
 .admin-nav-link { width: 100%; border: 0; background: transparent; font: inherit; cursor: pointer; }
 .admin-nav-link:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
-.admin-space-main { width: min(100%, 1280px); }
+.admin-space-main { width: min(100%, 1280px); margin-inline: auto; }
 .admin-workspace__content { min-width: 0; width: 100%; }
 .admin-workspace__content > [role="tabpanel"] { min-width: 0; }
 .admin-settings-page { display: grid; gap: 16px; }

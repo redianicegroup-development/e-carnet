@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { ApiError, apiGet } from "../../infrastructure/api/client";
 import { SPACES, type SpaceId } from "../../lib/spaces";
@@ -41,6 +41,7 @@ type State = { status: "loading" } | { status: "anonymous" } | { status: "error"
 
 export function SpaceShell({ space, children }: { space: SpaceId; children: ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const config = SPACES[space];
   const [state, setState] = useState<State>({ status: "loading" });
   const [navCollapsed, setNavCollapsed] = useState(false);
@@ -55,13 +56,19 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
         if (active) setState({ status: "ready", account });
       } catch (error) {
         if (!active) return;
-        if (error instanceof ApiError && (error.status === 401 || error.status === 403)) setState({ status: "anonymous" });
+        if (error instanceof ApiError && error.status === 401) setState({ status: "anonymous" });
         else setState({ status: "error", message: error instanceof Error ? error.message : "Service indisponible." });
       }
     }
     void load();
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    if (state.status !== "anonymous" || bare) return;
+    const requested = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    router.replace(`/connexion?next=${encodeURIComponent(requested)}`);
+  }, [state.status, bare, router]);
 
   const moi = config.tabs[config.tabs.length - 1];
   const showAdminLink = space === "patient" && state.status === "ready" && state.account.is_admin === true;
@@ -104,14 +111,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
 
       <main className="space-main" id="contenu">
         {state.status === "loading" && <div className="skeleton" role="status" aria-live="polite"><span className="sr-only">Chargement de votre espace…</span><i /><i /><i /></div>}
-        {state.status === "anonymous" && !bare && (
-          <section className="card gate" aria-labelledby="gate-title">
-            <span className="gate__icon" aria-hidden="true"><Icon name="lock" size={26} /></span>
-            <h1 id="gate-title">Connexion requise</h1>
-            <p className="muted">Votre session a expiré ou vous n’êtes pas connecté. Reconnectez-vous pour ouvrir votre espace.</p>
-            <div className="actions"><Link className="button primary" href="/connexion">Se connecter</Link><Link className="button" href="/inscription">Créer un compte</Link></div>
-          </section>
-        )}
+        {state.status === "anonymous" && !bare && <div className="skeleton" role="status" aria-live="polite"><span className="sr-only">Redirection vers la connexion…</span><i /><i /><i /></div>}
         {state.status === "error" && !bare && (
           <section className="card gate" role="alert"><h1>Service momentanément indisponible</h1><p className="muted">{state.message}</p><div className="actions"><button type="button" className="button primary" onClick={() => window.location.reload()}>Réessayer</button></div></section>
         )}

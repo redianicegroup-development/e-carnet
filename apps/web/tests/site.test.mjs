@@ -12,6 +12,35 @@ const credits = await import("../src/lib/credits.ts");
 const routeExists = (href) => existsSync(`${root}src/app${href.split("#")[0]}/page.tsx`);
 const hrefsOf = (source) => [...source.matchAll(/href[:=]\s*[{"]\s*"?(\/[a-z0-9/#-]*)/g)].map((m) => m[1]);
 
+test("une session expirée redirige vers la connexion et les erreurs de connexion ouvrent une modale oops", () => {
+  const shell = read("src/components/shell/SpaceShell.tsx");
+  const auth = read("src/components/AuthForms.tsx");
+  assert.match(shell, /error\.status === 401[\s\S]*setState\(\{ status: "anonymous" \}\)/);
+  assert.match(shell, /router\.replace\(`\/connexion\?next=/);
+  assert.doesNotMatch(shell, /Votre session a expiré ou vous n’êtes pas connecté/);
+  assert.match(auth, /<AuthErrorDialog message=\{errorModal\}/);
+  assert.match(auth, /<ModalIllustration mood="oops"/);
+  assert.match(auth, /role="alertdialog" aria-modal="true"/);
+});
+
+test("les salutations d’accueil sont des notifications de 3 secondes sans description ni bouton", () => {
+  const greeting = read("src/components/modal/GreetingModal.tsx");
+  const styles = read("src/components/modal/modal.css");
+  assert.match(greeting, /setTimeout\(\(\) => setKind\(null\), 3000\)/);
+  assert.match(greeting, /role="status" aria-live="polite"/);
+  assert.match(greeting, /<h2[^>]*>\{titleFor\(kind/);
+  assert.doesNotMatch(greeting, /WELCOME_TEXT|cta:|<button|<p/);
+  assert.doesNotMatch(greeting, /useDialogBehavior|aria-modal="true"/);
+  assert.match(styles, /modal-backdrop--greeting \{[^}]*background: transparent; pointer-events: none;/);
+});
+test("les contenus des espaces se recentrent dans la colonne libre et le header connecté est transparent", () => {
+  const styles = read("src/app/globals.css");
+  assert.match(styles, /\.space-header \{[^}]*background: transparent;/);
+  assert.doesNotMatch(styles.match(/\.space-header \{[^}]*\}/)?.[0] ?? "", /backdrop-filter/);
+  assert.match(styles, /\.space-main \{[^}]*grid-column: 2;[^}]*margin-inline: auto;/);
+  assert.match(styles, /\.admin-space-main \{[^}]*margin-inline: auto;/);
+  assert.match(styles, /\.space\.space--nav-collapsed \{ grid-template-columns: 82px minmax\(0,1fr\);/);
+});
 test("visiteurs : le pied de page public renvoie vers les trois pages légales", () => {
   const footer = read("src/components/public/PublicShell.tsx");
   for (const doc of Object.values(legal.LEGAL_DOCS)) assert.ok(footer.includes(`LEGAL_DOCS.${Object.keys(legal.LEGAL_DOCS).find((k) => legal.LEGAL_DOCS[k] === doc)}.path`), `pied de page : lien manquant vers ${doc.path}`);

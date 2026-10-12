@@ -18,9 +18,12 @@
 
 /* ---------- Fond + boîte ---------- */
 .modal-backdrop { position: fixed; inset: 0; display: grid; place-items: center; padding: 16px; background: rgba(8, 19, 29, .58); }
-.modal-backdrop--greeting { z-index: 1300; }
+.modal-backdrop--greeting { z-index: 1300; align-items: start; padding: clamp(16px, 8vh, 64px) 16px 0; background: transparent; pointer-events: none; }
 .modal-backdrop--confirm { z-index: 1600; } /* au-dessus des paramètres (1200), de l'accueil (1300), du feedback et des enquêtes (1400) */
 .modal-dialog { width: min(100%, 440px); max-height: min(92vh, 720px); max-height: min(92dvh, 720px); overflow: auto; overscroll-behavior: contain; display: grid; justify-items: center; gap: 16px; padding: 28px 24px 22px; text-align: center; border: 1px solid var(--border); border-radius: 20px; background: var(--surface); color: var(--text); box-shadow: 0 24px 80px rgba(0, 0, 0, .24); }
+.modal-greeting { width: min(100%, 400px); max-height: none; overflow: visible; grid-template-columns: auto 1fr; justify-items: start; align-items: center; gap: 12px; padding: 16px 20px; text-align: left; pointer-events: none; }
+.modal-greeting .modal-copy { justify-items: start; }
+.modal-greeting .modal-copy h2 { font-size: 1.15rem; }
 .modal-confirm[data-tone="danger"] { border-top: 4px solid var(--danger); }
 .modal-copy { display: grid; justify-items: center; gap: 8px; max-width: 100%; }
 .modal-copy h2 { margin: 0; font-size: 1.3rem; line-height: 1.25; overflow-wrap: anywhere; }
@@ -38,6 +41,7 @@
 /* ---------- Mobile : feuille qui monte du bas (même comportement que les autres modals) ---------- */
 @media (max-width: 600px) {
   .modal-backdrop { align-items: end; padding: 0; }
+  .modal-backdrop--greeting { align-items: start; padding: 16px 12px 0; }
   .modal-dialog { width: 100%; border-radius: 18px 18px 0 0; border-bottom: 0; padding-bottom: calc(22px + env(safe-area-inset-bottom)); }
 }
 

@@ -1,9 +1,11 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
 import { safeOAuthNext } from "../lib/auth";
 import { BrandMark } from "./ui/BrandMark";
+import { ModalIllustration } from "./modal/ModalIllustration";
+import { useDialogBehavior } from "./modal/useDialogBehavior";
 const API = "";
 type AuthMode = "login" | "register";
 type Account = { contexts?: Array<{ role: string; is_active: boolean; onboarding_completed: boolean }> };
@@ -26,25 +28,30 @@ export function AuthForms() {
   const [mode, setMode] = useState<AuthMode>("login");
   const [form, setForm] = useState({ email: "", password: "", first_name: "", last_name: "" });
   const [message, setMessage] = useState("");
+  const [errorModal, setErrorModal] = useState("");
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     const timer = window.setTimeout(() => {
       const params = new URLSearchParams(window.location.search);
       if (params.get("mode") === "register") setMode("register");
       if (params.has("oauth") && params.get("status") === "success") setMessage("Connexion réussie, ouverture de votre espace…");
-      else setMessage(params.get("message") ?? "");
+      else if (params.has("oauth") && params.get("status") !== "success") setErrorModal(params.get("message") || "La connexion avec ce fournisseur n’a pas abouti. Réessayez ou choisissez une autre méthode.");
+      else if (params.get("message")) setErrorModal(params.get("message") ?? "");
     }, 0);
     return () => window.clearTimeout(timer);
   }, []);
   async function submit(e: React.FormEvent) {
-    e.preventDefault(); setBusy(true); setMessage(mode === "login" ? "Connexion sécurisée en cours…" : "Création de votre compte…");
+    e.preventDefault(); setBusy(true); setErrorModal(""); setMessage(mode === "login" ? "Connexion sécurisée en cours…" : "Création de votre compte…");
     try {
       const tokenResponse = await primeCsrf();
       const r = await fetch(`${API}/api/v1/identity/${mode}/`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json", "X-CSRFToken": readCsrfToken() }, body: JSON.stringify(form) });
-      const p = await r.json();
-      if (!tokenResponse.ok || !r.ok) { setMessage(p.message ?? "Impossible de poursuivre. Vérifiez vos informations."); return; }
+      const p = await r.json().catch(() => ({}));
+      if (!tokenResponse.ok || !r.ok) {
+        const detail = p.message ?? p.detail ?? (r.status === 401 ? "Adresse e-mail ou mot de passe incorrect. Vérifiez vos informations et réessayez." : r.status === 429 ? "Trop de tentatives. Patientez quelques minutes avant de réessayer." : "La demande n’a pas abouti. Vérifiez les informations saisies puis réessayez.");
+        setMessage(""); setErrorModal(typeof detail === "string" ? detail : "Certains champs sont invalides. Vérifiez vos informations."); return;
+      }
       router.replace(destinationFor(p.data ?? {}, mode, new URLSearchParams(window.location.search).get("next")));
-    } catch { setMessage("Le service de connexion est momentanément inaccessible. Réessayez."); }
+    } catch { setMessage(""); setErrorModal("Le service de connexion est momentanément inaccessible. Vérifiez votre connexion puis réessayez."); }
     finally { setBusy(false); }
   }
   const requested = typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("next");
@@ -69,5 +76,20 @@ export function AuthForms() {
       <button className="button primary auth-submit" type="submit" disabled={busy}>{busy ? "Veuillez patienter…" : mode === "login" ? "Se connecter" : "Créer mon compte"}</button>
     </form>
     {message && <p className="auth-message" role="status">{message}</p>}
+    {errorModal && <AuthErrorDialog message={errorModal} onClose={() => setErrorModal("")} />}
+  </div>;
+}
+
+function AuthErrorDialog({ message, onClose }: { message: string; onClose: () => void }) {
+  const dialog = useRef<HTMLElement>(null);
+  const closeButton = useRef<HTMLButtonElement>(null);
+  const titleId = useId();
+  useDialogBehavior({ open: true, container: dialog, initialFocus: closeButton, onEscape: onClose });
+  return <div className="modal-backdrop modal-backdrop--confirm" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+    <section ref={dialog} className="modal-dialog modal-confirm" data-tone="danger" role="alertdialog" aria-modal="true" aria-labelledby={titleId}>
+      <ModalIllustration mood="oops" size="md" />
+      <div className="modal-copy"><h2 id={titleId}>Connexion impossible</h2><p className="modal-message">{message}</p></div>
+      <div className="modal-actions modal-actions--single"><button ref={closeButton} type="button" className="button primary" onClick={onClose}>Compris</button></div>
+    </section>
   </div>;
 }
