@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { ApiError, apiGet } from "../../infrastructure/api/client";
+import { ApiError, apiGet, apiPost } from "../../infrastructure/api/client";
 import { SPACES, type SpaceId } from "../../lib/spaces";
+import { useConfirm } from "../modal/ConfirmProvider";
 import { GreetingModal } from "../modal/GreetingModal";
 import { Icon } from "../ui/Icon";
 import { BrandMark } from "../ui/BrandMark";
@@ -43,10 +44,27 @@ type State = { status: "loading" } | { status: "anonymous" } | { status: "error"
 export function SpaceShell({ space, children }: { space: SpaceId; children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const confirm = useConfirm();
   const config = SPACES[space];
   const [state, setState] = useState<State>({ status: "loading" });
   const [navCollapsed, setNavCollapsed] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  const [logoutMessage, setLogoutMessage] = useState("");
   function toggleNav() { setNavCollapsed((current) => !current); }
+  async function logout() {
+    const ok = await confirm({ title: "Se déconnecter ?", message: "Vous allez être déconnecté de cet appareil.", note: "Vos données restent enregistrées dans votre compte.", confirmLabel: "Me déconnecter", cancelLabel: "Rester connecté", tone: "neutral", mood: "decision" });
+    if (!ok) return;
+    setSigningOut(true);
+    setLogoutMessage("");
+    try {
+      await apiPost("/api/v1/identity/logout/");
+      router.replace("/connexion");
+      router.refresh();
+    } catch (error) {
+      setLogoutMessage(error instanceof Error ? error.message : "La déconnexion n’a pas abouti.");
+      setSigningOut(false);
+    }
+  }
   const bare = config.bare.some((path) => pathname === path || pathname.startsWith(`${path}/`));
 
   useEffect(() => {
@@ -99,11 +117,19 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
           })}
           {showAdminLink && <li><a href="https://e-carnetci.vercel.app/admin/" target="_blank" rel="noopener noreferrer" className="space-nav__link" aria-label="Administration" title="Administration"><Icon name="shield" size={22} /><span className="space-nav__label">Admin</span><span className="space-nav__long">Administration</span></a></li>}
         </ul>}
-        {state.status === "ready" && <Link className={`space-sidebar-profile${moi.match(pathname) ? " is-active" : ""}`} href={moi.href} aria-label={`${displayName(state.account)} — ouvrir ${moi.long.toLowerCase()}`} aria-current={moi.match(pathname) ? "page" : undefined} title={displayName(state.account)}>
-          <AvatarBadge account={state.account} size={38} />
-          <span className="space-sidebar-profile__copy"><strong>{displayName(state.account)}</strong><small>Profil et paramètres</small></span>
-          <Icon name="chevron" size={17} />
-        </Link>}
+        {state.status === "ready" && <div className="space-sidebar-footer">
+          <Link className={`space-sidebar-profile${moi.match(pathname) ? " is-active" : ""}`} href={moi.href} aria-label={`${displayName(state.account)} — ouvrir ${moi.long.toLowerCase()}`} aria-current={moi.match(pathname) ? "page" : undefined} title={displayName(state.account)}>
+            <AvatarBadge account={state.account} size={38} />
+            <span className="space-sidebar-profile__copy"><strong>{displayName(state.account)}</strong><small>Profil et paramètres</small></span>
+            <Icon name="chevron" size={17} />
+          </Link>
+          {!bare && <div className="space-sidebar-logout">
+            <button type="button" onClick={() => void logout()} disabled={signingOut} title="Se déconnecter">
+              <Icon name="logout" size={20} /><span>{signingOut ? "Déconnexion…" : "Se déconnecter"}</span>
+            </button>
+            {logoutMessage && <small role="alert">{logoutMessage}</small>}
+          </div>}
+        </div>}
       </nav>
 
       <main className="space-main" id="contenu">
