@@ -242,7 +242,7 @@ class AccountActionRequest(models.Model):
     )
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="account_action_requests")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="account_action_requests")
     request_type = models.CharField(max_length=16, choices=REQUEST_TYPES)
     suspension_days = models.PositiveSmallIntegerField(null=True, blank=True)
     reason = models.CharField(max_length=24, choices=REASONS, blank=True)

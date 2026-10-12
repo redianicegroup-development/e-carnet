@@ -14,14 +14,14 @@ Le footer public comprend le watermark E‑CARNET, des liens d’aide et légaux
 
 Les crédits précisent que **Redianice est une startup qui a contacté AKATech Studio pour proposer une collaboration**. Le thème et les autres réglages par défaut ne sont pas remplacés. Les salutations restent en mémoire de l’application uniquement.
 
-Les paramètres patient comprennent désormais des demandes de **suspension temporaire** (durée au choix : 1, 7, 14, 30, 60 ou 90 jours) et de **suppression de compte** (motif dans une liste ; le choix « Autre » demande une précision). Ces formulaires créent des demandes persistées, reliées au compte et visibles dans l’onglet « Demandes de compte » de la console superadmin. L’administration peut suivre et mettre à jour leur statut. Par sécurité, l’envoi ne suspend pas la connexion et ne supprime aucun compte ou dossier automatiquement ; un administrateur doit examiner et traiter chaque demande.
+Les paramètres patient proposent une **demande de suspension temporaire** (durée au choix : 1, 7, 14, 30, 60 ou 90 jours) et une **suppression immédiate du compte** (motif dans une liste ; « Autre » demande une précision). Après confirmation explicite, la suppression ne dépend d’aucun agrément admin : session et accès sont désactivés immédiatement, les identifiants et données de profil sont anonymisés, les autorisations d’accès sont révoquées, et les données déclaratives/préconsultations sont supprimées. Une trace anonymisée du motif apparaît dans l’administration. Les consultations validées et journaux d’audit immuables peuvent rester protégés afin de préserver l’intégrité de l’historique médical et les obligations applicables.
 
-L’entrée « Administration » est ajoutée au répertoire des paramètres patient uniquement lorsque l’API confirme que le compte connecté est superadministrateur ; elle mène à `https://e-carnetci.vercel.app/admin/`. Les endpoints de consultation et de revue des demandes sont eux aussi réservés au superadministrateur.
+La console possède une sidebar de navigation, dont le bouton « Gestion des comptes » mène à la suppression immédiate des demandes anciennes encore en attente. L’endpoint refuse systématiquement les comptes staff/superadmins ; aucune fonction d’inscription publique ne peut créer un compte admin ou superadmin. Le lien « Administration » a été déplacé hors des paramètres vers la sidebar desktop et la barre de navigation mobile de l’espace patient ; il apparaît uniquement lorsque l’API signale `is_admin=true` et ouvre l’URL admin habituelle sans modifier son formulaire d’accès email/mot de passe. La gestion (suspension/suppression) du compte se trouve dans la modale « Sécurité et connexion » des espaces patient, professionnel et établissement. Les endpoints de consultation et de revue restent réservés au superadministrateur.
 
 ## Vérifications
 
-- Tests web, légaux et site : **31 réussis, 0 échec**.
-- Tests API Django : **138 réussis, 0 échec, 3 ignorés** (incluant les demandes de compte et leur accès admin).
+- Tests web, légaux et site : **32 réussis, 0 échec**.
+- Tests API Django : **141 réussis, 0 échec, 3 ignorés** (incluant la suppression immédiate, l’anonymisation et les garde-fous admin).
 - Build de production Next.js : réussi.
 - ESLint : aucune erreur ; quatre avertissements d’images d’avatar préexistants.
 - Contrôle des dépendances : les versions déclarées de GSAP et Lenis sont inchangées.

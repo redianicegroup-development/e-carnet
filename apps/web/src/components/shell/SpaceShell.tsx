@@ -16,6 +16,7 @@ export type SpaceAccount = {
   last_name: string;
   avatar_url: string;
   date_joined?: string;
+  is_admin?: boolean;
   contexts: { role: string; is_active: boolean; onboarding_completed: boolean }[];
   patient_profile: { completed: boolean; id: string | null };
 };
@@ -63,6 +64,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
   }, []);
 
   const moi = config.tabs[config.tabs.length - 1];
+  const showAdminLink = space === "patient" && state.status === "ready" && state.account.is_admin === true;
 
   return (
     <div className={`space space--${space}${bare ? " space--bare" : ""}${navCollapsed ? " space--nav-collapsed" : ""}`}>
@@ -80,7 +82,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
       </header>
 
       {!bare && (
-        <nav className="space-nav" aria-label={`Navigation de l’${config.label.toLowerCase()}`}>
+        <nav className={`space-nav${showAdminLink ? " space-nav--admin" : ""}`} aria-label={`Navigation de l’${config.label.toLowerCase()}`}>
           <button type="button" className="space-nav__toggle" onClick={toggleNav} aria-expanded={!navCollapsed} aria-label={navCollapsed ? "Déplier la navigation" : "Replier la navigation"}><Icon name="chevron" size={18} /><span>{navCollapsed ? "Déplier" : "Réduire"}</span></button>
           <ul>
             {config.tabs.map((tab) => {
@@ -95,6 +97,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
                 </li>
               );
             })}
+            {showAdminLink && <li><a href="https://e-carnetci.vercel.app/admin/" target="_blank" rel="noopener noreferrer" className="space-nav__link" aria-label="Administration" title="Administration"><Icon name="shield" size={22} /><span className="space-nav__label">Admin</span><span className="space-nav__long">Administration</span></a></li>}
           </ul>
         </nav>
       )}

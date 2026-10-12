@@ -15,7 +15,7 @@ import { AccountActionRequestsSettingsClient } from "./AccountActionRequestsSett
 import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
 
 const API = "";
-type Account = { first_name: string; last_name: string; email: string; avatar_url: string; is_admin: boolean };
+type Account = { first_name: string; last_name: string; email: string; avatar_url: string; is_privileged: boolean };
 const sections: SettingsNavItem[] = [
   { id: "personnel", title: "Mes informations personnelles", description: "Modifier mon nom et ma photo de profil.", icon: "idcard" },
   { id: "sante", title: "Informations de santé déclaratives", description: "Téléphone, adresse et couverture santé.", icon: "heart" },
@@ -23,8 +23,6 @@ const sections: SettingsNavItem[] = [
   { id: "securite", title: "Sécurité et connexion", description: "Gérer les fournisseurs liés au compte.", icon: "lock" },
   { id: "en-savoir-plus", title: "En savoir plus", description: "Aide, informations et documents E‑Carnet.", icon: "help" },
   { id: "avis", title: "Votre avis", description: "Partager une suggestion ou signaler un problème.", icon: "pencil" },
-  { id: "gestion-compte", title: "Gestion du compte", description: "Demander une suspension ou une suppression.", icon: "alert" },
-  { id: "administration", title: "Administration", description: "Ouvrir la console administrateur.", icon: "shield" },
 ];
 function titleFor(id: string) { return sections.find((section) => section.id === id)?.title ?? "Paramètres"; }
 function initials(account: Account) { return `${account.first_name?.[0] ?? ""}${account.last_name?.[0] ?? ""}`.toUpperCase() || "EC"; }
@@ -99,8 +97,6 @@ export function AccountSettingsClient() {
   }
 
   if (!account) return <section className="card"><p className="notice" role="status">{message}</p></section>;
-  const visibleSections = sections.filter((section) => section.id !== "administration" || account.is_admin);
-
   return (
     <div className="settings-page">
       <section className="card account-summary settings-account-summary">
@@ -111,7 +107,7 @@ export function AccountSettingsClient() {
         <p className="notice" role="status" aria-live="polite">{message}</p>
       </section>
 
-      <SettingsDirectory items={visibleSections} activeId={activeSection} onSelect={setActiveSection} onLogout={() => void logout()} logoutDisabled={signingOut} />
+      <SettingsDirectory items={sections} activeId={activeSection} onSelect={setActiveSection} onLogout={() => void logout()} logoutDisabled={signingOut} />
 
       {activeSection === "personnel" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section">
         <span className="eyebrow">Mon identité</span><p className="muted">Votre nom et votre photo sont rattachés à votre compte E‑Carnet.</p>
@@ -136,12 +132,11 @@ export function AccountSettingsClient() {
 
       {activeSection === "securite" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section">
         <span className="eyebrow">Accès au compte</span><LinkedProvidersSettingsClient nextPath="/patient/parametres" />
+        <AccountActionRequestsSettingsClient isPrivileged={account.is_privileged} />
       </div></SettingsModal>}
 
       {activeSection === "en-savoir-plus" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><SettingsMoreSection /></SettingsModal>}
       {activeSection === "avis" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Amélioration continue</span><p className="muted">Votre retour aide l’équipe E‑Carnet à améliorer l’application. N’indiquez aucune information personnelle ou médicale.</p><LandingFeedbackWidget inline /></div></SettingsModal>}
-      {activeSection === "gestion-compte" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><AccountActionRequestsSettingsClient /></SettingsModal>}
-      {activeSection === "administration" && account.is_admin && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Accès réservé</span><p className="muted">Votre compte dispose des droits de superadministrateur.</p><div className="actions"><a className="button primary" href="https://e-carnetci.vercel.app/admin/" target="_blank" rel="noopener noreferrer">Ouvrir l’administration</a></div></div></SettingsModal>}
     </div>
   );
 }

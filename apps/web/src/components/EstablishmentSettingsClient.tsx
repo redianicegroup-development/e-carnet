@@ -9,10 +9,11 @@ import { SettingsModal } from "./SettingsModal";
 import { SettingsMoreSection } from "./SettingsMoreSection";
 import { LandingFeedbackWidget } from "./LandingFeedbackWidget";
 import { ThemeSettingsClient } from "./ThemeSettingsClient";
+import { AccountActionRequestsSettingsClient } from "./AccountActionRequestsSettingsClient";
 import { Icon } from "./ui/Icon";
 import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
 
-type Account = { email: string; first_name: string; last_name: string; avatar_url?: string; contexts: { role: string; is_active: boolean }[] };
+type Account = { email: string; first_name: string; last_name: string; avatar_url?: string; is_privileged: boolean; contexts: { role: string; is_active: boolean }[] };
 type Establishment = { id: string; name: string; establishment_type: string; city: string; address: string; phone: string; email: string; responsible_name: string; status: "pending" | "active" | "rejected" | string; internal_code: string | null };
 type Envelope<T> = { data?: T; message?: string; detail?: string };
 const API = "";
@@ -104,7 +105,7 @@ export function EstablishmentSettingsClient() {
         <dl className="settings-details"><div><dt>Responsable du compte</dt><dd>{accountName}</dd></div><div><dt>Email de connexion</dt><dd>{account?.email ?? (loading ? "Chargement…" : "Non disponible")}</dd></div><div><dt>Contexte établissement</dt><dd>{account?.contexts.find((context) => context.role === "establishment")?.is_active ? "Actif" : "Associé au compte"}</dd></div></dl><ThemeSettingsClient compact />
       </div></SettingsModal>}
 
-      {activeSection === "securite" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Accès au compte</span><p className="muted">Les actions établissement sont contrôlées côté API selon votre compte et votre rôle. Gérez ci-dessous vos méthodes de connexion.</p><LinkedProvidersSettingsClient nextPath="/etablissement/parametres" /><ul className="info-list"><li>La session est gérée par le serveur et protégée contre les requêtes intersites.</li></ul>
+      {activeSection === "securite" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Accès au compte</span><p className="muted">Les actions établissement sont contrôlées côté API selon votre compte et votre rôle. Gérez ci-dessous vos méthodes de connexion.</p><LinkedProvidersSettingsClient nextPath="/etablissement/parametres" /><AccountActionRequestsSettingsClient isPrivileged={account?.is_privileged ?? true} /><ul className="info-list"><li>La session est gérée par le serveur et protégée contre les requêtes intersites.</li></ul>
       </div></SettingsModal>}
 
       {activeSection === "en-savoir-plus" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><SettingsMoreSection /></SettingsModal>}

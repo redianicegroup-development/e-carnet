@@ -4,7 +4,7 @@ from .oauth_views import OAuthCallbackView, OAuthStartView
 from .views import CurrentAccountThemeView
 from .visitor_views import AnonymousClickView, AnonymousVisitView, ProductActionSurveyTriggerView, ProductExperienceSurveySubmitView, ProductSurveySubmitView, ProductSurveySummaryView, PublicFeedbackView
 from .admin_views import AdminDashboardView, AdminFeedbackStatusView
-from .account_action_views import AdminAccountActionRequestStatusView, AdminAccountActionRequestsView, CurrentAccountActionRequestsView
+from .account_action_views import AdminAccountActionRequestStatusView, AdminAccountActionRequestsView, AdminDeleteRequestedAccountView, CurrentAccountActionRequestsView
 urlpatterns = [
     path("register/", RegisterView.as_view()), path("login/", LoginView.as_view()), path("logout/", LogoutView.as_view()),
     path("analytics/visits/", AnonymousVisitView.as_view(), name="anonymous-visitor-visit"),
@@ -18,6 +18,7 @@ urlpatterns = [
     path("admin/feedback/<uuid:feedback_id>/", AdminFeedbackStatusView.as_view(), name="admin-feedback-status"),
     path("admin/account-requests/", AdminAccountActionRequestsView.as_view(), name="admin-account-action-requests"),
     path("admin/account-requests/<uuid:request_id>/", AdminAccountActionRequestStatusView.as_view(), name="admin-account-action-request-status"),
+    path("admin/account-requests/<uuid:request_id>/delete/", AdminDeleteRequestedAccountView.as_view(), name="admin-delete-requested-account"),
     path("me/", CurrentAccountView.as_view()), path("me/profile/", IdentityProfileView.as_view()), path("me/avatar/", AccountAvatarView.as_view()), path("me/theme/", CurrentAccountThemeView.as_view(), name="current-account-theme"),
     path("me/account-requests/", CurrentAccountActionRequestsView.as_view(), name="current-account-action-requests"),
     path("oauth/identities/", OAuthIdentityListView.as_view()), path("oauth/identities/<str:provider>/", OAuthIdentityUnlinkView.as_view()),

@@ -44,7 +44,7 @@ const tabs: { id: AdminTab; label: string }[] = [
   { id: "feedback", label: "Feedback" },
   { id: "survey", label: "Enquête UX" },
   { id: "establishments", label: "Établissements" },
-  { id: "account-requests", label: "Demandes de compte" },
+  { id: "account-requests", label: "Gestion des comptes" },
 ];
 const categoryLabel: Record<string, string> = {
   landing: "Accueil", public: "Pages publiques", auth: "Connexion / inscription",
@@ -158,8 +158,8 @@ export default function AdminPage() {
   function onTabKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     const index = tabs.findIndex((tab) => tab.id === activeTab);
     let next = index;
-    if (event.key === "ArrowRight") next = (index + 1) % tabs.length;
-    else if (event.key === "ArrowLeft") next = (index - 1 + tabs.length) % tabs.length;
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") next = (index + 1) % tabs.length;
+    else if (event.key === "ArrowLeft" || event.key === "ArrowUp") next = (index - 1 + tabs.length) % tabs.length;
     else if (event.key === "Home") next = 0;
     else if (event.key === "End") next = tabs.length - 1;
     else return;
@@ -209,9 +209,14 @@ export default function AdminPage() {
   return <main className="shell admin-shell stack-lg">
     <header className="admin-heading"><div><span className="eyebrow">Console privée</span><h1>Administration E‑Carnet</h1><p className="muted">Données actualisées {formatDate(dashboard.generated_at)} · synchronisation automatique toutes les 2 min</p></div><div className="admin-actions"><button className="button secondary" onClick={() => void loadDashboard(true, true)} disabled={manualRefreshing}>{manualRefreshing ? "Actualisation…" : "Actualiser"}</button><button className="button ghost" onClick={() => void askSignOut()}>Déconnexion</button></div></header>
     {refreshMessage && <p className="admin-refresh-note" role="status">{refreshMessage}</p>}
-    <div className="admin-tabs" role="tablist" aria-label="Sections de l’administration" onKeyDown={onTabKeyDown}>
-      {tabs.map((tab) => <button key={tab.id} id={`admin-tab-${tab.id}`} type="button" role="tab" aria-selected={activeTab === tab.id} aria-controls={`admin-panel-${tab.id}`} tabIndex={activeTab === tab.id ? 0 : -1} className="admin-tab" onClick={() => setActiveTab(tab.id)}>{tab.label}{tab.id === "feedback" && dashboard.feedback_new_total > 0 && <span className="admin-tab-badge">{dashboard.feedback_new_total}</span>}</button>)}
-    </div>
+    <div className="admin-workspace">
+      <aside className="admin-sidebar" aria-label="Navigation de l’administration">
+        <span className="eyebrow">Navigation</span>
+        <div className="admin-tabs" role="tablist" aria-label="Sections de l’administration" onKeyDown={onTabKeyDown}>
+          {tabs.map((tab) => <button key={tab.id} id={`admin-tab-${tab.id}`} type="button" role="tab" aria-selected={activeTab === tab.id} aria-controls={`admin-panel-${tab.id}`} tabIndex={activeTab === tab.id ? 0 : -1} className="admin-tab" onClick={() => setActiveTab(tab.id)}>{tab.label}{tab.id === "feedback" && dashboard.feedback_new_total > 0 && <span className="admin-tab-badge">{dashboard.feedback_new_total}</span>}</button>)}
+        </div>
+      </aside>
+      <div className="admin-workspace__content">
 
     {activeTab === "overview" && <section id="admin-panel-overview" role="tabpanel" aria-labelledby="admin-tab-overview" className="stack-lg">
       <div className="admin-metrics" aria-label="Indicateurs clés">
@@ -272,5 +277,7 @@ export default function AdminPage() {
       <article className="card"><span className="eyebrow">Limites du rôle</span><h2>Contrôle administratif, pas clinique</h2><p className="muted">Le staff E‑Carnet ne vérifie pas les justificatifs personnels du médecin dans ce parcours. L’établissement vérifie ses médecins, émet un code temporaire et décide des demandes de rattachement. L’espace établissement n’accède jamais aux dossiers médicaux.</p></article>
     </section>}
     {activeTab === "account-requests" && <section id="admin-panel-account-requests" role="tabpanel" aria-labelledby="admin-tab-account-requests"><AdminAccountActionRequestsClient /></section>}
+      </div>
+    </div>
   </main>;
 }

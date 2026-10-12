@@ -74,3 +74,10 @@ test("le seul stockage local applicatif est le cache de thème déclaré dans la
   assert.match(privacy, /se synchronise lorsque vous utilisez un autre appareil/i);
   assert.doesNotMatch(readFileSync(offenders[0], "utf8"), /sessionStorage|indexedDB/i);
 });
+
+test("la politique décrit la suppression immédiate et les seules traces protégées conservées", () => {
+  const privacy = read("confidentialite");
+  assert.match(privacy, /désactive immédiatement l’accès, sans agrément préalable/i);
+  assert.match(privacy, /journaux d’audit immuables/i);
+  assert.match(privacy, /trace anonymisée du motif de suppression/i);
+});

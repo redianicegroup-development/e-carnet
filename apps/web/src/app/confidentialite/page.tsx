@@ -201,7 +201,8 @@ const sections: LegalSectionDef[] = [
     body: (
       <>
         <p>Selon la loi applicable, notamment la loi n° 2013-450 du 19 juin 2013 relative à la protection des données à caractère personnel, vous pouvez demander l’accès à vos données et leur rectification. Vous pouvez vous opposer à certains traitements pour des motifs légitimes et, dans les cas prévus, demander leur suppression.</p>
-        <p>Les consultations validées sont corrigées par révision : les corrections sont historisées. Une demande de suppression est examinée au regard des obligations de conservation applicables.</p>
+        <p>Après votre confirmation, la suppression du compte désactive immédiatement l’accès, sans agrément préalable de l’administration. Les identifiants de connexion et informations de profil sont anonymisés, les accès sont révoqués et les données déclaratives/preconsultations supprimées.</p>
+        <p>Les consultations validées et les journaux d’audit immuables peuvent être conservés sous forme protégée lorsque l’intégrité de l’historique médical ou les obligations applicables l’exigent. La console d’administration conserve une trace anonymisée du motif de suppression, sans email ni nom de compte. Les corrections de consultations validées restent historisées.</p>
         <p>Pour exercer vos droits, écrivez à : <Fill k="privacy.dpoContact" />, en indiquant le compte concerné. Procédure et délais : <Fill k="privacy.rights" />.</p>
         <p>Vous pouvez aussi saisir l’Autorité de protection des données à caractère personnel de Côte d’Ivoire, selon les procédures qu’elle publie.</p>
       </>

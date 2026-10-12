@@ -291,6 +291,7 @@ a.setting-item:hover, button.setting-item:hover { border-color: var(--primary); 
 .space-footer { color: var(--text-muted); font-size: .8rem; text-align: center; padding-top: 6px; }
 .space-nav { position: fixed; z-index: 40; left: 0; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--border); padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); box-shadow: 0 -8px 24px -18px rgba(44, 58, 51, .5); }
 .space-nav ul { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin: 0; padding: 0; list-style: none; max-width: 640px; margin-inline: auto; }
+.space-nav--admin ul { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 .space-nav li { margin: 0; }
 .space-nav li { min-width: 0; }
 .space-nav__link { display: grid; justify-items: center; gap: 3px; padding: 8px 1px 6px; min-height: 56px; border-radius: 14px; color: var(--text-muted); text-decoration: none; font-size: clamp(8.5px, 2.5vw, 11px); letter-spacing: -.02em; overflow-wrap: anywhere; hyphens: auto; font-weight: 700; line-height: 1.1; text-align: center; }
@@ -309,6 +310,7 @@ a.setting-item:hover, button.setting-item:hover { border-color: var(--primary); 
   .space-header__name { display: block; }
   .space-nav { position: sticky; top: 64px; align-self: start; grid-row: 2; grid-column: 1; height: calc(100dvh - 64px); padding: 20px 16px; background: transparent; border-top: 0; border-right: 1px solid var(--border); box-shadow: none; }
   .space-nav ul { grid-template-columns: 1fr; gap: 6px; max-width: none; }
+  .space-nav--admin ul { grid-template-columns: 1fr; }
   .space-nav__link { grid-auto-flow: column; justify-content: start; justify-items: start; align-items: center; gap: 12px; min-height: 48px; padding: 10px 14px; font-size: .95rem; text-align: left; }
   .space-nav__label { display: none; }
   .space-nav__long { display: inline; }
@@ -387,6 +389,14 @@ a.setting-item:hover, button.setting-item:hover { border-color: var(--primary); 
 .admin-feedback-message { white-space: pre-wrap; overflow-wrap: anywhere; }
 .admin-feedback-select { width: min(100%, 240px); }
 @media (max-width: 600px) { .admin-tab { padding: 10px 11px; font-size: .9rem; } .admin-feedback-item { padding: 13px; } }
+.admin-workspace { min-width: 0; display: grid; grid-template-columns: minmax(190px, 248px) minmax(0, 1fr); align-items: start; gap: 20px; }
+.admin-sidebar { position: sticky; top: 16px; display: grid; gap: 10px; padding: 12px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); }
+.admin-workspace__content { min-width: 0; }
+.admin-workspace .admin-tabs { display: grid; gap: 4px; overflow: visible; border: 0; }
+.admin-workspace .admin-tab { width: 100%; justify-content: flex-start; border: 1px solid transparent; border-radius: 10px; margin: 0; padding: 11px 12px; text-align: left; }
+.admin-workspace .admin-tab[aria-selected="true"] { border-color: var(--border); border-bottom-color: var(--border); background: var(--surface-tint); }
+.admin-workspace .admin-tab:focus-visible { outline-offset: 0; border-radius: 10px; }
+@media (max-width: 900px) { .admin-workspace { grid-template-columns: minmax(0, 1fr); gap: 14px; } .admin-sidebar { position: static; padding: 9px; } .admin-workspace .admin-tabs { display: flex; gap: 4px; overflow-x: auto; border: 0; } .admin-workspace .admin-tab { width: auto; flex: 0 0 auto; border: 0; border-bottom: 3px solid transparent; border-radius: 8px 8px 0 0; margin-bottom: -1px; text-align: center; } .admin-workspace .admin-tab[aria-selected="true"] { border: 0; border-bottom: 3px solid var(--primary); border-radius: 8px 8px 0 0; } }
 
 /* Résultats de l’enquête UX et notes étoilées */
 .admin-stars { display: inline-flex; gap: 2px; color: var(--border-strong, #cbd5e1); font-size: 1.2rem; line-height: 1; }
