@@ -293,6 +293,8 @@ class PatientAccessTests(TestCase):
         reads = [event for event in audit.data["data"] if event["action"] == "read_preconsultations"]
         self.assertEqual(len(reads), 1)
         self.assertEqual(reads[0]["resource_count"], 1)
+        self.assertEqual(reads[0]["access_duration_minutes"], 60)
+        self.assertIsNotNone(reads[0]["authorized_until"])
         self.assertEqual(reads[0]["facility_label"], site_b.name)
         self.assertNotIn("Préconsultation de B", str(audit.data))
 
@@ -317,6 +319,28 @@ class PatientAccessTests(TestCase):
         self.assertEqual(created.status_code, 201)
         self.assertEqual(created.data["data"]["status"], "pending")
         self.assertEqual(created.data["data"]["establishment_id"], str(establishment.id))
+
+    def test_professional_can_request_with_qr_token_alone_without_patient_uuid(self):
+        from .models import PatientAccessQrToken
+        doctor = User.objects.create_user(username="doctor-qr-only", password="local-test-password")
+        profile = ProfessionalProfile.objects.create(user=doctor, professional_title="Médecin", verification_status="verified")
+        AccountContext.objects.create(user=doctor, role="professional", is_active=True)
+        establishment = Establishment.objects.create(created_by=self.user, name="Clinique QR", establishment_type="Clinique", city="Abidjan", address="A", phone="0", email="qr@example.test", responsible_name="Root", status="active", internal_code="QR-ONLY")
+        EstablishmentMembership.objects.create(establishment=establishment, professional=profile, status="active")
+        profile.active_establishment = establishment
+        profile.save(update_fields=("active_establishment", "updated_at"))
+
+        patient_client = APIClient()
+        patient_client.force_authenticate(self.user)
+        qr = patient_client.post("/api/v1/patient/care/access-qr/")
+        raw_token = qr.data["data"]["token"]
+        self.client.force_authenticate(doctor)
+        created = self.client.post("/api/v1/patient/care/professional/access-grants/", {"qr_token": raw_token, "scope": ["preconsultation", "declarations"]}, format="json")
+
+        self.assertEqual(created.status_code, 201)
+        self.assertEqual(created.data["data"]["patient_id"], str(self.profile.id))
+        token = PatientAccessQrToken.objects.get(patient=self.profile)
+        self.assertIsNotNone(token.consumed_at)
 
     def test_professional_cannot_request_access_for_unknown_scope_or_duplicate(self):
         doctor = User.objects.create_user(username="doctor-duplicate", password="local-test-password")

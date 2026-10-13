@@ -129,7 +129,7 @@ export function AccountSettingsClient() {
 
       {activeSection === "compte" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section">
         <span className="eyebrow">Préférences personnelles</span><p className="muted">Vos choix d’apparence sont enregistrés sur votre compte et vous suivent sur vos autres appareils.</p>
-        <ThemeSettingsClient compact />
+        <ThemeSettingsClient compact space="patient" />
       </div></SettingsModal>}
 
       {activeSection === "securite" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section">

@@ -19,6 +19,7 @@ class VisitorDiscoverySurveyTests(TestCase):
 
     def setUp(self):
         self.client = APIClient()
+        self.client.cookies["ecarnet_analytics_consent"] = "accepted"
 
     def visit(self, path="/"):
         return self.client.post(self.visit_url, {"path": path}, format="json")
@@ -81,6 +82,7 @@ class ProductExperienceSurveyTests(TestCase):
 
     def test_trigger_requires_login_and_is_claimed_once_after_first_action(self):
         client = APIClient()
+        client.cookies["ecarnet_analytics_consent"] = "accepted"
         self.assertEqual(client.post(self.trigger_url, {}, format="json").status_code, 403)
         user = get_user_model().objects.create_user(
             username="patient@example.test", email="patient@example.test", password="Secure-test-password-2026!",
@@ -102,6 +104,7 @@ class ProductExperienceSurveyTests(TestCase):
             username="member@example.test", email="member@example.test", password="Secure-test-password-2026!",
         )
         client = APIClient()
+        client.cookies["ecarnet_analytics_consent"] = "accepted"
         client.force_authenticate(user)
         payload = {"ease_rating": 2, "appreciated": ["access_control"], "pain_points": ["navigation"], "improvement_suggestion": "Réduire les étapes."}
         self.assertEqual(client.post(self.submit_url, payload, format="json").status_code, 403)

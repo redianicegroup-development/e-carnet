@@ -104,6 +104,24 @@ test("les trois espaces paramètres utilisent des icônes SVG sémantiques, sans
   assert.match(read("src/components/SettingsDirectory.tsx"), /Icon name=\{item\.icon\}/);
 });
 
+test("le sélecteur d’apparence utilise les couples retenus, les tailles accessibles et une application par espace", () => {
+  const picker = read("src/components/ThemeSettingsClient.tsx");
+  const engine = read("../../packages/ui/src/themes.ts");
+  const bootstrap = read("src/components/ThemeBootstrap.tsx");
+  const layout = read("src/app/layout.tsx");
+  assert.match(picker, /theme-text-scale/);
+  assert.match(picker, /text_scale/);
+  assert.match(picker, /réservées à l’espace patient/);
+  assert.match(engine, /sora-bricolage/);
+  assert.match(engine, /mooli-manrope/);
+  assert.match(engine, /fredoka-quicksand/);
+  assert.match(engine, /themeForWorkspace/);
+  assert.match(bootstrap, /usePathname/);
+  assert.match(bootstrap, /themeForWorkspace/);
+  assert.match(layout, /preload: false/);
+  assert.doesNotMatch(layout, /Plus_Jakarta_Sans|Unbounded|Nunito|Lexend|Barlow|Ubuntu/);
+});
+
 test("la connexion conserve son animation GSAP/Lenis et les styles de mouvement réduit", () => {
   const page = read("src/app/connexion/page.tsx");
   const motion = read("src/components/motion/AuthMotion.tsx");
@@ -264,4 +282,21 @@ test("pré-consultation : une seule question visible et barre de navigation mobi
   assert.match(loader, /position: fixed; z-index: 2000; inset: 0/);
   assert.match(pro, /event\.key === "\/"/);
   assert.match(pro, /professional-compact-list/);
+});
+
+test("consentement patient : QR seul côté professionnel, choix égaux et journal compréhensible", () => {
+  const proAccess = read("src/components/ProfessionalAccessGrants.tsx");
+  const service = read("src/application/professional-access-grants.ts");
+  const patientAccess = read("src/components/PatientAccessGrants.tsx");
+  const apiTests = read("../api/apps/care/tests.py");
+  const styles = read("src/app/globals.css");
+  assert.match(proAccess, /qrToken\.trim\(\)/);
+  assert.doesNotMatch(proAccess, /patientId|UUID communiqué/);
+  assert.match(service, /\{ scope, qr_token: qrToken \}/);
+  assert.match(apiTests, /qr_token_alone_without_patient_uuid/);
+  assert.match(patientAccess, /Aucune donnée n’est accessible avant votre décision/);
+  assert.match(patientAccess, /consent-decision/);
+  assert.match(patientAccess, /eventDescription/);
+  assert.match(patientAccess, /clinical_data\.read/);
+  assert.match(styles, /\.consent-decision/);
 });

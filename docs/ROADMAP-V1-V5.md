@@ -1,7 +1,7 @@
 # Roadmap produit — Mon Carnet Numérique, V1 à V5
 
 **Mise à jour : 13/10/2026 — décisions produit actives, périmètre V1–V3 clarifié.**  
-**Statut :** V1 en construction, non acceptée et interdite pour les données de santé réelles. Ce document fait foi pour l’intention produit ; l’état réellement implémenté et les preuves sont dans [ETAT-REEL-V1.md](ETAT-REEL-V1.md) et [RECETTE-V1.md](RECETTE-V1.md). Les validations médicales/juridiques restent à obtenir. Cette révision met à jour le roadmap seulement : elle ne signifie pas que les fonctionnalités ajoutées sont codées ou déployées.
+**Statut :** V1 en construction, non acceptée et interdite pour les données de santé réelles. Ce document fait foi pour l’intention produit ; l’état réellement implémenté et les preuves sont dans [ETAT-REEL-V1.md](ETAT-REEL-V1.md) et [RECETTE-V1.md](RECETTE-V1.md). Les validations médicales/juridiques et le déploiement restent à obtenir. Les changements de code de cette passe doivent être vérifiés dans la matrice de recette ; leur inscription ici ne vaut pas preuve de staging.
 
 > Les prototypes HTML sont une **référence visuelle mobile** (ambiance, hiérarchie, navigation, densité, cartes et icônes), non une source de parcours fonctionnel. Ne pas recopier les anciens flows des maquettes lorsqu’ils contredisent cette roadmap.
 
@@ -53,7 +53,7 @@ Le détail, les contrôles d’accès, la conservation et le plan de réalisatio
 
 ## 4. AccessGrant, QR et scopes
 
-Le QR initie une demande sans donnée médicale : jeton opaque, usage unique, validité **5 minutes**. L’API génère le jeton et l’interface patient/professionnel sait générer/scanner ou saisir le jeton. Le formulaire professionnel demande toutefois encore l’UUID patient séparément ; l’expérience complète reste à valider/finir sur mobile.
+Le QR initie une demande sans donnée médicale : jeton opaque, usage unique, validité **5 minutes**. Le patient génère le QR temporaire; le professionnel le scanne ou saisit son jeton opaque. **Le QR/jeton suffit à identifier le patient côté serveur : aucun UUID patient distinct ne doit être demandé ni accepté comme exigence UX.** La caméra et le secours par saisie du jeton restent à recetter sur de vrais mobiles.
 
 Les scopes doivent être visibles au patient et strictement appliqués. **A9 est décidé pour la V1** : `preconsultation` + `declarations` par défaut, `consultations` sélectionnable, `documents` hors V1. Le QR est valable 5 minutes et à usage unique.
 
@@ -76,10 +76,10 @@ L’expérience reste mobile-first, lisible et adaptée au contexte ivoirien et 
 
 ### Identité visuelle et personnalisation confirmées
 
-- **Valeur par défaut inchangée :** palette **Miel** et police **Bricolage Grotesque**. C’est l’identité mixte/neutre par défaut du produit.
-- Couples typographiques proposés : **1)** titres Sora + texte Bricolage Grotesque; **2)** titres Mooli + texte Manrope. Le défaut Bricolage Grotesque reste disponible en premier choix. Fredoka et Quicksand sont réservées à une éventuelle option « très arrondie »; les autres polices non retenues sortent des choix de personnalisation.
+- **Valeur par défaut :** palette **Miel** (identité mixte/neutre) avec titres **Sora** et texte **Bricolage Grotesque**. Miel reste sélectionnable et modifiable.
+- Couples typographiques : **1)** titres Sora + texte Bricolage Grotesque (défaut); **2)** titres Mooli + texte Manrope; **3)** titres Fredoka + texte Quicksand, réservée à l’espace patient. Hors patient, l’application emploie une paire sobre et les paramètres ne proposent pas Fredoka/Quicksand.
 - Palettes à conserver : **Miel**, **Rose**, **Violet**, **Argile** et **Sauge**. Miel est le défaut. Les thèmes restent librement sélectionnables par toute personne, sans verrouillage selon le genre.
-- Ajouter une taille de texte réglable (standard, grande, très grande) pour les personnes malvoyantes, sans empêcher le zoom du navigateur. Contraste, focus visible, zones tactiles et réduction des animations restent requis.
+- Ajouter une taille de texte réglable (standard, grande, très grande) pour les personnes malvoyantes, sans empêcher le zoom du navigateur. Contraste, focus visible, zones tactiles et réduction des animations restent requis; faire valider le contraste renforcé en recette avant d’en ajouter un mode distinct.
 - Alléger le chargement : ne pas importer/télécharger simultanément toutes les familles depuis Google. Charger la police sélectionnée seulement; privilégier des fichiers locaux WOFF2 en sous-ensemble latin avec licence vérifiée, `font-display: swap` et une pile système de secours. La police par défaut doit être immédiatement disponible sur mobile 4G; les autres choix peuvent être chargés à la demande.
 
 ### Parcours UX à préserver
@@ -88,6 +88,10 @@ L’expérience reste mobile-first, lisible et adaptée au contexte ivoirien et 
 - Chargement et réseau : loader plein écran sans sidebar pendant le contrôle initial; après délai, expliquer « Connexion lente, on réessaie » et proposer une action Réessayer, plutôt qu’un spinner indéfini. Une session expirée ou refusée renvoie à la connexion.
 - Navigation mobile : barre compacte flottante inspirée de Movesync, icônes seules mais accessibles; ne pas réintroduire un header séparé.
 - Professionnel sur ordinateur : recherche rapide au clavier (raccourci `/`) et listes compactes, sans élargir les droits ni contourner le consentement patient.
+- Consentement : afficher dans une carte lisible les ressources demandées, celles qui restent exclues, la durée par défaut (2 h), et des boutons « Autoriser »/« Refuser » de poids égal.
+- Journal patient : nom du professionnel et de l’établissement, ressource et quantité consultées, date/heure, durée autorisée et heure d’expiration; ne jamais exposer le contenu médical dans le journal.
+- Réseau instable : « Connexion lente, on réessaie » et bouton Réessayer après un délai mesuré; les brouillons médicaux sont sauvegardés côté serveur uniquement, jamais dans un stockage navigateur.
+- Recette UX : cinq tests utilisateurs qualitatifs (dont personne âgée, jeune et professionnel pressé), avec observation de la compréhension du consentement et du parcours mobile; pas un substitut à l’audit d’accessibilité.
 
 **Règle de source :** les flows produit et les choix confirmés viennent de cette roadmap; les prototypes n’apportent que la direction visuelle. Les prototypes ne priment pas sur les décisions de sécurité, d’accessibilité ou de confidentialité.
 
@@ -101,26 +105,29 @@ L’expérience reste mobile-first, lisible et adaptée au contexte ivoirien et 
 | Onboarding | Inscription e-mail auto-contexte Patient; choix Patient/Professionnel ensuite. Étape identité/avatar et formulaires conditionnels présents ; recette métier restante. |
 | Professionnel / justificatifs | Profil et flow d’affiliation présents ; les pièces du médecin restent internes à l’établissement et ne sont pas collectées par E‑Carnet. |
 | Startup / administrateur établissement | Flow API/UI présent : route publique neutralisée, console staff, compte nominatif, invitation 48 h et rattachement par code ; e-mail réel et recette production à faire. |
-| QR | API et écrans de génération/scan présents ; UUID patient encore requis séparément. 5 minutes/A9 appliqués ; recette complète mobile/staging restante. |
+| QR | Le jeton QR opaque suffit désormais à identifier le patient côté serveur, sans saisie d’UUID distinct; contrat protégé par test API, scan/saisie sur vrais mobiles encore à recetter. |
+| Consentement & audit d’accès | Carte patient explicitant périmètre, exclusions et durée, avec actions Autoriser/Refuser de poids égal; journal indiquant professionnel/établissement, ressources et quantités, horodatage et fenêtre d’autorisation, sans contenu clinique. Tests automatisés présents; recette utilisateur restante. |
+| Apparence/accessibilité | Miel + Sora/Bricolage par défaut; trois paires et échelle de texte configurables, paire Fredoka/Quicksand réservée à l’espace patient. Préférences persistées par compte et cache local; vérification build et persistance inter-appareils à compléter. |
 | Carte d’urgence QR | Exigence produit ajoutée le 13/10 : carte personnalisée téléchargeable/imprimable, QR exportable et lien « appeler ». Une première version de QR/page dédiée a été préparée dans l’archive de travail précédente; l’export carte, le design personnalisable et leur recette restent à terminer. Rien n’est déployé ni autorisé pour de vraies données. |
 | AccessGrant scopes | Contrat A9 appliqué : pré-consultation + déclarations par défaut, consultations sélectionnable, documents hors V1. |
 | SVG | Allowlist stricte, hash/horodatage et tests adversariaux présents localement ; rendu et pipeline staging à recetter. |
 | MFA/TOTP | Endpoints et stockage des secrets retirés de V1; réimplémentation réservée à V3 avec stockage chiffré et limitation des essais. |
-| Design | Maquettes reprises partiellement; icônes/navigation mobile à réaligner. |
+| Navigation/design | Sidebar PC pliable et navigation mobile communes aux espaces, Admin inclus; icônes sémantiques cohérentes. Recette responsive/accessibilité restante. |
 | Recette de déploiement | 77 tests PostgreSQL 16 et smoke de restauration locale isolée passés le 08/10 ; instance managée/staging, sauvegardes planifiées, RPO/RTO et vrai mobile/4G non démontrés. |
 
 Vérifications consignées le 05/10/2026 : 57 tests Django OK et 1 ignoré sous SQLite, `check`, migrations, lint et build passés (27 routes), smoke Chromium local sur 6 routes. Le 08/10, 77 tests ont réussi sur PostgreSQL 16 local et un smoke de restauration isolée a réussi ; la cible managée/staging et le RPO/RTO opérationnel restent à valider. Les cinq alertes npm `high` mentionnées le 05/10 n’ont pas été revérifiées. Voir [état réel](ETAT-REEL-V1.md), [recette](RECETTE-V1.md) et [rapport d’audit historique](RAPPORT-AUDIT-ECARNET.md).
 
 ## 7. Ordre de travail restant avant V1
 
-1. **Carte d’urgence :** concevoir l’aperçu personnalisé, l’export PNG/SVG du QR et le PDF imprimable; rendre le numéro appelable, montrer clairement les champs choisis, tester lecture/scans sur téléphone et papier, révocation/rotation et protection de la page publique.
-2. Recetter A9/QR d’accès professionnel sur vrais appareils ; décider si l’UUID patient doit être intégré au QR d’accès ou saisi séparément. Ne pas confondre ce QR d’accès avec le QR d’urgence.
+1. **Recetter les nouveautés V1** : QR seul, carte consentement, journal d’accès intelligible, tailles de texte et sélection de paires; vérifier les tests automatisés puis le parcours en staging.
+2. **Carte d’urgence** : tester l’aperçu, l’export PNG/SVG du QR et le PDF imprimable, l’appel du contact, la révocation/rotation et la protection de la page publique sur vrais téléphones et papier.
 3. Configurer et recetter SMTP/OAuth sur staging (credentials, callbacks réels).
 4. Vérifier permissions staff/établissement et contrôles PostgreSQL (`TRUNCATE`, privilèges runtime) sur la cible.
 5. Rejouer les sauvegardes/restaurations managées et mesurer/approuver le RPO/RTO opérationnel.
-6. Finaliser la recette mobile/desktop/accessibilité, les déclarations médicales, la taille de texte et le plan de chargement des polices; obtenir les validations juridiques/hébergement/rétention.
-7. Réaliser audit de dépendances daté ; les alertes du 05/10 ne prouvent pas le statut actuel.
-8. Garder les prototypes comme références visuelles uniquement ; ne pas réintroduire d’anciens parcours.
+6. Réaliser la recette mobile/desktop/accessibilité et confirmer déclarations médicales, contraste, zoom, comportement 4G, et chargement des polices; obtenir validations juridiques/hébergement/rétention.
+7. Tester qualitativement avec cinq utilisateurs représentatifs; consigner observations sans substituer ce test à la recette médicale/sécurité.
+8. Réaliser audit de dépendances daté ; les alertes du 05/10 ne prouvent pas le statut actuel.
+9. Garder les prototypes comme références visuelles uniquement ; ne pas réintroduire d’anciens parcours.
 
 ## 8. Périmètre fonctionnel par version
 
@@ -131,8 +138,16 @@ Les versions indiquent un ordre de priorité, pas une autorisation de mise en pr
 - Socle déjà défini : identité, patient/professionnel, déclarations avec provenance, préparation de consultation, demandes de consentement/AccessGrant, espace établissement privé et journalisation.
 - Carte d’urgence personnelle : groupe sanguin, allergies, traitements, contact à prévenir; activation explicite; QR d’URL exportable; page minimale avec appel en un geste; carte PDF téléchargeable/imprimable et visuellement personnalisable; désactivation et renouvellement.
 - Pré-consultation en écrans successifs; navigation mobile compacte; recherche clavier et listes professionnelles denses sur desktop; état de connexion lente avec bouton de reprise.
-- Personnalisation : Miel + Bricolage Grotesque par défaut; couples Sora/Bricolage et Mooli/Manrope; palettes Rose, Violet, Argile et Sauge en plus de Miel; réglage de taille de texte; chargement à la demande d’une seule paire de polices.
+- Accès professionnel par jeton QR seul; carte de consentement équilibrée et explicite; journal patient décrivant les ressources réellement consultées, le professionnel, l’horodatage et la fenêtre d’autorisation.
+- Personnalisation : Miel + Sora/Bricolage par défaut; couples Mooli/Manrope et Fredoka/Quicksand (patient seulement); palettes Rose, Violet, Argile et Sauge en plus de Miel; réglage de taille de texte; seule la paire affichée est chargée par le navigateur.
 - Terminer la recette réelle du QR d’accès professionnel, du consentement, de l’accessibilité et des gates d’exploitation avant tout pilote autorisé.
+
+### V1.x — améliorations utiles après les flux de base
+
+- **À spécifier et implémenter :** brouillons de pré-consultation créés/sauvegardés côté serveur uniquement (API authentifiée, lien au patient, sauvegarde progressive et reprise après déconnexion/réseau lent); cadrer durée de conservation et suppression. Ne jamais placer de données de santé en `localStorage`, `sessionStorage` ou IndexedDB.
+- Checklist patient de démarrage en trois étapes, non bloquante et réinitialisable.
+- Export PDF d’une consultation ou du carnet, après définition du périmètre exporté et avertissement sur le fichier téléchargé.
+- Rappel d’expiration des codes d’établissement de 48 h et liste « patients récents » pour le professionnel, sous réserve d’un cadre clair de confidentialité/retention.
 
 ### V2 — prévention et suivi quotidien
 
@@ -143,6 +158,7 @@ Les versions indiquent un ordre de priorité, pas une autorisation de mise en pr
 - Rendez-vous, rappels SMS et ticket virtuel avec estimation d’attente si les établissements partenaires fournissent des données fiables.
 - Messagerie patient–médecin sécurisée pour le suivi non urgent; contenus éducatifs courts en français (audio possible), revus par un professionnel; rappels de dépistage et informations de couverture santé/CMU.
 - Suivi de grossesse, d’enfant et de croissance à cadrer avec des profils de proches et leur consentement.
+- Profils pour proches (enfant, parent âgé) et carte d’urgence consultable hors ligne : uniquement après revue juridique, modèle de délégation/consentement, analyse de menace et règles de révocation/expiration hors ligne. Ne pas publier ou mettre en cache des données de santé avant cette validation.
 
 ### V3 — services cliniques et intégrations conditionnels
 
@@ -154,6 +170,7 @@ Les versions indiquent un ordre de priorité, pas une autorisation de mise en pr
 - Paiement mobile money (Orange Money, MTN, Wave, Moov) via agrégateur autorisé, avec reçu; dépend des contrats, remboursements, sécurité financière et conformité.
 - Pas et données de capteurs automatiques uniquement avec une application native/intégration confirmée (Health Connect/Apple Santé ou capteur compatible). Une PWA seule ne lit pas ces sources; Web Bluetooth est limité, et la mesure du pouls par caméra est écartée pour fiabilité insuffisante.
 - Assistant de préparation de consultation uniquement : reformuler le récit du patient et suggérer des questions, sans diagnostic ni vérificateur de symptômes. Données synthétiques jusqu’aux validations juridiques, médicales et d’hébergement.
+- Toute extension du MFA/OTP, des accès délégués et du partage inter-professionnel est conditionnée à la récupération de compte, à la limitation d’essais et aux audits de sécurité prévus.
 
 ### V4–V5 — à décider après retours et partenariats
 

@@ -1,37 +1,66 @@
 /**
- * Thème d'un carnet : 5 couleurs source (c1→c5) + 1 police.
- * Source : maquettes Espace_*.html (palette Miel par défaut, 9 presets, 12 polices).
+ * Thème d'un carnet : 5 couleurs source (c1→c5), une paire typographique et une échelle de texte.
+ * Choix V1 : cinq palettes et trois paires de polices servies localement par next/font.
  * Règle : le thème ne touche JAMAIS aux couleurs sémantiques (statuts de provenance, danger) — voir tokens.css.
  * resolveTheme() garantit WCAG 2.1 AA (CDC 13.6) quelle que soit la palette cliente.
  */
 
-export const FONTS = [
-  "Plus Jakarta Sans", "Nunito", "Lexend", "Manrope", "Sora", "Mooli",
-  "Unbounded", "Quicksand", "Bricolage Grotesque", "Barlow", "Ubuntu", "Fredoka",
-] as const;
-export type FontName = (typeof FONTS)[number];
+export const FONT_PAIRS = {
+  "sora-bricolage": { label: "Sora (titres) · Bricolage Grotesque (texte)", heading: "Sora", body: "Bricolage Grotesque" },
+  "mooli-manrope": { label: "Mooli (titres) · Manrope (texte)", heading: "Mooli", body: "Manrope" },
+  "fredoka-quicksand": { label: "Fredoka (titres) · Quicksand (texte, arrondi)", heading: "Fredoka", body: "Quicksand" },
+} as const;
+export type FontPairId = keyof typeof FONT_PAIRS;
+export type FontName = (typeof FONT_PAIRS)[FontPairId]["body"] | (typeof FONT_PAIRS)[FontPairId]["heading"];
+export const TEXT_SCALES = {
+  normal: { label: "Standard", value: "100%" },
+  large: { label: "Grand", value: "115%" },
+  "very-large": { label: "Très grand", value: "130%" },
+} as const;
+export type TextScale = keyof typeof TEXT_SCALES;
+export type ThemeWorkspace = "patient" | "professional" | "establishment";
 
 /** [c1 fond, c2 teinte/bordure, c3 accent doux, c4 primaire, c5 encre] */
 export type Palette5 = readonly [string, string, string, string, string];
 
 export interface ThemeConfig {
   palette: Palette5;
-  font: FontName;
+  font_pair: FontPairId;
+  text_scale: TextScale;
 }
 
 export const PALETTES = {
   sauge:   { label: "Sauge",   colors: ["#F2F5EF", "#D8E2D0", "#A9C4A5", "#5B7F68", "#2C3A33"] },
-  menthe:  { label: "Menthe",  colors: ["#E9F7F2", "#BFE8D6", "#63C6A7", "#2F7E6A", "#1F2E2C"] },
-  brume:   { label: "Brume",   colors: ["#FFFFFF", "#F4F7F8", "#D6E2E6", "#58B7B0", "#20343A"] },
-  lagon:   { label: "Lagon",   colors: ["#E6FFF7", "#B9F2E3", "#7AD8C8", "#4AA1A3", "#2A4B5D"] },
   miel:    { label: "Miel",    colors: ["#FFF7E6", "#FFE3B3", "#FFC857", "#4BAA8B", "#1E3A34"] },
-  lavande: { label: "Lavande", colors: ["#F6F2FF", "#E3D7FF", "#BCA6F6", "#5D64B8", "#1F2440"] },
+  lavande: { label: "Violet", colors: ["#F6F2FF", "#E3D7FF", "#BCA6F6", "#5D64B8", "#1F2440"] },
   rose:    { label: "Rose",    colors: ["#FFF1F5", "#FFD2DF", "#F28AA8", "#B94D6D", "#3A1E2A"] },
-  prairie: { label: "Prairie", colors: ["#F5FAF4", "#DCEFD7", "#8CCF8A", "#2F8A5A", "#1F2D24"] },
   argile:  { label: "Argile",  colors: ["#FFF4EC", "#F6D8C3", "#DDA57A", "#4D8F86", "#1D2F33"] },
 } as const satisfies Record<string, { label: string; colors: Palette5 }>;
 
-export const DEFAULT_THEME: ThemeConfig = { palette: PALETTES.miel.colors, font: "Bricolage Grotesque" };
+export const DEFAULT_THEME: ThemeConfig = { palette: PALETTES.miel.colors, font_pair: "sora-bricolage", text_scale: "normal" };
+
+/** Les polices très rondes restent réservées au patient; la préférence est conservée au compte. */
+export function themeForWorkspace(theme: ThemeConfig, workspace: ThemeWorkspace): ThemeConfig {
+  return workspace !== "patient" && theme.font_pair === "fredoka-quicksand" ? { ...theme, font_pair: "sora-bricolage" } : theme;
+}
+
+/** Normalise aussi les enregistrements historiques qui ne contiennent qu'une police `font`. */
+export function normalizeTheme(value: unknown): ThemeConfig | null {
+  if (!value || typeof value !== "object") return null;
+  const candidate = value as Record<string, unknown>;
+  const palette = candidate.palette;
+  if (!Array.isArray(palette) || palette.length !== 5 || palette.some((color) => typeof color !== "string") || validatePalette(palette as string[]).length) return null;
+  const owns = (record: object, key: string) => Object.prototype.hasOwnProperty.call(record, key);
+  if (candidate.font_pair !== undefined && (typeof candidate.font_pair !== "string" || !owns(FONT_PAIRS, candidate.font_pair))) return null;
+  const legacyFont = candidate.font;
+  const legacyPairs: Record<string, FontPairId> = {
+    "Sora": "sora-bricolage", "Bricolage Grotesque": "sora-bricolage", "Mooli": "mooli-manrope", "Manrope": "mooli-manrope", "Fredoka": "fredoka-quicksand", "Quicksand": "fredoka-quicksand",
+  };
+  const pair = (typeof candidate.font_pair === "string" && owns(FONT_PAIRS, candidate.font_pair) ? candidate.font_pair : typeof legacyFont === "string" ? legacyPairs[legacyFont] : undefined) as FontPairId | undefined;
+  const scale = candidate.text_scale;
+  const textScale = typeof scale === "string" && owns(TEXT_SCALES, scale) ? scale as TextScale : "normal";
+  return { palette: palette as unknown as Palette5, font_pair: pair ?? DEFAULT_THEME.font_pair, text_scale: textScale };
+}
 
 /* ---------- couleur ---------- */
 const WHITE = "#FFFFFF";
@@ -75,7 +104,7 @@ export function validatePalette(p: readonly string[]): string[] {
 }
 
 /* ---------- résolution : thème → variables CSS ---------- */
-export function resolveTheme({ palette, font }: ThemeConfig): Record<string, string> {
+export function resolveTheme({ palette, font_pair, text_scale }: ThemeConfig): Record<string, string> {
   const errs = validatePalette(palette);
   if (errs.length) throw new Error(errs.join(" · "));
   const [c1, c2, c3, c4, c5] = palette;
@@ -110,26 +139,25 @@ export function resolveTheme({ palette, font }: ThemeConfig): Record<string, str
     "--primary-text": primaryText,
     "--primary-tint": c2,
     "--focus": focus,
-    "--font-body": fontStack(font),
+    "--font-body": fontStack(font_pair, "body"),
+    "--font-heading": fontStack(font_pair, "heading"),
+    "--text-scale": TEXT_SCALES[text_scale].value,
   };
 }
 
 const FONT_VARIABLES: Record<FontName, string> = {
-  "Plus Jakarta Sans": "--font-plus-jakarta-sans",
-  Nunito: "--font-nunito",
-  Lexend: "--font-lexend",
   Manrope: "--font-manrope",
   Sora: "--font-sora",
   Mooli: "--font-mooli",
-  Unbounded: "--font-unbounded",
   Quicksand: "--font-quicksand",
   "Bricolage Grotesque": "--font-bricolage-grotesque",
-  Barlow: "--font-barlow",
-  Ubuntu: "--font-ubuntu",
   Fredoka: "--font-fredoka",
 };
 
-export const fontStack = (f: FontName) => `var(${FONT_VARIABLES[f]}, '${f}'), system-ui, -apple-system, 'Segoe UI', sans-serif`;
+export const fontStack = (pair: FontPairId, role: "body" | "heading" = "body") => {
+  const name = FONT_PAIRS[pair][role];
+  return `var(${FONT_VARIABLES[name]}, '${name}'), system-ui, -apple-system, 'Segoe UI', sans-serif`;
+};
 
 export function themeToStyle(cfg: ThemeConfig): string {
   return Object.entries(resolveTheme(cfg)).map(([k, v]) => `${k}:${v}`).join(";");

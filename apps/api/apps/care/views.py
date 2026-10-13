@@ -115,6 +115,8 @@ class PatientAccessAuditView(APIView):
                 "resource_type": metadata.get("resource_type"),
                 "resource_count": metadata.get("resource_count"),
                 "extension_count": metadata.get("extension_count"),
+                "authorized_until": metadata.get("authorized_until"),
+                "access_duration_minutes": metadata.get("access_duration_minutes"),
                 "professional_name": grant.professional_name if grant else "Professionnel",
                 "facility_label": grant.facility_label if grant else "Établissement",
                 "created_at": event.created_at,
@@ -206,7 +208,9 @@ class ProfessionalConsultationListCreateView(APIView):
             return Response({"success": False, "message": access_error}, status=403)
         items = list(Consultation.objects.filter(professional=profile, establishment=profile.active_establishment).select_related("establishment", "source_encounter", "patient", "access_grant"))
         for item in items:
-            record_event(event_type="clinical_data.read", actor=request.user, actor_role="professional", patient=item.patient, establishment=item.establishment, access_grant=item.access_grant, consultation=item, metadata={"action": "read_consultation", "resource_type": "consultation", "resource_id": str(item.id), "resource_count": 1})
+            grant = item.access_grant
+            duration = int(round((grant.expires_at - grant.starts_at).total_seconds() / 60)) if grant and grant.starts_at and grant.expires_at else None
+            record_event(event_type="clinical_data.read", actor=request.user, actor_role="professional", patient=item.patient, establishment=item.establishment, access_grant=grant, consultation=item, metadata={"action": "read_consultation", "resource_type": "consultation", "resource_id": str(item.id), "resource_count": 1, "authorized_until": grant.expires_at.isoformat() if grant and grant.expires_at else None, "access_duration_minutes": duration})
         return Response({"success": True, "data": ConsultationSerializer(items, many=True).data})
 
     @transaction.atomic
@@ -241,5 +245,6 @@ class ProfessionalAuthorizedEncounterListView(APIView):
         if grant.status != "active" or grant.establishment_id != getattr(profile.active_establishment, "id", None) or "preconsultation" not in grant.scope:
             return Response({"success": False, "message": "Cette pré-consultation n’est pas accessible avec l’autorisation courante."}, status=403)
         items = list(CareEncounter.objects.filter(patient=grant.patient, establishment_id=grant.establishment_id, status="closed").order_by("-closed_at"))
-        record_event(event_type="clinical_data.read", actor=request.user, actor_role="professional", patient=grant.patient, establishment=grant.establishment, access_grant=grant, metadata={"action": "read_preconsultations", "resource_type": "preconsultation", "resource_count": len(items)})
+        duration = int(round((grant.expires_at - grant.starts_at).total_seconds() / 60)) if grant.starts_at and grant.expires_at else None
+        record_event(event_type="clinical_data.read", actor=request.user, actor_role="professional", patient=grant.patient, establishment=grant.establishment, access_grant=grant, metadata={"action": "read_preconsultations", "resource_type": "preconsultation", "resource_count": len(items), "authorized_until": grant.expires_at.isoformat() if grant.expires_at else None, "access_duration_minutes": duration})
         return Response({"success": True, "data": CareEncounterSerializer(items, many=True).data})

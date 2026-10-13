@@ -22,6 +22,10 @@ type AccessEvent = {
   action: string;
   status: string | null;
   extension_count: number | null;
+  resource_type?: string | null;
+  resource_count?: number | null;
+  access_duration_minutes?: number | null;
+  authorized_until?: string | null;
   professional_name: string;
   facility_label: string;
   created_at: string;
@@ -48,6 +52,31 @@ const actionLabels: Record<string, string> = {
   revoke: "Accès révoqué",
   expired: "Accès expiré",
 };
+const resourceLabels: Record<string, string> = {
+  preconsultation: "vos pré-consultations",
+  consultation: "vos consultations",
+  declaration: "vos déclarations",
+};
+
+function eventDescription(event: AccessEvent): string {
+  if (event.event_type === "clinical_data.read") {
+    const resourceNoun = event.resource_type === "preconsultation" ? "pré-consultation" : event.resource_type === "consultation" ? "consultation" : event.resource_type === "declaration" ? "déclaration" : "élément de votre carnet";
+    const count = event.resource_count;
+    const quantity = typeof count === "number" ? `${count} ${resourceNoun}${count === 1 ? "" : "s"}` : resourceLabels[event.resource_type ?? ""] ?? "des éléments de votre carnet";
+    const duration = event.access_duration_minutes;
+    const durationText = typeof duration === "number" ? ` L’autorisation était valable ${duration / 60} h` : "";
+    return `${event.professional_name} a consulté ${quantity} dans le cadre de son accès autorisé.${durationText}.`;
+  }
+  const labels: Record<string, string> = {
+    requested: `${event.professional_name} a demandé un accès à votre carnet.`,
+    accept: "Vous avez autorisé cet accès.",
+    refuse: "Vous avez refusé cette demande d’accès.",
+    extend: "Vous avez prolongé cet accès.",
+    revoke: "Vous avez révoqué cet accès.",
+    expired: "Cet accès a expiré.",
+  };
+  return labels[event.action] ?? actionLabels[event.action] ?? "Événement lié à un accès.";
+}
 
 async function getData<T>(path: string): Promise<T> {
   const response = await fetch(`${API}${path}`, { credentials: "include", cache: "no-store" });
@@ -164,12 +193,13 @@ export function PatientAccessGrants() {
                   <div><h3>{item.professional_name}</h3><p className="muted">{item.facility_label}</p></div>
                   <span className={item.status === "active" ? "badge verified" : "badge declared"}>{statusLabels[item.status] ?? item.status}</span>
                 </div>
-                <p className="muted">Périmètre : {item.scope.map((scope) => scopeLabels[scope] ?? scope).join(", ") || "À préciser"}</p>
+                <p className="muted">Périmètre demandé : {item.scope.map((scope) => scopeLabels[scope] ?? scope).join(", ") || "À préciser"}</p>
+                {item.status === "pending" && <p className="consent-explanation">Si vous autorisez : accès pendant <strong>2 heures</strong>, prolongeable deux fois d’une heure. Le professionnel ne verra que le périmètre affiché ci-dessus. Les documents sont exclus. <strong>Aucune donnée n’est accessible avant votre décision.</strong></p>}
                 <p className="muted">Durée initiale : 2 h, prolongeable deux fois d’1 h. {item.status === "active" && item.expires_at ? `Expiration : ${new Date(item.expires_at).toLocaleString("fr-FR")}.` : ""}</p>
                 <div className="actions">
                   {item.status === "pending" && <>
-                    <button type="button" className="button primary" disabled={busyId === item.id} onClick={() => act(item.id, "accept")}>Autoriser 2 h</button>
-                    <button type="button" className="button" disabled={busyId === item.id} onClick={() => act(item.id, "refuse")}>Refuser</button>
+                    <button type="button" className="button consent-decision" disabled={busyId === item.id} onClick={() => act(item.id, "accept")}>Autoriser pendant 2 h</button>
+                    <button type="button" className="button consent-decision" disabled={busyId === item.id} onClick={() => act(item.id, "refuse")}>Refuser</button>
                   </>}
                   {item.status === "active" && <>
                     <button type="button" className="button" disabled={busyId === item.id || item.extension_count >= 2} onClick={() => act(item.id, "extend")}>Prolonger 1 h ({Math.max(0, 2 - item.extension_count)} restante{item.extension_count === 1 ? "" : "s"})</button>
@@ -188,7 +218,7 @@ export function PatientAccessGrants() {
           <ol className="stack">
             {events.map((event) => (
               <li className="record" key={event.id}>
-                <div><strong>{actionLabels[event.action] ?? "Événement d’accès"}</strong><p className="muted">{event.professional_name} · {event.facility_label}</p></div>
+                <div><strong>{eventDescription(event)}</strong><p className="muted">{event.facility_label}{event.authorized_until ? ` · accès valable jusqu’au ${new Date(event.authorized_until).toLocaleString("fr-FR")}` : ""}{event.status ? ` · statut : ${statusLabels[event.status] ?? event.status}` : ""}</p></div>
                 <time className="muted" dateTime={event.created_at}>{new Date(event.created_at).toLocaleString("fr-FR")}</time>
               </li>
             ))}

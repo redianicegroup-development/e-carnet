@@ -1,7 +1,7 @@
 # État réel du projet — V1
 
-**État documentaire vérifié : 08/10/2026 — code du dépôt et rapports de recette disponibles**  
-**Comparaison :** code courant et preuves locales horodatées ; les résultats de lint/build du 05/10 ne sont pas rejoués dans cette mise à jour  
+**État documentaire revu : 13/10/2026 — base v1.8 et modifications locales en cours**  
+**Comparaison :** preuves historiques horodatées ci-dessous; les changements de code du 13/10 sont en cours de validation et ne sont ni déployés ni acceptés  
 **Verdict : V1 en construction, non acceptée et non autorisée pour des données de santé réelles.**
 
 ## Résumé exécutif
@@ -14,7 +14,9 @@ Le dépôt contient un socle fonctionnel sérieux : monorepo Next.js/Django, ses
 La V1 n’est toutefois pas finalisée :
 
 - la preuve la plus récente est **77 tests réussis sur PostgreSQL 16 local, zéro échec et zéro ignoré**, le 08/10 ; elle n’équivaut pas à une recette de la base managée de staging ;
-- la génération QR côté patient et la lecture caméra/saisie du jeton côté professionnel existent, mais le formulaire demande encore séparément l’UUID patient ;
+- la génération QR côté patient, le scan/saisie côté professionnel et l’API existent. Le correctif local du 13/10 retire le champ UUID séparé et ajoute un test de contrat QR seul; ce test et le parcours mobile doivent encore être exécutés;
+- le correctif local ajoute un journal patient des ressources et quantités lues, avec instant, durée snapshotée du droit et expiration; à confirmer par tests et recette staging;
+- les préférences d’apparence ont été étendues aux couples de polices et à trois tailles de texte; synchronisation API, cache et application selon l’espace restent à confirmer par tests/build;
 - A9 est décidé : QR à usage unique de 5 min ; scopes par défaut `preconsultation` + `declarations`, `consultations` sélectionnable et `documents` hors V1 ;
 - callbacks et interface de liaison/déliaison OAuth présents ; credentials réels, essais avec les fournisseurs et contrôle de sécurité du parcours restent à faire ;
 - la sanitation SVG est maintenant une allowlist stricte, couverte par des tests adversariaux ;
@@ -75,7 +77,7 @@ Limites restantes : configurer et vérifier SMTP/délivrabilité en staging, tes
 - Pages Patient, Professionnel, Établissement, Staff, onboarding, sécurité et FAQ présentes. Les comptes-rendus de build du 05/10 donnent 27 ou 31 routes selon la passe ; ce total est historique et doit être revérifié avant de s’y référer.
 - Manifest/service worker présents ; aucune donnée médicale ne doit être mise en cache.
 - Un smoke Chromium headless valide 6 routes pour mobile/accessibilité de base ; la recette Android/iOS/4G et l’audit WCAG 2.2 AA complet restent à faire.
-- Le formulaire QR est partiellement intégré : scan caméra/saisie du jeton présents, mais l’UUID patient reste à saisir séparément.
+- Le formulaire QR v1.8 permet scan/saisie du jeton. Le retrait local du champ UUID ajouté le 13/10 n’est pas encore validé par les tests/build.
 
 ## Travaux restants pour déclarer la V1 finalisée
 
@@ -83,7 +85,7 @@ Limites restantes : configurer et vérifier SMTP/délivrabilité en staging, tes
 
 1. Rejouer les tests sur la base PostgreSQL managée de staging, notamment concurrence, isolation, refus et révocation.
 2. Recetter en staging le transport SMTP, SPF/DKIM/DMARC, délivrabilité, expiration et procédure de renvoi ; ne jamais exposer le jeton dans une réponse API.
-3. Recetter QR/A9 sur mobile : durée produit de 5 minutes et scopes décidés ; supprimer ou justifier la saisie séparée de l’UUID patient.
+3. Recetter QR/A9 sur mobile : durée produit de 5 minutes et scopes décidés ; vérifier le contrat QR seul et l’absence d’exigence d’UUID distinct.
 4. Recetter l’onboarding identité/avatar et les formulaires métier ; l’avatar URL est livré, l’upload de fichier n’est pas prévu en V1.
 5. Rejouer la sanitation SVG stricte sur le pipeline de staging et vérifier le rendu avec le composant final.
 
@@ -100,7 +102,8 @@ Limites restantes : configurer et vérifier SMTP/délivrabilité en staging, tes
 11. Faire valider médicalement les champs de pré-consultation/consultation, unités et corrections.
 12. Formaliser les décisions juridiques sur hébergement ivoirien, conservation, droits, e-mail des justificatifs structure et incidents.
 13. Recetter navigateur mobile, Android/4G, clavier, lecteur d’écran, focus, session expirée et responsive desktop.
-14. Réaliser une recette staging complète CA-01 à CA-24 avec SMTP réel, QR sur mobile et preuves horodatées, puis prendre une décision Go/No-Go. Tant que cette étape n’est pas signée, utiliser uniquement des données `example.test`.
+14. Rejouer d’abord sur cette copie lint, tests web, tests Django et build après les changements du 13/10; consigner les résultats réels sans extrapoler.
+15. Réaliser une recette staging complète CA-01 à CA-24 avec SMTP réel, QR sur mobile et preuves horodatées, puis prendre une décision Go/No-Go. Tant que cette étape n’est pas signée, utiliser uniquement des données `example.test`.
 
 ## Documents de référence
 

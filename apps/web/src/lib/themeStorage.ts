@@ -1,4 +1,4 @@
-import { DEFAULT_THEME, FONTS, validatePalette, type ThemeConfig } from "@ecarnet/ui/themes";
+import { DEFAULT_THEME, normalizeTheme, type ThemeConfig } from "@ecarnet/ui/themes";
 
 const ACTIVE_ACCOUNT_KEY = "ecarnet:theme:v1:active-account";
 const ACCOUNT_THEME_PREFIX = "ecarnet:theme:v1:account:";
@@ -6,11 +6,7 @@ const ACCOUNT_THEME_PREFIX = "ecarnet:theme:v1:account:";
 function parseTheme(raw: string | null): ThemeConfig | null {
   if (!raw) return null;
   try {
-    const value = JSON.parse(raw) as Partial<ThemeConfig>;
-    if (!value || typeof value.font !== "string" || !FONTS.includes(value.font as (typeof FONTS)[number])) return null;
-    if (!Array.isArray(value.palette) || value.palette.length !== 5 || value.palette.some((color) => typeof color !== "string")) return null;
-    if (validatePalette(value.palette).length) return null;
-    return { font: value.font as ThemeConfig["font"], palette: value.palette as unknown as ThemeConfig["palette"] };
+    return normalizeTheme(JSON.parse(raw));
   } catch {
     return null;
   }
@@ -48,5 +44,5 @@ export function clearActiveThemeCache(): void {
 }
 
 export function defaultTheme(): ThemeConfig {
-  return { font: DEFAULT_THEME.font, palette: [...DEFAULT_THEME.palette] as unknown as ThemeConfig["palette"] };
+  return { ...DEFAULT_THEME, palette: [...DEFAULT_THEME.palette] as unknown as ThemeConfig["palette"] };
 }

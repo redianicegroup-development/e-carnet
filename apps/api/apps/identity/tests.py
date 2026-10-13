@@ -21,7 +21,7 @@ class ThemePreferenceTests(TestCase):
         self.user_b = User.objects.create_user(username="patient-b", password="fake-local-password")
         self.client = APIClient()
 
-    def test_new_account_gets_lagon_unbounded_default(self):
+    def test_new_account_gets_miel_bricolage_default(self):
         self.client.force_authenticate(self.user_a)
         response = self.client.get("/api/v1/identity/me/theme/")
         self.assertEqual(response.status_code, 200)
@@ -30,7 +30,7 @@ class ThemePreferenceTests(TestCase):
         self.assertEqual(ThemePreference.objects.get(user=self.user_a).theme, DEFAULT_THEME)
 
     def test_theme_is_private_to_each_account(self):
-        custom = {"font": "Sora", "palette": ["#E9F7F2", "#BFE8D6", "#63C6A7", "#2F7E6A", "#1F2E2C"]}
+        custom = {"font_pair": "mooli-manrope", "text_scale": "large", "palette": ["#FFF1F5", "#FFD2DF", "#F28AA8", "#B94D6D", "#3A1E2A"]}
         self.client.force_authenticate(self.user_a)
         response = self.client.patch("/api/v1/identity/me/theme/", custom, format="json")
         self.assertEqual(response.status_code, 200)
@@ -47,11 +47,20 @@ class ThemePreferenceTests(TestCase):
         self.assertEqual(response_b.data["account_id"], str(self.user_b.pk))
         self.assertNotEqual(response_b.data["data"], custom)
 
-    def test_invalid_font_or_palette_is_rejected(self):
+    def test_invalid_font_pair_text_scale_or_palette_is_rejected(self):
         self.client.force_authenticate(self.user_a)
-        invalid = {"font": "url(javascript:alert(1))", "palette": ["red"] * 5}
+        invalid = {"font_pair": "url(javascript:alert(1))", "text_scale": "giant", "palette": ["red"] * 5}
         response = self.client.patch("/api/v1/identity/me/theme/", invalid, format="json")
         self.assertEqual(response.status_code, 400)
+
+    def test_legacy_preference_is_upgraded_without_losing_its_valid_palette(self):
+        old_palette = ["#FFF1F5", "#FFD2DF", "#F28AA8", "#B94D6D", "#3A1E2A"]
+        ThemePreference.objects.create(user=self.user_a, theme={"font": "Mooli", "palette": old_palette})
+        self.client.force_authenticate(self.user_a)
+        response = self.client.get("/api/v1/identity/me/theme/")
+        expected = {"font_pair": "mooli-manrope", "text_scale": "normal", "palette": old_palette}
+        self.assertEqual(response.data["data"], expected)
+        self.assertEqual(ThemePreference.objects.get(user=self.user_a).theme, expected)
 
     def test_anonymous_user_gets_default_theme_but_cannot_write(self):
         response = self.client.get("/api/v1/identity/me/theme/")
@@ -64,7 +73,7 @@ class ThemePreferenceTests(TestCase):
     def test_session_write_requires_csrf_token(self):
         client = Client(enforce_csrf_checks=True)
         client.force_login(self.user_a)
-        payload = {"font": "Sora", "palette": ["#E9F7F2", "#BFE8D6", "#63C6A7", "#2F7E6A", "#1F2E2C"]}
+        payload = {"font_pair": "fredoka-quicksand", "text_scale": "very-large", "palette": ["#FFF7E6", "#FFE3B3", "#FFC857", "#4BAA8B", "#1E3A34"]}
         url = "/api/v1/identity/me/theme/"
         denied = client.patch(url, data=json.dumps(payload), content_type="application/json", HTTP_ORIGIN="http://localhost:3000")
         self.assertEqual(denied.status_code, 403)

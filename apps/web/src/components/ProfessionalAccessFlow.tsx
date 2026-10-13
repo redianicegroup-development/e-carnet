@@ -52,7 +52,7 @@ const scopeLabels: Record<string, string> = {
 export function ProfessionalAccessFlow() {
   const [items, setItems] = useState<Grant[]>([]);
   const [message, setMessage] = useState("Chargement des demandes d’accès…");
-  const [form, setForm] = useState({ patient_id: "", scope: "preconsultation" });
+  const [form, setForm] = useState({ qr_token: "", scope: "preconsultation" });
 
   async function refresh() {
     const grants = await get<Grant[]>("/api/v1/patient/care/professional/access-grants/");
@@ -80,10 +80,10 @@ export function ProfessionalAccessFlow() {
     event.preventDefault();
     try {
       await post<Grant>("/api/v1/patient/care/professional/access-grants/", {
-        patient_id: form.patient_id,
+        qr_token: form.qr_token.trim(),
         scope: [form.scope],
       });
-      setForm({ patient_id: "", scope: "preconsultation" });
+      setForm({ qr_token: "", scope: "preconsultation" });
       setMessage("Demande d’AccessGrant envoyée au patient pour validation.");
       await refresh();
     } catch (error) {
@@ -101,12 +101,12 @@ export function ProfessionalAccessFlow() {
       <form className="card" onSubmit={requestAccess} style={{ marginTop: 20 }}>
         <h2>Nouvelle demande d’accès</h2>
         <label className="field">
-          <span>ID patient</span>
+          <span>Jeton QR du patient</span>
           <input
             required
-            value={form.patient_id}
-            onChange={(event) => setForm({ ...form, patient_id: event.target.value })}
-            placeholder="UUID du patient"
+            value={form.qr_token}
+            onChange={(event) => setForm({ ...form, qr_token: event.target.value })}
+            placeholder="Scannez ou collez le jeton QR temporaire"
           />
         </label>
         <label className="field">

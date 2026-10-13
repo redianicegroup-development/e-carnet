@@ -8,8 +8,8 @@ export function listProfessionalGrants(): Promise<ProfessionalGrant[]> {
   return apiGet<ProfessionalGrant[]>("/api/v1/patient/care/professional/access-grants/");
 }
 
-export function requestProfessionalGrant(patientId: string, scope: string[], qrToken?: string): Promise<ProfessionalGrant> {
-  return apiPost<ProfessionalGrant>("/api/v1/patient/care/professional/access-grants/", { patient_id: patientId, scope, ...(qrToken ? { qr_token: qrToken } : {}) });
+export function requestProfessionalGrant(scope: string[], qrToken: string): Promise<ProfessionalGrant> {
+  return apiPost<ProfessionalGrant>("/api/v1/patient/care/professional/access-grants/", { scope, qr_token: qrToken });
 }
 
 export function listAuthorizedEncounters(grantId: string): Promise<Encounter[]> {

@@ -1,19 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import {
-  Barlow,
   Bricolage_Grotesque,
   Fredoka,
   JetBrains_Mono,
-  Lexend,
   Manrope,
   Mooli,
-  Nunito,
-  Plus_Jakarta_Sans,
   Quicksand,
   Sora,
-  Ubuntu,
-  Unbounded,
 } from "next/font/google";
 import "@ecarnet/ui/tokens.css";
 import "./globals.css";
@@ -28,22 +22,16 @@ import "./cookie-consent.css";
 import "./screen-loader.css";
 import "../components/modal/modal.css";
 
-// Les fichiers sont intégrés au build puis servis localement. preload=false
-// évite de précharger les 12 familles : seul le thème sélectionné est demandé.
-const plusJakartaSans = Plus_Jakarta_Sans({ subsets: ["latin"], weight: "400", variable: "--font-plus-jakarta-sans", display: "swap", preload: false });
-const nunito = Nunito({ subsets: ["latin"], weight: "400", variable: "--font-nunito", display: "swap", preload: false });
-const lexend = Lexend({ subsets: ["latin"], weight: "400", variable: "--font-lexend", display: "swap", preload: false });
+// Polices auto-hébergées par Next au build : une seule paire est utilisée à l’écran,
+// sans requête Google Fonts à l’exécution ni préchargement des autres paires.
 const manrope = Manrope({ subsets: ["latin"], weight: "400", variable: "--font-manrope", display: "swap", preload: false });
 const sora = Sora({ subsets: ["latin"], weight: "400", variable: "--font-sora", display: "swap", preload: false });
 const mooli = Mooli({ subsets: ["latin"], weight: "400", variable: "--font-mooli", display: "swap", preload: false });
-const unbounded = Unbounded({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-unbounded", display: "swap", preload: false });
 const quicksand = Quicksand({ subsets: ["latin"], weight: "400", variable: "--font-quicksand", display: "swap", preload: false });
 const bricolageGrotesque = Bricolage_Grotesque({ subsets: ["latin"], weight: "400", variable: "--font-bricolage-grotesque", display: "swap", preload: false });
-const barlow = Barlow({ subsets: ["latin"], weight: "400", variable: "--font-barlow", display: "swap", preload: false });
-const ubuntu = Ubuntu({ subsets: ["latin"], weight: "400", variable: "--font-ubuntu", display: "swap", preload: false });
 const fredoka = Fredoka({ subsets: ["latin"], weight: "400", variable: "--font-fredoka", display: "swap", preload: false });
 const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], weight: ["400", "600"], variable: "--font-jetbrains-mono", display: "swap", preload: false });
-const localFontClasses = [jetbrainsMono, plusJakartaSans, nunito, lexend, manrope, sora, mooli, unbounded, quicksand, bricolageGrotesque, barlow, ubuntu, fredoka]
+const localFontClasses = [jetbrainsMono, manrope, sora, mooli, quicksand, bricolageGrotesque, fredoka]
   .map((font) => font.variable)
   .join(" ");
 
