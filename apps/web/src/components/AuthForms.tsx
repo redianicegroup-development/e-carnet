@@ -10,7 +10,7 @@ const API = "";
 type AuthMode = "login" | "register";
 type Account = { recovery_configured?: boolean; contexts?: Array<{ role: string; is_active: boolean; onboarding_completed: boolean }> };
 function destinationFor(account: Account, mode: AuthMode, requested: string | null) {
-  if (mode === "register") return "/onboarding/identite";
+  if (mode === "register") return requested === "/patient/transfert" ? requested : "/onboarding/identite";
   const context = account.contexts?.find((item) => item.is_active) ?? account.contexts?.[0];
   if (context?.onboarding_completed && !account.recovery_configured) return "/onboarding/securite";
   if (requested?.startsWith("/") && !requested.startsWith("//") && !requested.includes("\\")) return safeOAuthNext(requested);

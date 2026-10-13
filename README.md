@@ -21,6 +21,8 @@ Pour éviter de réintroduire un ancien choix : [état réel et hiérarchie docu
 - Authentification e-mail/mot de passe et endpoints OAuth Google/Facebook/Apple : callbacks et interface de liaison/déliaison sont présents ; secrets et recette réelle fournisseur restent requis. Aucun compte n’est fusionné sur la seule égalité d’e-mail.
 - Onboarding en quatre étapes : identité, choix du contexte, profil métier, puis configuration d’une question de récupération complémentaire. Sa réponse est hachée; elle ne permet pas à elle seule de récupérer le compte ni d’ouvrir le dossier médical.
 - Profil patient, déclarations, pré-consultation, historique et consultation.
+- Profils d’enfants représentés séparés du dossier du parent; transfert du dossier existant à son titulaire adulte soumis à vérifications humaines. Le seuil légal reste à configurer et les délégations d’adultes ne sont pas ouvertes.
+- Carte d’urgence hors ligne distincte du carnet complet : identité minimale, déclarations choisies et contact d’urgence; les copies imprimées peuvent être périmées et ne sont pas effaçables à distance.
 - AccessGrant : consentement, scopes V1, expiration serveur de 2 h, deux prolongations d’1 h et révocation.
 - QR opaque, hashé en base, à usage unique, valable **5 minutes** ; A9 : `preconsultation` + `declarations` par défaut, `consultations` sélectionnable, `documents` hors V1. Le formulaire professionnel exige encore l’UUID patient en plus du jeton QR : le parcours n’est pas entièrement sans friction.
 - Invitations établissement via transport SMTP Django configurable ; le jeton brut n’est jamais renvoyé dans une réponse API.

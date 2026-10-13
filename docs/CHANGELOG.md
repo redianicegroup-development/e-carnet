@@ -39,6 +39,13 @@
 - Verdict maintenu : NO-GO staging/production tant que PostgreSQL réel, restauration, staging et validations métier/sécurité ne sont pas signés.
 # Changelog
 
+## V1 — profils représentés et carte d’urgence hors ligne — 2026-10-13
+
+- Ajout local de profils enfants distincts, de liens parentaux révocables/réactivables et de sélection de dossier avec contrôle d’accès serveur et journalisation. Aucune fusion avec le dossier du parent.
+- Ajout du parcours de demande de transfert du même dossier par le titulaire adulte et d’une file de revue dans la console admin; toute approbation exige les attestations staff d’identité et d’âge légal. Le seuil légal reste à configurer après validation juridique; aucune pièce d’identité n’est collectée par l’application.
+- Ajout d’un export volontaire de carte d’urgence imprimable avec identité minimale, déclarations sélectionnées, contact, date de mise à jour et mention qu’elle peut être périmée. Les copies hors ligne ne peuvent être effacées à distance.
+- Adultes représentés/délégations non activés. Vérifications locales : 33 tests patients/soins OK, migrations et check Django OK, build Next.js OK (42 routes), lint OK avec 4 avertissements `<img>` préexistants. Ces contrôles ne valent pas recette staging.
+
 ## V1 — question de récupération complémentaire — 2026-10-13
 
 - Ajout de l’étape 4 de l’onboarding après le profil patient ou professionnel, avec questions prédéfinies et question personnalisée.

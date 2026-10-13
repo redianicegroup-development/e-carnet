@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { QRCodeSVG } from "qrcode.react";
 import { notifyProductActionCompleted, primeCsrf, readCsrfToken } from "../infrastructure/api/client";
+import { usePatientAccessQr } from "./shell/SpaceShell";
 import { useConfirm } from "./modal/ConfirmProvider";
 
 type Grant = {
@@ -90,8 +90,7 @@ export function PatientAccessGrants() {
   const [events, setEvents] = useState<AccessEvent[]>([]);
   const [message, setMessage] = useState("Chargement des demandes…");
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [qrToken, setQrToken] = useState<string | null>(null);
-  const [qrExpiresAt, setQrExpiresAt] = useState<number | null>(null);
+  const { qr, setQr } = usePatientAccessQr();
   const [qrBusy, setQrBusy] = useState(false);
   const confirm = useConfirm();
 
@@ -153,8 +152,7 @@ export function PatientAccessGrants() {
       const payload = await response.json();
       if (!csrf.ok || !response.ok) throw new Error(payload.message ?? "QR indisponible.");
       notifyProductActionCompleted("/api/v1/patient/care/access-qr/", "POST");
-      setQrToken(payload.data.token);
-      setQrExpiresAt(Date.now() + payload.data.expires_in_seconds * 1000);
+      setQr({ token: payload.data.token, expiresAt: Date.now() + payload.data.expires_in_seconds * 1000 });
       setMessage("QR temporaire généré. Il expire automatiquement dans 5 minutes.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Impossible de générer le QR.");
@@ -172,12 +170,8 @@ export function PatientAccessGrants() {
         <span className="eyebrow">Accès temporaire</span>
         <h2 id="qr-heading">Présenter mon QR à un professionnel</h2>
         <p className="muted">Le QR contient uniquement un jeton opaque à usage unique. Il ne contient aucune donnée médicale.</p>
-        {!qrToken ? <button type="button" className="button primary" onClick={() => void createQr()} disabled={qrBusy}>{qrBusy ? "Génération…" : "Générer un QR temporaire"}</button> : (
-          <div className="qr-panel">
-            <QRCodeSVG value={qrToken} size={240} includeMargin aria-label="QR temporaire d’accès au carnet" />
-            <p className="muted">Valable jusqu’à {qrExpiresAt ? new Date(qrExpiresAt).toLocaleTimeString("fr-FR") : "expiration automatique"}. Une seule demande peut le consommer.</p>
-            <button type="button" className="button" onClick={() => { setQrToken(null); setQrExpiresAt(null); }}>Masquer le QR</button>
-          </div>
+        {!qr ? <button type="button" className="button primary" onClick={() => void createQr()} disabled={qrBusy}>{qrBusy ? "Génération…" : "Générer un QR temporaire"}</button> : (
+          <p className="notice">Votre QR est affiché en haut de l’espace Patient et reste visible pendant votre navigation jusqu’à son expiration.</p>
         )}
       </section>
 

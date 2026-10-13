@@ -13,6 +13,7 @@ import { LandingFeedbackWidget } from "./LandingFeedbackWidget";
 import { ThemeSettingsClient } from "./ThemeSettingsClient";
 import { AccountActionRequestsSettingsClient } from "./AccountActionRequestsSettingsClient";
 import { PatientEmergencyCardSettingsClient } from "./PatientEmergencyCardSettingsClient";
+import { PatientRepresentationsSettingsClient } from "./PatientRepresentationsSettingsClient";
 import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
 
 const API = "";
@@ -20,6 +21,7 @@ type Account = { first_name: string; last_name: string; email: string; avatar_ur
 const sections: SettingsNavItem[] = [
   { id: "personnel", title: "Mes informations personnelles", description: "Modifier mon nom et ma photo de profil.", icon: "idcard" },
   { id: "sante", title: "Informations de santé déclaratives", description: "Téléphone, adresse et couverture santé.", icon: "heart" },
+  { id: "proches", title: "Proches et personnes représentées", description: "Gérer les dossiers distincts des enfants représentés.", icon: "users" },
   { id: "compte", title: "Paramètres du compte", description: "Personnaliser l’apparence de l’application.", icon: "sparkle" },
   { id: "securite", title: "Sécurité et connexion", description: "Gérer les fournisseurs liés au compte.", icon: "lock" },
   { id: "en-savoir-plus", title: "En savoir plus", description: "Aide, informations et documents E‑Carnet.", icon: "help" },
@@ -125,6 +127,11 @@ export function AccountSettingsClient() {
         <span className="eyebrow">Déclaratif</span><p className="muted">Les allergies, antécédents et traitements que vous déclarez sont conservés dans votre carnet.</p>
         <div className="actions"><Link className="button" href="/patient/carnet">Gérer mes déclarations du carnet</Link></div>
         <PatientHealthSettingsClient />
+      </div></SettingsModal>}
+
+      {activeSection === "proches" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section">
+        <span className="eyebrow">Représentation explicite</span>
+        <PatientRepresentationsSettingsClient />
       </div></SettingsModal>}
 
       {activeSection === "compte" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section">

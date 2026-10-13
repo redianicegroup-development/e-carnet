@@ -58,6 +58,10 @@ Le flow d’invitation est présent côté API/UI : lien hashé à usage unique 
 
 Argon2id est déclaré dans `apps/api/requirements.txt` et est le premier hasher Django. PBKDF2 reste déclaré pour vérifier les anciens hachages et permettre la mise à niveau. Vérifier le comportement sur la base staging et ne jamais exporter les vrais hashes dans un rapport.
 
+## Profils représentés et transfert adulte
+
+`ECARNET_REPRESENTATION_LEGAL_AGE` est volontairement vide par défaut. Ne la renseigner qu’après validation juridique du seuil applicable; tant qu’elle est vide, la création de profils représentés et les demandes de transfert sont bloquées. L’approbation d’un transfert exige une vérification manuelle de l’identité du demandeur et de son âge légal via la file dédiée de la console admin (superutilisateurs uniquement). Aucune pièce d’identité n’est collectée par l’application; définir et valider la procédure probante hors application avant la production.
+
 ## Installation native
 
 ```bash

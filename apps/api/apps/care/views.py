@@ -8,7 +8,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from apps.patients.views import profile_for
+from apps.patients.views import patient_actor_role, profile_for
 from apps.establishments.models import Establishment
 from apps.professionals.access import professional_clinical_access_error
 from apps.professionals.models import ProfessionalProfile
@@ -23,7 +23,7 @@ from .consultation_services import validate_consultation
 class EncounterListCreateView(APIView):
     permission_classes = [IsAuthenticated]
     def get(self, request):
-        items = CareEncounter.objects.filter(patient=profile_for(request.user))
+        items = CareEncounter.objects.filter(patient=profile_for(request.user, request))
         return Response({"success": True, "data": CareEncounterSerializer(items, many=True).data})
     @transaction.atomic
     def post(self, request):
@@ -37,15 +37,15 @@ class EncounterListCreateView(APIView):
             establishment = None
         if not establishment:
             return Response({"success": False, "message": "Choisissez un établissement actif pour associer cette pré-consultation."}, status=400)
-        item = CareEncounter.objects.create(patient=profile_for(request.user), establishment=establishment, facility_label=establishment.name, **serializer.validated_data)
-        record_event(event_type="preconsultation.created", actor=request.user, actor_role="patient", patient=item.patient, metadata={"action": "created", "encounter_id": str(item.id), "status": item.status})
+        item = CareEncounter.objects.create(patient=profile_for(request.user, request), establishment=establishment, facility_label=establishment.name, **serializer.validated_data)
+        record_event(event_type="preconsultation.created", actor=request.user, actor_role=patient_actor_role(request), patient=item.patient, metadata={"action": "created", "encounter_id": str(item.id), "status": item.status})
         return Response({"success": True, "data": CareEncounterSerializer(item).data}, status=status.HTTP_201_CREATED)
 
 
 class EncounterDetailView(APIView):
     permission_classes = [IsAuthenticated]
     def get_object(self, request, pk):
-        return CareEncounter.objects.filter(pk=pk, patient=profile_for(request.user)).first()
+        return CareEncounter.objects.filter(pk=pk, patient=profile_for(request.user, request)).first()
     def get(self, request, pk):
         item = self.get_object(request, pk)
         if not item:
@@ -61,7 +61,7 @@ class EncounterDetailView(APIView):
         serializer = CareEncounterSerializer(item, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        record_event(event_type="preconsultation.updated", actor=request.user, actor_role="patient", patient=item.patient, metadata={"action": "updated", "encounter_id": str(item.id), "status": item.status})
+        record_event(event_type="preconsultation.updated", actor=request.user, actor_role=patient_actor_role(request), patient=item.patient, metadata={"action": "updated", "encounter_id": str(item.id), "status": item.status})
         return Response({"success": True, "data": serializer.data})
     @transaction.atomic
     def post(self, request, pk):
@@ -73,14 +73,14 @@ class EncounterDetailView(APIView):
             item.closed_at = timezone.now()
             item.save(update_fields=("status", "closed_at", "updated_at"))
             PreConsultationRevision.objects.create(encounter=item, snapshot={"reason": item.reason, "observations": item.observations, "facility_label": item.facility_label, "recorded_with_help": item.recorded_with_help})
-            record_event(event_type="preconsultation.closed", actor=request.user, actor_role="patient", patient=item.patient, metadata={"action": "closed", "encounter_id": str(item.id), "status": item.status})
+            record_event(event_type="preconsultation.closed", actor=request.user, actor_role=patient_actor_role(request), patient=item.patient, metadata={"action": "closed", "encounter_id": str(item.id), "status": item.status})
         return Response({"success": True, "data": CareEncounterSerializer(item).data})
 
 
 class PatientAccessGrantListView(APIView):
     permission_classes = [IsAuthenticated]
     def get(self, request):
-        items = AccessGrant.objects.filter(patient=profile_for(request.user))
+        items = AccessGrant.objects.filter(patient=profile_for(request.user, request))
         for item in items:
             item.refresh_expiration()
         return Response({"success": True, "data": AccessGrantSerializer(items, many=True).data})
@@ -90,7 +90,7 @@ class PatientAccessQrCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        raw = create_patient_qr_token(patient=profile_for(request.user))
+        raw = create_patient_qr_token(patient=profile_for(request.user, request))
         return Response({"success": True, "data": {"token": raw, "expires_in_seconds": QR_TOKEN_TTL_SECONDS, "scope": ["preconsultation", "declarations"]}})
 
 
@@ -99,7 +99,7 @@ class PatientAccessAuditView(APIView):
 
     def get(self, request):
         events = (
-            AuditEvent.objects.filter(patient=profile_for(request.user)).filter(Q(event_type__startswith="access_grant.") | Q(event_type="clinical_data.read"))
+            AuditEvent.objects.filter(patient=profile_for(request.user, request)).filter(Q(event_type__startswith="access_grant.") | Q(event_type="clinical_data.read"))
             .select_related("access_grant")
             .order_by("-created_at")[:100]
         )
@@ -129,7 +129,7 @@ class PatientAccessGrantActionView(APIView):
     @transaction.atomic
     def post(self, request, pk, action):
         # Serialize the whole state transition. A stale extend must never rewrite a concurrent revoke.
-        item = AccessGrant.objects.select_for_update(of=("self",)).select_related("patient", "establishment").filter(pk=pk, patient=profile_for(request.user)).first()
+        item = AccessGrant.objects.select_for_update(of=("self",)).select_related("patient", "establishment").filter(pk=pk, patient=profile_for(request.user, request)).first()
         if not item:
             return Response({"success": False, "message": "Demande d’accès introuvable."}, status=404)
         now = timezone.now()
@@ -157,14 +157,14 @@ class PatientAccessGrantActionView(APIView):
         else:
             return Response({"success": False, "message": "Cette action n’est pas disponible pour cet état."}, status=409)
         item.save(update_fields=update_fields)
-        record_event(event_type=f"access_grant.{action}", actor=request.user, actor_role="patient", patient=item.patient, establishment=item.establishment, access_grant=item, metadata={"action": action, "status": item.status, "extension_count": item.extension_count})
+        record_event(event_type=f"access_grant.{action}", actor=request.user, actor_role=patient_actor_role(request), patient=item.patient, establishment=item.establishment, access_grant=item, metadata={"action": action, "status": item.status, "extension_count": item.extension_count})
         return Response({"success": True, "data": AccessGrantSerializer(item).data})
 
 
 class PatientConsultationListView(APIView):
     permission_classes = [IsAuthenticated]
     def get(self, request):
-        items = Consultation.objects.filter(patient=profile_for(request.user))
+        items = Consultation.objects.filter(patient=profile_for(request.user, request))
         return Response({"success": True, "data": ConsultationSerializer(items, many=True).data})
 
 

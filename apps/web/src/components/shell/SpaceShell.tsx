@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { QRCodeSVG } from "qrcode.react";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { ApiError, apiGet, apiPost } from "../../infrastructure/api/client";
 import { SPACES, type SpaceId } from "../../lib/spaces";
@@ -25,6 +26,19 @@ export type SpaceAccount = {
 const AccountContext = createContext<SpaceAccount | null>(null);
 export const useSpaceAccount = () => useContext(AccountContext);
 
+type PatientAccessQr = { token: string; expiresAt: number };
+type PatientAccessQrContextValue = {
+  qr: PatientAccessQr | null;
+  setQr: (qr: PatientAccessQr | null) => void;
+};
+const PatientAccessQrContext = createContext<PatientAccessQrContextValue | null>(null);
+
+export function usePatientAccessQr() {
+  const context = useContext(PatientAccessQrContext);
+  if (!context) throw new Error("Le QR d’accès patient doit être utilisé dans l’espace Patient.");
+  return context;
+}
+
 export function displayName(account: Pick<SpaceAccount, "first_name" | "last_name" | "email">) {
   return [account.first_name, account.last_name].filter(Boolean).join(" ") || account.email;
 }
@@ -46,6 +60,8 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
   const confirm = useConfirm();
   const config = SPACES[space];
   const [state, setState] = useState<State>({ status: "loading" });
+  const [patientAccessQr, setPatientAccessQr] = useState<PatientAccessQr | null>(null);
+  const [qrNow, setQrNow] = useState(0);
   const [navCollapsed, setNavCollapsed] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [logoutMessage, setLogoutMessage] = useState("");
@@ -65,6 +81,24 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
     }
   }
   const bare = config.bare.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+
+  useEffect(() => {
+    if (space !== "patient" || !patientAccessQr) return;
+    const updateExpiry = () => {
+      const now = Date.now();
+      setQrNow(now);
+      if (now >= patientAccessQr.expiresAt) setPatientAccessQr(null);
+    };
+    updateExpiry();
+    const timer = window.setInterval(updateExpiry, 1000);
+    return () => window.clearInterval(timer);
+  }, [space, patientAccessQr]);
+
+  useEffect(() => {
+    const clearQrForProfileChange = () => setPatientAccessQr(null);
+    window.addEventListener("ecarnet:patient-profile-changed", clearQrForProfileChange);
+    return () => window.removeEventListener("ecarnet:patient-profile-changed", clearQrForProfileChange);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -90,6 +124,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
 
   const moi = config.tabs[config.tabs.length - 1];
   const showAdminLink = space === "patient" && state.status === "ready" && state.account.is_admin === true;
+  const qrRemainingSeconds = patientAccessQr ? Math.max(0, Math.ceil((patientAccessQr.expiresAt - qrNow) / 1000)) : 0;
 
   const items: SidebarItem[] = config.tabs.map((tab) => ({ id: tab.id, label: tab.label, long: tab.long, icon: tab.icon, href: tab.href, active: tab.match(pathname), account: tab === moi }));
   if (showAdminLink) items.splice(items.length - 1, 0, { id: "admin", label: "Admin", long: "Administration", icon: "shield", href: "https://e-carnetci.vercel.app/admin/", external: true, active: false });
@@ -121,7 +156,25 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
           <section className="card gate" role="alert"><h1>Service momentanément indisponible</h1><p className="muted">{state.message}</p><div className="actions"><button type="button" className="button primary" onClick={() => window.location.reload()}>Réessayer</button></div></section>
         )}
         {(state.status === "ready" || bare) && (
-          <AccountContext.Provider value={state.status === "ready" ? state.account : null}>{children}</AccountContext.Provider>
+          <AccountContext.Provider value={state.status === "ready" ? state.account : null}>
+            <PatientAccessQrContext.Provider value={{ qr: patientAccessQr, setQr: setPatientAccessQr }}>
+              {space === "patient" && patientAccessQr && qrNow > 0 && qrNow < patientAccessQr.expiresAt && (
+                <section className="patient-active-qr card" aria-label="QR temporaire actif">
+                  <div className="patient-active-qr__code">
+                    <QRCodeSVG value={patientAccessQr.token} size={132} includeMargin aria-label="QR temporaire d’accès au carnet" />
+                  </div>
+                  <div className="patient-active-qr__details">
+                    <span className="eyebrow">QR temporaire actif</span>
+                    <h2>Votre QR reste disponible</h2>
+                    <p className="muted">Vous pouvez naviguer dans votre espace Patient : ce QR restera affiché jusqu’à son expiration.</p>
+                    <p className="patient-active-qr__countdown">Expire dans {Math.floor(qrRemainingSeconds / 60)}:{String(qrRemainingSeconds % 60).padStart(2, "0")}</p>
+                    <small className="muted">Jeton à usage unique. Ne le partagez qu’avec le professionnel concerné.</small>
+                  </div>
+                </section>
+              )}
+              {children}
+            </PatientAccessQrContext.Provider>
+          </AccountContext.Provider>
         )}
         {!bare && <p className="space-footer">Données fictives uniquement pour le moment · <Link href="/aide#confidentialite">Aide</Link></p>}
       </main>

@@ -1,7 +1,7 @@
 # Roadmap produit — Mon Carnet Numérique, V1 à V5
 
 **Mise à jour : 13/10/2026 — décisions produit actives, périmètre V1–V3 clarifié.**  
-**Statut :** V1 en construction, non acceptée et interdite pour les données de santé réelles. Ce document fait foi pour l’intention produit ; l’état réellement implémenté et les preuves sont dans [ETAT-REEL-V1.md](ETAT-REEL-V1.md) et [RECETTE-V1.md](RECETTE-V1.md). Les validations médicales/juridiques et le déploiement restent à obtenir. Les changements de code de cette passe doivent être vérifiés dans la matrice de recette ; leur inscription ici ne vaut pas preuve de staging.
+**Statut :** V1 en construction, non acceptée et interdite pour les données de santé réelles. Ce document fait foi pour l’intention produit ; l’état réellement implémenté et les preuves sont dans [ETAT-REEL-V1.md](ETAT-REEL-V1.md) et [RECETTE-V1.md](RECETTE-V1.md). Les validations médicales/juridiques et le déploiement restent à obtenir. Les changements locaux de cette passe ont passé les contrôles ciblés décrits dans l’état réel; cela ne vaut pas preuve de staging.
 
 > Les prototypes HTML sont une **référence visuelle mobile** (ambiance, hiérarchie, navigation, densité, cartes et icônes), non une source de parcours fonctionnel. Ne pas recopier les anciens flows des maquettes lorsqu’ils contredisent cette roadmap.
 
@@ -42,6 +42,13 @@ L’onboarding doit être reprenable. Aucun accès clinique n’est ouvert par l
 
 Le compte choisit une question prédéfinie ou saisit sa propre question, puis enregistre une réponse. Le serveur conserve la réponse sous forme hachée et ne la restitue jamais. Cette donnée aide à préparer une récupération future, mais la réponse seule n’autorise ni la récupération du compte ni l’accès au dossier médical. Aucun SMS ni parcours d’assistance n’est activé dans cette étape; une vérification supplémentaire devra être définie avant toute récupération autonome. L’étape ne modifie pas le carnet ni son historique.
 
+## 2 bis. Profils représentés et autonomie
+
+- Un parent/représentant crée pour un enfant mineur un profil patient distinct (identité et date de naissance), sans créer de compte de connexion séparé. Le carnet du parent n’est jamais utilisé comme dossier de l’enfant; les déclarations, consultations et traces d’audit restent rattachées au profil enfant. Chaque accès représenté doit passer par le lien explicite du représentant, être sélectionné côté serveur et être journalisé.
+- La V1 ne permet que la création de profils d’enfants avec confirmation de représentation légale. Les profils de parents/grands-parents adultes ne sont pas créés par le proche : toute délégation adulte doit être autorisée par la personne elle-même et fera l’objet d’un parcours distinct. Une révocation coupe l’accès du représentant mais conserve le profil et son historique.
+- À l’âge adulte, le titulaire crée/ouvre son propre compte et demande le rattachement du dossier existant avant de créer un second dossier patient. Après contrôle manuel de l’identité **et** de l’âge légal, le staff rattache le même profil au compte du titulaire; il ne copie, ne fusionne et ne supprime aucune donnée. Le seuil `ECARNET_REPRESENTATION_LEGAL_AGE` n’est pas défini par défaut : validation juridique et interface/procédure staff sont des prérequis au lancement.
+- La carte d’urgence hors ligne est un document séparé du carnet complet et du QR public. L’utilisateur choisit les allergies et traitements à inclure; la carte porte l’identité minimale, le contact désigné, la date de mise à jour et un avertissement de péremption possible. Une copie imprimée/téléchargée ne peut pas être révoquée ni effacée à distance. L’export doit être volontaire, privé et audité.
+
 ## 3. Établissement privé et rattachements
 
 1. L’établissement contacte E‑Carnet par e-mail officiel et envoie les preuves de la structure; aucune demande/upload public d’établissement n’est proposé sur la landing page.
@@ -73,6 +80,7 @@ Cette carte n’est **pas** un QR d’accès professionnel et ne donne jamais ac
 - **Livrable souhaité :** QR exportable en PNG et SVG, plus une carte personnelle soignée, téléchargeable et imprimable en PDF, avec le QR bien contrasté, un titre d’urgence, une date de mise à jour et le moyen d’appeler le contact. Le design est personnalisable (palette/présentation); le prénom sur le support imprimé reste facultatif. Par défaut, ne pas afficher l’identité du patient sur la page publique. Le résultat doit rester lisible sur téléphone comme sur papier.
 - La page liée doit être sans cache, sans indexation, avec politique de référent restrictive; pas d’analytics contenant le jeton ou les valeurs de santé. Expliquer qu’une connexion Internet est nécessaire pour ouvrir la page. Si des valeurs sont imprimées en clair sur la carte, elles doivent être un choix distinct, précédé d’un avertissement sur le risque de perte/lecture par un tiers.
 - La carte aide à transmettre des informations et à appeler un proche; elle ne diagnostique pas, ne garantit pas une prise en charge et ne remplace pas les secours ou un avis médical. La publication de données réelles dépend des validations médicales, juridiques, sécurité et hébergement.
+- En complément, une carte imprimable/hors ligne distincte du QR public est en cours d’implémentation : données choisies et sauvegardées explicitement avant export, date de mise à jour, avertissement « peut être périmée » et absence de promesse d’expiration/effacement à distance.
 
 ## 5. Design, personnalisation et UX
 

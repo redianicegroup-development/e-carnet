@@ -54,6 +54,8 @@ REST_FRAMEWORK = {
         "auth_login": os.environ.get("ECARNET_RATE_LOGIN", "20/hour"),
         "auth_login_email": os.environ.get("ECARNET_RATE_LOGIN_EMAIL", "8/hour"),
         "auth_register": os.environ.get("ECARNET_RATE_REGISTER", "10/hour"),
+        "representation_changes": os.environ.get("ECARNET_RATE_REPRESENTATION", "20/hour"),
+        "representation_transfer": os.environ.get("ECARNET_RATE_REPRESENTATION_TRANSFER", "5/hour"),
         "code_redeem": os.environ.get("ECARNET_RATE_CODE", "10/hour"),
         "grant_request": os.environ.get("ECARNET_RATE_GRANT", "60/hour"),
         "visitor_analytics": os.environ.get("ECARNET_RATE_VISITOR", "1200/hour"),
@@ -66,6 +68,11 @@ REST_FRAMEWORK = {
 }
 WEB_ORIGIN = os.environ.get("WEB_ORIGIN", "http://localhost:3000")
 ECARNET_QR_TTL_SECONDS = int(os.environ.get("ECARNET_QR_TTL_SECONDS", "300"))
+ECARNET_REPRESENTATION_LEGAL_AGE = (
+    int(os.environ["ECARNET_REPRESENTATION_LEGAL_AGE"])
+    if os.environ.get("ECARNET_REPRESENTATION_LEGAL_AGE", "").isdigit()
+    else None
+)
 CORS_ALLOWED_ORIGINS = [origin.strip() for origin in os.environ.get("CORS_ALLOWED_ORIGINS", WEB_ORIGIN).split(",") if origin.strip()]
 CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in os.environ.get("CSRF_TRUSTED_ORIGINS", ",".join(CORS_ALLOWED_ORIGINS)).split(",") if origin.strip()]

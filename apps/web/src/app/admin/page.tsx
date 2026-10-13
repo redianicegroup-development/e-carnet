@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ApiError, apiGet, apiPatch, apiPost } from "../../infrastructure/api/client";
 import { AdminActivityCharts, type DailyActivityPoint } from "../../components/AdminActivityCharts";
 import { AdminAccountActionRequestsClient } from "../../components/AdminAccountActionRequestsClient";
+import { AdminRepresentationTransfersClient } from "../../components/AdminRepresentationTransfersClient";
 import { AdminSettingsClient } from "../../components/AdminSettingsClient";
 import { useConfirm } from "../../components/modal/ConfirmProvider";
 import { Icon, type IconName } from "../../components/ui/Icon";
@@ -41,7 +42,7 @@ type Dashboard = {
   visitors: Visitor[]; feedback: Feedback[]; survey_responses: SurveyResponse[];
 };
 type AdminProfile = { email: string; first_name: string; last_name: string; avatar_url?: string };
-type AdminTab = "overview" | "activity" | "feedback" | "survey" | "establishments" | "account-requests" | "settings";
+type AdminTab = "overview" | "activity" | "feedback" | "survey" | "establishments" | "account-requests" | "representation-transfers" | "settings";
 
 const tabs: { id: AdminTab; label: string; short: string; icon: IconName }[] = [
   { id: "overview", label: "Vue d’ensemble", short: "Accueil", icon: "home" },
@@ -50,6 +51,7 @@ const tabs: { id: AdminTab; label: string; short: string; icon: IconName }[] = [
   { id: "survey", label: "Enquête UX", short: "Enquête", icon: "document" },
   { id: "establishments", label: "Établissements", short: "Établ.", icon: "building" },
   { id: "account-requests", label: "Gestion des comptes", short: "Comptes", icon: "users" },
+  { id: "representation-transfers", label: "Transferts de dossiers", short: "Transferts", icon: "users" },
   { id: "settings", label: "Paramètres", short: "Moi", icon: "user" },
 ];
 const categoryLabel: Record<string, string> = {
@@ -209,7 +211,7 @@ export default function AdminPage() {
   const adminName = [adminProfile?.first_name, adminProfile?.last_name].filter(Boolean).join(" ") || adminProfile?.email || "Administrateur";
   const adminInitials = `${adminProfile?.first_name?.[0] ?? ""}${adminProfile?.last_name?.[0] ?? ""}`.toUpperCase() || adminProfile?.email?.[0]?.toUpperCase() || "A";
 
-  const tabGroup: Partial<Record<AdminTab, string>> = { overview: "Pilotage", establishments: "Gestion", settings: "Compte" };
+  const tabGroup: Partial<Record<AdminTab, string>> = { overview: "Pilotage", establishments: "Gestion", "representation-transfers": "Gestion", settings: "Compte" };
   const sidebarItems: SidebarItem[] = tabs.map((tab) => ({
     id: tab.id, label: tab.short, long: tab.label, icon: tab.icon, active: activeTab === tab.id,
     onSelect: () => setActiveTab(tab.id), domId: `admin-tab-${tab.id}`, controls: `admin-panel-${tab.id}`, heading: tabGroup[tab.id],
@@ -297,6 +299,7 @@ export default function AdminPage() {
       <article className="card"><span className="eyebrow">Limites du rôle</span><h2>Contrôle administratif, pas clinique</h2><p className="muted">Le staff E‑Carnet ne vérifie pas les justificatifs personnels du médecin dans ce parcours. L’établissement vérifie ses médecins, émet un code temporaire et décide des demandes de rattachement. L’espace établissement n’accède jamais aux dossiers médicaux.</p></article>
     </section>}
     {activeTab === "account-requests" && <section id="admin-panel-account-requests" role="tabpanel" aria-labelledby="admin-tab-account-requests"><AdminAccountActionRequestsClient /></section>}
+    {activeTab === "representation-transfers" && <section id="admin-panel-representation-transfers" role="tabpanel" aria-labelledby="admin-tab-representation-transfers"><AdminRepresentationTransfersClient /></section>}
     {activeTab === "settings" && <section id="admin-panel-settings" role="tabpanel" aria-labelledby="admin-tab-settings"><AdminSettingsClient onLogout={() => void askSignOut()} /></section>}
       </div>
     </main>

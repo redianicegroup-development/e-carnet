@@ -1,7 +1,7 @@
 # État réel du projet — V1
 
-**État documentaire revu : 13/10/2026 — base v1.8 et modifications locales en cours**  
-**Comparaison :** preuves historiques horodatées ci-dessous; les changements locaux du 13/10 sont vérifiés par les contrôles listés, mais ne sont ni déployés ni acceptés
+**État documentaire revu : 13/10/2026 — base v1.8 et modifications locales vérifiées**
+**Comparaison :** preuves historiques horodatées ci-dessous; les changements locaux du 13/10 ont passé les contrôles ciblés indiqués, mais ne sont ni déployés ni acceptés
 **Verdict : V1 en construction, non acceptée et non autorisée pour des données de santé réelles.**
 
 ## Résumé exécutif
@@ -27,6 +27,9 @@ La V1 n’est toutefois pas finalisée :
 
 | Contrôle | Résultat |
 |---|---|
+| Tests Django ciblés patients/soins, 13/10 | **OK** : 33 tests réussis, dont profils représentés, révocation/réactivation, transfert avec double vérification staff et carte hors ligne |
+| Migrations et `check` Django, 13/10 | **OK** : aucune migration manquante; aucun problème système |
+| Build Next.js et lint, 13/10 | **OK** : 42 routes; zéro erreur lint et 4 avertissements `<img>` préexistants |
 | Tests Django sur PostgreSQL 16, 08/10 | **OK** : 77 réussis, 0 échec, 0 ignoré ; preuve la plus récente disponible |
 | Smoke de sauvegarde/restauration locale PostgreSQL, 08/10 | **OK** : restauration isolée, marqueur et migrations vérifiés ; commande de restauration 1 s, non assimilable au RTO |
 | Suite SQLite rapportée le 05/10 | **Historique :** 57 tests OK, 1 ignoré dans un rapport ; 71 OK, 1 ignoré dans un rapport ultérieur du même jour |
@@ -52,10 +55,13 @@ Les mentions d’échecs sur l’ancienne création publique d’établissement,
 - Compte unique avec choix Patient ou Professionnel ; `AuthIdentity` et callbacks Google/Facebook/Apple présents.
 - Onboarding identité/avatar → contexte → formulaire métier → question de récupération complémentaire présent ; la réponse est hachée et le profil de compte est distinct du dossier patient.
 - La question de récupération ne constitue pas à elle seule un parcours de récupération : aucune vérification par SMS ni réouverture du dossier sur cette seule preuve n’est implémentée.
+- Les profils représentés, la revue des transferts et l’export d’une carte d’urgence hors ligne ont passé les tests ciblés et le build local; procédure probante, recette staging et validation juridique restent nécessaires.
 
 ### Patient, accès clinique et consultation
 
 - Profil patient, déclarations, pré-consultation brouillon/clôture, historique et consultation persistée.
+- Dossiers enfants représentés séparés, lien révocable/réactivable et sélection session contrôlée côté serveur; transfert du même dossier à un compte adulte soumis à revue manuelle de l’identité et de l’âge légal via la console superadmin. Le seuil légal est absent par défaut; les délégations d’adultes ne sont pas ouvertes et aucune pièce d’identité n’est conservée. Tests ciblés locaux passés; procédure probante et staging restent à valider.
+- Carte d’urgence imprimable/hors ligne avec identité minimale, allergies/traitements sélectionnés et contact. La sélection doit être enregistrée avant export; les exports sont privés, sans cache et audités. Une copie papier/PDF peut être périmée et ne peut être effacée à distance.
 - AccessGrant : demande, consentement/refus, expiration serveur à 2 h, deux prolongations d’1 h et révocation.
 - Le garde clinique exige maintenant un contexte professionnel actif, un établissement actif, un rattachement actif et le consentement patient ; le statut global `verification_status == verified` n’est plus le contrôle d’accès dans `professionals/access.py`.
 - Le backend QR émet un jeton opaque hashé, à usage unique, avec validité produit de 5 minutes ; les scopes V1 sont appliqués.

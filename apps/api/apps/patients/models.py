@@ -5,9 +5,11 @@ from django.db import models
 
 
 class PatientProfile(models.Model):
-    """Informations administratives du carnet, possédées par le patient."""
+    """Dossier patient, détenu par un compte ou géré par un représentant."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="patient_profile")
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.CASCADE, related_name="patient_profile")
+    first_name = models.CharField(max_length=80, blank=True)
+    last_name = models.CharField(max_length=80, blank=True)
     phone = models.CharField(max_length=32, blank=True)
     birth_date = models.DateField(null=True, blank=True)
     address = models.CharField(max_length=240, blank=True)
@@ -19,6 +21,69 @@ class PatientProfile(models.Model):
 
     class Meta:
         ordering = ("created_at",)
+
+    def display_first_name(self):
+        return self.first_name or (self.user.first_name if self.user_id else "")
+
+    def display_last_name(self):
+        return self.last_name or (self.user.last_name if self.user_id else "")
+
+
+class PatientRepresentation(models.Model):
+    """Lien explicite et révocable entre un compte représentant et un dossier patient."""
+    RELATION_CHOICES = (
+        ("child", "Enfant"),
+        ("parent", "Parent"),
+        ("grandparent", "Grand-parent"),
+        ("other", "Autre proche"),
+    )
+    STATUS_CHOICES = (
+        ("active", "Actif"),
+        ("revoked", "Révoqué"),
+        ("transferred", "Transféré au titulaire"),
+    )
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    guardian = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="patient_representations")
+    patient = models.ForeignKey(PatientProfile, on_delete=models.PROTECT, related_name="representations")
+    relationship = models.CharField(max_length=20, choices=RELATION_CHOICES)
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="active")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=("guardian", "patient"), name="unique_guardian_patient_representation"),
+            models.UniqueConstraint(
+                fields=("patient",),
+                condition=models.Q(status="active"),
+                name="unique_active_patient_representation",
+            ),
+        ]
+        ordering = ("created_at",)
+
+
+class RepresentationTransferRequest(models.Model):
+    """Demande de transfert de titulaire, avec examen humain avant tout changement."""
+    STATUS_CHOICES = (("pending", "En attente"), ("approved", "Approuvée"), ("rejected", "Refusée"))
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    representation = models.ForeignKey(PatientRepresentation, on_delete=models.PROTECT, related_name="transfer_requests")
+    applicant = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="representation_transfer_requests")
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="pending")
+    age_verified = models.BooleanField(default=False)
+    identity_verified = models.BooleanField(default=False)
+    reviewed_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="reviewed_representation_transfers")
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=("representation",),
+                condition=models.Q(status="pending"),
+                name="unique_pending_representation_transfer",
+            ),
+        ]
+        ordering = ("-created_at",)
 
 
 class ClinicalDeclaration(models.Model):
@@ -45,6 +110,7 @@ class PatientEmergencyCard(models.Model):
     patient = models.OneToOneField(PatientProfile, on_delete=models.CASCADE, related_name="emergency_card")
     contact_name = models.CharField(max_length=120, blank=True)
     contact_phone = models.CharField(max_length=32, blank=True)
+    offline_declaration_ids = models.JSONField(default=list)
     qr_enabled = models.BooleanField(default=False)
     qr_version = models.PositiveIntegerField(default=1)
     created_at = models.DateTimeField(auto_now_add=True)
