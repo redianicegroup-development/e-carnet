@@ -1,6 +1,7 @@
 import base64
 import binascii
 from django.contrib.auth import authenticate, get_user_model, login, logout
+from django.contrib.auth.hashers import make_password
 from django.http import HttpResponse, Http404
 from django.db import transaction
 from .throttles import IpScopedThrottle, LoginEmailThrottle
@@ -10,7 +11,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from apps.audit.services import record_event
 from apps.patients.models import PatientProfile
-from .auth_serializers import AccountIdentitySerializer, AccountSerializer, LinkedIdentitySerializer, LoginSerializer, PatientOnboardingSerializer, RegisterSerializer
+from .auth_serializers import AccountIdentitySerializer, AccountSerializer, LinkedIdentitySerializer, LoginSerializer, PatientOnboardingSerializer, RecoverySetupSerializer, RegisterSerializer
 from .models import AccountContext, AccountProfile, AuthIdentity
 from .visitor_tracking import track_auth_response
 
@@ -128,6 +129,26 @@ class PatientOnboardingView(APIView):
         serializer = PatientOnboardingSerializer(profile, data=request.data, partial=True); serializer.is_valid(raise_exception=True); serializer.save()
         context.is_active = True; context.onboarding_completed = True; context.save(update_fields=("is_active", "onboarding_completed", "updated_at"))
         return Response({"success": True, "data": account_payload(request.user)})
+
+
+class RecoverySetupView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @transaction.atomic
+    def patch(self, request):
+        serializer = RecoverySetupSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        profile, _ = AccountProfile.objects.get_or_create(user=request.user)
+        profile.recovery_question = serializer.validated_data["question"]
+        profile.recovery_answer_hash = make_password(serializer.validated_data["answer"].casefold())
+        profile.save(update_fields=("recovery_question", "recovery_answer_hash", "updated_at"))
+        record_event(
+            event_type="account.recovery_method_configured",
+            actor=request.user,
+            actor_role="account",
+            metadata={"action": "configured"},
+        )
+        return Response({"success": True, "data": {"configured": True}})
 
 
 class ContextSelectView(APIView):

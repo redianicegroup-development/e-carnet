@@ -1,7 +1,7 @@
 # État réel du projet — V1
 
 **État documentaire revu : 13/10/2026 — base v1.8 et modifications locales en cours**  
-**Comparaison :** preuves historiques horodatées ci-dessous; les changements de code du 13/10 sont en cours de validation et ne sont ni déployés ni acceptés  
+**Comparaison :** preuves historiques horodatées ci-dessous; les changements locaux du 13/10 sont vérifiés par les contrôles listés, mais ne sont ni déployés ni acceptés
 **Verdict : V1 en construction, non acceptée et non autorisée pour des données de santé réelles.**
 
 ## Résumé exécutif
@@ -33,8 +33,10 @@ La V1 n’est toutefois pas finalisée :
 | `npm run check:api`, migrations, lint | **OK historiquement** le 05/10 ; non rejoués dans cette mise à jour |
 | `npm run build` | **OK historiquement** le 05/10 ; les rapports donnent 27 ou 31 routes selon la passe ; nombre actuel non revérifié |
 | `npm ci` / avertissement Authlib | Observations du 05/10 : 5 vulnérabilités `high` dans l’arbre npm et dépréciation `authlib.jose` ; état actuel non revérifié |
+| Contrôles locaux ciblés du 13/10 | Build Next.js OK; lint sans erreur (4 avertissements `img`); 12 tests Django identité OK; migration sans changement manquant |
+| Suite web complète du 13/10 | **24/44 réussis, 20 échecs** dus aux chemins de fichiers Windows construits en `C:\C:\...`; résultat non concluant pour les tests concernés |
 
-Les comptes et marqueurs de recette sont synthétiques. Les divergences de comptage des rapports du 05/10 ne changent pas le résultat PostgreSQL daté du 08/10. Aucun contrôle frontend/linters n’a été rejoué ici. Ces résultats ne constituent ni une recette staging ni un audit de sécurité indépendant.
+Les comptes et marqueurs de recette sont synthétiques. Les divergences de comptage des rapports du 05/10 ne changent pas le résultat PostgreSQL daté du 08/10. Les contrôles locaux du 13/10 ne constituent ni une recette staging ni un audit de sécurité indépendant.
 
 ### Note sur les anciens rapports de tests
 
@@ -48,7 +50,8 @@ Les mentions d’échecs sur l’ancienne création publique d’établissement,
 - Session serveur, cookies HttpOnly/Secure hors debug, CSRF/CORS configurés ; pas de JWT dans `localStorage`.
 - Argon2id configuré comme premier hasher Django.
 - Compte unique avec choix Patient ou Professionnel ; `AuthIdentity` et callbacks Google/Facebook/Apple présents.
-- Onboarding identité/avatar → contexte → formulaire métier présent ; l’avatar est éditable par URL, sans upload de fichier local.
+- Onboarding identité/avatar → contexte → formulaire métier → question de récupération complémentaire présent ; la réponse est hachée et le profil de compte est distinct du dossier patient.
+- La question de récupération ne constitue pas à elle seule un parcours de récupération : aucune vérification par SMS ni réouverture du dossier sur cette seule preuve n’est implémentée.
 
 ### Patient, accès clinique et consultation
 
@@ -102,7 +105,7 @@ Limites restantes : configurer et vérifier SMTP/délivrabilité en staging, tes
 11. Faire valider médicalement les champs de pré-consultation/consultation, unités et corrections.
 12. Formaliser les décisions juridiques sur hébergement ivoirien, conservation, droits, e-mail des justificatifs structure et incidents.
 13. Recetter navigateur mobile, Android/4G, clavier, lecteur d’écran, focus, session expirée et responsive desktop.
-14. Rejouer d’abord sur cette copie lint, tests web, tests Django et build après les changements du 13/10; consigner les résultats réels sans extrapoler.
+14. Corriger les chemins Windows de la suite web puis rejouer les 20 tests actuellement en échec; les contrôles ciblés du 13/10 (build, lint, 12 tests Django identité et migration) sont passés localement.
 15. Réaliser une recette staging complète CA-01 à CA-24 avec SMTP réel, QR sur mobile et preuves horodatées, puis prendre une décision Go/No-Go. Tant que cette étape n’est pas signée, utiliser uniquement des données `example.test`.
 
 ## Documents de référence

@@ -39,6 +39,13 @@
 - Verdict maintenu : NO-GO staging/production tant que PostgreSQL réel, restauration, staging et validations métier/sécurité ne sont pas signés.
 # Changelog
 
+## V1 — question de récupération complémentaire — 2026-10-13
+
+- Ajout de l’étape 4 de l’onboarding après le profil patient ou professionnel, avec questions prédéfinies et question personnalisée.
+- La réponse est hachée côté serveur; l’API n’expose ni la question ni le hachage et un événement d’audit est enregistré sans donnée secrète.
+- La question seule ne permet pas de récupérer le compte ni d’ouvrir le dossier médical. SMS et procédure de récupération renforcée restent à concevoir; les données du carnet ne sont pas modifiées.
+- Vérifications locales : 12 tests Django identité, migration, build Next.js et lint (0 erreur, 4 avertissements) réussis. La suite web complète a 20 échecs de résolution de chemins Windows et nécessite un correctif.
+
 ## V1 — flow établissement confirmé par le porteur — 2026-10-05
 
 > Décision produit historique, amendée le 08/10. Pour l’implémentation et les gates actuels, voir [le flow établissement](FLOW-ETABLISSEMENT.md) et [l’état réel V1](ETAT-REEL-V1.md).

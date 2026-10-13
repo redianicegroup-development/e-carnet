@@ -68,6 +68,11 @@ def account_destination(user):
     )
     if context is None:
         return "/patient"
+    profile = getattr(user, "account_profile", None)
+    if context.onboarding_completed and not (
+        profile and profile.recovery_question and profile.recovery_answer_hash
+    ):
+        return "/onboarding/securite"
     if context.role == "patient":
         return "/patient" if context.onboarding_completed else "/onboarding/identite"
     if context.role == "professional":
@@ -147,7 +152,7 @@ class OAuthCallbackView(APIView):
                     account_profile.save(update_fields=("avatar_url", "updated_at"))
                 login(request, user); existing.last_seen_at = timezone.now(); existing.save(update_fields=("last_seen_at",))
                 fallback = "/patient/parametres" if link_user_id else account_destination(existing.user)
-                destination = safe_next_path(next_path, fallback)
+                destination = fallback if fallback == "/onboarding/securite" else safe_next_path(next_path, fallback)
                 response = oauth_success_redirect(destination)
                 return track_auth_response(request, response, "oauth_link" if link_user_id else "oauth_success")
             if link_user_id:
@@ -184,7 +189,7 @@ class OAuthCallbackView(APIView):
             stage = "audit_event"
             record_event(event_type="oauth.identity_linked" if linked else "oauth.account_created", actor=user, actor_role="account", metadata={"action": "linked" if linked else "created", "provider": provider})
             fallback = "/patient/parametres" if linked else account_destination(user)
-            destination = safe_next_path(next_path, fallback)
+            destination = fallback if fallback == "/onboarding/securite" else safe_next_path(next_path, fallback)
             response = oauth_success_redirect(destination)
             return track_auth_response(request, response, "oauth_link" if linked else "oauth_success")
         except Exception:

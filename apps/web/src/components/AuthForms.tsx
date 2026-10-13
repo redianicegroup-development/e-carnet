@@ -8,11 +8,12 @@ import { ModalIllustration } from "./modal/ModalIllustration";
 import { useDialogBehavior } from "./modal/useDialogBehavior";
 const API = "";
 type AuthMode = "login" | "register";
-type Account = { contexts?: Array<{ role: string; is_active: boolean; onboarding_completed: boolean }> };
+type Account = { recovery_configured?: boolean; contexts?: Array<{ role: string; is_active: boolean; onboarding_completed: boolean }> };
 function destinationFor(account: Account, mode: AuthMode, requested: string | null) {
-  if (requested?.startsWith("/") && !requested.startsWith("//") && !requested.includes("\\")) return safeOAuthNext(requested);
   if (mode === "register") return "/onboarding/identite";
   const context = account.contexts?.find((item) => item.is_active) ?? account.contexts?.[0];
+  if (context?.onboarding_completed && !account.recovery_configured) return "/onboarding/securite";
+  if (requested?.startsWith("/") && !requested.startsWith("//") && !requested.includes("\\")) return safeOAuthNext(requested);
   if (!context) return "/patient";
   if (context.role === "professional") return context.onboarding_completed ? "/professionnel" : "/professionnel/onboarding";
   if (context.role === "establishment") return "/etablissement";

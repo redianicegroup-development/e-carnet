@@ -47,7 +47,7 @@ export function PatientOnboarding() {
         else setMessage(formatError(payload));
         return;
       }
-      router.push("/patient");
+      router.push("/onboarding/securite");
     } catch {
       setMessage("Impossible de joindre le service. Vérifiez votre connexion puis réessayez.");
     } finally {

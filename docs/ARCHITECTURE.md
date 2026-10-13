@@ -1,6 +1,6 @@
 # Architecture — Mon Carnet Numérique
 
-**État revu : 08/10/2026.** V1 en construction, non autorisée pour des données de santé réelles. Pour les preuves datées, voir [l’état réel V1](ETAT-REEL-V1.md) ; la roadmap porte les décisions produit.
+**État revu : 13/10/2026.** V1 en construction, non autorisée pour des données de santé réelles. Pour les preuves datées, voir [l’état réel V1](ETAT-REEL-V1.md) ; la roadmap porte les décisions produit.
 
 ## Vue technique actuelle
 
@@ -20,6 +20,7 @@ Monorepo : `apps/web` (Next.js App Router), `apps/api` (Django modulaire), `pack
 - **Étape 1** : prénom, nom, avatar éditable; préremplissage du fournisseur possible.
 - **Étape 2** : Patient ou Professionnel. Aucun choix public Root/Établissement.
 - **Étape 3** : profil du contexte choisi.
+- **Étape 4** : question et réponse secrète de récupération configurées sur le compte. La réponse est hachée côté serveur; ce mécanisme complémentaire ne permet pas, seul, de récupérer le compte ou d’accéder aux données cliniques.
 - **Patient** : possède le carnet et accorde/refuse les AccessGrants.
 - **Professionnel** : médecin avec compte propre. Les justificatifs professionnels ne sont pas collectés par E‑Carnet; l’établissement effectue sa vérification interne. Une demande de rattachement active après approbation établissement, et le médecin n’accède aux dossiers qu’avec consentement patient.
 - **Établissement** : espace privé avec compte d’un administrateur nominatif, un seul actif en V1. L’entité établissement est indépendante de l’admin, qui peut être remplacé sans recréer l’entité. Pas de rôle global `root` et aucun accès clinique établissement.
@@ -34,6 +35,7 @@ Le code courant implémente ces frontières : route publique neutralisée, conso
 ## Sécurité et état d’implémentation
 
 - Argon2id configuré en premier hasher; à recetter sur comptes anciens et staging.
+- Question de récupération enregistrée dans le profil du compte; seul son état de configuration est exposé à l’API. Aucun parcours de récupération autonome n’est activé et le dossier patient n’est pas modifié.
 - OAuth callbacks/identités uniques, retour UI, écran de liaison/déliaison et audit présents ; credentials et essais bout en bout avec les fournisseurs restent à faire.
 - QR backend et écrans de génération/scan présents : jeton opaque hashé, usage unique, 300 s (5 minutes). Le formulaire professionnel requiert encore l’UUID patient séparément du jeton.
 - Scopes AccessGrant : `preconsultation`, `declarations`, `consultations`; défaut `[preconsultation, declarations]`; `documents` est hors V1 (A9 décidé).
@@ -50,4 +52,4 @@ Les prototypes HTML (320×660 environ) sont des références de **design**, non 
 
 ## Résultats de vérification locale
 
-Le 08/10/2026 : 77 tests Django réussis sur PostgreSQL 16 local (rapport reproductible) et smoke de restauration isolée réussi ; la durée observée d’une commande (1 s) n’est pas un RTO. Le 05/10, lint/build/check/migrations avaient réussi (27 routes) ; alertes de dépendances et dépréciation Authlib rapportées ce jour-là, état actuel non revérifié. Staging, PostgreSQL managé, RPO/RTO, Android/4G et validations métier restent non démontrés. Voir [état réel](ETAT-REEL-V1.md), [sécurité](SECURITY.md) et [roadmap](ROADMAP-V1-V5.md).
+Le 08/10/2026 : 77 tests Django réussis sur PostgreSQL 16 local (rapport reproductible) et smoke de restauration isolée réussi ; la durée observée d’une commande (1 s) n’est pas un RTO. Le 13/10, le build Next.js, le lint (sans erreur, 4 avertissements) et 12 tests Django ciblés identité sont passés; la suite web complète a des échecs dus à des chemins Windows mal construits. Staging, PostgreSQL managé, RPO/RTO, Android/4G et validations métier restent non démontrés. Voir [état réel](ETAT-REEL-V1.md), [sécurité](SECURITY.md) et [roadmap](ROADMAP-V1-V5.md).

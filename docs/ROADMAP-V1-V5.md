@@ -38,6 +38,10 @@ Choix limité à **Patient** ou **Professionnel**. Le choix ne crée pas une sec
 
 L’onboarding doit être reprenable. Aucun accès clinique n’est ouvert par la complétion d’un profil.
 
+### Étape 4 — sécurité et récupération complémentaire
+
+Le compte choisit une question prédéfinie ou saisit sa propre question, puis enregistre une réponse. Le serveur conserve la réponse sous forme hachée et ne la restitue jamais. Cette donnée aide à préparer une récupération future, mais la réponse seule n’autorise ni la récupération du compte ni l’accès au dossier médical. Aucun SMS ni parcours d’assistance n’est activé dans cette étape; une vérification supplémentaire devra être définie avant toute récupération autonome. L’étape ne modifie pas le carnet ni son historique.
+
 ## 3. Établissement privé et rattachements
 
 1. L’établissement contacte E‑Carnet par e-mail officiel et envoie les preuves de la structure; aucune demande/upload public d’établissement n’est proposé sur la landing page.

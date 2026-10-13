@@ -60,6 +60,55 @@ class IdentityOnboardingTests(TestCase):
         self.assertTrue(response.data["data"]["patient_profile"]["completed"])
         self.assertTrue(response.data["data"]["contexts"][0]["onboarding_completed"])
 
+
+class RecoverySetupTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="recovery@example.test",
+            email="recovery@example.test",
+            password="a-long-local-password",
+        )
+        self.client = APIClient()
+        self.client.force_authenticate(self.user)
+
+    def test_recovery_answer_is_hashed_and_never_returned(self):
+        from django.contrib.auth.hashers import check_password
+        from .models import AccountProfile
+
+        response = self.client.patch(
+            "/api/v1/identity/me/recovery/",
+            {"question": "Quel était votre ancien pseudonyme ?", "answer": "  Mon   surnom  "},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["data"], {"configured": True})
+        profile = AccountProfile.objects.get(user=self.user)
+        self.assertNotEqual(profile.recovery_answer_hash, "Mon surnom")
+        self.assertTrue(check_password("mon surnom", profile.recovery_answer_hash))
+        account = self.client.get("/api/v1/identity/me/")
+        self.assertTrue(account.data["data"]["recovery_configured"])
+        self.assertNotIn("recovery_question", account.data["data"])
+        self.assertNotIn("recovery_answer_hash", account.data["data"])
+
+    def test_recovery_setup_requires_a_question_and_answer(self):
+        response = self.client.patch(
+            "/api/v1/identity/me/recovery/",
+            {"question": " ", "answer": " "},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_recovery_setup_requires_authentication(self):
+        self.client.force_authenticate(user=None)
+        response = self.client.patch(
+            "/api/v1/identity/me/recovery/",
+            {"question": "Quel était votre ancien pseudonyme ?", "answer": "réponse"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 403)
+
+
 class IdentityProfileAndOAuthTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username="identity@example.test", email="identity@example.test", password="a-long-local-password", first_name="Awa", last_name="Kone")

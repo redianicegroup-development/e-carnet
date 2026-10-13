@@ -23,6 +23,8 @@ class AccountProfile(models.Model):
     public_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     avatar_url = models.URLField(max_length=500, blank=True)
     avatar_data = models.TextField(blank=True)
+    recovery_question = models.CharField(max_length=200, blank=True)
+    recovery_answer_hash = models.CharField(max_length=256, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
 

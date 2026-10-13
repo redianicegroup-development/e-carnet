@@ -13,17 +13,17 @@
 }
 
 /* ---------- mobile : barre basse ---------- */
-.sb { position: fixed; z-index: 40; top: auto; right: auto; bottom: calc(12px + env(safe-area-inset-bottom)); left: 50%; width: max-content; max-width: calc(100vw - 24px); padding: 6px; border: 1px solid color-mix(in srgb, var(--text) 10%, var(--border)); border-radius: 999px; background: var(--surface); box-shadow: 0 12px 36px -12px rgba(22, 36, 30, .3); transform: translateX(-50%); }
+.sb { position: fixed; z-index: 40; top: auto; right: 0; bottom: 0; left: 0; padding: 6px 12px calc(6px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); background: var(--surface); box-shadow: 0 -8px 24px -20px rgba(44, 58, 51, .5); }
 .sb__head, .sb__foot, .sb__heading { display: none; }
-.sb__list { display: flex; justify-content: center; gap: 4px; width: max-content; max-width: 100%; margin: 0 auto; padding: 0; list-style: none; }
-.sb__row { flex: 0 1 52px; min-width: 42px; margin: 0; }
-.sb__item { position: relative; display: grid; place-items: center; width: 48px; max-width: 100%; min-height: 48px; aspect-ratio: 1; margin: auto; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--text-muted); font: inherit; font-size: 0; cursor: pointer; transition: background-color .18s ease, color .18s ease, transform .18s ease; }
+.sb__list { display: grid; grid-template-columns: repeat(auto-fit, minmax(44px, 1fr)); gap: 2px; max-width: 640px; margin: 0 auto; padding: 0; list-style: none; }
+.sb__row { min-width: 0; margin: 0; }
+.sb__item { position: relative; display: grid; align-content: center; justify-items: center; gap: 3px; width: 100%; min-height: 48px; padding: 5px 1px; border: 0; border-radius: 14px; background: transparent; color: var(--text-muted); font: inherit; font-size: clamp(8px, 2.4vw, 10px); font-weight: 700; letter-spacing: -.02em; line-height: 1.1; text-align: center; text-decoration: none; overflow-wrap: anywhere; hyphens: auto; cursor: pointer; }
 .sb__item:hover { color: var(--text); }
-.sb__item.is-active { background: var(--text); color: var(--surface); transform: scale(1.04); }
+.sb__item.is-active { background: var(--primary-tint); color: var(--primary-text); }
 .sb__item .icon { width: 22px; height: 22px; }
-.sb__label, .sb__long { display: none; }
+.sb__long { display: none; }
 .sb__badge { position: absolute; top: 1px; right: calc(50% - 23px); display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding-inline: 4px; border-radius: 999px; background: var(--danger); color: #fff; font-size: .62rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
-@media (max-width: 380px) { .sb { max-width: calc(100vw - 16px); padding: 5px; } .sb__list { gap: 2px; } .sb__row { min-width: 38px; } .sb__item { width: 42px; min-height: 42px; } .sb__item .icon { width: 19px; height: 19px; } }
+@media (max-width: 380px) { .sb__item { font-size: 7.5px; } .sb__item .icon { width: 19px; height: 19px; } }
 
 /* Écran sans navigation (onboarding, activation) : bandeau haut avec marque et compte. */
 .sb.is-bare { position: sticky; top: 0; right: auto; bottom: auto; left: auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: max(8px, env(safe-area-inset-top)) 12px 10px; border-top: 0; border-bottom: 1px solid var(--border); box-shadow: 0 8px 24px -20px rgba(44, 58, 51, .5); }

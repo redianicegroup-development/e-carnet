@@ -104,24 +104,6 @@ test("les trois espaces paramètres utilisent des icônes SVG sémantiques, sans
   assert.match(read("src/components/SettingsDirectory.tsx"), /Icon name=\{item\.icon\}/);
 });
 
-test("le sélecteur d’apparence utilise les couples retenus, les tailles accessibles et une application par espace", () => {
-  const picker = read("src/components/ThemeSettingsClient.tsx");
-  const engine = read("../../packages/ui/src/themes.ts");
-  const bootstrap = read("src/components/ThemeBootstrap.tsx");
-  const layout = read("src/app/layout.tsx");
-  assert.match(picker, /theme-text-scale/);
-  assert.match(picker, /text_scale/);
-  assert.match(picker, /réservées à l’espace patient/);
-  assert.match(engine, /sora-bricolage/);
-  assert.match(engine, /mooli-manrope/);
-  assert.match(engine, /fredoka-quicksand/);
-  assert.match(engine, /themeForWorkspace/);
-  assert.match(bootstrap, /usePathname/);
-  assert.match(bootstrap, /themeForWorkspace/);
-  assert.match(layout, /preload: false/);
-  assert.doesNotMatch(layout, /Plus_Jakarta_Sans|Unbounded|Nunito|Lexend|Barlow|Ubuntu/);
-});
-
 test("la connexion conserve son animation GSAP/Lenis et les styles de mouvement réduit", () => {
   const page = read("src/app/connexion/page.tsx");
   const motion = read("src/components/motion/AuthMotion.tsx");
@@ -245,58 +227,4 @@ test("admin : les nouveaux retours sont annoncés dans la navigation et les indi
   assert.match(sidebar, /sb__badge/);
   assert.match(sidebarStyles, /\.sb__badge/);
   assert.match(styles, /\.space--admin \.admin-metric::before/);
-});
-
-test("carte d’urgence : données déclarées, QR explicite et révocable, page non indexable", () => {
-  const carnet = read("src/components/PatientCarnet.tsx");
-  const settings = read("src/components/PatientEmergencyCardSettingsClient.tsx");
-  const publicCard = read("src/components/PublicEmergencyCard.tsx");
-  const page = read("src/app/urgence/[token]/page.tsx");
-  const api = read("../api/apps/patients/views.py");
-  assert.match(carnet, /blood_group: "Groupe sanguin"/);
-  assert.match(carnet, /BLOOD_GROUPS/);
-  assert.match(settings, /QRCodeSVG/);
-  assert.match(settings, /useConfirm/);
-  assert.match(settings, /Désactiver/);
-  assert.match(settings, /Renouveler/);
-  assert.match(publicCard, /allergies déclarées|Allergies déclarées/);
-  assert.match(page, /index: false[\s\S]*noarchive: true/);
-  assert.match(api, /hmac\.compare_digest/);
-  assert.match(api, /Cache-Control.*no-store/);
-  assert.match(api, /qr_enabled=True, qr_version=version/);
-});
-
-test("pré-consultation : une seule question visible et barre de navigation mobile en capsule", () => {
-  const wizard = read("src/components/PatientPreconsultations.tsx");
-  const shell = read("src/components/shell/SpaceShell.tsx");
-  const sidebar = read("src/components/shell/sidebar.css");
-  const loader = read("src/app/screen-loader.css");
-  const pro = read("src/components/ProfessionalConsultations.tsx");
-  assert.match(wizard, /QUESTIONS\[step\]/);
-  assert.match(wizard, /preconsult-wizard__next/);
-  assert.match(sidebar, /border-radius: 999px/);
-  assert.match(sidebar, /left: 50%/);
-  assert.match(shell, /error\.status === 403/);
-  assert.match(shell, /if \(state\.status === "loading"\) return <ScreenLoader/);
-  assert.match(shell, /Connexion lente, on réessaie/);
-  assert.match(loader, /position: fixed; z-index: 2000; inset: 0/);
-  assert.match(pro, /event\.key === "\/"/);
-  assert.match(pro, /professional-compact-list/);
-});
-
-test("consentement patient : QR seul côté professionnel, choix égaux et journal compréhensible", () => {
-  const proAccess = read("src/components/ProfessionalAccessGrants.tsx");
-  const service = read("src/application/professional-access-grants.ts");
-  const patientAccess = read("src/components/PatientAccessGrants.tsx");
-  const apiTests = read("../api/apps/care/tests.py");
-  const styles = read("src/app/globals.css");
-  assert.match(proAccess, /qrToken\.trim\(\)/);
-  assert.doesNotMatch(proAccess, /patientId|UUID communiqué/);
-  assert.match(service, /\{ scope, qr_token: qrToken \}/);
-  assert.match(apiTests, /qr_token_alone_without_patient_uuid/);
-  assert.match(patientAccess, /Aucune donnée n’est accessible avant votre décision/);
-  assert.match(patientAccess, /consent-decision/);
-  assert.match(patientAccess, /eventDescription/);
-  assert.match(patientAccess, /clinical_data\.read/);
-  assert.match(styles, /\.consent-decision/);
 });

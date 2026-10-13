@@ -43,7 +43,7 @@ export function ProfessionalOnboarding() {
     try {
       await apiPatch("/api/v1/professionals/onboarding/", { specialty });
       setMessage("Spécialité déclarée. L’établissement vérifiera le professionnel en interne.");
-      router.push("/professionnel");
+      router.push("/onboarding/securite");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Le profil n’a pas pu être enregistré.");
     } finally {

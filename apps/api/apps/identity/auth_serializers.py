@@ -44,6 +44,7 @@ class AccountSerializer(serializers.Serializer):
     is_privileged = serializers.SerializerMethodField()
     date_joined = serializers.DateTimeField(read_only=True)  # sert au message d'accueil du front (« Bienvenue » pour un compte récent)
     avatar_url = serializers.SerializerMethodField()
+    recovery_configured = serializers.SerializerMethodField()
     auth_identities = serializers.SerializerMethodField()
     contexts = serializers.SerializerMethodField()
     patient_profile = serializers.SerializerMethodField()
@@ -64,6 +65,10 @@ class AccountSerializer(serializers.Serializer):
         if profile.avatar_data:
             return f"/api/v1/identity/me/avatar/?v={int(profile.updated_at.timestamp())}"
         return profile.avatar_url
+
+    def get_recovery_configured(self, obj):
+        profile = getattr(obj, "account_profile", None)
+        return bool(profile and profile.recovery_question and profile.recovery_answer_hash)
 
     def get_auth_identities(self, obj):
         return [{"provider": identity.provider, "display_name": identity.display_name, "avatar_url": identity.avatar_url} for identity in obj.auth_identities.all()]
@@ -109,6 +114,21 @@ class AccountIdentitySerializer(serializers.Serializer):
         if len(image) > 250 * 1024 or len(image) < 12 or image[:4] != b"RIFF" or image[8:12] != b"WEBP":
             raise serializers.ValidationError("La photo doit être un WebP valide de 250 Ko maximum.")
         return value
+
+
+class RecoverySetupSerializer(serializers.Serializer):
+    question = serializers.CharField(max_length=200, trim_whitespace=True)
+    answer = serializers.CharField(max_length=200, write_only=True, trim_whitespace=True)
+
+    def validate(self, attrs):
+        answer = " ".join(attrs["answer"].split())
+        if not attrs["question"].strip():
+            raise serializers.ValidationError({"question": "Choisissez ou saisissez une question."})
+        if not answer:
+            raise serializers.ValidationError({"answer": "Saisissez une réponse."})
+        attrs["question"] = attrs["question"].strip()
+        attrs["answer"] = answer
+        return attrs
 
 
 class LinkedIdentitySerializer(serializers.ModelSerializer):

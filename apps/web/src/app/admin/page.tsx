@@ -2,7 +2,6 @@
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { ApiError, apiGet, apiPatch, apiPost } from "../../infrastructure/api/client";
 import { AdminActivityCharts, type DailyActivityPoint } from "../../components/AdminActivityCharts";
 import { AdminAccountActionRequestsClient } from "../../components/AdminAccountActionRequestsClient";
@@ -81,7 +80,6 @@ function StarRating({ value, label }: { value: number; label: string }) {
 }
 
 export default function AdminPage() {
-  const router = useRouter();
   const confirm = useConfirm();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -108,9 +106,7 @@ export default function AdminPage() {
       setDashboard(data);
       if (!profileRequested.current) {
         profileRequested.current = true;
-        void apiGet<AdminProfile>("/api/v1/identity/me/").then(setAdminProfile).catch((profileError: unknown) => {
-          if (profileError instanceof ApiError && (profileError.status === 401 || profileError.status === 403)) router.replace(`/connexion?next=${encodeURIComponent("/admin")}`);
-        });
+        void apiGet<AdminProfile>("/api/v1/identity/me/").then(setAdminProfile).catch(() => undefined);
       }
       setMessage("");
       setRefreshMessage("");
@@ -120,16 +116,13 @@ export default function AdminPage() {
         return;
       }
       setDashboard(null);
-      if (error instanceof ApiError && (error.status === 403 || error.status === 401)) {
-        router.replace(`/connexion?next=${encodeURIComponent("/admin")}`);
-        setMessage("Redirection vers la connexion…");
-      }
+      if (error instanceof ApiError && (error.status === 403 || error.status === 401)) setMessage("Connectez-vous avec le compte superadministrateur autorisé pour continuer.");
       else setMessage(error instanceof Error ? error.message : "Impossible de charger le tableau de bord.");
     } finally {
       if (!silent) setLoading(false);
       if (manual) setManualRefreshing(false);
     }
-  }, [router]);
+  }, []);
 
   useEffect(() => {
     const initialLoad = window.setTimeout(() => void loadDashboard(), 0);
@@ -176,7 +169,6 @@ export default function AdminPage() {
   }
 
   if (loading && !dashboard) return <main className="admin-loader"><ScreenLoader label="Vérification de la session administrateur…" /></main>;
-  if (!dashboard && message === "Redirection vers la connexion…") return <ScreenLoader label="Redirection vers la connexion…" />;
 
   if (!dashboard) return <main className="shell admin-shell"><section className="admin-login card">
     <span className="eyebrow">E‑Carnet · Administration</span><h1>Console d’administration</h1>
@@ -185,7 +177,6 @@ export default function AdminPage() {
       <label className="field"><span>Email administrateur</span><input type="email" autoComplete="username" required value={email} onChange={(event) => setEmail(event.target.value)} /></label>
       <label className="field"><span>Mot de passe</span><input type="password" autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} /></label>
       {message && <p className="notice" role="alert">{message}</p>}
-      {message.startsWith("Connexion lente") && <button className="button" type="button" onClick={() => void loadDashboard()}>Réessayer</button>}
       <button className="button primary" type="submit" disabled={submitting}>{submitting ? "Connexion…" : "Se connecter"}</button>
     </form>
   </section></main>;

@@ -46,7 +46,6 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
   const confirm = useConfirm();
   const config = SPACES[space];
   const [state, setState] = useState<State>({ status: "loading" });
-  const [loadAttempt, setLoadAttempt] = useState(0);
   const [navCollapsed, setNavCollapsed] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [logoutMessage, setLogoutMessage] = useState("");
@@ -66,7 +65,6 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
     }
   }
   const bare = config.bare.some((path) => pathname === path || pathname.startsWith(`${path}/`));
-  const publicBare = space === "establishment" && (pathname === "/etablissement/activation" || pathname.startsWith("/etablissement/activation/"));
 
   useEffect(() => {
     let active = true;
@@ -76,19 +74,19 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
         if (active) setState({ status: "ready", account });
       } catch (error) {
         if (!active) return;
-        if (error instanceof ApiError && (error.status === 401 || error.status === 403)) setState({ status: "anonymous" });
+        if (error instanceof ApiError && error.status === 401) setState({ status: "anonymous" });
         else setState({ status: "error", message: error instanceof Error ? error.message : "Service indisponible." });
       }
     }
     void load();
     return () => { active = false; };
-  }, [loadAttempt]);
+  }, []);
 
   useEffect(() => {
-    if (state.status !== "anonymous" || publicBare) return;
+    if (state.status !== "anonymous" || bare) return;
     const requested = `${window.location.pathname}${window.location.search}${window.location.hash}`;
     router.replace(`/connexion?next=${encodeURIComponent(requested)}`);
-  }, [state.status, publicBare, router]);
+  }, [state.status, bare, router]);
 
   const moi = config.tabs[config.tabs.length - 1];
   const showAdminLink = space === "patient" && state.status === "ready" && state.account.is_admin === true;
@@ -100,16 +98,6 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
     { id: "help", label: "Centre d’aide", icon: "help", href: "/aide" },
     { id: "logout", label: signingOut ? "Déconnexion…" : "Se déconnecter", icon: "logout", tone: "danger", disabled: signingOut, onSelect: () => void logout() },
   ];
-
-  if (state.status === "loading") return <ScreenLoader label={`Chargement de votre espace ${config.label.toLowerCase()}…`} />;
-  if (state.status === "anonymous" && !publicBare) return <ScreenLoader label="Redirection vers la connexion…" />;
-  if (state.status === "error" && !bare) return <main className="connection-retry-screen" role="alert">
-    <span className="connection-retry-screen__signal" aria-hidden="true"><span /><span /><span /></span>
-    <span className="eyebrow">E‑Carnet · connexion</span>
-    <h1>{state.message.startsWith("Connexion lente") ? "Connexion lente, on réessaie" : "Impossible de joindre votre espace"}</h1>
-    <p>{state.message}</p>
-    <button type="button" className="button primary connection-retry-screen__button" onClick={() => { setState({ status: "loading" }); setLoadAttempt((attempt) => attempt + 1); }}>Réessayer</button>
-  </main>;
 
   return (
     <div className={`space space--${space}${bare ? " space--bare" : ""}${navCollapsed && !bare ? " space--nav-collapsed" : ""}`}>
@@ -127,6 +115,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
       />
 
       <main className="space-main" id="contenu">
+        {state.status === "loading" && <ScreenLoader label={`Chargement de votre espace ${config.label.toLowerCase()}…`} />}
         {state.status === "anonymous" && !bare && <div className="skeleton" role="status" aria-live="polite"><span className="sr-only">Redirection vers la connexion…</span><i /><i /><i /></div>}
         {state.status === "error" && !bare && (
           <section className="card gate" role="alert"><h1>Service momentanément indisponible</h1><p className="muted">{state.message}</p><div className="actions"><button type="button" className="button primary" onClick={() => window.location.reload()}>Réessayer</button></div></section>

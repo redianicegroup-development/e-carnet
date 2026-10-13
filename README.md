@@ -2,14 +2,14 @@
 
 Monorepo d’une application web/PWA mobile-first : Next.js 16, API Django/DRF et PostgreSQL cible.
 
-> **État documentaire vérifié le 08/10/2026. V1 en construction, non acceptée et non autorisée pour des données de santé réelles.**
+> **Documentation mise à jour le 13/10/2026. V1 en construction, non acceptée et non autorisée pour des données de santé réelles.**
 > Les tests PostgreSQL 16 et le smoke local de sauvegarde/restauration ont réussi. Le verdict reste **NO-GO** : ils ne remplacent ni une recette staging, ni une sauvegarde managée testée, ni l’approbation du RPO/RTO et des validations produit, juridiques et sécurité.
 
 ## Dernières preuves disponibles
 
 - Le 08/10, `npm run test:api -- --keepdb` sur PostgreSQL 16 local : **77 tests réussis, aucun échec, aucun ignoré**. Voir [rapport de tests PostgreSQL](reports/postgres-tests-20261008.txt).
 - Le 08/10, une sauvegarde PostgreSQL custom a été restaurée dans une base isolée ; empreinte, marqueur synthétique et migrations vérifiés. La commande de restauration a pris 1 s, ce qui **ne mesure pas** le RTO d’un service. Voir [rapport de restauration](reports/postgres-restore-20261008T081823Z.txt).
-- Les derniers résultats documentés du lint, du build, du contrôle Django, des migrations et du smoke Chromium datent du **05/10** : voir [état réel V1](docs/ETAT-REEL-V1.md). Ils n’ont pas été rejoués dans cette mise à jour documentaire.
+- Sur la copie locale le 13/10 : build Next.js OK, lint sans erreur (4 avertissements existants) et 12 tests Django identité OK. La suite web complète reste à corriger/valider sous Windows : plusieurs tests échouent à cause de chemins construits en `C:\C:\...`. Détails : [état réel V1](docs/ETAT-REEL-V1.md).
 - Les alertes npm et l’avertissement Authlib rapportés le 05/10 sont des observations historiques ; leur état actuel n’a pas été revérifié.
 - Le staging réel, les sauvegardes managées, le RPO/RTO, les domaines/cookies/SMTP/OAuth réels, les essais Android/iOS et les validations médicales/juridiques restent à prouver.
 
@@ -19,7 +19,7 @@ Pour éviter de réintroduire un ancien choix : [état réel et hiérarchie docu
 
 - Compte unique, sessions serveur, CSRF/CORS et Argon2id.
 - Authentification e-mail/mot de passe et endpoints OAuth Google/Facebook/Apple : callbacks et interface de liaison/déliaison sont présents ; secrets et recette réelle fournisseur restent requis. Aucun compte n’est fusionné sur la seule égalité d’e-mail.
-- Onboarding en trois étapes : identité/nom/avatar URL éditable, choix Patient/Professionnel, formulaire métier conditionnel.
+- Onboarding en quatre étapes : identité, choix du contexte, profil métier, puis configuration d’une question de récupération complémentaire. Sa réponse est hachée; elle ne permet pas à elle seule de récupérer le compte ni d’ouvrir le dossier médical.
 - Profil patient, déclarations, pré-consultation, historique et consultation.
 - AccessGrant : consentement, scopes V1, expiration serveur de 2 h, deux prolongations d’1 h et révocation.
 - QR opaque, hashé en base, à usage unique, valable **5 minutes** ; A9 : `preconsultation` + `declarations` par défaut, `consultations` sélectionnable, `documents` hors V1. Le formulaire professionnel exige encore l’UUID patient en plus du jeton QR : le parcours n’est pas entièrement sans friction.
