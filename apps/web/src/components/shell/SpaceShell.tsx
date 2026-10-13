@@ -52,14 +52,24 @@ export function AvatarBadge({ account, size = 40 }: { account: Pick<SpaceAccount
   return account.avatar_url ? <img className="avatar" style={style} src={account.avatar_url} alt="" referrerPolicy="no-referrer" /> : <span className="avatar" style={style} aria-hidden="true">{initials(account)}</span>;
 }
 
-type State = { status: "loading" } | { status: "anonymous" } | { status: "error"; message: string } | { status: "ready"; account: SpaceAccount };
+type State = { status: "loading"; label: string } | { status: "anonymous" } | { status: "error"; message: string } | { status: "ready"; account: SpaceAccount };
+const WAKE_RETRY_MS = 2000;
+const WAKE_TIMEOUT_MS = 15000;
+const WAKE_BUDGET_MS = 120000;
+
+function isTransientConnectionError(error: unknown): boolean {
+  return error instanceof TypeError
+    || (error instanceof DOMException && error.name === "AbortError")
+    || (error instanceof ApiError && [0, 502, 503, 504].includes(error.status));
+}
 
 export function SpaceShell({ space, children }: { space: SpaceId; children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const confirm = useConfirm();
   const config = SPACES[space];
-  const [state, setState] = useState<State>({ status: "loading" });
+  const [state, setState] = useState<State>({ status: "loading", label: "Chargement de votre espace…" });
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [patientAccessQr, setPatientAccessQr] = useState<PatientAccessQr | null>(null);
   const [qrNow, setQrNow] = useState(0);
   const [navCollapsed, setNavCollapsed] = useState(false);
@@ -102,19 +112,52 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
 
   useEffect(() => {
     let active = true;
+    const controller = new AbortController();
     async function load() {
-      try {
-        const account = await apiGet<SpaceAccount>("/api/v1/identity/me/");
-        if (active) setState({ status: "ready", account });
-      } catch (error) {
-        if (!active) return;
-        if (error instanceof ApiError && error.status === 401) setState({ status: "anonymous" });
-        else setState({ status: "error", message: error instanceof Error ? error.message : "Service indisponible." });
+      const deadline = Date.now() + WAKE_BUDGET_MS;
+      setState({ status: "loading", label: "Réveil du service et chargement de votre espace…" });
+      while (active && Date.now() < deadline) {
+        let checkingIdentity = false;
+        try {
+          const probeController = new AbortController();
+          const timeout = window.setTimeout(() => probeController.abort(), WAKE_TIMEOUT_MS);
+          const abortProbe = () => probeController.abort();
+          controller.signal.addEventListener("abort", abortProbe, { once: true });
+          let probe: Response;
+          try {
+            probe = await fetch("/api/v1/health/ready/", {
+              credentials: "omit",
+              cache: "no-store",
+              signal: probeController.signal,
+            });
+          } finally {
+            window.clearTimeout(timeout);
+            controller.signal.removeEventListener("abort", abortProbe);
+          }
+          if (!probe.ok) throw new ApiError("Le service démarre encore.", probe.status);
+
+          checkingIdentity = true;
+          const account = await apiGet<SpaceAccount>("/api/v1/identity/me/", 20000);
+          if (active) setState({ status: "ready", account });
+          return;
+        } catch (error) {
+          if (!active) return;
+          if (checkingIdentity && error instanceof ApiError && error.status === 401) {
+            setState({ status: "anonymous" });
+            return;
+          }
+          if (!isTransientConnectionError(error)) {
+            setState({ status: "error", message: error instanceof Error ? error.message : "Service indisponible." });
+            return;
+          }
+          await new Promise((resolve) => window.setTimeout(resolve, WAKE_RETRY_MS));
+        }
       }
+      if (active) setState({ status: "error", message: "Le service met plus de temps que prévu à démarrer. Réessayez dans un instant." });
     }
     void load();
-    return () => { active = false; };
-  }, []);
+    return () => { active = false; controller.abort(); };
+  }, [loadAttempt]);
 
   useEffect(() => {
     if (state.status !== "anonymous" || bare) return;
@@ -150,10 +193,10 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
       />
 
       <main className="space-main" id="contenu">
-        {state.status === "loading" && <ScreenLoader label={`Chargement de votre espace ${config.label.toLowerCase()}…`} />}
+        {state.status === "loading" && <ScreenLoader label={state.label} />}
         {state.status === "anonymous" && !bare && <div className="skeleton" role="status" aria-live="polite"><span className="sr-only">Redirection vers la connexion…</span><i /><i /><i /></div>}
         {state.status === "error" && !bare && (
-          <section className="card gate" role="alert"><h1>Service momentanément indisponible</h1><p className="muted">{state.message}</p><div className="actions"><button type="button" className="button primary" onClick={() => window.location.reload()}>Réessayer</button></div></section>
+          <section className="card gate" role="alert"><h1>Service momentanément indisponible</h1><p className="muted">{state.message}</p><div className="actions"><button type="button" className="button primary" onClick={() => setLoadAttempt((attempt) => attempt + 1)}>Réessayer</button></div></section>
         )}
         {(state.status === "ready" || bare) && (
           <AccountContext.Provider value={state.status === "ready" ? state.account : null}>

@@ -13,17 +13,18 @@
 }
 
 /* ---------- mobile : barre basse ---------- */
-.sb { position: fixed; z-index: 40; top: auto; right: 0; bottom: 0; left: 0; padding: 6px 12px calc(6px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); background: var(--surface); box-shadow: 0 -8px 24px -20px rgba(44, 58, 51, .5); }
+.sb { position: fixed; z-index: 40; top: auto; right: 0; bottom: 0; left: 0; display: flex; justify-content: center; padding: 0 16px calc(12px + env(safe-area-inset-bottom)); border: 0; background: transparent; box-shadow: none; pointer-events: none; }
 .sb__head, .sb__foot, .sb__heading { display: none; }
+.sb__scroll { width: min(100%, 390px); padding: 5px; border: 1px solid color-mix(in srgb, var(--text) 10%, transparent); border-radius: 999px; background: var(--surface); box-shadow: 0 8px 28px -12px color-mix(in srgb, var(--text) 32%, transparent); pointer-events: auto; }
 .sb__list { display: grid; grid-template-columns: repeat(auto-fit, minmax(44px, 1fr)); gap: 2px; max-width: 640px; margin: 0 auto; padding: 0; list-style: none; }
 .sb__row { min-width: 0; margin: 0; }
-.sb__item { position: relative; display: grid; align-content: center; justify-items: center; gap: 3px; width: 100%; min-height: 48px; padding: 5px 1px; border: 0; border-radius: 14px; background: transparent; color: var(--text-muted); font: inherit; font-size: clamp(8px, 2.4vw, 10px); font-weight: 700; letter-spacing: -.02em; line-height: 1.1; text-align: center; text-decoration: none; overflow-wrap: anywhere; hyphens: auto; cursor: pointer; }
+.sb__item { position: relative; display: grid; align-content: center; justify-items: center; width: 48px; min-height: 48px; margin-inline: auto; padding: 5px; border: 0; border-radius: 50%; background: transparent; color: var(--text-muted); font: inherit; text-decoration: none; cursor: pointer; }
 .sb__item:hover { color: var(--text); }
-.sb__item.is-active { background: var(--primary-tint); color: var(--primary-text); }
-.sb__item .icon { width: 22px; height: 22px; }
-.sb__long { display: none; }
+.sb__item.is-active { background: var(--text); color: var(--bg); }
+.sb__item .icon { width: 23px; height: 23px; }
+.sb__label, .sb__long { display: none; }
 .sb__badge { position: absolute; top: 1px; right: calc(50% - 23px); display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding-inline: 4px; border-radius: 999px; background: var(--danger); color: #fff; font-size: .62rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
-@media (max-width: 380px) { .sb__item { font-size: 7.5px; } .sb__item .icon { width: 19px; height: 19px; } }
+@media (max-width: 380px) { .sb { padding-inline: 10px; } .sb__scroll { padding: 4px; } .sb__item { width: 44px; min-height: 44px; } .sb__item .icon { width: 21px; height: 21px; } }
 
 /* Écran sans navigation (onboarding, activation) : bandeau haut avec marque et compte. */
 .sb.is-bare { position: sticky; top: 0; right: auto; bottom: auto; left: auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: max(8px, env(safe-area-inset-top)) 12px 10px; border-top: 0; border-bottom: 1px solid var(--border); box-shadow: 0 8px 24px -20px rgba(44, 58, 51, .5); }
@@ -69,7 +70,7 @@
   .sb__head, .sb.is-bare .sb__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 48px; padding: 0 4px 0 8px; }
   .sb__brand .brand-mark, .sb.is-bare .sb__brand .brand-mark { width: 28px; height: 28px; }
 
-  .sb__scroll { flex: 1; min-height: 0; margin-top: 6px; padding: 0 2px; overflow-y: auto; scrollbar-width: thin; }
+  .sb__scroll { flex: 1; min-height: 0; margin-top: 6px; padding: 0 2px; overflow-y: auto; scrollbar-width: thin; border: 0; border-radius: 0; background: transparent; box-shadow: none; pointer-events: auto; }
   .sb__list { grid-template-columns: 1fr; gap: 2px; max-width: none; margin: 0; }
   .sb__heading { display: block; padding: 16px 10px 5px; color: var(--text-muted); font-size: .72rem; font-weight: 600; letter-spacing: .02em; }
   .sb__row:first-child .sb__heading { padding-top: 6px; }
