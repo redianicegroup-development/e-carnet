@@ -283,8 +283,8 @@ a.setting-item:hover, button.setting-item:hover { border-color: var(--primary); 
 /* =====================================================================================================
    Shell d'espace : grille page + sidebar (la sidebar elle-même est dans components/shell/sidebar.css)
    ===================================================================================================== */
-.space { min-height: 100dvh; display: grid; grid-template-rows: auto 1fr; }
-.space-main { width: min(100%, 720px); margin-inline: auto; padding: 18px 16px 30px; display: grid; gap: 16px; align-content: start; }
+.space { min-height: 100dvh; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; }
+.space-main { grid-column: 1; min-width: 0; width: min(100%, 720px); margin-inline: auto; padding: 18px 16px 30px; display: grid; gap: 16px; align-content: start; }
 .space:not(.space--bare) .space-main { padding-bottom: calc(100px + env(safe-area-inset-bottom)); }
 .space--bare .space-main { padding-bottom: 40px; }
 .space-footer { color: var(--text-muted); font-size: .8rem; text-align: center; padding-top: 6px; }
