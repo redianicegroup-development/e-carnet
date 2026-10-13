@@ -25,6 +25,12 @@
 .sb__label, .sb__long { display: none; }
 .sb__badge { position: absolute; top: 1px; right: calc(50% - 23px); display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding-inline: 4px; border-radius: 999px; background: var(--danger); color: #fff; font-size: .62rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
 @media (max-width: 380px) { .sb { padding-inline: 10px; } .sb__scroll { padding: 4px; } .sb__item { width: 44px; min-height: 44px; } .sb__item .icon { width: 21px; height: 21px; } }
+.space-mobile-header { position: sticky; top: 0; z-index: 35; width: calc(100% + 32px); margin: -18px -16px 0; padding: max(10px, env(safe-area-inset-top)) 16px 10px; border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(12px); }
+.space-mobile-header__brand { display: inline-flex; align-items: center; gap: 10px; min-width: 0; color: var(--text); text-decoration: none; }
+.space-mobile-header__brand .brand-mark { width: 32px; height: 32px; }
+.space-mobile-header__brand > span:last-child { display: grid; line-height: 1.1; }
+.space-mobile-header__brand strong { font-size: .98rem; font-weight: 800; }
+.space-mobile-header__brand small { color: var(--text-muted); font-size: .72rem; font-weight: 600; }
 
 /* Écran sans navigation (onboarding, activation) : bandeau haut avec marque et compte. */
 .sb.is-bare { position: sticky; top: 0; right: auto; bottom: auto; left: auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: max(8px, env(safe-area-inset-top)) 12px 10px; border-top: 0; border-bottom: 1px solid var(--border); box-shadow: 0 8px 24px -20px rgba(44, 58, 51, .5); }
@@ -63,6 +69,7 @@
 
 /* ---------- desktop ---------- */
 @media (min-width: 920px) {
+  .space-mobile-header { display: none; }
   .space { grid-template-columns: var(--sb-w) minmax(0, 1fr); grid-template-rows: minmax(100dvh, 1fr); transition: grid-template-columns .18s ease; }
   .space.space--nav-collapsed { grid-template-columns: var(--sb-w-rail) minmax(0, 1fr); }
 

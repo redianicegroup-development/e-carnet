@@ -8,6 +8,7 @@ import { ApiError, apiGet, apiPost } from "../../infrastructure/api/client";
 import { SPACES, type SpaceId } from "../../lib/spaces";
 import { useConfirm } from "../modal/ConfirmProvider";
 import { GreetingModal } from "../modal/GreetingModal";
+import { BrandMark } from "../ui/BrandMark";
 import { ScreenLoader } from "../ui/ScreenLoader";
 import { AppSidebar, type SidebarItem, type SidebarMenuItem } from "./AppSidebar";
 
@@ -193,6 +194,14 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
       />
 
       <main className="space-main" id="contenu">
+        {!bare && (
+          <header className="space-mobile-header">
+            <Link className="space-mobile-header__brand" href={config.home} aria-label={`E-Carnet, accueil ${config.label.toLowerCase()}`}>
+              <BrandMark />
+              <span><strong>E-Carnet</strong><small>{config.label}</small></span>
+            </Link>
+          </header>
+        )}
         {state.status === "loading" && <ScreenLoader label={state.label} />}
         {state.status === "anonymous" && !bare && <div className="skeleton" role="status" aria-live="polite"><span className="sr-only">Redirection vers la connexion…</span><i /><i /><i /></div>}
         {state.status === "error" && !bare && (

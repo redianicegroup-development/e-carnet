@@ -8,6 +8,7 @@ import { AdminAccountActionRequestsClient } from "../../components/AdminAccountA
 import { AdminRepresentationTransfersClient } from "../../components/AdminRepresentationTransfersClient";
 import { AdminSettingsClient } from "../../components/AdminSettingsClient";
 import { useConfirm } from "../../components/modal/ConfirmProvider";
+import { BrandMark } from "../../components/ui/BrandMark";
 import { Icon, type IconName } from "../../components/ui/Icon";
 import { AppSidebar, type SidebarItem, type SidebarMenuItem } from "../../components/shell/AppSidebar";
 import { ScreenLoader } from "../../components/ui/ScreenLoader";
@@ -236,6 +237,12 @@ export default function AdminPage() {
       onToggle={() => setNavCollapsed((collapsed) => !collapsed)}
     />
     <main className="space-main admin-space-main">
+      <header className="space-mobile-header">
+        <Link className="space-mobile-header__brand" href="/admin/" aria-label="E-Carnet, accueil administration">
+          <BrandMark />
+          <span><strong>E-Carnet</strong><small>Administration</small></span>
+        </Link>
+      </header>
       <header className="admin-page-heading"><div><span className="eyebrow">Console privée</span><h1>Administration E‑Carnet</h1><p className="muted">Actualisé {formatDate(dashboard.generated_at)} · synchronisation automatique toutes les 2 min</p></div><button type="button" className={`admin-refresh-icon${manualRefreshing ? " is-refreshing" : ""}`} aria-label="Actualiser les données" title="Actualiser les données" aria-busy={manualRefreshing} disabled={manualRefreshing} onClick={() => void loadDashboard(true, true)}><Icon name="refresh" size={20} /></button></header>
       {refreshMessage && <p className="admin-refresh-note" role="status">{refreshMessage}</p>}
       <div className="admin-workspace__content">
