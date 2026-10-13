@@ -72,7 +72,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [patientAccessQr, setPatientAccessQr] = useState<PatientAccessQr | null>(null);
   const [qrNow, setQrNow] = useState(0);
-  const [navCollapsed, setNavCollapsed] = useState(false);
+  const [navCollapsed, setNavCollapsed] = useState(true);
   const [signingOut, setSigningOut] = useState(false);
   const [logoutMessage, setLogoutMessage] = useState("");
   function toggleNav() { setNavCollapsed((current) => !current); }

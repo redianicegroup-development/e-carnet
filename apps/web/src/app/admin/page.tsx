@@ -96,7 +96,7 @@ export default function AdminPage() {
   const [feedbackSearch, setFeedbackSearch] = useState("");
   const [surveySearch, setSurveySearch] = useState("");
   const [busyFeedbackId, setBusyFeedbackId] = useState("");
-  const [navCollapsed, setNavCollapsed] = useState(false);
+  const [navCollapsed, setNavCollapsed] = useState(true);
   const [adminProfile, setAdminProfile] = useState<AdminProfile | null>(null);
   const profileRequested = useRef(false);
 

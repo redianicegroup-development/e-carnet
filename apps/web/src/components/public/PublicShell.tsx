@@ -4,27 +4,7 @@ import { BrandMark } from "../ui/BrandMark";
 import { Icon } from "../ui/Icon";
 import { PwaInstallButton } from "../PwaInstallButton";
 import { LEGAL_DOCS } from "../../lib/legal/config";
-
-export function PublicHeader() {
-  return (
-    <header className="pub-header">
-      <Link className="brand" href="/" aria-label="Mon Carnet Numérique, accueil">
-        <BrandMark />
-        <span className="brand-text"><strong>E-carnet</strong><small>Mon Carnet Numérique</small></span>
-      </Link>
-      <nav className="pub-nav" aria-label="Navigation principale">
-        <Link href="/#parcours">Comment ça marche</Link>
-        <Link href="/#profils">Pour qui</Link>
-        <Link href="/securite">Sécurité</Link>
-        <Link href="/aide">Aide</Link>
-      </nav>
-      <div className="pub-actions">
-        <Link className="button ghost small" href="/connexion">Se connecter</Link>
-        <Link className="button primary small" href="/connexion?mode=register">Créer mon carnet</Link>
-      </div>
-    </header>
-  );
-}
+import { PublicHeader } from "./PublicHeader";
 
 export function PublicFooter() {
   return (
