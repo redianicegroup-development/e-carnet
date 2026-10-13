@@ -80,11 +80,3 @@
 .lp-rating-score { color: var(--text); font-size: 1.6rem; }
 .lp-rating-score > span { margin-left: 3px; color: var(--text-muted); font-size: .8rem; font-weight: 600; }
 .lp-rating-card p { margin: 0; }
-
-/* Priorité des nouvelles zones du footer E‑Carnet sur les styles de la landing existants. */
-.pub-footer { display: block; border-top: 0; background: transparent; padding: 28px 12px 0; }
-.pub-footer__brand { display: grid; align-content: start; align-items: initial; gap: 10px; max-width: 310px; }
-.pub-footer__brand > .brand { display: inline-flex; align-items: center; gap: 10px; }
-.pub-footer__brand p { margin: 0; }
-.pub-footer__columns nav { display: grid; gap: 9px; }
-.pub-footer__columns nav a { font-weight: 500; font-size: .85rem; }
