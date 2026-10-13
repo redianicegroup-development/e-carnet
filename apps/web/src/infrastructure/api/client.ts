@@ -53,8 +53,19 @@ async function parse<T>(response: Response): Promise<T> {
   return payload.data as T;
 }
 
-export async function apiGet<T>(path: string): Promise<T> {
-  return parse<T>(await fetch(`${API_URL}${path}`, { credentials: "include", cache: "no-store" }));
+export async function apiGet<T>(path: string, timeoutMs = 12000): Promise<T> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await parse<T>(await fetch(`${API_URL}${path}`, { credentials: "include", cache: "no-store", signal: controller.signal }));
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new ApiError("Connexion lente, on réessaie. Vérifiez votre réseau puis réessayez.", 0);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 const PRODUCT_ACTION_EXCLUSIONS = [

@@ -23,7 +23,7 @@ class PatientProfile(models.Model):
 
 class ClinicalDeclaration(models.Model):
     """Déclaration patient dont la provenance initiale reste visible."""
-    KIND_CHOICES = (("antecedent", "Antécédent"), ("allergy", "Allergie"), ("treatment", "Traitement"))
+    KIND_CHOICES = (("antecedent", "Antécédent"), ("allergy", "Allergie"), ("treatment", "Traitement"), ("blood_group", "Groupe sanguin"))
     STATUS_CHOICES = (("declared", "Déclaré par le patient"), ("cancelled", "Annulé avec historique"))
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name="declarations")
@@ -37,3 +37,15 @@ class ClinicalDeclaration(models.Model):
     class Meta:
         ordering = ("-updated_at",)
         constraints = [models.UniqueConstraint(fields=("patient", "kind", "label"), name="unique_patient_declaration")]
+
+
+class PatientEmergencyCard(models.Model):
+    """Carte d’urgence facultative, publiée uniquement par QR à la demande du patient."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    patient = models.OneToOneField(PatientProfile, on_delete=models.CASCADE, related_name="emergency_card")
+    contact_name = models.CharField(max_length=120, blank=True)
+    contact_phone = models.CharField(max_length=32, blank=True)
+    qr_enabled = models.BooleanField(default=False)
+    qr_version = models.PositiveIntegerField(default=1)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)

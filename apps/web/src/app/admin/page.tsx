@@ -1,14 +1,15 @@
 "use client";
 
-import { FormEvent, KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ApiError, apiGet, apiPatch, apiPost } from "../../infrastructure/api/client";
 import { AdminActivityCharts, type DailyActivityPoint } from "../../components/AdminActivityCharts";
 import { AdminAccountActionRequestsClient } from "../../components/AdminAccountActionRequestsClient";
 import { AdminSettingsClient } from "../../components/AdminSettingsClient";
 import { useConfirm } from "../../components/modal/ConfirmProvider";
 import { Icon, type IconName } from "../../components/ui/Icon";
-import { BrandMark } from "../../components/ui/BrandMark";
+import { AppSidebar, type SidebarItem, type SidebarMenuItem } from "../../components/shell/AppSidebar";
 import { ScreenLoader } from "../../components/ui/ScreenLoader";
 
 type Visitor = {
@@ -80,6 +81,7 @@ function StarRating({ value, label }: { value: number; label: string }) {
 }
 
 export default function AdminPage() {
+  const router = useRouter();
   const confirm = useConfirm();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -106,7 +108,9 @@ export default function AdminPage() {
       setDashboard(data);
       if (!profileRequested.current) {
         profileRequested.current = true;
-        void apiGet<AdminProfile>("/api/v1/identity/me/").then(setAdminProfile).catch(() => undefined);
+        void apiGet<AdminProfile>("/api/v1/identity/me/").then(setAdminProfile).catch((profileError: unknown) => {
+          if (profileError instanceof ApiError && (profileError.status === 401 || profileError.status === 403)) router.replace(`/connexion?next=${encodeURIComponent("/admin")}`);
+        });
       }
       setMessage("");
       setRefreshMessage("");
@@ -116,13 +120,16 @@ export default function AdminPage() {
         return;
       }
       setDashboard(null);
-      if (error instanceof ApiError && (error.status === 403 || error.status === 401)) setMessage("Connectez-vous avec le compte superadministrateur autorisé pour continuer.");
+      if (error instanceof ApiError && (error.status === 403 || error.status === 401)) {
+        router.replace(`/connexion?next=${encodeURIComponent("/admin")}`);
+        setMessage("Redirection vers la connexion…");
+      }
       else setMessage(error instanceof Error ? error.message : "Impossible de charger le tableau de bord.");
     } finally {
       if (!silent) setLoading(false);
       if (manual) setManualRefreshing(false);
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     const initialLoad = window.setTimeout(() => void loadDashboard(), 0);
@@ -168,20 +175,8 @@ export default function AdminPage() {
     } finally { setBusyFeedbackId(""); }
   }
 
-  function onTabKeyDown(event: KeyboardEvent<HTMLUListElement>) {
-    const index = tabs.findIndex((tab) => tab.id === activeTab);
-    let next = index;
-    if (event.key === "ArrowRight" || event.key === "ArrowDown") next = (index + 1) % tabs.length;
-    else if (event.key === "ArrowLeft" || event.key === "ArrowUp") next = (index - 1 + tabs.length) % tabs.length;
-    else if (event.key === "Home") next = 0;
-    else if (event.key === "End") next = tabs.length - 1;
-    else return;
-    event.preventDefault();
-    setActiveTab(tabs[next].id);
-    document.getElementById(`admin-tab-${tabs[next].id}`)?.focus();
-  }
-
   if (loading && !dashboard) return <main className="admin-loader"><ScreenLoader label="Vérification de la session administrateur…" /></main>;
+  if (!dashboard && message === "Redirection vers la connexion…") return <ScreenLoader label="Redirection vers la connexion…" />;
 
   if (!dashboard) return <main className="shell admin-shell"><section className="admin-login card">
     <span className="eyebrow">E‑Carnet · Administration</span><h1>Console d’administration</h1>
@@ -190,6 +185,7 @@ export default function AdminPage() {
       <label className="field"><span>Email administrateur</span><input type="email" autoComplete="username" required value={email} onChange={(event) => setEmail(event.target.value)} /></label>
       <label className="field"><span>Mot de passe</span><input type="password" autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} /></label>
       {message && <p className="notice" role="alert">{message}</p>}
+      {message.startsWith("Connexion lente") && <button className="button" type="button" onClick={() => void loadDashboard()}>Réessayer</button>}
       <button className="button primary" type="submit" disabled={submitting}>{submitting ? "Connexion…" : "Se connecter"}</button>
     </form>
   </section></main>;
@@ -222,17 +218,30 @@ export default function AdminPage() {
   const adminName = [adminProfile?.first_name, adminProfile?.last_name].filter(Boolean).join(" ") || adminProfile?.email || "Administrateur";
   const adminInitials = `${adminProfile?.first_name?.[0] ?? ""}${adminProfile?.last_name?.[0] ?? ""}`.toUpperCase() || adminProfile?.email?.[0]?.toUpperCase() || "A";
 
+  const tabGroup: Partial<Record<AdminTab, string>> = { overview: "Pilotage", establishments: "Gestion", settings: "Compte" };
+  const sidebarItems: SidebarItem[] = tabs.map((tab) => ({
+    id: tab.id, label: tab.short, long: tab.label, icon: tab.icon, active: activeTab === tab.id,
+    onSelect: () => setActiveTab(tab.id), domId: `admin-tab-${tab.id}`, controls: `admin-panel-${tab.id}`, heading: tabGroup[tab.id],
+    badge: tab.id === "feedback" ? dashboard.feedback_new_total : undefined,
+    ariaLabel: tab.id === "feedback" && dashboard.feedback_new_total > 0 ? `${tab.label}, ${dashboard.feedback_new_total} nouveau(x)` : undefined,
+  }));
+  const sidebarMenu: SidebarMenuItem[] = [
+    { id: "settings", label: "Profil et paramètres", icon: "sliders", onSelect: () => setActiveTab("settings") },
+    { id: "logout", label: "Se déconnecter", icon: "logout", tone: "danger", onSelect: () => void askSignOut() },
+  ];
+
   return <div className={`space space--admin${navCollapsed ? " space--nav-collapsed" : ""}`}>
-    <nav className="space-nav space-nav--admin" aria-label="Navigation de l’administration">
-      <div className="admin-sidebar-brand"><a className="brand" href="/admin/" aria-label="E‑Carnet, administration"><BrandMark /><span className="brand-text"><strong>E-carnet</strong><small>Console admin</small></span></a></div>
-      <button type="button" className="space-nav__toggle" onClick={() => setNavCollapsed((collapsed) => !collapsed)} aria-expanded={!navCollapsed} aria-label={navCollapsed ? "Déplier la navigation" : "Replier la navigation"}><Icon name="chevron" size={18} /><span>{navCollapsed ? "Déplier" : "Réduire"}</span></button>
-      <ul role="tablist" aria-label="Sections de l’administration" onKeyDown={onTabKeyDown}>{tabs.map((tab) => <li key={tab.id}><button id={`admin-tab-${tab.id}`} type="button" role="tab" aria-selected={activeTab === tab.id} aria-controls={`admin-panel-${tab.id}`} tabIndex={activeTab === tab.id ? 0 : -1} className={`space-nav__link admin-nav-link${activeTab === tab.id ? " is-active" : ""}`} aria-label={tab.id === "feedback" && dashboard.feedback_new_total > 0 ? `${tab.label}, ${dashboard.feedback_new_total} nouveau(x)` : tab.label} title={tab.label} onClick={() => setActiveTab(tab.id)}><Icon name={tab.icon} size={22} /><span className="space-nav__label">{tab.short}</span><span className="space-nav__long">{tab.label}</span>{tab.id === "feedback" && dashboard.feedback_new_total > 0 && <span className="admin-nav-badge" aria-hidden="true">{dashboard.feedback_new_total > 99 ? "99+" : dashboard.feedback_new_total}</span>}</button></li>)}</ul>
-      <button type="button" className={`admin-sidebar-profile${activeTab === "settings" ? " is-active" : ""}`} onClick={() => setActiveTab("settings")} aria-label={`Ouvrir les paramètres du compte ${adminName}`} title={adminName}>
-        <span className="admin-sidebar-avatar" aria-hidden="true" style={adminProfile?.avatar_url ? { backgroundImage: `url(${JSON.stringify(adminProfile.avatar_url)})` } : undefined}>{adminProfile?.avatar_url ? null : adminInitials}</span>
-        <span className="admin-sidebar-profile__copy"><strong>{adminName}</strong><small>Profil et paramètres</small></span>
-        <Icon name="chevron" size={17} />
-      </button>
-    </nav>
+    <AppSidebar
+      ariaLabel="Navigation de l’administration"
+      brand={{ href: "/admin/", title: "E-carnet", subtitle: "Console admin" }}
+      items={sidebarItems}
+      listRole="tablist"
+      listLabel="Sections de l’administration"
+      account={{ name: adminName, email: adminProfile?.email, initials: adminInitials, avatarUrl: adminProfile?.avatar_url || undefined }}
+      menu={sidebarMenu}
+      collapsed={navCollapsed}
+      onToggle={() => setNavCollapsed((collapsed) => !collapsed)}
+    />
     <main className="space-main admin-space-main">
       <header className="admin-page-heading"><div><span className="eyebrow">Console privée</span><h1>Administration E‑Carnet</h1><p className="muted">Actualisé {formatDate(dashboard.generated_at)} · synchronisation automatique toutes les 2 min</p></div><button type="button" className={`admin-refresh-icon${manualRefreshing ? " is-refreshing" : ""}`} aria-label="Actualiser les données" title="Actualiser les données" aria-busy={manualRefreshing} disabled={manualRefreshing} onClick={() => void loadDashboard(true, true)}><Icon name="refresh" size={20} /></button></header>
       {refreshMessage && <p className="admin-refresh-note" role="status">{refreshMessage}</p>}

@@ -7,9 +7,8 @@ import { ApiError, apiGet, apiPost } from "../../infrastructure/api/client";
 import { SPACES, type SpaceId } from "../../lib/spaces";
 import { useConfirm } from "../modal/ConfirmProvider";
 import { GreetingModal } from "../modal/GreetingModal";
-import { Icon } from "../ui/Icon";
-import { BrandMark } from "../ui/BrandMark";
 import { ScreenLoader } from "../ui/ScreenLoader";
+import { AppSidebar, type SidebarItem, type SidebarMenuItem } from "./AppSidebar";
 
 export type SpaceAccount = {
   id: string;
@@ -47,6 +46,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
   const confirm = useConfirm();
   const config = SPACES[space];
   const [state, setState] = useState<State>({ status: "loading" });
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [navCollapsed, setNavCollapsed] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [logoutMessage, setLogoutMessage] = useState("");
@@ -66,6 +66,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
     }
   }
   const bare = config.bare.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+  const publicBare = space === "establishment" && (pathname === "/etablissement/activation" || pathname.startsWith("/etablissement/activation/"));
 
   useEffect(() => {
     let active = true;
@@ -75,65 +76,57 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
         if (active) setState({ status: "ready", account });
       } catch (error) {
         if (!active) return;
-        if (error instanceof ApiError && error.status === 401) setState({ status: "anonymous" });
+        if (error instanceof ApiError && (error.status === 401 || error.status === 403)) setState({ status: "anonymous" });
         else setState({ status: "error", message: error instanceof Error ? error.message : "Service indisponible." });
       }
     }
     void load();
     return () => { active = false; };
-  }, []);
+  }, [loadAttempt]);
 
   useEffect(() => {
-    if (state.status !== "anonymous" || bare) return;
+    if (state.status !== "anonymous" || publicBare) return;
     const requested = `${window.location.pathname}${window.location.search}${window.location.hash}`;
     router.replace(`/connexion?next=${encodeURIComponent(requested)}`);
-  }, [state.status, bare, router]);
+  }, [state.status, publicBare, router]);
 
   const moi = config.tabs[config.tabs.length - 1];
   const showAdminLink = space === "patient" && state.status === "ready" && state.account.is_admin === true;
 
+  const items: SidebarItem[] = config.tabs.map((tab) => ({ id: tab.id, label: tab.label, long: tab.long, icon: tab.icon, href: tab.href, active: tab.match(pathname), account: tab === moi }));
+  if (showAdminLink) items.splice(items.length - 1, 0, { id: "admin", label: "Admin", long: "Administration", icon: "shield", href: "https://e-carnetci.vercel.app/admin/", external: true, active: false });
+  const menu: SidebarMenuItem[] = [
+    { id: "settings", label: "Profil et paramètres", icon: "sliders", href: moi.href },
+    { id: "help", label: "Centre d’aide", icon: "help", href: "/aide" },
+    { id: "logout", label: signingOut ? "Déconnexion…" : "Se déconnecter", icon: "logout", tone: "danger", disabled: signingOut, onSelect: () => void logout() },
+  ];
+
+  if (state.status === "loading") return <ScreenLoader label={`Chargement de votre espace ${config.label.toLowerCase()}…`} />;
+  if (state.status === "anonymous" && !publicBare) return <ScreenLoader label="Redirection vers la connexion…" />;
+  if (state.status === "error" && !bare) return <main className="connection-retry-screen" role="alert">
+    <span className="connection-retry-screen__signal" aria-hidden="true"><span /><span /><span /></span>
+    <span className="eyebrow">E‑Carnet · connexion</span>
+    <h1>{state.message.startsWith("Connexion lente") ? "Connexion lente, on réessaie" : "Impossible de joindre votre espace"}</h1>
+    <p>{state.message}</p>
+    <button type="button" className="button primary connection-retry-screen__button" onClick={() => { setState({ status: "loading" }); setLoadAttempt((attempt) => attempt + 1); }}>Réessayer</button>
+  </main>;
+
   return (
-    <div className={`space space--${space}${bare ? " space--bare" : ""}${navCollapsed ? " space--nav-collapsed" : ""}`}>
-      <nav className={`space-nav space-nav--workspace${navCollapsed ? " is-collapsed" : ""}${bare ? " is-bare" : ""}`} aria-label={`Navigation de l’${config.label.toLowerCase()}`}>
-        <div className="space-sidebar-brand">
-          <Link className="brand" href={bare || state.status !== "ready" ? "/" : config.home} aria-label="Mon Carnet Numérique, retour à l’accueil de l’espace">
-            <BrandMark />
-            <span className="brand-text"><strong>E-carnet</strong><small>{config.label}</small></span>
-          </Link>
-          <button type="button" className="space-nav__toggle" onClick={toggleNav} aria-expanded={!navCollapsed} aria-label={navCollapsed ? "Déplier la navigation" : "Replier la navigation"} title={navCollapsed ? "Déplier la navigation" : "Réduire la navigation"}><Icon name="chevron" size={18} /><span>{navCollapsed ? "Déplier" : "Réduire"}</span></button>
-        </div>
-        {!bare && <ul>
-          {config.tabs.map((tab) => {
-            const active = tab.match(pathname);
-            return (
-              <li key={tab.id}>
-                <Link href={tab.href} className={active ? "space-nav__link is-active" : "space-nav__link"} aria-label={tab.long} title={tab.long} aria-current={active ? "page" : undefined}>
-                  <Icon name={tab.icon} size={22} />
-                  <span className="space-nav__label">{tab.label}</span>
-                  <span className="space-nav__long">{tab.long}</span>
-                </Link>
-              </li>
-            );
-          })}
-          {showAdminLink && <li><a href="https://e-carnetci.vercel.app/admin/" target="_blank" rel="noopener noreferrer" className="space-nav__link" aria-label="Administration" title="Administration"><Icon name="shield" size={22} /><span className="space-nav__label">Admin</span><span className="space-nav__long">Administration</span></a></li>}
-        </ul>}
-        {state.status === "ready" && <div className="space-sidebar-footer">
-          <Link className={`space-sidebar-profile${moi.match(pathname) ? " is-active" : ""}`} href={moi.href} aria-label={`${displayName(state.account)} — ouvrir ${moi.long.toLowerCase()}`} aria-current={moi.match(pathname) ? "page" : undefined} title={displayName(state.account)}>
-            <AvatarBadge account={state.account} size={38} />
-            <span className="space-sidebar-profile__copy"><strong>{displayName(state.account)}</strong><small>Profil et paramètres</small></span>
-            <Icon name="chevron" size={17} />
-          </Link>
-          {!bare && <div className="space-sidebar-logout">
-            <button type="button" onClick={() => void logout()} disabled={signingOut} title="Se déconnecter">
-              <Icon name="logout" size={20} /><span>{signingOut ? "Déconnexion…" : "Se déconnecter"}</span>
-            </button>
-            {logoutMessage && <small role="alert">{logoutMessage}</small>}
-          </div>}
-        </div>}
-      </nav>
+    <div className={`space space--${space}${bare ? " space--bare" : ""}${navCollapsed && !bare ? " space--nav-collapsed" : ""}`}>
+      <AppSidebar
+        ariaLabel={`Navigation de l’${config.label.toLowerCase()}`}
+        brand={{ href: bare || state.status !== "ready" ? "/" : config.home, title: "E-carnet", subtitle: config.label }}
+        items={items}
+        account={state.status === "ready" ? { name: displayName(state.account), email: state.account.email, initials: initials(state.account), avatarUrl: state.account.avatar_url || undefined } : null}
+        accountHref={moi.href}
+        menu={menu}
+        notice={logoutMessage}
+        collapsed={navCollapsed}
+        onToggle={toggleNav}
+        bare={bare}
+      />
 
       <main className="space-main" id="contenu">
-        {state.status === "loading" && <ScreenLoader label={`Chargement de votre espace ${config.label.toLowerCase()}…`} />}
         {state.status === "anonymous" && !bare && <div className="skeleton" role="status" aria-live="polite"><span className="sr-only">Redirection vers la connexion…</span><i /><i /><i /></div>}
         {state.status === "error" && !bare && (
           <section className="card gate" role="alert"><h1>Service momentanément indisponible</h1><p className="muted">{state.message}</p><div className="actions"><button type="button" className="button primary" onClick={() => window.location.reload()}>Réessayer</button></div></section>

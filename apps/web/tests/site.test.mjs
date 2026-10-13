@@ -37,21 +37,30 @@ test("les salutations d’accueil sont des toasts illustrés, accessibles, non b
   assert.match(styles, /@media \(max-width: 520px\)[\s\S]*\.greeting-toast/);
   assert.match(styles, /prefers-reduced-motion: reduce/);
 });
-test("les espaces connectés partagent une sidebar responsive avec logo et avatar, sans header séparé", () => {
+test("les quatre espaces partagent une seule sidebar responsive (logo, navigation, compte avec menu), sans header séparé", () => {
   const shell = read("src/components/shell/SpaceShell.tsx");
+  const sidebar = read("src/components/shell/AppSidebar.tsx");
+  const sidebarStyles = read("src/components/shell/sidebar.css");
   const styles = read("src/app/globals.css");
-  assert.match(shell, /space-nav--workspace/);
-  assert.match(shell, /space-sidebar-brand[\s\S]*BrandMark/);
-  assert.match(shell, /space-sidebar-profile[\s\S]*AvatarBadge/);
-  assert.doesNotMatch(shell, /space-header|space-header__me/);
+  const adminPage = read("src/app/admin/page.tsx");
+  assert.match(shell, /<AppSidebar/);
+  assert.match(adminPage, /<AppSidebar/);
+  assert.match(sidebar, /sb__head[\s\S]*BrandMark/);
+  assert.match(sidebar, /sb__account[\s\S]*SidebarAvatar/);
+  assert.match(sidebar, /aria-haspopup="menu"/);
+  assert.match(sidebar, /aria-expanded=\{!rail\}/);
+  assert.doesNotMatch(shell, /space-header|space-header__me|<nav/);
+  assert.doesNotMatch(adminPage, /<nav|space-nav|admin-sidebar/);
   for (const layout of ["patient", "professionnel", "etablissement"]) {
     assert.match(read(`src/app/${layout}/layout.tsx`), /<SpaceShell space=/, `${layout} doit utiliser la sidebar partagée`);
   }
   assert.match(styles, /\.space-main \{[^}]*grid-row: 1;[^}]*grid-column: 2;[^}]*margin-inline: auto;/);
   assert.match(styles, /\.admin-space-main \{[^}]*margin-inline: auto;/);
-  assert.match(styles, /\.space\.space--nav-collapsed \{ grid-template-columns: 82px minmax\(0,1fr\);/);
-  assert.match(styles, /\.space-nav--workspace \{[^}]*position: sticky/);
-  assert.match(styles, /\.space-nav--workspace \.space-sidebar-profile/);
+  assert.match(sidebarStyles, /\.space\.space--nav-collapsed \{ grid-template-columns: var\(--sb-w-rail\) minmax\(0, 1fr\);/);
+  assert.match(sidebarStyles, /\.sb, \.sb\.is-bare \{[^}]*position: sticky/);
+  assert.match(sidebarStyles, /\.sb \{[^}]*position: fixed/, "mobile : barre basse");
+  assert.doesNotMatch(styles, /space-nav|space-sidebar|admin-sidebar-|admin-nav-link|admin-nav-badge/, "les anciennes règles de sidebar ne doivent plus subsister dans globals.css");
+  assert.doesNotMatch(sidebar, /localStorage|sessionStorage|indexedDB/, "l’état replié de la sidebar reste en mémoire (aucun stockage navigateur)");
 });
 test("visiteurs : le pied de page public renvoie vers les trois pages légales", () => {
   const footer = read("src/components/public/PublicShell.tsx");
@@ -119,12 +128,10 @@ test("le lien admin est dans la navigation patient et la gestion du compte dans 
   const patientForm = read("src/components/AccountActionRequestsSettingsClient.tsx");
   const adminPanel = read("src/components/AdminAccountActionRequestsClient.tsx");
   const adminPage = read("src/app/admin/page.tsx");
-  const css = read("src/app/globals.css");
   assert.doesNotMatch(settings, /gestion-compte|id: "administration"|e-carnetci\.vercel\.app\/admin/);
   assert.match(shell, /space === "patient" && state\.status === "ready" && state\.account\.is_admin === true/);
-  assert.match(shell, /space-nav--workspace/);
-  assert.match(shell, /href="https:\/\/e-carnetci\.vercel\.app\/admin\/"/);
-  assert.match(css, /\.space-nav--admin ul \{ grid-template-columns: repeat\(6/);
+  assert.match(shell, /<AppSidebar/);
+  assert.match(shell, /href: "https:\/\/e-carnetci\.vercel\.app\/admin\/", external: true/);
   assert.match(settings, /activeSection === "securite"[\s\S]*AccountActionRequestsSettingsClient/);
   assert.match(professional, /activeSection === "securite"[\s\S]*AccountActionRequestsSettingsClient/);
   assert.match(establishment, /activeSection === "securite"[\s\S]*AccountActionRequestsSettingsClient/);
@@ -138,18 +145,16 @@ test("le lien admin est dans la navigation patient et la gestion du compte dans 
   assert.match(adminPanel, /\/delete\//);
   assert.match(adminPanel, /protected_account/);
   assert.match(adminPage, /AdminAccountActionRequestsClient/);
-  assert.match(adminPage, /space-nav space-nav--admin/);
-  assert.match(adminPage, /space-nav__toggle/);
+  assert.match(adminPage, /<AppSidebar/);
+  assert.match(adminPage, /onToggle=/);
   assert.match(adminPage, /space--nav-collapsed/);
-  assert.match(adminPage, /space-nav__label/);
+  assert.match(adminPage, /listRole="tablist"/);
   assert.match(adminPage, /Gestion des comptes/);
   assert.match(adminPage, /id: "settings", label: "Paramètres", short: "Moi", icon: "user"/);
   assert.match(adminPage, /admin-panel-settings/);
   assert.match(adminPage, /AdminSettingsClient/);
   assert.match(read("src/components/AdminSettingsClient.tsx"), /SettingsDirectory/);
   assert.match(read("src/components/AdminSettingsClient.tsx"), /ThemeSettingsClient/);
-  assert.match(read("src/app/globals.css"), /\.space--admin\.space--nav-collapsed \{ grid-template-columns: 82px/);
-  assert.match(read("src/app/globals.css"), /\.space-nav--admin ul \{ grid-template-columns: repeat\(7/);
 });
 
 test("favicon, ICO et icônes PWA : les fichiers déclarés existent et sont valides", () => {
@@ -215,8 +220,48 @@ test("landing animée : le pouls respire et respecte le mouvement réduit", () =
 test("admin : les nouveaux retours sont annoncés dans la navigation et les indicateurs mieux hiérarchisés", () => {
   const admin = read("src/app/admin/page.tsx");
   const styles = read("src/app/globals.css");
-  assert.match(admin, /admin-nav-badge/);
-  assert.match(admin, /aria-label=\{tab\.id === "feedback"[\s\S]*dashboard\.feedback_new_total/);
-  assert.match(styles, /\.admin-nav-badge/);
+  const sidebar = read("src/components/shell/AppSidebar.tsx");
+  const sidebarStyles = read("src/components/shell/sidebar.css");
+  assert.match(admin, /badge: tab\.id === "feedback" \? dashboard\.feedback_new_total/);
+  assert.match(admin, /ariaLabel: tab\.id === "feedback"[\s\S]*dashboard\.feedback_new_total/);
+  assert.match(sidebar, /sb__badge/);
+  assert.match(sidebarStyles, /\.sb__badge/);
   assert.match(styles, /\.space--admin \.admin-metric::before/);
+});
+
+test("carte d’urgence : données déclarées, QR explicite et révocable, page non indexable", () => {
+  const carnet = read("src/components/PatientCarnet.tsx");
+  const settings = read("src/components/PatientEmergencyCardSettingsClient.tsx");
+  const publicCard = read("src/components/PublicEmergencyCard.tsx");
+  const page = read("src/app/urgence/[token]/page.tsx");
+  const api = read("../api/apps/patients/views.py");
+  assert.match(carnet, /blood_group: "Groupe sanguin"/);
+  assert.match(carnet, /BLOOD_GROUPS/);
+  assert.match(settings, /QRCodeSVG/);
+  assert.match(settings, /useConfirm/);
+  assert.match(settings, /Désactiver/);
+  assert.match(settings, /Renouveler/);
+  assert.match(publicCard, /allergies déclarées|Allergies déclarées/);
+  assert.match(page, /index: false[\s\S]*noarchive: true/);
+  assert.match(api, /hmac\.compare_digest/);
+  assert.match(api, /Cache-Control.*no-store/);
+  assert.match(api, /qr_enabled=True, qr_version=version/);
+});
+
+test("pré-consultation : une seule question visible et barre de navigation mobile en capsule", () => {
+  const wizard = read("src/components/PatientPreconsultations.tsx");
+  const shell = read("src/components/shell/SpaceShell.tsx");
+  const sidebar = read("src/components/shell/sidebar.css");
+  const loader = read("src/app/screen-loader.css");
+  const pro = read("src/components/ProfessionalConsultations.tsx");
+  assert.match(wizard, /QUESTIONS\[step\]/);
+  assert.match(wizard, /preconsult-wizard__next/);
+  assert.match(sidebar, /border-radius: 999px/);
+  assert.match(sidebar, /left: 50%/);
+  assert.match(shell, /error\.status === 403/);
+  assert.match(shell, /if \(state\.status === "loading"\) return <ScreenLoader/);
+  assert.match(shell, /Connexion lente, on réessaie/);
+  assert.match(loader, /position: fixed; z-index: 2000; inset: 0/);
+  assert.match(pro, /event\.key === "\/"/);
+  assert.match(pro, /professional-compact-list/);
 });

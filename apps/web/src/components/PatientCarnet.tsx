@@ -5,7 +5,8 @@ import { apiGet, apiPost } from "../infrastructure/api/client";
 import { PageHeader } from "./ui/PageHeader";
 
 type Declaration = { id: string; kind: string; label: string; details: string; provenance: { label: string } };
-const KINDS: Record<string, string> = { allergy: "Allergie", antecedent: "Antécédent", treatment: "Traitement" };
+const KINDS: Record<string, string> = { allergy: "Allergie", antecedent: "Antécédent", treatment: "Traitement", blood_group: "Groupe sanguin" };
+const BLOOD_GROUPS = ["A+", "A−", "B+", "B−", "AB+", "AB−", "O+", "O−", "Inconnu"];
 
 export function PatientCarnet() {
   const [items, setItems] = useState<Declaration[] | null>(null);
@@ -26,7 +27,7 @@ export function PatientCarnet() {
     setMessage("");
     try {
       const created = await apiPost<Declaration>("/api/v1/patient/declarations/", form);
-      setItems((current) => [created, ...(current ?? [])]);
+      setItems((current) => [created, ...(current ?? []).filter((item) => form.kind !== "blood_group" || item.kind !== "blood_group")]);
       setForm({ ...form, label: "", details: "" });
       setMessage("Déclaration ajoutée. Elle reste marquée « déclarée par vous ».");
     } catch (error) {
@@ -41,8 +42,8 @@ export function PatientCarnet() {
         <form className="card" onSubmit={submit}>
           <span className="eyebrow">Ajouter</span>
           <h2>Une déclaration</h2>
-          <label className="field"><span>Type</span><select value={form.kind} onChange={(event) => setForm({ ...form, kind: event.target.value })}>{Object.entries(KINDS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-          <label className="field"><span>Nom ou libellé</span><input required maxLength={160} value={form.label} onChange={(event) => setForm({ ...form, label: event.target.value })} placeholder="Ex. allergie connue" /></label>
+          <label className="field"><span>Type</span><select value={form.kind} onChange={(event) => setForm({ ...form, kind: event.target.value, label: "", details: "" })}>{Object.entries(KINDS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+          {form.kind === "blood_group" ? <label className="field"><span>Groupe sanguin déclaré</span><select required value={form.label} onChange={(event) => setForm({ ...form, label: event.target.value })}><option value="">Choisir un groupe</option>{BLOOD_GROUPS.map((group) => <option key={group} value={group}>{group}</option>)}</select></label> : <label className="field"><span>Nom ou libellé</span><input required maxLength={160} value={form.label} onChange={(event) => setForm({ ...form, label: event.target.value })} placeholder="Ex. allergie connue" /></label>}
           <label className="field"><span>Détails (facultatif)</span><textarea maxLength={500} value={form.details} onChange={(event) => setForm({ ...form, details: event.target.value })} /></label>
           <button className="button primary" type="submit" disabled={busy}>{busy ? "Enregistrement…" : "Ajouter à mon carnet"}</button>
           <p className="status" role="status" aria-live="polite">{message}</p>

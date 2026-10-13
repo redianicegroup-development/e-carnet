@@ -1,0 +1,109 @@
+/* =====================================================================================================
+   Sidebar partagée des quatre espaces (patient, professionnel, établissement, administration).
+   Mobile : barre basse à icônes. Desktop (≥ 920 px) : sidebar façon Claude, repliable en rail d’icônes.
+   Les couleurs dérivent des variables du thème actif (--bg, --text, --surface…), donc suivent tous les thèmes.
+   ===================================================================================================== */
+.space {
+  --sb-w: 288px;
+  --sb-w-rail: 60px;
+  --sb-bg: color-mix(in srgb, var(--text) 4%, var(--bg));
+  --sb-line: color-mix(in srgb, var(--text) 10%, transparent);
+  --sb-hover: color-mix(in srgb, var(--text) 7%, transparent);
+  --sb-active: color-mix(in srgb, var(--text) 11%, transparent);
+}
+
+/* ---------- mobile : barre basse ---------- */
+.sb { position: fixed; z-index: 40; top: auto; right: auto; bottom: calc(12px + env(safe-area-inset-bottom)); left: 50%; width: max-content; max-width: calc(100vw - 24px); padding: 6px; border: 1px solid color-mix(in srgb, var(--text) 10%, var(--border)); border-radius: 999px; background: var(--surface); box-shadow: 0 12px 36px -12px rgba(22, 36, 30, .3); transform: translateX(-50%); }
+.sb__head, .sb__foot, .sb__heading { display: none; }
+.sb__list { display: flex; justify-content: center; gap: 4px; width: max-content; max-width: 100%; margin: 0 auto; padding: 0; list-style: none; }
+.sb__row { flex: 0 1 52px; min-width: 42px; margin: 0; }
+.sb__item { position: relative; display: grid; place-items: center; width: 48px; max-width: 100%; min-height: 48px; aspect-ratio: 1; margin: auto; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--text-muted); font: inherit; font-size: 0; cursor: pointer; transition: background-color .18s ease, color .18s ease, transform .18s ease; }
+.sb__item:hover { color: var(--text); }
+.sb__item.is-active { background: var(--text); color: var(--surface); transform: scale(1.04); }
+.sb__item .icon { width: 22px; height: 22px; }
+.sb__label, .sb__long { display: none; }
+.sb__badge { position: absolute; top: 1px; right: calc(50% - 23px); display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding-inline: 4px; border-radius: 999px; background: var(--danger); color: #fff; font-size: .62rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+@media (max-width: 380px) { .sb { max-width: calc(100vw - 16px); padding: 5px; } .sb__list { gap: 2px; } .sb__row { min-width: 38px; } .sb__item { width: 42px; min-height: 42px; } .sb__item .icon { width: 19px; height: 19px; } }
+
+/* Écran sans navigation (onboarding, activation) : bandeau haut avec marque et compte. */
+.sb.is-bare { position: sticky; top: 0; right: auto; bottom: auto; left: auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: max(8px, env(safe-area-inset-top)) 12px 10px; border-top: 0; border-bottom: 1px solid var(--border); box-shadow: 0 8px 24px -20px rgba(44, 58, 51, .5); }
+.sb.is-bare .sb__head, .sb.is-bare .sb__foot { display: flex; }
+.sb.is-bare .sb__toggle { display: none; }
+.sb.is-bare .sb__brand .brand-mark { width: 30px; height: 30px; }
+.sb.is-bare .sb__account { min-height: 42px; padding: 2px 5px; }
+.sb.is-bare .sb__account-copy, .sb.is-bare .sb__account > .icon { display: none; }
+
+/* ---------- éléments communs (marque, compte, menu) ---------- */
+.sb__brand { display: inline-flex; align-items: center; gap: 10px; min-width: 0; border-radius: 10px; color: var(--text); text-decoration: none; }
+.sb__brand .brand-mark { flex: 0 0 auto; width: 30px; height: 30px; }
+.sb__brand-text { display: grid; min-width: 0; line-height: 1.1; }
+.sb__brand-text strong { font-size: 1.02rem; font-weight: 800; letter-spacing: -.01em; }
+.sb__brand-text small { color: var(--text-muted); font-size: 11px; font-weight: 600; }
+.sb__toggle { display: grid; place-items: center; flex: 0 0 auto; width: 34px; height: 34px; border: 0; border-radius: 8px; background: transparent; color: var(--text-muted); cursor: pointer; }
+.sb__toggle:hover { background: var(--sb-hover); color: var(--text); }
+.sb__avatar { display: grid; place-items: center; flex: 0 0 32px; width: 32px; height: 32px; border-radius: 50%; background: var(--primary); color: var(--on-primary); font-size: .8rem; font-weight: 800; object-fit: cover; overflow: hidden; }
+.sb__account { display: flex; align-items: center; gap: 10px; width: 100%; min-width: 0; min-height: 52px; padding: 8px; border: 0; border-radius: 10px; background: transparent; color: var(--text); font: inherit; text-align: left; text-decoration: none; cursor: pointer; }
+.sb__account:hover, .sb__account.is-open { background: var(--sb-hover); }
+.sb__account-copy { display: grid; flex: 1; min-width: 0; gap: 1px; }
+.sb__account-copy strong { overflow: hidden; font-size: .88rem; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.sb__account-copy small { overflow: hidden; color: var(--text-muted); font-size: .72rem; text-overflow: ellipsis; white-space: nowrap; }
+.sb__account > .icon { flex: 0 0 auto; color: var(--text-muted); transform: rotate(-90deg); transition: transform .15s ease; }
+.sb__account.is-open > .icon { transform: rotate(90deg); }
+.sb__notice { margin: 4px 8px 0; color: var(--danger, #b42318); font-size: .74rem; }
+.sb__menu { position: absolute; z-index: 70; right: 0; bottom: calc(100% + 6px); left: 0; display: grid; gap: 2px; padding: 6px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); box-shadow: var(--shadow-md); }
+.sb__menu-email { margin: 0; padding: 8px 10px 6px; overflow: hidden; color: var(--text-muted); font-size: .78rem; text-overflow: ellipsis; white-space: nowrap; }
+.sb__menu-sep { height: 1px; margin: 4px 6px; background: var(--border); }
+.sb__menu-item { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 38px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: var(--text); font: inherit; font-size: .9rem; font-weight: 500; text-align: left; text-decoration: none; cursor: pointer; }
+.sb__menu-item .icon { flex: 0 0 auto; color: var(--text-muted); }
+.sb__menu-item:hover, .sb__menu-item:focus-visible { background: var(--sb-hover); }
+.sb__menu-item:disabled { opacity: .6; cursor: wait; }
+.sb__menu-item--danger:hover, .sb__menu-item--danger:focus-visible { background: color-mix(in srgb, var(--danger, #b42318) 9%, transparent); color: var(--danger, #b42318); }
+.sb__menu-item--danger:hover .icon, .sb__menu-item--danger:focus-visible .icon { color: inherit; }
+
+/* ---------- desktop ---------- */
+@media (min-width: 920px) {
+  .space { grid-template-columns: var(--sb-w) minmax(0, 1fr); grid-template-rows: minmax(100dvh, 1fr); transition: grid-template-columns .18s ease; }
+  .space.space--nav-collapsed { grid-template-columns: var(--sb-w-rail) minmax(0, 1fr); }
+
+  .sb, .sb.is-bare { position: sticky; top: 0; right: auto; bottom: auto; left: auto; grid-row: 1; grid-column: 1; display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; align-self: start; gap: 0; width: auto; height: 100dvh; padding: 10px 8px; border: 0; border-right: 1px solid var(--sb-line); border-radius: 0; background: var(--sb-bg); box-shadow: none; }
+  .sb__head, .sb.is-bare .sb__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 48px; padding: 0 4px 0 8px; }
+  .sb__brand .brand-mark, .sb.is-bare .sb__brand .brand-mark { width: 28px; height: 28px; }
+
+  .sb__scroll { flex: 1; min-height: 0; margin-top: 6px; padding: 0 2px; overflow-y: auto; scrollbar-width: thin; }
+  .sb__list { grid-template-columns: 1fr; gap: 2px; max-width: none; margin: 0; }
+  .sb__heading { display: block; padding: 16px 10px 5px; color: var(--text-muted); font-size: .72rem; font-weight: 600; letter-spacing: .02em; }
+  .sb__row:first-child .sb__heading { padding-top: 6px; }
+  .sb__item { display: flex; align-items: center; justify-content: flex-start; gap: 10px; min-height: 36px; padding: 0 10px; border-radius: 8px; color: var(--text); font-size: .92rem; font-weight: 500; letter-spacing: 0; text-align: left; hyphens: none; overflow-wrap: normal; }
+  .sb__item .icon { flex: 0 0 20px; width: 20px; height: 20px; color: var(--text-muted); }
+  .sb__item:hover { background: var(--sb-hover); color: var(--text); }
+  .sb__item.is-active { background: var(--sb-active); color: var(--text); font-weight: 650; }
+  .sb__item.is-active .icon { color: var(--primary-text); }
+  .sb__item--account { display: none; }
+  .sb__label { display: none; }
+  .sb__long { display: inline; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sb__badge { position: static; margin-left: auto; min-width: 20px; height: 20px; padding-inline: 6px; font-size: .72rem; }
+
+  .sb__foot, .sb.is-bare .sb__foot { position: relative; display: block; padding-top: 8px; border-top: 1px solid var(--sb-line); }
+  .sb.is-bare .sb__scroll { display: none; }
+  .sb.is-bare .sb__head { flex: 0 0 auto; }
+  .sb.is-bare .sb__foot { margin-top: auto; }
+  .sb.is-bare .sb__account { min-height: 52px; padding: 8px; }
+  .sb.is-bare .sb__account-copy { display: grid; }
+
+  /* Rail replié : icônes seules, bulle au survol / focus, menu du compte ouvert sur le côté. */
+  .space--bare, .space--bare.space--nav-collapsed { grid-template-columns: var(--sb-w) minmax(0, 1fr); }
+  .sb.is-collapsed { padding-inline: 8px; }
+  .sb.is-collapsed .sb__head { flex-direction: column; justify-content: flex-start; gap: 4px; height: auto; padding: 4px 0 8px; }
+  .sb.is-collapsed .sb__brand-text, .sb.is-collapsed .sb__account-copy, .sb.is-collapsed .sb__account > .icon, .sb.is-collapsed .sb__long { display: none; }
+  .sb.is-collapsed .sb__scroll { overflow: visible; }
+  .sb.is-collapsed .sb__heading { height: 1px; margin: 10px 10px; padding: 0; overflow: hidden; background: var(--sb-line); font-size: 0; }
+  .sb.is-collapsed .sb__row:first-child .sb__heading { display: none; }
+  .sb.is-collapsed .sb__item { justify-content: center; padding: 0; }
+  .sb.is-collapsed .sb__badge { position: absolute; top: 2px; right: 2px; min-width: 16px; height: 16px; padding-inline: 4px; font-size: .62rem; }
+  .sb.is-collapsed .sb__account { justify-content: center; padding: 8px 0; }
+  .sb.is-collapsed .sb__menu { right: auto; bottom: 0; left: calc(100% + 10px); width: 248px; }
+  .sb.is-collapsed .sb__toggle[data-tip]::after, .sb.is-collapsed .sb__item[data-tip]::after, .sb.is-collapsed .sb__account[data-tip]::after { content: attr(data-tip); position: absolute; z-index: 80; top: 50%; left: calc(100% + 14px); display: none; width: max-content; max-width: 220px; padding: 6px 9px; border-radius: 8px; background: var(--text); color: var(--surface); font-size: .75rem; font-weight: 600; line-height: 1.3; pointer-events: none; transform: translateY(-50%); }
+  .sb.is-collapsed .sb__toggle, .sb.is-collapsed .sb__account { position: relative; }
+  .sb.is-collapsed .sb__toggle:hover::after, .sb.is-collapsed .sb__toggle:focus-visible::after, .sb.is-collapsed .sb__item:hover::after, .sb.is-collapsed .sb__item:focus-visible::after, .sb.is-collapsed .sb__account:hover:not(.is-open)::after, .sb.is-collapsed .sb__account:focus-visible:not(.is-open)::after { display: block; }
+}
+@media print { .sb { display: none; } }

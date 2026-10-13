@@ -1,4 +1,4 @@
-.screen-loader { min-height: min(70dvh, 720px); display: grid; place-content: center; justify-items: center; gap: 12px; padding: 32px 16px; color: var(--text); text-align: center; }
+.screen-loader { position: fixed; z-index: 2000; inset: 0; width: 100%; min-height: 100dvh; display: grid; place-content: center; justify-items: center; gap: 14px; padding: 32px 16px; overflow: hidden; background: var(--bg); color: var(--text); text-align: center; }
 .screen-loader__orb { position: relative; display: grid; place-items: center; width: 86px; height: 86px; }
 .screen-loader__orb .brand-mark { z-index: 1; width: 48px; height: 48px; border-radius: 17px; }
 .screen-loader__ring { position: absolute; inset: 0; border: 2px solid color-mix(in srgb, var(--primary) 20%, transparent); border-top-color: var(--primary); border-right-color: color-mix(in srgb, var(--primary) 56%, transparent); border-radius: 50%; }
@@ -6,8 +6,19 @@
 .screen-loader p { color: var(--text-muted); font-size: .9rem; }
 .screen-loader__progress { display: block; width: 150px; height: 4px; overflow: hidden; border-radius: 99px; background: var(--surface-tint); }
 .screen-loader__progress i { display: block; width: 42%; height: 100%; border-radius: inherit; background: var(--primary); }
-@media (prefers-reduced-motion: no-preference) { .screen-loader__ring { animation: screen-loader-spin 1.35s linear infinite; } .screen-loader__orb .brand-mark { animation: screen-loader-breathe 1.8s ease-in-out infinite; } .screen-loader__progress i { animation: screen-loader-progress 1.7s ease-in-out infinite; } }
+.screen-loader::before, .screen-loader::after { content: ""; position: absolute; z-index: 0; width: min(72vw, 720px); aspect-ratio: 1; border: 1px solid color-mix(in srgb, var(--primary) 9%, transparent); border-radius: 50%; }
+.screen-loader::after { width: min(54vw, 520px); }
+.screen-loader > * { position: relative; z-index: 1; }
+.connection-retry-screen { position: fixed; z-index: 2000; inset: 0; display: grid; align-content: center; justify-items: center; gap: 14px; padding: 28px; background: var(--bg); color: var(--text); text-align: center; }
+.connection-retry-screen h1 { max-width: 620px; margin: 0; font-size: clamp(1.6rem, 5vw, 2.6rem); }
+.connection-retry-screen p { max-width: 520px; color: var(--text-muted); }
+.connection-retry-screen__button { min-width: min(100%, 260px); min-height: 56px; font-size: 1rem; }
+.connection-retry-screen__signal { display: flex; align-items: end; gap: 5px; height: 36px; color: var(--primary); }
+.connection-retry-screen__signal span { display: block; width: 7px; height: 12px; border-radius: 999px; background: currentColor; }
+@media (prefers-reduced-motion: no-preference) { .screen-loader__ring { animation: screen-loader-spin 1.35s linear infinite; } .screen-loader__orb .brand-mark { animation: screen-loader-breathe 1.8s ease-in-out infinite; } .screen-loader__progress i { animation: screen-loader-progress 1.7s ease-in-out infinite; } .screen-loader::before { animation: screen-loader-halo 6s ease-in-out infinite alternate; } .screen-loader::after { animation: screen-loader-halo 4.5s ease-in-out infinite alternate-reverse; } .connection-retry-screen__signal span { animation: connection-bars 1s ease-in-out infinite alternate; } .connection-retry-screen__signal span:nth-child(2) { animation-delay: .18s; } .connection-retry-screen__signal span:nth-child(3) { animation-delay: .36s; } }
 @keyframes screen-loader-spin { to { transform: rotate(360deg); } }
 @keyframes screen-loader-breathe { 50% { transform: scale(1.06); } }
 @keyframes screen-loader-progress { 0% { transform: translateX(-110%); } 55% { transform: translateX(140%); } 100% { transform: translateX(260%); } }
-@media (prefers-reduced-motion: reduce) { .screen-loader__ring, .screen-loader__orb .brand-mark, .screen-loader__progress i { animation: none; } }
+@keyframes screen-loader-halo { to { transform: scale(1.08); opacity: .45; } }
+@keyframes connection-bars { to { height: 32px; opacity: .5; } }
+@media (prefers-reduced-motion: reduce) { .screen-loader__ring, .screen-loader__orb .brand-mark, .screen-loader__progress i, .screen-loader::before, .screen-loader::after, .connection-retry-screen__signal span { animation: none; } }
