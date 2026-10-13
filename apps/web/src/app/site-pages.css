@@ -98,6 +98,30 @@
 .help h2, .help__guide h2 { scroll-margin-top: 88px; }
 @media (min-width: 720px) { .help__glossary { grid-template-columns: repeat(2, 1fr); } }
 
+/* PublicShell est partagé par les pages d'information, pas seulement la landing. */
+.pub { min-height: 100dvh; display: grid; grid-template-rows: auto 1fr auto; }
+.pub-header { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 16px; padding: max(10px, env(safe-area-inset-top)) clamp(16px, 4vw, 40px) 10px; background: color-mix(in srgb, var(--bg) 90%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
+.pub-nav { display: none; gap: 22px; margin-left: 20px; }
+.pub-nav a { color: var(--text); text-decoration: none; font-weight: 600; font-size: .925rem; }
+.pub-nav a:hover { color: var(--primary-text); text-decoration: underline; }
+.pub-actions { display: flex; gap: 8px; margin-left: auto; }
+.pub-actions .ghost { display: none; }
+.pub-main { width: min(calc(100% - 32px), 1120px); margin-inline: auto; padding: 22px 0 40px; display: grid; gap: clamp(40px, 8vw, 84px); align-content: start; }
+.pub-main > article, .pub-main > .shell { width: 100%; }
+.pub-footer { border-top: 1px solid var(--border); background: var(--surface); padding: 28px clamp(16px, 4vw, 40px) calc(28px + env(safe-area-inset-bottom)); display: grid; gap: 16px; }
+.pub-footer__brand { display: flex; gap: 12px; align-items: center; }
+.pub-footer__brand p { color: var(--text-muted); font-size: .875rem; }
+.pub-footer nav { display: flex; gap: 18px; flex-wrap: wrap; }
+.pub-footer nav a { color: var(--text); font-weight: 600; font-size: .9rem; }
+.pub-footer__note { color: var(--text-muted); font-size: .8rem; max-width: 70ch; }
+
 /* Cibles tactiles : liens du pied de page public et « À lire aussi » (24 px minimum recommandé, 32 px visé) */
 .pub-footer nav a, .legal__others a { display: inline-flex; align-items: center; min-height: 32px; }
 .help__notice { display: grid; gap: 6px; }
+
+@media (min-width: 720px) {
+  .pub-actions .ghost { display: inline-flex; }
+}
+@media (min-width: 920px) {
+  .pub-nav { display: flex; }
+}
