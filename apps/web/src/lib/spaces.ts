@@ -30,7 +30,7 @@ export const SPACES: Record<SpaceId, { label: string; role: string; home: string
     ],
   },
   establishment: {
-    label: "Espace établissement", role: "establishment", home: "/etablissement", bare: ["/etablissement/activation"],
+    label: "Espace établissement", role: "establishment", home: "/etablissement", bare: ["/etablissement/activation", "/etablissement/fiche"],
     tabs: [
       { id: "home", label: "Accueil", long: "Accueil", href: "/etablissement", icon: "home", match: exact("/etablissement") },
       { id: "demandes", label: "Demandes", long: "Demandes", href: "/etablissement/demandes", icon: "document", match: section("/etablissement/demandes") },

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CookieSettingItem } from "./CookieSettingItem";
 import { Icon, type IconName } from "./ui/Icon";
 
 type MoreItem = { href: string; icon: IconName; title: string; description: string };
@@ -46,6 +47,7 @@ export function SettingsMoreSection() {
                 <span className="setting-item__chevron" aria-hidden="true">↗</span>
               </Link>
             ))}
+            {group.title === "Informations légales" && <CookieSettingItem />}
           </div>
         </div>
       ))}

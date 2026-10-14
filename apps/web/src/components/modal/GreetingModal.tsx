@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
-import Image from "next/image";
 import type { SpaceId } from "../../lib/spaces";
+import { WelcomeCharacter } from "../auth/WelcomeCharacter";
 import { decideGreeting, firstNameOf, markGreeted, readGreetingFlags, type GreetingKind } from "./greeting";
 
 type Props = { account: { id: string; first_name: string; date_joined?: string }; space: SpaceId };
@@ -37,7 +37,7 @@ export function GreetingModal({ account }: Props) {
   if (!kind) return null;
   return <div className="greeting-toast" data-kind={kind} role="status" aria-live="polite" aria-atomic="true" aria-labelledby={titleId}>
     <span className="greeting-toast__halo" aria-hidden="true" />
-    <div className="greeting-toast__character" aria-hidden="true"><Image src="/answer.svg" alt="" width={78} height={78} unoptimized /></div>
+    <div className="greeting-toast__character" aria-hidden="true"><WelcomeCharacter mood="greet" /></div>
     <div className="greeting-toast__copy"><span className="greeting-toast__eyebrow">Votre espace E‑Carnet</span><h2 id={titleId}>{titleFor(kind, firstNameOf(account.first_name))}</h2><p>{messageFor(kind)}</p></div>
     <span className="greeting-toast__spark greeting-toast__spark--one" aria-hidden="true">✦</span><span className="greeting-toast__spark greeting-toast__spark--two" aria-hidden="true">✦</span>
   </div>;

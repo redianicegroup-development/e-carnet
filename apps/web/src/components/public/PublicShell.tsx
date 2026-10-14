@@ -5,6 +5,7 @@ import { Icon } from "../ui/Icon";
 import { PwaInstallButton } from "../PwaInstallButton";
 import { LEGAL_DOCS } from "../../lib/legal/config";
 import { PublicHeader } from "./PublicHeader";
+import { CookiePreferencesLink } from "../CookieConsentBanner";
 
 export function PublicFooter() {
   return (
@@ -25,7 +26,7 @@ export function PublicFooter() {
         <div className="pub-footer__bottom">
           <span>© 2026 E‑Carnet</span>
           <p>Utilisez uniquement des données fictives pour le moment.</p>
-          <nav aria-label="Informations légales"><Link href={LEGAL_DOCS.privacy.path}>{LEGAL_DOCS.privacy.short}</Link><Link href={LEGAL_DOCS.terms.path}>{LEGAL_DOCS.terms.short}</Link><Link href={LEGAL_DOCS.mentions.path}>{LEGAL_DOCS.mentions.short}</Link></nav>
+          <nav aria-label="Informations légales"><Link href={LEGAL_DOCS.privacy.path}>{LEGAL_DOCS.privacy.short}</Link><Link href={LEGAL_DOCS.terms.path}>{LEGAL_DOCS.terms.short}</Link><Link href={LEGAL_DOCS.mentions.path}>{LEGAL_DOCS.mentions.short}</Link><CookiePreferencesLink className="pub-footer__link-button">Gérer les cookies</CookiePreferencesLink></nav>
           <a href="#contenu">Retour en haut <Icon name="chevron" size={14} /></a>
         </div>
       </div>

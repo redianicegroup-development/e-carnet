@@ -1,3 +1,12 @@
+## 2026-10-14 — parcours d'établissement par nom + e‑mail, login PC/mobile, confirmations et cookies (sur la 1.9)
+
+- **Établissement :** l'équipe saisit le nom vérifié et l'e‑mail du responsable ; l'établissement complète sa fiche dans son onboarding (`/etablissement/fiche`), puis enchaîne sur l'étape « sécurité » de la 1.9 si la récupération n'est pas configurée. Suivi des invitations, renvoi, révocation, code interne `ETB-XXXXXX`, refus des doublons. Décision : [ADR-003](adr/ADR-003-fiche-etablissement-completee-par-l-etablissement.md).
+- **Sécurité :** un lien d'invitation ne modifie plus un compte existant (le mot de passe pouvait être écrasé) ; un échec SMTP ne fait plus échouer la requête ni créer de doublon ; codes médecin et catalogue réservés aux fiches complètes.
+- **Modal de confirmation étendu :** autoriser, refuser ou prolonger un accès, clôturer une pré‑consultation, rattacher ou refuser un médecin, refuser/traiter une demande de compte, créer/renvoyer/révoquer une invitation.
+- **Login :** cadre à deux volets sur grand écran, écran d'accueil puis formulaire sur mobile, personnage « answer » animé (clignement, yeux qui suivent le curseur, pouce qui s'agite, salue par le prénom), scène animée GSAP, mouvement réduit respecté. La destination après connexion garde les règles de la 1.9 (transfert de représentation, étape sécurité).
+- **Cookies :** cookie animé aux couleurs du thème (plus de SVG noir en `<img>`), boutons de même poids, focus et Échap à la réouverture, lien « Gérer les cookies » en pied de page et réglage dans les paramètres, plus de clignotement au chargement.
+- **Tests :** test OAuth mis à jour pour la redirection vers `/onboarding/securite` (+ cas sans récupération) ; 17 tests API et 6 tests web ajoutés. Idées complémentaires : [ROADMAP-V2](ROADMAP-V2.md).
+
 ## 2026-10-08 — invitation privée, fin de rattachement, conditions et sauvegarde PostgreSQL
 
 - Retrait définitif du jeton d’invitation brut des réponses API et de la console staff; invitation délivrée par e-mail SMTP configurable.

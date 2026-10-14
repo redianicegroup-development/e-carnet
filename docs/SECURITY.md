@@ -32,6 +32,12 @@ Ce document décrit le code et ses limites. Il ne constitue ni une certification
 - **Dépendances :** `npm ci` du 05/10/2026 signalait cinq vulnérabilités `high` dans l’arbre d’outillage ; cette observation n’a pas été revérifiée depuis. Faire un audit daté avant publication.
 - **Authlib :** usage d’`authlib.jose` émet un avertissement de dépréciation; prévoir migration vers `joserfc` et retester les JWT Apple.
 
+## Hygiène des archives — 13/10/2026
+
+Une archive de travail (`.zip`) partagée hors du dépôt ne doit jamais contenir `apps/api/.env`, `apps/web/.env.*`, une base locale `*.sqlite3`, `node_modules/` ou `.next/`. Le `.gitignore` protège le dépôt git, **pas un zip fait à la main**. Utiliser `./scripts/make-archive.sh`, qui exclut ces fichiers et refuse de produire une archive qui en contiendrait.
+
+Si une archive contenant un `.env` ou une base locale a été partagée (messagerie, outil d'IA, stockage tiers), considérer son contenu comme exposé et changer : la clé secrète Django, le mot de passe de la base de données, les secrets OAuth (Google, Facebook, Apple) et le mot de passe du compte administrateur ; les sessions et comptes de la base locale sont à traiter comme compromis.
+
 ## Contrôles qui restent à réaliser
 
 1. OAuth réel par fournisseur et vérification Apple séparée.

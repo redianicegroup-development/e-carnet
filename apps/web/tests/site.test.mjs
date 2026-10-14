@@ -29,7 +29,8 @@ test("les salutations d’accueil sont des toasts illustrés, accessibles, non b
   assert.match(greeting, /setTimeout\(\(\) => setKind\(null\), 4200\)/);
   assert.match(greeting, /role="status" aria-live="polite"/);
   assert.match(greeting, /<h2[^>]*>\{titleFor\(kind/);
-  assert.match(greeting, /(?:<img src=|<Image src=)"?\/answer\.svg/);
+  assert.match(greeting, /<WelcomeCharacter mood="greet"/, "le toast utilise le personnage « answer » animé (tracé du SVG fourni, aux couleurs du thème)");
+  assert.match(readFileSync(new URL("../src/components/auth/answerPath.ts", import.meta.url), "utf8"), /ANSWER_PATH/);
   assert.match(greeting, /Votre espace personnel est prêt/);
   assert.doesNotMatch(greeting, /WELCOME_TEXT|cta:|<button|aria-modal="true"/);
   assert.doesNotMatch(greeting, /useDialogBehavior|aria-modal="true"/);

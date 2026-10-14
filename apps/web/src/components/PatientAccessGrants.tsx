@@ -122,6 +122,17 @@ export function PatientAccessGrants() {
     return () => { active = false; };
   }, []);
 
+  /* Autoriser, refuser ou prolonger un accès à son carnet : une décision de consentement, confirmée avant d'être envoyée. */
+  async function decide(item: Grant, action: "accept" | "refuse" | "extend") {
+    const shared = item.scope.map((entry) => scopeLabels[entry] ?? entry).join(", ");
+    const copy = {
+      accept: { title: "Autoriser cet accès ?", message: `${item.professional_name} (${item.facility_label}) pourra consulter ${shared ? `ces éléments de votre carnet : ${shared}` : "les éléments demandés de votre carnet"} pendant 2 heures.`, note: "Vous pourrez le révoquer à tout moment.", confirmLabel: "Autoriser 2 h" },
+      refuse: { title: "Refuser cette demande ?", message: `${item.professional_name} (${item.facility_label}) ne recevra aucun accès à votre carnet.`, note: "Le professionnel pourra renvoyer une nouvelle demande.", confirmLabel: "Refuser la demande" },
+      extend: { title: "Prolonger l’accès d’une heure ?", message: `${item.professional_name} gardera l’accès à votre carnet une heure de plus.`, note: "Un accès peut être prolongé deux fois au maximum.", confirmLabel: "Prolonger d’1 h" },
+    }[action];
+    if (await confirm({ ...copy, cancelLabel: "Annuler" })) await act(item.id, action);
+  }
+
   async function act(id: string, action: "accept" | "refuse" | "extend" | "revoke") {
     setBusyId(id);
     try {
@@ -192,11 +203,11 @@ export function PatientAccessGrants() {
                 <p className="muted">Durée initiale : 2 h, prolongeable deux fois d’1 h. {item.status === "active" && item.expires_at ? `Expiration : ${new Date(item.expires_at).toLocaleString("fr-FR")}.` : ""}</p>
                 <div className="actions">
                   {item.status === "pending" && <>
-                    <button type="button" className="button consent-decision" disabled={busyId === item.id} onClick={() => act(item.id, "accept")}>Autoriser pendant 2 h</button>
-                    <button type="button" className="button consent-decision" disabled={busyId === item.id} onClick={() => act(item.id, "refuse")}>Refuser</button>
+                    <button type="button" className="button consent-decision" disabled={busyId === item.id} onClick={() => void decide(item, "accept")}>Autoriser pendant 2 h</button>
+                    <button type="button" className="button consent-decision" disabled={busyId === item.id} onClick={() => void decide(item, "refuse")}>Refuser</button>
                   </>}
                   {item.status === "active" && <>
-                    <button type="button" className="button" disabled={busyId === item.id || item.extension_count >= 2} onClick={() => act(item.id, "extend")}>Prolonger 1 h ({Math.max(0, 2 - item.extension_count)} restante{item.extension_count === 1 ? "" : "s"})</button>
+                    <button type="button" className="button" disabled={busyId === item.id || item.extension_count >= 2} onClick={() => void decide(item, "extend")}>Prolonger 1 h ({Math.max(0, 2 - item.extension_count)} restante{item.extension_count === 1 ? "" : "s"})</button>
                     <button type="button" className="button" disabled={busyId === item.id} onClick={() => void confirm({ title: "Révoquer cet accès maintenant ?", message: `${item.professional_name} perdra immédiatement l’accès à votre carnet.`, note: "L’autorisation apparaîtra comme « Révoquée » dans votre liste.", confirmLabel: "Révoquer l’accès", cancelLabel: "Garder l’accès", tone: "danger", mood: "question" }).then((ok) => { if (ok) void act(item.id, "revoke"); })}>Révoquer maintenant</button>
                   </>}
                 </div>

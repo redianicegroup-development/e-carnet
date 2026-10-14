@@ -14,10 +14,11 @@ def send_establishment_invitation(*, email: str, first_name: str, establishment_
     send_mail(
         subject="Votre invitation administrateur — Mon Carnet Numérique",
         message=(
-            f"Bonjour {first_name},\n\n"
+            f"{'Bonjour ' + first_name if first_name else 'Bonjour'},\n\n"
             f"L’équipe E-Carnet vous invite à administrer {establishment_name}.\n"
             "Cette invitation est personnelle, valable 48 heures et à usage unique. "
-            "Choisissez votre mot de passe depuis le lien suivant :\n\n"
+            "Depuis le lien suivant, choisissez votre mot de passe puis complétez la fiche de votre établissement "
+            "(type, ville, adresse, téléphone) :\n\n"
             f"{url}\n\n"
             f"Expiration : {expires_at.isoformat()}\n\n"
             "Si vous n’êtes pas la personne attendue, ignorez ce message."

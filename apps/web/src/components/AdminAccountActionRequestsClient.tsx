@@ -62,6 +62,17 @@ export function AdminAccountActionRequestsClient() {
   }, [load]);
 
   async function changeStatus(item: AccountRequest, status: RequestStatus) {
+    if (status === "rejected" || status === "resolved") {
+      const rejecting = status === "rejected";
+      const accepted = await confirm({
+        title: rejecting ? "Refuser cette demande ?" : "Marquer la demande comme traitée ?",
+        message: `${item.request_type === "deletion" ? "Demande de suppression" : "Demande de suspension"} de ${item.user_email || "ce compte"}.`,
+        note: "Le changement est enregistré avec votre adresse e‑mail.",
+        confirmLabel: rejecting ? "Refuser la demande" : "Marquer comme traitée",
+        tone: rejecting ? "danger" : "neutral",
+      });
+      if (!accepted) return;
+    }
     setBusyId(item.id);
     setMessage("");
     try {

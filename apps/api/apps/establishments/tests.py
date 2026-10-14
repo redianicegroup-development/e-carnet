@@ -113,6 +113,7 @@ class EstablishmentProfessionalFlowTests(TestCase):
                 "responsible_email": "admin@clinique.example.test",
                 "responsible_first_name": "Amina",
                 "responsible_last_name": "Test",
+            "verification_confirmed": True,
                 },
                 format="json",
             )
@@ -140,6 +141,7 @@ class EstablishmentProfessionalFlowTests(TestCase):
                 "responsible_email": "admin-production@clinique.example.test",
                 "responsible_first_name": "Amina",
                 "responsible_last_name": "Production",
+            "verification_confirmed": True,
             },
             format="json",
         )

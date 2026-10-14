@@ -163,6 +163,8 @@ Les versions indiquent un ordre de priorité, pas une autorisation de mise en pr
 
 ### V2 — prévention et suivi quotidien
 
+> Idées complémentaires issues de la revue 1.7–1.9 (consolidation, établissement, accessibilité, ordre proposé) : [ROADMAP-V2](ROADMAP-V2.md).
+
 - Carnet de mesures saisies manuellement d’abord : tension, glycémie, poids, température et pouls; graphiques de tendances et statut clairement « mesuré » ou « déclaré ». Stocker des résumés journaliers plutôt que des flux continus.
 - Plan de suivi prescrit (quoi mesurer et à quelle fréquence) pour les parcours retenus avec les professionnels; le partage des mesures exige un consentement séparé et le professionnel ne voit les tendances qu’avec ce consentement. Pas de diagnostic automatique ni de promesse d’alerte médicale.
 - Rappels de médicaments, confirmation de prise, renouvellement et stock restant; notifications push avec SMS de secours si un fournisseur fiable est disponible.

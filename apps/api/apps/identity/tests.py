@@ -206,10 +206,12 @@ class OAuthRedirectTests(TestCase):
     @patch("apps.identity.oauth_views.external_profile", return_value={"id": "existing-google-user", "email": "existing-user@example.test", "name": "Existing User", "avatar": ""})
     @patch("apps.identity.oauth_views.http_json", return_value={"access_token": "temporary-access-token"})
     def test_existing_oauth_account_redirects_to_active_space(self, _http_json, _external_profile):
-        from .models import AccountContext, AuthIdentity
+        from .models import AccountContext, AccountProfile, AuthIdentity
 
         user = User.objects.create_user(username="oauth-existing-user", email="existing-user@example.test")
         AccountContext.objects.create(user=user, role="professional", is_active=True, onboarding_completed=True)
+        # Depuis la 1.9, un compte sans méthode de récupération est d'abord dirigé vers /onboarding/securite : ici elle est configurée.
+        AccountProfile.objects.update_or_create(user=user, defaults={"recovery_question": "Question de test ?", "recovery_answer_hash": "hash-de-test"})
         AuthIdentity.objects.create(user=user, provider="google", provider_user_id="existing-google-user")
         session = self.client.session
         session["oauth_state_google"] = "valid-state"
@@ -223,6 +225,29 @@ class OAuthRedirectTests(TestCase):
 
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response["Location"], "https://frontend.example.test/professionnel")
+
+
+    @override_settings(WEB_ORIGIN="https://frontend.example.test")
+    @patch("apps.identity.oauth_views.external_profile", return_value={"id": "existing-google-user-2", "email": "existing-user-2@example.test", "name": "Existing User", "avatar": ""})
+    @patch("apps.identity.oauth_views.http_json", return_value={"access_token": "temporary-access-token"})
+    def test_existing_oauth_account_without_recovery_goes_to_security_step(self, _http_json, _external_profile):
+        from .models import AccountContext, AuthIdentity
+
+        user = User.objects.create_user(username="oauth-existing-user-2", email="existing-user-2@example.test")
+        AccountContext.objects.create(user=user, role="professional", is_active=True, onboarding_completed=True)
+        AuthIdentity.objects.create(user=user, provider="google", provider_user_id="existing-google-user-2")
+        session = self.client.session
+        session["oauth_state_google"] = "valid-state"
+        session.save()
+
+        with patch.dict(os.environ, {"GOOGLE_CLIENT_ID": "test-client", "GOOGLE_CLIENT_SECRET": "test-secret"}):
+            response = self.client.get(
+                "/api/v1/identity/oauth/google/callback/",
+                {"state": "valid-state", "code": "temporary-oauth-code"},
+            )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response["Location"], "https://frontend.example.test/onboarding/securite")
 
 
 class DemoSeedCommandTests(TestCase):

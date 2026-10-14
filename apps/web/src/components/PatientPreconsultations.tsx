@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { apiGet, apiPost } from "../infrastructure/api/client";
+import { useConfirm } from "./modal/ConfirmProvider";
 
 type Encounter = { id: string; establishment_id: string | null; facility_label: string; reason: string; observations: string; recorded_with_help?: string; status: "draft" | "closed"; closed_at: string | null; provenance: { label: string } };
 type EstablishmentOption = { id: string; name: string; city: string };
@@ -15,6 +16,7 @@ const QUESTIONS = [
 ];
 
 export function PatientPreconsultations() {
+  const confirm = useConfirm();
   const [items, setItems] = useState<Encounter[] | null>(null);
   const [establishments, setEstablishments] = useState<EstablishmentOption[] | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
@@ -59,6 +61,15 @@ export function PatientPreconsultations() {
   }
 
   async function close(id: string) {
+    const item = (items ?? []).find((entry) => entry.id === id);
+    const accepted = await confirm({
+      title: "Clôturer cette pré-consultation ?",
+      message: `Elle ne pourra plus être modifiée${item?.facility_label ? ` (${item.facility_label})` : ""}.`,
+      note: "Elle reste lisible uniquement avec votre autorisation et par le même établissement.",
+      confirmLabel: "Clôturer",
+      cancelLabel: "Continuer à la modifier",
+    });
+    if (!accepted) return;
     setMessage("");
     try {
       const closed = await apiPost<Encounter>(`/api/v1/patient/care/encounters/${id}/`, {});

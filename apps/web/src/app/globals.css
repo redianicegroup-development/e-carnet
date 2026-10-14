@@ -74,6 +74,8 @@ fieldset { border: 1.5px solid var(--border); border-radius: 12px; padding: 12px
 legend { padding: 0 6px; font-weight: 700; font-size: .85rem; color: var(--text-muted); }
 
 /* ---------- retours : notice, statut, vide ---------- */
+.notice.error { background: var(--status-contested-bg); color: var(--status-contested-fg); border-color: var(--danger); }
+.admin-management-grid > .admin-table-card { grid-column: 1 / -1; }
 .notice { padding: 12px 14px; border-radius: 12px; background: var(--surface-tint); color: var(--text); font-size: .925rem; border: 1px solid var(--border); }
 .status { min-height: 1.4em; font-size: .9rem; color: var(--text-muted); }
 .status:empty { display: none; }

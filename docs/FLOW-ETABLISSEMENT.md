@@ -8,12 +8,32 @@ L’établissement ne se crée pas son compte et ne téléverse pas ses justific
 
 ## Parcours 1 — demande, vérification et accès de l’établissement
 
+> **Mise à jour du 13/10/2026 ([ADR-003](adr/ADR-003-fiche-etablissement-completee-par-l-etablissement.md)).** L'équipe saisit désormais **le nom vérifié et l'e‑mail du responsable** (prénom et nom facultatifs) ; l'établissement complète **lui‑même** type, ville, adresse, téléphone et e‑mail de contact dans son onboarding (`/etablissement/fiche`). Le lien reste envoyé par e‑mail uniquement. Tant que la fiche est incomplète, la structure est absente du catalogue des médecins et ne peut pas créer de code. Les étapes 3, 5 et 6 ci‑dessous se lisent avec ces précisions ; la section « Parcours 1 bis » en donne le détail.
+
 1. **Contact hors application :** l’hôpital/la clinique est invité à écrire à l’adresse officielle E‑Carnet et à envoyer les documents de la structure, son identité et celle de son responsable. La landing page ne propose ni création libre de compte établissement ni upload public de justificatifs.
 2. **Contrôle interne :** l’équipe E‑Carnet examine l’existence de la structure, ses preuves légales, son identité et son responsable. Les preuves restent traitées dans le canal interne de l’équipe; la V1 ne les stocke pas dans l’espace web public. La règle de rétention et de sécurité de la boîte e-mail reste à formaliser.
 3. **Action interne :** un administrateur E‑Carnet, authentifié et autorisé, ouvre la console privée, inscrit la décision (validation/refus) et, après validation seulement, lance **Créer l’accès**. Chaque action est attribuée à l’employé et horodatée.
 4. **Compte nominatif :** l’établissement est une entité stable, séparée de la personne qui l’administre. En V1, un seul administrateur principal nominatif est activé par structure; aucun identifiant/mot de passe commun. L’association de l’administrateur peut être remplacée ultérieurement sans recréer l’établissement. Le modèle pourra accueillir d’autres administrateurs dans une version future, mais leur activation multiple est hors périmètre V1.
 5. **Invitation :** le backend envoie un lien sécurisé lié à l’établissement et à l’adresse professionnelle nominative validée. Il est à usage unique et expire après **48 heures**. Le destinataire définit son mot de passe sur la page d’activation. Le mot de passe n’est jamais envoyé par e-mail; dès consommation ou expiration, le lien est inutilisable. Une invitation expirée exige une nouvelle émission par l’administration E‑Carnet.
 6. **Espace privé :** après activation, l’administrateur se connecte à une route établissement authentifiée. Il peut gérer les codes et demandes d’affiliation, les informations de sa structure et les rattachements autorisés; il ne peut ni demander ni consulter les dossiers médicaux au titre de cette fonction.
+
+## Parcours 1 bis — création par nom + e‑mail et fiche complétée par l'établissement — 13/10/2026
+
+1. **Création (équipe, après vérification hors application).** Nom de l'établissement + e‑mail du responsable ; case obligatoire « pièces vérifiées » ; confirmation dans l'interface (« Créer l'accès de X ? Un e‑mail part à Y »). Le serveur attribue un code interne `ETB-XXXXXX`, refuse un nom déjà pris (sauf confirmation explicite) et envoie l'invitation.
+2. **Suivi (équipe).** Onglet « Établissements » du tableau de bord (et console `/staff/etablissements`) : état de chaque structure — invitation envoyée / échec d'envoi / expirée / révoquée / fiche à compléter / prête. Actions : **Renvoyer** (nouveau lien, l'ancien cesse de fonctionner), **Révoquer**. Remplacer un administrateur actif exige `confirm_replace` côté API.
+3. **Activation (responsable).** La page d'activation affiche le nom de la structure et l'adresse masquée. Nouveau compte : prénom/nom si l'équipe ne les a pas fournis, mot de passe de 12 caractères minimum. Adresse ayant déjà un compte : connexion d'abord, puis activation depuis la même page ; **le compte existant n'est jamais modifié par le lien**.
+4. **Onboarding (responsable).** Après connexion, redirection vers `/etablissement/fiche` tant que le contexte établissement n'est pas « terminé ». Le nom, le responsable et le code interne s'affichent en lecture seule ; type, ville, adresse, téléphone et e‑mail de contact sont obligatoires. À l'enregistrement complet, `profile_completed_at` est renseigné, l'onboarding est terminé et l'espace s'ouvre.
+5. **Ensuite.** La fiche reste modifiable depuis les paramètres (« Modifier la fiche »), hors nom et responsable. Chaque complétion ou modification est tracée (`establishment.profile.completed` / `.updated`).
+
+| Étape | Qui | Contrôle serveur |
+|---|---|---|
+| Création | équipe (`is_staff`) | nom + e‑mail valides, vérification confirmée, doublon bloqué |
+| Invitation | système | jeton jamais renvoyé ; échec d'envoi journalisé et visible |
+| Activation | responsable | compte existant jamais modifié ; mot de passe validé |
+| Fiche | administrateur actif | champs vérifiés verrouillés ; téléphone et e‑mail validés |
+| Codes médecin | administrateur actif | refusés tant que la fiche est incomplète |
+| Catalogue | médecins | n'affiche que les fiches complètes |
+
 
 ## Parcours 2 — code et affiliation médecin
 

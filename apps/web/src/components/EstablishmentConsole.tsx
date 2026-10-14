@@ -78,7 +78,19 @@ export function EstablishmentConsole({ view }: { view: "home" | "requests" | "do
     try { await action(); if (done) setMessage(done); await reload(); } catch (reason) { setMessage(reason instanceof Error ? reason.message : "Action impossible."); } finally { setBusy(false); }
   }
   const createCode = () => run(async () => { const result = await apiPost<{ code: string; expires_at: string }>(`/api/v1/establishments/${establishment.id}/join-codes/`, {}); setCode({ value: result.code, expires_at: result.expires_at }); });
-  const decide = (id: string, decision: "approve" | "refuse") => run(async () => { await apiPost(`/api/v1/establishments/${establishment.id}/memberships/${id}/decision/`, { decision }); }, decision === "approve" ? "Rattachement confirmé : le médecin peut travailler." : "Demande refusée.");
+  const decide = async (id: string, decision: "approve" | "refuse") => {
+    const member = data.memberships.find((entry) => entry.id === id);
+    const who = member?.professional_name || member?.professional_email || "ce médecin";
+    const approve = decision === "approve";
+    const accepted = await confirm({
+      title: approve ? "Confirmer le rattachement ?" : "Refuser cette demande ?",
+      message: approve ? `${who} pourra travailler au nom de ${establishment.name}.` : `${who} ne sera pas rattaché(e) à ${establishment.name}.`,
+      note: approve ? "Vous pourrez mettre fin au rattachement à tout moment." : "Le médecin pourra refaire une demande avec un nouveau code.",
+      confirmLabel: approve ? "Confirmer le rattachement" : "Refuser la demande",
+    });
+    if (!accepted) return;
+    await run(async () => { await apiPost(`/api/v1/establishments/${establishment.id}/memberships/${id}/decision/`, { decision }); }, approve ? "Rattachement confirmé : le médecin peut travailler." : "Demande refusée.");
+  };
 
   const codeCard = (
     <section className="card" aria-labelledby="code-title">

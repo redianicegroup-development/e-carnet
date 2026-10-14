@@ -1,9 +1,11 @@
+import logging
 import secrets
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.core.validators import validate_email
 from django.db import transaction
 from django.utils import timezone
 from rest_framework import status
@@ -16,11 +18,14 @@ from apps.identity.throttles import IpScopedThrottle
 from apps.audit.services import record_event
 from apps.identity.models import AccountContext
 from .email_service import send_establishment_invitation
-from .models import Establishment, EstablishmentAdminInvitation, EstablishmentAdministrator, EstablishmentJoinCode, EstablishmentMembership
-from .serializers import EstablishmentSerializer, MembershipSerializer
+from .models import PROFILE_FIELDS, Establishment, EstablishmentAdminInvitation, EstablishmentAdministrator, EstablishmentJoinCode, EstablishmentMembership, generate_internal_code
+from .serializers import EstablishmentProfileSerializer, EstablishmentSerializer, MembershipSerializer
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 MEMBERSHIP_AGREEMENT_VERSION = "2026-10-08-v1"
+STAFF_LIST_LIMIT = 200
+INVITATION_INVALID_MESSAGE = "Cette invitation est invalide, expirée ou déjà utilisée."
 
 
 def payload(establishment):
@@ -34,7 +39,28 @@ def active_administrator(user, establishment_id=None):
     return query.select_related("establishment").first()
 
 
-def make_invitation(*, establishment, created_by, email, first_name, last_name):
+def deliver_invitation(invitation_id, raw_token):
+    """Envoie le lien d'invitation et note le résultat. Ne lève jamais : la requête est déjà validée quand on arrive ici,
+    un échec SMTP se voit côté équipe (état « échec d'envoi ») et se corrige par un renvoi, sans créer de doublon."""
+    invitation = EstablishmentAdminInvitation.objects.select_related("establishment").filter(pk=invitation_id).first()
+    if not invitation:
+        return
+    try:
+        send_establishment_invitation(
+            email=invitation.email,
+            first_name=invitation.first_name,
+            establishment_name=invitation.establishment.name,
+            raw_token=raw_token,
+            expires_at=invitation.expires_at,
+        )
+    except Exception:  # noqa: BLE001 - tout échec d'envoi est journalisé et rendu visible, jamais propagé
+        logger.exception("Échec d'envoi de l'invitation d'établissement %s", invitation_id)
+        EstablishmentAdminInvitation.objects.filter(pk=invitation_id).update(email_error="send_failed")
+        return
+    EstablishmentAdminInvitation.objects.filter(pk=invitation_id).update(email_sent_at=timezone.now(), email_error="")
+
+
+def make_invitation(*, establishment, created_by, email, first_name="", last_name=""):
     # Un seul lien actif par adresse et structure; l'ancien reste historisé mais inutilisable.
     EstablishmentAdminInvitation.objects.filter(
         establishment=establishment, email__iexact=email, consumed_at__isnull=True, revoked_at__isnull=True
@@ -49,13 +75,7 @@ def make_invitation(*, establishment, created_by, email, first_name, last_name):
         expires_at=timezone.now() + timedelta(hours=48),
         created_by=created_by,
     )
-    transaction.on_commit(lambda: send_establishment_invitation(
-        email=invitation.email,
-        first_name=invitation.first_name,
-        establishment_name=establishment.name,
-        raw_token=raw_token,
-        expires_at=invitation.expires_at,
-    ))
+    transaction.on_commit(lambda: deliver_invitation(invitation.id, raw_token))
     record_event(
         event_type="establishment.invitation.created",
         actor=created_by,
@@ -66,11 +86,32 @@ def make_invitation(*, establishment, created_by, email, first_name, last_name):
     return invitation
 
 
+def invitation_state(invitation):
+    """pending (envoi en cours) | sent | failed | expired | revoked | consumed."""
+    if invitation is None:
+        return None
+    if invitation.consumed_at:
+        return "consumed"
+    if invitation.revoked_at:
+        return "revoked"
+    if invitation.expires_at <= timezone.now():
+        return "expired"
+    if invitation.email_error:
+        return "failed"
+    return "sent" if invitation.email_sent_at else "pending"
+
+
 def invitation_response_data(invitation, establishment=None):
-    data = {"invitation_id": str(invitation.id), "expires_at": invitation.expires_at}
+    # Le jeton n'est jamais renvoyé : il n'existe en clair que dans le courriel envoyé au responsable.
+    data = {"invitation_id": str(invitation.id), "expires_at": invitation.expires_at, "state": "pending"}
     if establishment is not None:
         data["establishment"] = payload(establishment)
     return data
+
+
+def mask_email(email):
+    local, _, domain = email.partition("@")
+    return f"{local[:1]}***@{domain}" if domain else "***"
 
 
 class EstablishmentListView(APIView):
@@ -88,7 +129,7 @@ class EstablishmentCatalogView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        items = Establishment.objects.filter(status="active").order_by("name").values("id", "name", "city")
+        items = Establishment.with_complete_profile().filter(status="active").order_by("name").values("id", "name", "city")
         return Response({"success": True, "data": [{"id": str(item["id"]), "name": item["name"], "city": item["city"]} for item in items]})
 
 
@@ -103,25 +144,74 @@ class EstablishmentCreateView(APIView):
         )
 
 
+def administrator_summary(establishment):
+    admin = next((item for item in establishment.administrator_history.all() if item.status == "active"), None)
+    if not admin:
+        return None
+    return {"name": f"{admin.user.first_name} {admin.user.last_name}".strip(), "email": admin.user.email}
+
+
+def establishment_stage(establishment, administrator):
+    if not administrator:
+        return "awaiting_activation"
+    return "ready" if establishment.is_profile_complete else "awaiting_profile"
+
+
 class StaffEstablishmentCreateView(APIView):
+    """Création par l'équipe E‑Carnet : le nom vérifié et l'e‑mail du responsable suffisent. C'est l'établissement qui
+    renseigne ensuite sa fiche (type, ville, adresse, téléphone) dans son onboarding."""
     permission_classes = [IsAuthenticated, IsAdminUser]
+
+    def get(self, request):
+        queryset = Establishment.objects.filter(status="active").prefetch_related("administrator_history__user", "admin_invitations")
+        total = queryset.count()
+        items = []
+        for establishment in queryset[:STAFF_LIST_LIMIT]:
+            administrator = administrator_summary(establishment)
+            latest = max(establishment.admin_invitations.all(), key=lambda item: item.created_at, default=None)
+            items.append({
+                "id": str(establishment.id),
+                "name": establishment.name,
+                "internal_code": establishment.internal_code,
+                "created_at": establishment.created_at,
+                "profile_completed_at": establishment.profile_completed_at,
+                "stage": establishment_stage(establishment, administrator),
+                "administrator": administrator,
+                "invitation": None if latest is None else {
+                    "id": str(latest.id),
+                    "email": latest.email,
+                    "state": invitation_state(latest),
+                    "expires_at": latest.expires_at,
+                    "sent_at": latest.email_sent_at,
+                },
+            })
+        return Response({"success": True, "data": {"items": items, "total": total, "truncated": total > STAFF_LIST_LIMIT}})
 
     @transaction.atomic
     def post(self, request):
-        required = ("name", "establishment_type", "city", "address", "phone", "email", "responsible_name", "responsible_email", "responsible_first_name", "responsible_last_name")
-        missing = [field for field in required if not str(request.data.get(field, "")).strip()]
-        if missing:
-            return Response({"success": False, "message": f"Champs requis : {', '.join(missing)}."}, status=400)
-        serializer = EstablishmentSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        establishment = serializer.save(status="active", activated_at=timezone.now())
-        invitation = make_invitation(
-            establishment=establishment,
-            created_by=request.user,
-            email=request.data["responsible_email"],
-            first_name=request.data["responsible_first_name"],
-            last_name=request.data["responsible_last_name"],
+        name = " ".join(str(request.data.get("name", "")).split())
+        email = str(request.data.get("responsible_email", "")).strip().lower()
+        first_name = str(request.data.get("responsible_first_name", "")).strip()[:120]
+        last_name = str(request.data.get("responsible_last_name", "")).strip()[:120]
+        if not name or len(name) > 180:
+            return Response({"success": False, "message": "Le nom de l’établissement est requis (180 caractères maximum)."}, status=400)
+        try:
+            validate_email(email)
+        except DjangoValidationError:
+            return Response({"success": False, "message": "L’e‑mail du responsable est requis et doit être valide : le lien d’activation lui sera envoyé."}, status=400)
+        if request.data.get("verification_confirmed") is not True:
+            return Response({"success": False, "message": "Confirmez que les pièces de la structure ont été vérifiées hors application avant de créer l’accès."}, status=400)
+        duplicate = Establishment.objects.filter(name__iexact=name).exclude(status="rejected").first()
+        if duplicate and request.data.get("allow_duplicate") is not True:
+            return Response({
+                "success": False,
+                "code": "duplicate_name",
+                "message": f"Un établissement nommé « {duplicate.name} » existe déjà (code {duplicate.internal_code or 'sans code'}).",
+            }, status=409)
+        establishment = Establishment.objects.create(
+            name=name, status="active", activated_at=timezone.now(), created_by=request.user, internal_code=generate_internal_code()
         )
+        invitation = make_invitation(establishment=establishment, created_by=request.user, email=email, first_name=first_name, last_name=last_name)
         record_event(event_type="establishment.verified", actor=request.user, actor_role="ecarnet_staff", establishment=establishment, metadata={"action": "verified", "status": "active"})
         return Response({"success": True, "data": invitation_response_data(invitation, establishment)}, status=201)
 
@@ -153,6 +243,7 @@ class StartupEstablishmentQueueView(APIView):
 
 
 class StaffAdministratorInvitationView(APIView):
+    """Renvoie l'invitation (même e‑mail par défaut) ou invite un autre responsable (remplacement, à confirmer)."""
     permission_classes = [IsAuthenticated, IsAdminUser]
 
     @transaction.atomic
@@ -160,16 +251,64 @@ class StaffAdministratorInvitationView(APIView):
         establishment = Establishment.objects.filter(id=establishment_id, status="active").first()
         if not establishment:
             return Response({"success": False, "message": "Établissement actif introuvable."}, status=404)
-        invitation = make_invitation(
-            establishment=establishment,
-            created_by=request.user,
-            email=request.data.get("email", ""),
-            first_name=request.data.get("first_name", ""),
-            last_name=request.data.get("last_name", ""),
-        ) if all(str(request.data.get(key, "")).strip() for key in ("email", "first_name", "last_name")) else None
-        if not invitation:
-            return Response({"success": False, "message": "Email, prénom et nom sont requis."}, status=400)
+        previous = establishment.admin_invitations.order_by("-created_at").first()
+        email = str(request.data.get("email", "") or (previous.email if previous else "")).strip().lower()
+        first_name = str(request.data.get("first_name", "") if "first_name" in request.data else (previous.first_name if previous else "")).strip()[:120]
+        last_name = str(request.data.get("last_name", "") if "last_name" in request.data else (previous.last_name if previous else "")).strip()[:120]
+        try:
+            validate_email(email)
+        except DjangoValidationError:
+            return Response({"success": False, "message": "Une adresse e‑mail valide est requise."}, status=400)
+        current = EstablishmentAdministrator.objects.filter(establishment=establishment, status="active").select_related("user").first()
+        if current and current.user.email.lower() == email:
+            return Response({"success": False, "code": "already_active", "message": "Ce responsable a déjà activé son accès."}, status=409)
+        if current and request.data.get("confirm_replace") is not True:
+            return Response({
+                "success": False,
+                "code": "administrator_exists",
+                "message": "Cette structure a déjà un administrateur actif : il sera remplacé dès que le nouveau responsable activera son accès.",
+            }, status=409)
+        invitation = make_invitation(establishment=establishment, created_by=request.user, email=email, first_name=first_name, last_name=last_name)
         return Response({"success": True, "data": invitation_response_data(invitation)})
+
+
+class StaffAdministratorInvitationRevokeView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminUser]
+
+    @transaction.atomic
+    def post(self, request, establishment_id):
+        establishment = Establishment.objects.filter(id=establishment_id, status="active").first()
+        if not establishment:
+            return Response({"success": False, "message": "Établissement actif introuvable."}, status=404)
+        usable = EstablishmentAdminInvitation.objects.select_for_update().filter(
+            establishment=establishment, consumed_at__isnull=True, revoked_at__isnull=True, expires_at__gt=timezone.now()
+        )
+        ids = list(usable.values_list("id", flat=True))
+        if not ids:
+            return Response({"success": False, "message": "Aucune invitation en attente à révoquer."}, status=409)
+        usable.update(revoked_at=timezone.now())
+        for invitation_id in ids:
+            record_event(event_type="establishment.invitation.revoked", actor=request.user, actor_role="ecarnet_staff", establishment=establishment, metadata={"action": "revoked", "status": "revoked", "invitation_id": str(invitation_id)})
+        return Response({"success": True, "data": {"revoked": len(ids)}})
+
+
+class EstablishmentInvitationPreviewView(APIView):
+    """Permet à la page d'activation de s'adapter (nom de la structure, compte déjà existant) sans rien modifier."""
+    permission_classes = [AllowAny]
+    throttle_classes = [IpScopedThrottle]
+    throttle_scope = "code_redeem"
+
+    def get(self, request):
+        raw_token = str(request.query_params.get("token", ""))
+        invitation = EstablishmentAdminInvitation.objects.select_related("establishment").filter(token_hash=EstablishmentAdminInvitation.digest(raw_token)).first() if raw_token else None
+        if not invitation or not invitation.is_usable:
+            return Response({"success": False, "message": INVITATION_INVALID_MESSAGE}, status=400)
+        return Response({"success": True, "data": {
+            "establishment_name": invitation.establishment.name,
+            "email_hint": mask_email(invitation.email),
+            "account_exists": User.objects.filter(email__iexact=invitation.email).exists(),
+            "needs_names": not (invitation.first_name and invitation.last_name),
+        }})
 
 
 class EstablishmentInvitationAcceptView(APIView):
@@ -180,36 +319,59 @@ class EstablishmentInvitationAcceptView(APIView):
     @transaction.atomic
     def post(self, request):
         raw_token = str(request.data.get("token", ""))
-        password = str(request.data.get("password", ""))
-        if not raw_token or not password:
-            return Response({"success": False, "message": "Le lien et le mot de passe sont requis."}, status=400)
+        if not raw_token:
+            return Response({"success": False, "message": "Le lien d’invitation est requis."}, status=400)
         invitation = EstablishmentAdminInvitation.objects.select_for_update().select_related("establishment").filter(token_hash=EstablishmentAdminInvitation.digest(raw_token)).first()
         if not invitation or not invitation.is_usable:
-            return Response({"success": False, "message": "Cette invitation est invalide, expirée ou déjà utilisée."}, status=400)
-        try:
-            validate_password(password)
-        except DjangoValidationError as exc:
-            return Response({"success": False, "message": " ".join(exc.messages)}, status=400)
-        user, created = User.objects.get_or_create(
-            email=invitation.email,
-            defaults={"username": invitation.email, "first_name": invitation.first_name, "last_name": invitation.last_name},
-        )
-        if not created and User.objects.exclude(pk=user.pk).filter(email__iexact=invitation.email).exists():
+            return Response({"success": False, "message": INVITATION_INVALID_MESSAGE}, status=400)
+        matches = list(User.objects.filter(email__iexact=invitation.email)[:2])
+        if len(matches) > 1:
             return Response({"success": False, "message": "Impossible d’activer cette invitation."}, status=409)
-        user.first_name, user.last_name = invitation.first_name, invitation.last_name
-        user.set_password(password)
-        user.save(update_fields=("first_name", "last_name", "password"))
-        EstablishmentAdministrator.objects.filter(establishment=invitation.establishment, status="active").update(status="ended", ended_at=timezone.now())
-        EstablishmentAdministrator.objects.create(establishment=invitation.establishment, user=user, assigned_by=invitation.created_by, status="active")
+        existing = matches[0] if matches else None
+        if existing:
+            # Un lien d'invitation ne doit jamais permettre de reprendre la main sur un compte existant (mot de passe
+            # écrasé, identité modifiée) : la personne doit d'abord prouver qu'elle est ce compte en s'y connectant.
+            if not (request.user.is_authenticated and request.user.pk == existing.pk):
+                return Response({
+                    "success": False,
+                    "code": "account_exists",
+                    "message": "Un compte E‑Carnet existe déjà avec cette adresse. Connectez‑vous avec ce compte, puis rouvrez ce lien d’invitation.",
+                }, status=409)
+            user = existing
+        else:
+            password = str(request.data.get("password", ""))
+            first_name = str(request.data.get("first_name", "") or invitation.first_name).strip()[:120]
+            last_name = str(request.data.get("last_name", "") or invitation.last_name).strip()[:120]
+            if not password:
+                return Response({"success": False, "message": "Le mot de passe est requis."}, status=400)
+            if not first_name or not last_name:
+                return Response({"success": False, "message": "Le prénom et le nom sont requis."}, status=400)
+            candidate = User(username=invitation.email, email=invitation.email, first_name=first_name, last_name=last_name)
+            try:
+                validate_password(password, user=candidate)
+            except DjangoValidationError as exc:
+                return Response({"success": False, "message": " ".join(exc.messages)}, status=400)
+            user = User.objects.create_user(username=invitation.email, email=invitation.email, password=password, first_name=first_name, last_name=last_name)
+        establishment = invitation.establishment
+        EstablishmentAdministrator.objects.filter(establishment=establishment, status="active").update(status="ended", ended_at=timezone.now())
+        EstablishmentAdministrator.objects.create(establishment=establishment, user=user, assigned_by=invitation.created_by, status="active")
+        establishment.responsible_name = f"{user.first_name} {user.last_name}".strip()
+        establishment.save(update_fields=("responsible_name", "updated_at"))
         context, _ = AccountContext.objects.get_or_create(user=user, role="establishment")
         context.is_active = True
-        context.onboarding_completed = True
+        # L'onboarding de l'établissement est la fiche à compléter : il n'est « terminé » qu'une fois la fiche renseignée.
+        context.onboarding_completed = establishment.is_profile_complete
         context.save(update_fields=("is_active", "onboarding_completed", "updated_at"))
         invitation.consumed_at = timezone.now()
         invitation.consumed_by = user
         invitation.save(update_fields=("consumed_at", "consumed_by"))
-        record_event(event_type="establishment.invitation.consumed", actor=user, actor_role="establishment_administrator", establishment=invitation.establishment, metadata={"action": "consumed", "status": "active", "invitation_id": str(invitation.id)})
-        return Response({"success": True, "data": {"establishment_id": str(invitation.establishment_id), "email": user.email}})
+        record_event(event_type="establishment.invitation.consumed", actor=user, actor_role="establishment_administrator", establishment=establishment, metadata={"action": "consumed", "status": "active", "invitation_id": str(invitation.id)})
+        return Response({"success": True, "data": {
+            "establishment_id": str(establishment.id),
+            "email": user.email,
+            "account_created": existing is None,
+            "profile_required": not establishment.is_profile_complete,
+        }})
 
 
 class EstablishmentDetailView(APIView):
@@ -222,6 +384,46 @@ class EstablishmentDetailView(APIView):
         return Response({"success": False, "message": "Établissement indisponible dans votre contexte."}, status=404)
 
 
+class EstablishmentProfileView(APIView):
+    """Fiche de l'établissement, complétée par son administrateur (onboarding) et modifiable ensuite.
+    Le nom et le responsable, vérifiés par l'équipe E‑Carnet, sont verrouillés."""
+    permission_classes = [IsAuthenticated]
+    LOCKED_FIELDS = ("name", "responsible_name")
+
+    @staticmethod
+    def body(establishment):
+        missing = [field for field in PROFILE_FIELDS if not getattr(establishment, field)]
+        return {**payload(establishment), "required_fields": list(PROFILE_FIELDS), "locked_fields": list(EstablishmentProfileView.LOCKED_FIELDS), "missing_fields": missing, "profile_complete": not missing}
+
+    def get(self, request, establishment_id):
+        admin = active_administrator(request.user, establishment_id)
+        if not admin:
+            return Response({"success": False, "message": "Vous n’êtes pas administrateur de cet établissement actif."}, status=403)
+        return Response({"success": True, "data": self.body(admin.establishment)})
+
+    @transaction.atomic
+    def patch(self, request, establishment_id):
+        admin = active_administrator(request.user, establishment_id)
+        if not admin:
+            return Response({"success": False, "message": "Vous n’êtes pas administrateur de cet établissement actif."}, status=403)
+        establishment = Establishment.objects.select_for_update().get(pk=admin.establishment_id)
+        for field in self.LOCKED_FIELDS:
+            if field in request.data and str(request.data[field]).strip() != getattr(establishment, field):
+                return Response({"success": False, "message": "Le nom de l’établissement et le responsable sont vérifiés par l’équipe E‑Carnet : écrivez‑lui pour les modifier."}, status=400)
+        serializer = EstablishmentProfileSerializer(establishment, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        establishment = serializer.save()
+        first_completion = establishment.is_profile_complete and establishment.profile_completed_at is None
+        if first_completion:
+            establishment.profile_completed_at = timezone.now()
+            establishment.save(update_fields=("profile_completed_at", "updated_at"))
+        if establishment.is_profile_complete:
+            AccountContext.objects.filter(user=request.user, role="establishment").update(onboarding_completed=True)
+        action = "completed" if first_completion else "updated"
+        record_event(event_type=f"establishment.profile.{action}", actor=request.user, actor_role="establishment_administrator", establishment=establishment, metadata={"action": action, "status": "active"})
+        return Response({"success": True, "data": self.body(establishment)})
+
+
 class EstablishmentJoinCodeCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -230,6 +432,8 @@ class EstablishmentJoinCodeCreateView(APIView):
         admin = active_administrator(request.user, establishment_id)
         if not admin:
             return Response({"success": False, "message": "Vous n’êtes pas administrateur de cet établissement actif."}, status=403)
+        if not admin.establishment.is_profile_complete:
+            return Response({"success": False, "code": "profile_incomplete", "message": "Complétez d’abord la fiche de votre établissement avant de créer un code médecin."}, status=409)
         raw_code = f"ECM-{secrets.token_urlsafe(9).upper()}"
         join_code = EstablishmentJoinCode.objects.create(
             establishment=admin.establishment,

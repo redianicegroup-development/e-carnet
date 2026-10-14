@@ -36,6 +36,7 @@ class PrivateEstablishmentAdminTests(TestCase):
             "responsible_email": "admin@clinique.test",
             "responsible_first_name": "Amina",
             "responsible_last_name": "Test",
+            "verification_confirmed": True,
         }
 
     def test_non_staff_cannot_create_establishment_and_staff_gets_invitation(self):
@@ -81,7 +82,7 @@ class PrivateEstablishmentAdminTests(TestCase):
         EstablishmentAdministrator.objects.create(establishment=establishment, user=old_admin, assigned_by=self.staff)
         self.client.force_authenticate(self.staff)
         with self.captureOnCommitCallbacks(execute=True):
-            response = self.client.post(f"/api/v1/establishments/startup/{establishment.id}/administrator-invitation/", {"email": "new@test", "first_name": "New", "last_name": "Admin"}, format="json")
+            response = self.client.post(f"/api/v1/establishments/startup/{establishment.id}/administrator-invitation/", {"email": "new@clinique.test", "first_name": "New", "last_name": "Admin", "confirm_replace": True}, format="json")
         token_url = next(part for part in mail.outbox[-1].body.split() if "activation?token=" in part)
         token = parse_qs(urlparse(token_url).query)["token"][0]
         self.client.post("/api/v1/establishments/invitations/accept/", {"token": token, "password": "a-new-long-password"}, format="json")

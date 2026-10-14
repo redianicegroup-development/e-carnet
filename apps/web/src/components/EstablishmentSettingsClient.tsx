@@ -94,7 +94,7 @@ export function EstablishmentSettingsClient() {
       {activeSection === "administratif" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Fiche établissement</span>
         {selected ? <dl className="settings-details"><div><dt>Nom</dt><dd>{selected.name}</dd></div><div><dt>Type de structure</dt><dd>{selected.establishment_type}</dd></div><div><dt>Statut</dt><dd><span className={`badge ${selected.status === "active" ? "active" : "pending"}`}>{statusLabel(selected.status)}</span></dd></div><div><dt>Code interne</dt><dd>{selected.internal_code ?? "Attribué après activation"}</dd></div></dl> : <p className="empty">{loading ? "Chargement…" : "Aucune fiche établissement n’est liée à cette session."}</p>}
         {!selected && !loading && <Link className="button primary" href="/professionnel/etablissements">Déclarer un établissement</Link>}
-        {selected && <p className="muted settings-note">La modification de la fiche sera activée avec l’endpoint de mise à jour établissement.</p>}
+        {selected && selected.status === "active" && <p className="settings-note"><Link className="button" href="/etablissement/fiche">Modifier la fiche</Link></p>}
       </div></SettingsModal>}
 
       {activeSection === "coordonnees" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Contact de la structure</span>

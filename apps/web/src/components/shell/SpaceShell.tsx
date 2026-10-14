@@ -166,6 +166,12 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
     router.replace(`/connexion?next=${encodeURIComponent(requested)}`);
   }, [state.status, bare, router]);
 
+  // Onboarding de l'établissement : tant que la fiche n'est pas complétée, l'espace reste fermé (le serveur bloque aussi les codes).
+  const profilePending = space === "establishment" && state.status === "ready" && state.account.contexts.some((context) => context.role === "establishment" && !context.onboarding_completed);
+  useEffect(() => {
+    if (profilePending && !bare) router.replace("/etablissement/fiche");
+  }, [profilePending, bare, router]);
+
   const moi = config.tabs[config.tabs.length - 1];
   const showAdminLink = space === "patient" && state.status === "ready" && state.account.is_admin === true;
   const qrRemainingSeconds = patientAccessQr ? Math.max(0, Math.ceil((patientAccessQr.expiresAt - qrNow) / 1000)) : 0;
