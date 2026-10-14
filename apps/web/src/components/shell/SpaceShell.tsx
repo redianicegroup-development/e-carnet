@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { ApiError, apiGet, apiPost } from "../../infrastructure/api/client";
+import { isSessionMissing } from "../../lib/session";
 import { SPACES, type SpaceId } from "../../lib/spaces";
 import { useConfirm } from "../modal/ConfirmProvider";
 import { GreetingModal } from "../modal/GreetingModal";
@@ -143,7 +144,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
           return;
         } catch (error) {
           if (!active) return;
-          if (checkingIdentity && error instanceof ApiError && error.status === 401) {
+          if (checkingIdentity && isSessionMissing(error)) {
             setState({ status: "anonymous" });
             return;
           }

@@ -15,7 +15,7 @@ const hrefsOf = (source) => [...source.matchAll(/href[:=]\s*[{"]\s*"?(\/[a-z0-9/
 test("une session expirée redirige vers la connexion et les erreurs de connexion ouvrent une modale oops", () => {
   const shell = read("src/components/shell/SpaceShell.tsx");
   const auth = read("src/components/AuthForms.tsx");
-  assert.match(shell, /error\.status === 401[\s\S]*setState\(\{ status: "anonymous" \}\)/);
+  assert.match(shell, /isSessionMissing\(error\)[\s\S]*setState\(\{ status: "anonymous" \}\)/);
   assert.match(shell, /router\.replace\(`\/connexion\?next=/);
   assert.doesNotMatch(shell, /Votre session a expiré ou vous n’êtes pas connecté/);
   assert.match(auth, /<AuthErrorDialog message=\{errorModal\}/);
