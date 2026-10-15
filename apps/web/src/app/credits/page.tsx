@@ -10,7 +10,7 @@ import { formatLegalDate } from "../../lib/legal/config";
 
 export const metadata: Metadata = {
   title: "Crédits et remerciements — Mon Carnet Numérique",
-  description: "Les personnes et les équipes à l’origine de Mon Carnet Numérique, et les outils sur lesquels il s’appuie.",
+  description: "Découvrez l’équipe à l’origine d’E-Carnet, les contributions au projet et les outils utilisés pour le développer.",
   robots: { index: false, follow: true },
 };
 
@@ -22,12 +22,12 @@ export default function CreditsPage() {
         <header className="credits__head">
           <BrandLogo height={60} />
           <span className="eyebrow">Crédits et remerciements</span>
-          <h1>Merci à celles et ceux qui ont rendu ce carnet possible.</h1>
-          <p className="lead">Mon Carnet Numérique est conçu par AKATech Studio. Redianice, une startup, a contacté AKATech Studio pour proposer une collaboration autour d’outils simples au service du domaine de la santé.</p>
+          <h1>Une idée portée par une startup, construite avec des compétences complémentaires.</h1>
+          <p className="lead">E-Carnet est un projet porté par Redianice pour répondre à un problème concret : la perte et la dispersion des informations lorsque les carnets de santé papier se perdent ou sont remplacés une fois remplis. Sa conception réunit développement numérique, accompagnement juridique, pilotage de projet et design graphique.</p>
         </header>
 
         <section className="stack" aria-labelledby="origine">
-          <h2 id="origine">À l’origine du projet</h2>
+          <h2 id="origine">Les contributions au projet</h2>
           <div className="credits__grid">
             {CREDITS_ORIGINS.map((entry) => (
               <article className="card credits__card" key={entry.id}>
@@ -42,12 +42,12 @@ export default function CreditsPage() {
 
         <section className="stack" aria-labelledby="remerciements">
           <h2 id="remerciements">Remerciements</h2>
-          <p>Merci aux patients, aux professionnels de santé et aux établissements qui testent le pilote et partagent leurs retours. Leurs remarques orientent chaque amélioration, pour que l’expérience reste simple, claire et sous le contrôle du patient.</p>
+          <p>Merci aux personnes qui prennent le temps de partager leurs retours et leurs besoins. Ces contributions aident l’équipe à faire évoluer le projet en gardant comme priorités la clarté, l’utilité et la place centrale du patient.</p>
         </section>
 
         <section className="stack" aria-labelledby="identite">
           <h2 id="identite">Identité visuelle</h2>
-          <p>Le signe réunit un carnet relié et un interrupteur : c’est mon carnet, et c’est moi qui décide. Il accompagne toute l’application, de la page d’accueil aux paramètres.</p>
+          <p>L’identité visuelle d’E-Carnet a été pensée pour exprimer une idée simple : un carnet personnel, organisé et placé sous le contrôle de son utilisateur. Le branding, le logo et les choix graphiques sont travaillés pour donner au service une identité cohérente sur l’ensemble de ses interfaces.</p>
         </section>
 
         <section className="stack" aria-labelledby="outils">
