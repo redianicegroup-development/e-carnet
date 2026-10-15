@@ -71,18 +71,18 @@ paths:
           description: Profil professionnel absent
     post:
       summary: Demander un accès temporaire à un carnet
-      description: Requiert un contexte professionnel, un établissement actif et un rattachement actif. Le patient doit encore consentir. La demande expire après 7 jours; un refus bloque une nouvelle demande pendant 30 jours.
+      description: Requiert un contexte professionnel, un établissement actif et un rattachement actif, ainsi que le QR temporaire affiché par le patient (jeton opaque à usage unique, 5 minutes). Un identifiant patient seul est refusé et n’est jamais renvoyé au professionnel. Le patient doit encore consentir. La demande expire après 7 jours; un refus bloque une nouvelle demande pendant 30 jours.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [patient_id, scope]
+              required: [qr_token, scope]
               properties:
-                patient_id:
+                qr_token:
                   type: string
-                  format: uuid
+                  description: Jeton affiché par le patient (usage unique)
                 scope:
                   type: array
                   items:
@@ -92,7 +92,7 @@ paths:
         '201':
           description: Demande créée en attente du consentement patient; demandes pending/active uniques par patient, professionnel et établissement
         '400':
-          description: Préconditions cliniques, refus récent ou périmètre invalide
+          description: QR absent, expiré, déjà utilisé ou invalide ; préconditions cliniques, refus récent ou périmètre invalide
   /patient/care/professional/consultations/:
     get:
       summary: Lister les consultations validées par le professionnel courant

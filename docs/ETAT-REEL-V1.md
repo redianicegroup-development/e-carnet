@@ -14,7 +14,7 @@ Le dépôt contient un socle fonctionnel sérieux : monorepo Next.js/Django, ses
 La V1 n’est toutefois pas finalisée :
 
 - la preuve la plus récente est **77 tests réussis sur PostgreSQL 16 local, zéro échec et zéro ignoré**, le 08/10 ; elle n’équivaut pas à une recette de la base managée de staging ;
-- la génération QR côté patient, le scan/saisie côté professionnel et l’API existent. Le correctif local du 13/10 retire le champ UUID séparé et ajoute un test de contrat QR seul; ce test et le parcours mobile doivent encore être exécutés;
+- la génération QR côté patient, le scan/saisie côté professionnel et l’API existent. Depuis le 14/10, l’API **exige** `qr_token` (un `patient_id` seul est refusé), ne renvoie plus `patient_id` au professionnel, verrouille et consomme le jeton de façon atomique, invalide les anciens QR à chaque nouveau, limite leur création (30/h) et purge les expirés (`cleanup_access_qr_tokens`) ; 11 tests dédiés passent sous SQLite, la concurrence réelle reste à rejouer sur PostgreSQL et le parcours sur mobile;
 - le correctif local ajoute un journal patient des ressources et quantités lues, avec instant, durée snapshotée du droit et expiration; à confirmer par tests et recette staging;
 - les préférences d’apparence ont été étendues aux couples de polices et à trois tailles de texte; synchronisation API, cache et application selon l’espace restent à confirmer par tests/build;
 - A9 est décidé : QR à usage unique de 5 min ; scopes par défaut `preconsultation` + `declarations`, `consultations` sélectionnable et `documents` hors V1 ;
@@ -61,10 +61,11 @@ Les mentions d’échecs sur l’ancienne création publique d’établissement,
 
 - Profil patient, déclarations, pré-consultation brouillon/clôture, historique et consultation persistée.
 - Dossiers enfants représentés séparés, lien révocable/réactivable et sélection session contrôlée côté serveur; transfert du même dossier à un compte adulte soumis à revue manuelle de l’identité et de l’âge légal via la console superadmin. Le seuil légal est absent par défaut; les délégations d’adultes ne sont pas ouvertes et aucune pièce d’identité n’est conservée. Tests ciblés locaux passés; procédure probante et staging restent à valider.
-- Carte d’urgence imprimable/hors ligne avec identité minimale, allergies/traitements sélectionnés et contact. La sélection doit être enregistrée avant export; les exports sont privés, sans cache et audités. Une copie papier/PDF peut être périmée et ne peut être effacée à distance.
+- Carte d’urgence virtuelle (14/10) : carte responsive (nom, prénom, groupe sanguin, ville, allergies, traitements déclarés, contact) avec QR à côté, page publique `/urgence/<jeton>` sans connexion (HMAC signé, révocable, limitée par IP), export PNG côté navigateur. La ville est un champ de `PatientEmergencyCard` (migration `0007`). Le QR est désactivé par défaut ; toute personne qui possède l’image ou le lien voit la carte jusqu’au renouvellement/désactivation.
+- Carte d’urgence imprimable/hors ligne (sans QR) avec identité minimale, allergies/traitements sélectionnés et contact. La sélection doit être enregistrée avant export; les exports sont privés, sans cache et audités. Une copie papier/PDF peut être périmée et ne peut être effacée à distance.
 - AccessGrant : demande, consentement/refus, expiration serveur à 2 h, deux prolongations d’1 h et révocation.
 - Le garde clinique exige maintenant un contexte professionnel actif, un établissement actif, un rattachement actif et le consentement patient ; le statut global `verification_status == verified` n’est plus le contrôle d’accès dans `professionals/access.py`.
-- Le backend QR émet un jeton opaque hashé, à usage unique, avec validité produit de 5 minutes ; les scopes V1 sont appliqués.
+- Le backend QR émet un jeton opaque hashé, à usage unique, avec validité produit de 5 minutes ; les scopes V1 sont appliqués. Chaque demande professionnelle exige le QR ; un nouveau QR invalide les précédents.
 - L’attestation SVG est parsée, sanitationnée par allowlist stricte, hashée en SHA-256 et horodatée ; les charges script/CSS/URL/DTD sont couvertes par tests.
 
 ### Établissement et rattachement médecin
@@ -86,7 +87,7 @@ Limites restantes : configurer et vérifier SMTP/délivrabilité en staging, tes
 - Pages Patient, Professionnel, Établissement, Staff, onboarding, sécurité et FAQ présentes. Les comptes-rendus de build du 05/10 donnent 27 ou 31 routes selon la passe ; ce total est historique et doit être revérifié avant de s’y référer.
 - Manifest/service worker présents ; aucune donnée médicale ne doit être mise en cache.
 - Un smoke Chromium headless valide 6 routes pour mobile/accessibilité de base ; la recette Android/iOS/4G et l’audit WCAG 2.2 AA complet restent à faire.
-- Le formulaire QR v1.8 permet scan/saisie du jeton. Le retrait local du champ UUID ajouté le 13/10 n’est pas encore validé par les tests/build.
+- Le formulaire professionnel ne demande plus que le jeton QR et le périmètre ; le champ UUID patient est retiré (tests API et web du 14/10 passés). Le QR de consultation s’affiche seulement dans l’onglet « Accès et QR » du patient.
 
 ## Travaux restants pour déclarer la V1 finalisée
 
@@ -94,7 +95,7 @@ Limites restantes : configurer et vérifier SMTP/délivrabilité en staging, tes
 
 1. Rejouer les tests sur la base PostgreSQL managée de staging, notamment concurrence, isolation, refus et révocation.
 2. Recetter en staging le transport SMTP, SPF/DKIM/DMARC, délivrabilité, expiration et procédure de renvoi ; ne jamais exposer le jeton dans une réponse API.
-3. Recetter QR/A9 sur mobile : durée produit de 5 minutes et scopes décidés ; vérifier le contrat QR seul et l’absence d’exigence d’UUID distinct.
+3. Recetter QR/A9 sur mobile : durée produit de 5 minutes et scopes décidés ; le contrat QR seul est appliqué par l’API, reste à le valider avec de vrais appareils et à rejouer la concurrence sur PostgreSQL.
 4. Recetter l’onboarding identité/avatar et les formulaires métier ; l’avatar URL est livré, l’upload de fichier n’est pas prévu en V1.
 5. Rejouer la sanitation SVG stricte sur le pipeline de staging et vérifier le rendu avec le composant final.
 

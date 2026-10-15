@@ -30,6 +30,21 @@ class AccessGrantSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class ProfessionalAccessGrantSerializer(AccessGrantSerializer):
+    """Vue professionnelle d’un accès : jamais d’identifiant de patient, seulement une référence propre à cet accès.
+
+    Un identifiant de patient connu du professionnel permettrait de renvoyer des demandes sans QR ; le QR du patient
+    reste donc la seule porte d’entrée, à chaque demande."""
+    reference = serializers.SerializerMethodField()
+
+    class Meta(AccessGrantSerializer.Meta):
+        fields = tuple(name for name in AccessGrantSerializer.Meta.fields if name != "patient_id") + ("reference",)
+        read_only_fields = fields
+
+    def get_reference(self, obj):
+        return str(obj.id)[:8].upper()
+
+
 class ConsultationSerializer(serializers.ModelSerializer):
     provenance = serializers.SerializerMethodField()
     professional_id = serializers.UUIDField(read_only=True, allow_null=True)

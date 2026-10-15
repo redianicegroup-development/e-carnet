@@ -37,6 +37,9 @@ const PATHS = {
   refresh: <><path d="M20 7v5h-5" /><path d="M4.8 9a7.5 7.5 0 0 1 13-2L20 12M4 17v-5h5" /><path d="M19.2 15a7.5 7.5 0 0 1-13 2L4 12" /></>,
   sparkle: <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5-1.8zM19 17l.7 1.8L21.5 19.5l-1.8.7L19 22l-.7-1.8-1.8-.7 1.8-.7z" />,
   sidebar: <><rect x="3.5" y="4.5" width="17" height="15" rx="3" /><path d="M9.5 4.5v15" /></>,
+  drop: <path d="M12 3s6 6.2 6 10.5a6 6 0 0 1-12 0C6 9.2 12 3 12 3z" />,
+  download: <path d="M12 4v11M7.5 11 12 15.5 16.5 11M5 20h14" />,
+  phone: <path d="M6.6 4h3l1.4 4-2 1.3a11 11 0 0 0 5.7 5.7l1.3-2 4 1.4v3a2 2 0 0 1-2.2 2A15.5 15.5 0 0 1 4.6 6.2 2 2 0 0 1 6.6 4z" />,
   sliders: <><path d="M4 7h9M17 7h3M4 12h3M11 12h9M4 17h11M19 17h1" /><circle cx="15" cy="7" r="2" /><circle cx="9" cy="12" r="2" /><circle cx="17" cy="17" r="2" /></>,
 } satisfies Record<string, ReactElement>;
 

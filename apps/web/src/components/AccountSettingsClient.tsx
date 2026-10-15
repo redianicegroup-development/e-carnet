@@ -108,8 +108,9 @@ export function AccountSettingsClient() {
           <div className="settings-account-summary__copy"><span className="eyebrow">Compte patient</span><h2>{[account.first_name, account.last_name].filter(Boolean).join(" ") || "Mon compte"}</h2><p className="muted">{account.email}</p></div>
         </div>
         <p className="notice" role="status" aria-live="polite">{message}</p>
-        <PatientEmergencyCardSettingsClient />
       </section>
+
+      <PatientEmergencyCardSettingsClient />
 
       <SettingsDirectory items={sections} activeId={activeSection} onSelect={setActiveSection} onLogout={() => void logout()} logoutDisabled={signingOut} />
 

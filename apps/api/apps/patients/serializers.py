@@ -46,7 +46,7 @@ class PatientEmergencyCardSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PatientEmergencyCard
-        fields = ("contact_name", "contact_phone", "qr_enabled", "offline_declaration_ids")
+        fields = ("city", "contact_name", "contact_phone", "qr_enabled", "offline_declaration_ids")
 
     def validate_offline_declaration_ids(self, value):
         if len(value) != len(set(value)):

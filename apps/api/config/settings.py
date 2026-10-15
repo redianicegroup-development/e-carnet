@@ -58,6 +58,8 @@ REST_FRAMEWORK = {
         "representation_transfer": os.environ.get("ECARNET_RATE_REPRESENTATION_TRANSFER", "5/hour"),
         "code_redeem": os.environ.get("ECARNET_RATE_CODE", "10/hour"),
         "grant_request": os.environ.get("ECARNET_RATE_GRANT", "60/hour"),
+        "qr_create": os.environ.get("ECARNET_RATE_QR_CREATE", "30/hour"),
+        "emergency_card_public": os.environ.get("ECARNET_RATE_EMERGENCY_CARD", "120/hour"),
         "visitor_analytics": os.environ.get("ECARNET_RATE_VISITOR", "1200/hour"),
         "visitor_clicks": os.environ.get("ECARNET_RATE_CLICKS", "2400/hour"),
         "visitor_feedback": os.environ.get("ECARNET_RATE_FEEDBACK", "5/hour"),

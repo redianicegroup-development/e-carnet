@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { QRCodeSVG } from "qrcode.react";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { ApiError, apiGet, apiPost } from "../../infrastructure/api/client";
 import { isSessionMissing } from "../../lib/session";
@@ -73,7 +72,6 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
   const [state, setState] = useState<State>({ status: "loading", label: "Chargement de votre espace…" });
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [patientAccessQr, setPatientAccessQr] = useState<PatientAccessQr | null>(null);
-  const [qrNow, setQrNow] = useState(0);
   const [navCollapsed, setNavCollapsed] = useState(true);
   const [signingOut, setSigningOut] = useState(false);
   const [logoutMessage, setLogoutMessage] = useState("");
@@ -94,16 +92,12 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
   }
   const bare = config.bare.some((path) => pathname === path || pathname.startsWith(`${path}/`));
 
+  // Le QR vit dans le shell (il survit au changement d’onglet) mais ne s’affiche que sur l’onglet « Accès et QR » :
+  // le shell ne fait que le retirer à l’expiration, sans re-rendre tout l’espace chaque seconde.
   useEffect(() => {
     if (space !== "patient" || !patientAccessQr) return;
-    const updateExpiry = () => {
-      const now = Date.now();
-      setQrNow(now);
-      if (now >= patientAccessQr.expiresAt) setPatientAccessQr(null);
-    };
-    updateExpiry();
-    const timer = window.setInterval(updateExpiry, 1000);
-    return () => window.clearInterval(timer);
+    const timer = window.setTimeout(() => setPatientAccessQr(null), Math.max(0, patientAccessQr.expiresAt - Date.now()));
+    return () => window.clearTimeout(timer);
   }, [space, patientAccessQr]);
 
   useEffect(() => {
@@ -175,7 +169,6 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
 
   const moi = config.tabs[config.tabs.length - 1];
   const showAdminLink = space === "patient" && state.status === "ready" && state.account.is_admin === true;
-  const qrRemainingSeconds = patientAccessQr ? Math.max(0, Math.ceil((patientAccessQr.expiresAt - qrNow) / 1000)) : 0;
 
   const items: SidebarItem[] = config.tabs.map((tab) => ({ id: tab.id, label: tab.label, long: tab.long, icon: tab.icon, href: tab.href, active: tab.match(pathname), account: tab === moi }));
   if (showAdminLink) items.splice(items.length - 1, 0, { id: "admin", label: "Admin", long: "Administration", icon: "shield", href: "https://e-carnetci.vercel.app/admin/", external: true, active: false });
@@ -217,20 +210,6 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
         {(state.status === "ready" || bare) && (
           <AccountContext.Provider value={state.status === "ready" ? state.account : null}>
             <PatientAccessQrContext.Provider value={{ qr: patientAccessQr, setQr: setPatientAccessQr }}>
-              {space === "patient" && patientAccessQr && qrNow > 0 && qrNow < patientAccessQr.expiresAt && (
-                <section className="patient-active-qr card" aria-label="QR temporaire actif">
-                  <div className="patient-active-qr__code">
-                    <QRCodeSVG value={patientAccessQr.token} size={132} includeMargin aria-label="QR temporaire d’accès au carnet" />
-                  </div>
-                  <div className="patient-active-qr__details">
-                    <span className="eyebrow">QR temporaire actif</span>
-                    <h2>Votre QR reste disponible</h2>
-                    <p className="muted">Vous pouvez naviguer dans votre espace Patient : ce QR restera affiché jusqu’à son expiration.</p>
-                    <p className="patient-active-qr__countdown">Expire dans {Math.floor(qrRemainingSeconds / 60)}:{String(qrRemainingSeconds % 60).padStart(2, "0")}</p>
-                    <small className="muted">Jeton à usage unique. Ne le partagez qu’avec le professionnel concerné.</small>
-                  </div>
-                </section>
-              )}
               {children}
             </PatientAccessQrContext.Provider>
           </AccountContext.Provider>

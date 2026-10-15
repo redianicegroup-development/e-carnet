@@ -1,8 +1,8 @@
 import { apiGet, apiPost } from "../infrastructure/api/client";
 
-export type ProfessionalGrant = { id: string; patient_id: string; professional_id: string | null; establishment_id: string | null; professional_name: string; facility_label: string; scope: string[]; status: "pending" | "active" | "refused" | "expired" | "revoked"; starts_at: string | null; expires_at: string | null; extension_count: number };
+export type ProfessionalGrant = { id: string; reference: string; professional_id: string | null; establishment_id: string | null; professional_name: string; facility_label: string; scope: string[]; status: "pending" | "active" | "refused" | "expired" | "revoked"; starts_at: string | null; expires_at: string | null; extension_count: number };
 export type Encounter = { id: string; reason: string; observations: string; status: "closed"; facility_label: string; provenance: { label: string } };
-export type Consultation = { id: string; patient_id?: string; professional_name: string; facility_label: string; reason: string; conclusion: string; care_plan: string; validated_at: string; provenance: { label: string } };
+export type Consultation = { id: string; professional_name: string; facility_label: string; reason: string; conclusion: string; care_plan: string; validated_at: string; provenance: { label: string } };
 
 export function listProfessionalGrants(): Promise<ProfessionalGrant[]> {
   return apiGet<ProfessionalGrant[]>("/api/v1/patient/care/professional/access-grants/");

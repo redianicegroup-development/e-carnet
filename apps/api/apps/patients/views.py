@@ -11,7 +11,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from apps.audit.services import record_event
-from apps.identity.throttles import WriteScopedThrottle
+from apps.identity.throttles import IpScopedThrottle, WriteScopedThrottle
 from .models import ClinicalDeclaration, PatientEmergencyCard, PatientProfile, PatientRepresentation, RepresentationTransferRequest
 from .serializers import ClinicalDeclarationSerializer, PatientEmergencyCardSerializer, PatientProfileSerializer
 
@@ -425,6 +425,10 @@ def emergency_card_data(card, *, public=False):
     declarations = ClinicalDeclaration.objects.filter(patient=card.patient, status="declared")
     blood = declarations.filter(kind="blood_group").order_by("-updated_at").first()
     data = {
+        # Carte d’urgence virtuelle : identité minimale (nom, prénom, ville) choisie par le titulaire, affichée telle quelle au scan.
+        "first_name": card.patient.display_first_name(),
+        "last_name": card.patient.display_last_name(),
+        "city": card.city,
         "blood_group": blood.label if blood else "",
         "allergies": list(declarations.filter(kind="allergy").values("label", "details")),
         "treatments": list(declarations.filter(kind="treatment").values("label", "details")),
@@ -533,6 +537,8 @@ class PatientOfflineEmergencyCardView(APIView):
 
 class EmergencyCardQrView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [IpScopedThrottle]
+    throttle_scope = "emergency_card_public"
 
     def get(self, request, token):
         try:

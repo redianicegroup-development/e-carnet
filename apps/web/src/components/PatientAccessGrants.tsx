@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { notifyProductActionCompleted, primeCsrf, readCsrfToken } from "../infrastructure/api/client";
 import { usePatientAccessQr } from "./shell/SpaceShell";
 import { useConfirm } from "./modal/ConfirmProvider";
@@ -83,6 +84,31 @@ async function getData<T>(path: string): Promise<T> {
   const payload = await response.json();
   if (!response.ok) throw new Error(payload.message ?? "Demandes indisponibles.");
   return payload.data as T;
+}
+
+/* QR temporaire affiché dans son propre onglet : il reste valable (et revient tel quel) si le patient change d’onglet
+   puis revient, mais ne s’affiche jamais au-dessus des autres pages de l’espace. */
+function ActiveAccessQr({ token, expiresAt, busy, onRenew }: { token: string; expiresAt: number; busy: boolean; onRenew: () => void }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const remaining = Math.max(0, Math.ceil((expiresAt - now) / 1000));
+  return (
+    <div className="patient-active-qr" role="group" aria-label="QR temporaire actif">
+      <div className="patient-active-qr__code">
+        <QRCodeSVG value={token} size={184} includeMargin aria-label="QR temporaire d’accès au carnet" />
+      </div>
+      <div className="patient-active-qr__details">
+        <span className="eyebrow">QR temporaire actif</span>
+        <p className="patient-active-qr__countdown" role="timer" aria-live="off">Expire dans {Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, "0")}</p>
+        <p className="muted">Montrez-le au professionnel pendant la consultation. Il reste ici si vous changez d’onglet.</p>
+        <small className="muted">Jeton à usage unique : ne le partagez qu’avec le professionnel concerné. Un nouveau QR remplace celui-ci.</small>
+        <div className="actions"><button type="button" className="button small" onClick={onRenew} disabled={busy}>{busy ? "Génération…" : "Générer un nouveau QR"}</button></div>
+      </div>
+    </div>
+  );
 }
 
 export function PatientAccessGrants() {
@@ -181,9 +207,9 @@ export function PatientAccessGrants() {
         <span className="eyebrow">Accès temporaire</span>
         <h2 id="qr-heading">Présenter mon QR à un professionnel</h2>
         <p className="muted">Le QR contient uniquement un jeton opaque à usage unique. Il ne contient aucune donnée médicale.</p>
-        {!qr ? <button type="button" className="button primary" onClick={() => void createQr()} disabled={qrBusy}>{qrBusy ? "Génération…" : "Générer un QR temporaire"}</button> : (
-          <p className="notice">Votre QR est affiché en haut de l’espace Patient et reste visible pendant votre navigation jusqu’à son expiration.</p>
-        )}
+        {!qr
+          ? <button type="button" className="button primary" onClick={() => void createQr()} disabled={qrBusy}>{qrBusy ? "Génération…" : "Générer un QR temporaire"}</button>
+          : <ActiveAccessQr token={qr.token} expiresAt={qr.expiresAt} busy={qrBusy} onRenew={() => void createQr()} />}
       </section>
 
       <section aria-labelledby="active-access-heading">

@@ -108,6 +108,7 @@ class PatientEmergencyCard(models.Model):
     """Carte d’urgence facultative, publiée uniquement par QR à la demande du patient."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     patient = models.OneToOneField(PatientProfile, on_delete=models.CASCADE, related_name="emergency_card")
+    city = models.CharField(max_length=120, blank=True)
     contact_name = models.CharField(max_length=120, blank=True)
     contact_phone = models.CharField(max_length=32, blank=True)
     offline_declaration_ids = models.JSONField(default=list)

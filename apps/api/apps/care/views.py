@@ -15,7 +15,7 @@ from apps.professionals.models import ProfessionalProfile
 from apps.audit.models import AuditEvent
 from apps.audit.services import record_event
 from .models import AccessGrant, CareEncounter, Consultation, PreConsultationRevision
-from .serializers import AccessGrantSerializer, CareEncounterSerializer, ConsultationSerializer, ProfessionalConsultationCreateSerializer
+from .serializers import AccessGrantSerializer, CareEncounterSerializer, ConsultationSerializer, ProfessionalAccessGrantSerializer, ProfessionalConsultationCreateSerializer
 from .services import QR_TOKEN_TTL_SECONDS, create_patient_qr_token, create_professional_grant
 from .consultation_services import validate_consultation
 
@@ -88,6 +88,8 @@ class PatientAccessGrantListView(APIView):
 
 class PatientAccessQrCreateView(APIView):
     permission_classes = [IsAuthenticated]
+    throttle_classes = [WriteScopedThrottle]
+    throttle_scope = "qr_create"
 
     def post(self, request):
         raw = create_patient_qr_token(patient=profile_for(request.user, request))
@@ -181,7 +183,7 @@ class ProfessionalAccessGrantListCreateView(APIView):
         items = AccessGrant.objects.filter(professional=profile, establishment=profile.active_establishment).select_related("patient", "establishment")
         for item in items:
             item.refresh_expiration()
-        return Response({"success": True, "data": AccessGrantSerializer(items, many=True).data})
+        return Response({"success": True, "data": ProfessionalAccessGrantSerializer(items, many=True).data})
 
     @transaction.atomic
     def post(self, request):
@@ -189,13 +191,13 @@ class ProfessionalAccessGrantListCreateView(APIView):
         if not profile:
             return Response({"success": False, "message": "Le profil professionnel n’est pas disponible."}, status=403)
         try:
-            item = create_professional_grant(professional=profile, patient_id=request.data.get("patient_id"), qr_token=request.data.get("qr_token"), scope=request.data.get("scope"))
+            item = create_professional_grant(professional=profile, qr_token=request.data.get("qr_token"), scope=request.data.get("scope"))
         except ValidationError as exc:
             detail = exc.detail
             message = detail[0] if isinstance(detail, list) else detail
             return Response({"success": False, "message": str(message)}, status=400)
         record_event(event_type="access_grant.requested", actor=request.user, actor_role="professional", patient=item.patient, establishment=item.establishment, access_grant=item, metadata={"action": "requested", "scope": item.scope, "status": item.status})
-        return Response({"success": True, "data": AccessGrantSerializer(item).data}, status=status.HTTP_201_CREATED)
+        return Response({"success": True, "data": ProfessionalAccessGrantSerializer(item).data}, status=status.HTTP_201_CREATED)
 
 
 class ProfessionalConsultationListCreateView(APIView):

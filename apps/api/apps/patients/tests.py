@@ -44,7 +44,7 @@ class PatientOwnedDataTests(TestCase):
         self.client.post("/api/v1/patient/declarations/", {"kind": "blood_group", "label": "AB+", "details": ""}, format="json")
         self.client.post("/api/v1/patient/declarations/", {"kind": "allergy", "label": "Pénicilline", "details": "Réaction cutanée"}, format="json")
         self.client.post("/api/v1/patient/declarations/", {"kind": "treatment", "label": "Traitement fictif", "details": "1 fois par jour"}, format="json")
-        self.client.patch("/api/v1/patient/emergency-card/", {"contact_name": "Contact fictif", "contact_phone": "+225 00 00 00 00", "qr_enabled": True}, format="json")
+        self.client.patch("/api/v1/patient/emergency-card/", {"city": "Abidjan", "contact_name": "Contact fictif", "contact_phone": "+225 00 00 00 00", "qr_enabled": True}, format="json")
         first_token = self.client.get("/api/v1/patient/emergency-card/").data["data"]["qr_token"]
 
         self.client.force_authenticate(None)
@@ -54,7 +54,11 @@ class PatientOwnedDataTests(TestCase):
         self.assertEqual(public.data["data"]["allergies"][0]["label"], "Pénicilline")
         self.assertEqual(public.data["data"]["treatments"][0]["label"], "Traitement fictif")
         self.assertEqual(public.data["data"]["contact_name"], "Contact fictif")
-        self.assertEqual(set(public.data["data"]), {"blood_group", "allergies", "treatments", "contact_name", "contact_phone", "updated_at"})
+        self.assertEqual(public.data["data"]["city"], "Abidjan")
+        self.assertEqual(set(public.data["data"]), {"first_name", "last_name", "city", "blood_group", "allergies", "treatments", "contact_name", "contact_phone", "updated_at"})
+        # Jamais de date de naissance, d’adresse, de téléphone du patient ni d’identifiant interne sur la carte publique.
+        for forbidden in ("birth_date", "address", "phone", "email", "id", "patient_id", "qr_token"):
+            self.assertNotIn(forbidden, public.data["data"])
         self.assertIn("no-store", public["Cache-Control"])
         self.assertIn("noindex", public["X-Robots-Tag"])
         self.assertEqual(self.client.get("/api/v1/patient/emergency-card/qr/not-a-token/").status_code, 404)

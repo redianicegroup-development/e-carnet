@@ -23,6 +23,11 @@ class PatientAccessTests(TestCase):
         self.other_profile = PatientProfile.objects.create(user=self.other)
         self.client = APIClient()
 
+    def qr(self, patient=None):
+        """QR frais du patient : chaque demande professionnelle en exige un, à usage unique."""
+        from .services import create_patient_qr_token
+        return create_patient_qr_token(patient=patient or self.profile)
+
     def make_access_target(self, suffix):
         user = User.objects.create_user(
             username=f"doctor-{suffix}",
@@ -140,7 +145,7 @@ class PatientAccessTests(TestCase):
         self.client.force_authenticate(doctor)
         response = self.client.post(
             "/api/v1/patient/care/professional/access-grants/",
-            {"patient_id": str(self.profile.id), "scope": ["preconsultation"]},
+            {"qr_token": self.qr(), "scope": ["preconsultation"]},
             format="json",
         )
         self.assertEqual(response.status_code, 201)
@@ -315,7 +320,7 @@ class PatientAccessTests(TestCase):
         profile.active_establishment = establishment
         profile.save(update_fields=("active_establishment", "updated_at"))
         self.client.force_authenticate(doctor)
-        created = self.client.post("/api/v1/patient/care/professional/access-grants/", {"patient_id": str(patient.id), "scope": ["preconsultation", "declarations"]}, format="json")
+        created = self.client.post("/api/v1/patient/care/professional/access-grants/", {"qr_token": self.qr(patient), "scope": ["preconsultation", "declarations"]}, format="json")
         self.assertEqual(created.status_code, 201)
         self.assertEqual(created.data["data"]["status"], "pending")
         self.assertEqual(created.data["data"]["establishment_id"], str(establishment.id))
@@ -338,7 +343,9 @@ class PatientAccessTests(TestCase):
         created = self.client.post("/api/v1/patient/care/professional/access-grants/", {"qr_token": raw_token, "scope": ["preconsultation", "declarations"]}, format="json")
 
         self.assertEqual(created.status_code, 201)
-        self.assertEqual(created.data["data"]["patient_id"], str(self.profile.id))
+        # Le professionnel ne reçoit jamais l’identifiant du patient : seulement une référence propre à cet accès.
+        self.assertNotIn("patient_id", created.data["data"])
+        self.assertEqual(created.data["data"]["reference"], created.data["data"]["id"][:8].upper())
         token = PatientAccessQrToken.objects.get(patient=self.profile)
         self.assertIsNotNone(token.consumed_at)
 
@@ -351,21 +358,21 @@ class PatientAccessTests(TestCase):
         profile.active_establishment = establishment
         profile.save(update_fields=("active_establishment", "updated_at"))
         self.client.force_authenticate(doctor)
-        unknown = self.client.post("/api/v1/patient/care/professional/access-grants/", {"patient_id": str(self.profile.id), "scope": ["diagnostic"]}, format="json")
+        unknown = self.client.post("/api/v1/patient/care/professional/access-grants/", {"qr_token": self.qr(), "scope": ["diagnostic"]}, format="json")
         self.assertEqual(unknown.status_code, 400)
-        first = self.client.post("/api/v1/patient/care/professional/access-grants/", {"patient_id": str(self.profile.id), "scope": ["preconsultation"]}, format="json")
+        first = self.client.post("/api/v1/patient/care/professional/access-grants/", {"qr_token": self.qr(), "scope": ["preconsultation"]}, format="json")
         self.assertEqual(first.status_code, 201)
-        duplicate = self.client.post("/api/v1/patient/care/professional/access-grants/", {"patient_id": str(self.profile.id), "scope": ["preconsultation"]}, format="json")
+        duplicate = self.client.post("/api/v1/patient/care/professional/access-grants/", {"qr_token": self.qr(), "scope": ["preconsultation"]}, format="json")
         self.assertEqual(duplicate.status_code, 400)
         grant = AccessGrant.objects.get(patient=self.profile)
         self.client.force_authenticate(self.user)
         refused = self.client.post(f"/api/v1/patient/care/access-grants/{grant.id}/refuse/")
         self.assertEqual(refused.status_code, 200)
         self.client.force_authenticate(doctor)
-        retry = self.client.post("/api/v1/patient/care/professional/access-grants/", {"patient_id": str(self.profile.id), "scope": ["preconsultation"]}, format="json")
+        retry = self.client.post("/api/v1/patient/care/professional/access-grants/", {"qr_token": self.qr(), "scope": ["preconsultation"]}, format="json")
         self.assertEqual(retry.status_code, 400)
         AccessGrant.objects.filter(pk=grant.pk).update(refused_at=timezone.now() - timedelta(days=31))
-        allowed = self.client.post("/api/v1/patient/care/professional/access-grants/", {"patient_id": str(self.profile.id), "scope": ["preconsultation"]}, format="json")
+        allowed = self.client.post("/api/v1/patient/care/professional/access-grants/", {"qr_token": self.qr(), "scope": ["preconsultation"]}, format="json")
         self.assertEqual(allowed.status_code, 201)
 
     def test_professional_validates_consultation_from_closed_encounter_with_server_context(self):
@@ -463,7 +470,7 @@ class PatientAccessTests(TestCase):
 
         request = professional_client.post(
             "/api/v1/patient/care/professional/access-grants/",
-            {"patient_id": str(self.profile.id), "scope": ["preconsultation"]},
+            {"qr_token": self.qr(), "scope": ["preconsultation"]},
             format="json",
         )
         self.assertEqual(request.status_code, 201)
@@ -596,3 +603,129 @@ class SvgSanitizerSecurityTests(TestCase):
             with self.subTest(payload=payload):
                 with self.assertRaises(ValidationError):
                     sanitize_svg(payload)
+
+
+class QrOnlyAndSingleUseTests(TestCase):
+    """Le QR du patient est la seule porte d’entrée d’une demande d’accès, et il ne sert qu’une fois."""
+
+    def setUp(self):
+        self.patient_user = User.objects.create_user(username="qr-patient", password="local-test-password")
+        self.profile = PatientProfile.objects.create(user=self.patient_user)
+        self.establishment = Establishment.objects.create(created_by=self.patient_user, name="Clinique QR unique", establishment_type="Clinique", city="Abidjan", address="A", phone="0", email="qr-unique@example.test", responsible_name="Root", status="active", internal_code="QR-UNIQUE")
+        self.doctor_a, self.client_a = self.make_professional("a")
+        self.doctor_b, self.client_b = self.make_professional("b")
+
+    def make_professional(self, suffix):
+        user = User.objects.create_user(username=f"qr-doctor-{suffix}", email=f"qr-doctor-{suffix}@example.test", password="local-test-password")
+        profile = ProfessionalProfile.objects.create(user=user, professional_title="Médecin", verification_status="verified")
+        AccountContext.objects.create(user=user, role="professional", is_active=True)
+        EstablishmentMembership.objects.create(establishment=self.establishment, professional=profile, status="active")
+        profile.active_establishment = self.establishment
+        profile.save(update_fields=("active_establishment", "updated_at"))
+        client = APIClient()
+        client.force_authenticate(user)
+        return profile, client
+
+    def new_qr(self):
+        from .services import create_patient_qr_token
+        return create_patient_qr_token(patient=self.profile)
+
+    def request_access(self, client, payload):
+        return client.post("/api/v1/patient/care/professional/access-grants/", payload, format="json")
+
+    def test_a_patient_identifier_alone_never_opens_a_request(self):
+        response = self.request_access(self.client_a, {"patient_id": str(self.profile.id), "scope": ["preconsultation"]})
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("QR", response.data["message"])
+        self.assertFalse(AccessGrant.objects.exists())
+
+    def test_a_patient_identifier_is_ignored_when_a_qr_is_also_sent(self):
+        other_user = User.objects.create_user(username="qr-other-patient", password="local-test-password")
+        other = PatientProfile.objects.create(user=other_user)
+        response = self.request_access(self.client_a, {"qr_token": self.new_qr(), "patient_id": str(other.id), "scope": ["preconsultation"]})
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(AccessGrant.objects.get().patient_id, self.profile.id)
+
+    def test_professional_payloads_never_contain_a_patient_identifier(self):
+        created = self.request_access(self.client_a, {"qr_token": self.new_qr(), "scope": ["preconsultation"]})
+        self.assertEqual(created.status_code, 201)
+        listed = self.client_a.get("/api/v1/patient/care/professional/access-grants/")
+        self.assertEqual(listed.status_code, 200)
+        for payload in (created.data["data"], *listed.data["data"]):
+            self.assertNotIn("patient_id", payload)
+            self.assertNotIn(str(self.profile.id), str(payload))
+
+    def test_after_revocation_a_new_request_needs_a_new_qr_from_the_patient(self):
+        created = self.request_access(self.client_a, {"qr_token": self.new_qr(), "scope": ["preconsultation"]})
+        grant_id = created.data["data"]["id"]
+        patient_client = APIClient()
+        patient_client.force_authenticate(self.patient_user)
+        self.assertEqual(patient_client.post(f"/api/v1/patient/care/access-grants/{grant_id}/accept/").status_code, 200)
+        self.assertEqual(patient_client.post(f"/api/v1/patient/care/access-grants/{grant_id}/revoke/").status_code, 200)
+        # Rien de ce que le professionnel a reçu ne permet de redemander : sans QR, la demande est refusée.
+        retry = self.request_access(self.client_a, {"patient_id": str(self.profile.id), "scope": ["preconsultation"]})
+        self.assertEqual(retry.status_code, 400)
+        self.assertEqual(AccessGrant.objects.filter(status="pending").count(), 0)
+        # Avec un nouveau QR présenté par le patient, la demande est possible.
+        again = self.request_access(self.client_a, {"qr_token": self.new_qr(), "scope": ["preconsultation"]})
+        self.assertEqual(again.status_code, 201)
+
+    def test_a_qr_token_works_once_even_for_two_professionals(self):
+        raw = self.new_qr()
+        first = self.request_access(self.client_a, {"qr_token": raw, "scope": ["preconsultation"]})
+        second = self.request_access(self.client_b, {"qr_token": raw, "scope": ["preconsultation"]})
+        self.assertEqual(first.status_code, 201)
+        self.assertEqual(second.status_code, 400)
+        self.assertEqual(AccessGrant.objects.count(), 1)
+
+    def test_consuming_a_stale_token_instance_fails(self):
+        """Simule la course : deux appelants ont lu le même jeton valable, un seul peut le consommer."""
+        from .services import consume_qr_token, patient_from_qr_token
+        raw = self.new_qr()
+        reader_one = patient_from_qr_token(raw)
+        reader_two = patient_from_qr_token(raw)
+        consume_qr_token(reader_one)
+        with self.assertRaises(ValidationError):
+            consume_qr_token(reader_two)
+
+    def test_a_new_qr_invalidates_the_previous_one(self):
+        old = self.new_qr()
+        current = self.new_qr()
+        refused = self.request_access(self.client_a, {"qr_token": old, "scope": ["preconsultation"]})
+        self.assertEqual(refused.status_code, 400)
+        accepted = self.request_access(self.client_a, {"qr_token": current, "scope": ["preconsultation"]})
+        self.assertEqual(accepted.status_code, 201)
+
+    def test_an_expired_qr_is_refused(self):
+        from .models import PatientAccessQrToken
+        raw = self.new_qr()
+        PatientAccessQrToken.objects.update(expires_at=timezone.now() - timedelta(seconds=1))
+        response = self.request_access(self.client_a, {"qr_token": raw, "scope": ["preconsultation"]})
+        self.assertEqual(response.status_code, 400)
+
+    def test_qr_creation_is_rate_limited_per_user(self):
+        from django.conf import settings
+        from .views import PatientAccessQrCreateView
+        self.assertEqual(PatientAccessQrCreateView.throttle_scope, "qr_create")
+        self.assertIn("qr_create", settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"])
+
+    def test_cleanup_command_removes_only_old_expired_or_used_tokens(self):
+        from io import StringIO
+        from django.core.management import call_command
+        from .models import PatientAccessQrToken
+        now = timezone.now()
+        old_expired = PatientAccessQrToken.objects.create(patient=self.profile, token_hash="a" * 64, expires_at=now - timedelta(days=3))
+        old_used = PatientAccessQrToken.objects.create(patient=self.profile, token_hash="b" * 64, expires_at=now + timedelta(minutes=5), consumed_at=now - timedelta(days=3))
+        recent_expired = PatientAccessQrToken.objects.create(patient=self.profile, token_hash="c" * 64, expires_at=now - timedelta(minutes=10))
+        valid = PatientAccessQrToken.objects.create(patient=self.profile, token_hash="d" * 64, expires_at=now + timedelta(minutes=5))
+        call_command("cleanup_access_qr_tokens", stdout=StringIO())
+        remaining = set(PatientAccessQrToken.objects.values_list("pk", flat=True))
+        self.assertEqual(remaining, {recent_expired.pk, valid.pk})
+        self.assertNotIn(old_expired.pk, remaining)
+        self.assertNotIn(old_used.pk, remaining)
+
+    def test_creating_a_qr_also_purges_this_patients_old_tokens(self):
+        from .models import PatientAccessQrToken
+        old = PatientAccessQrToken.objects.create(patient=self.profile, token_hash="e" * 64, expires_at=timezone.now() - timedelta(days=3))
+        self.new_qr()
+        self.assertFalse(PatientAccessQrToken.objects.filter(pk=old.pk).exists())

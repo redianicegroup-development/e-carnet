@@ -54,6 +54,12 @@ Lier une identité secondaire doit se faire après connexion au compte existant;
 
 Le flow d’invitation est présent côté API/UI : lien hashé à usage unique valable 48 h, activation et choix du mot de passe par le destinataire. L’API n’inclut jamais le jeton brut dans sa réponse staff ; l’e-mail d’invitation le transporte. L’envoi utilise le backend SMTP configurable : configurer et tester les identifiants SMTP, SPF/DKIM/DMARC et le domaine expéditeur en staging avant production. Les preuves légales de la structure sont examinées hors application ; leur rétention, leurs accès et leur suppression restent à décider avec conseil juridique. Les justificatifs professionnels des médecins ne sont pas collectés par la plateforme. Le V1/V2 restent sur Vercel + Render + Neon ; l’éventuelle centralisation sur VPS est à réévaluer après V2 et après validation juridique, sécurité, sauvegardes et exploitation.
 
+## Tâches planifiées et limites de débit
+
+- `python manage.py cleanup_access_qr_tokens` : supprime les QR de consultation expirés ou consommés depuis plus de 24 h (`--retention-hours N`). À planifier chaque jour (cron Render ou équivalent) ; sans elle, les jetons expirés s’accumulent, sans risque d’accès mais avec un coût de stockage.
+- Limites ajoutées le 14/10 : `ECARNET_RATE_QR_CREATE` (création de QR de consultation, défaut `30/hour`) et `ECARNET_RATE_EMERGENCY_CARD` (page publique de carte d’urgence, par IP, défaut `120/hour`). Le cache de limitation doit être partagé entre instances en production.
+- Migration `patients.0007_patientemergencycard_city` à appliquer avant de déployer la nouvelle carte d’urgence.
+
 ## Configuration de mots de passe
 
 Argon2id est déclaré dans `apps/api/requirements.txt` et est le premier hasher Django. PBKDF2 reste déclaré pour vérifier les anciens hachages et permettre la mise à niveau. Vérifier le comportement sur la base staging et ne jamais exporter les vrais hashes dans un rapport.

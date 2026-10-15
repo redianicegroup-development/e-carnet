@@ -5,7 +5,6 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
-from apps.patients.models import PatientProfile
 from apps.professionals.access import professional_clinical_access_error
 from .models import AccessGrant, PatientAccessQrToken
 
@@ -15,40 +14,61 @@ ALLOWED_SCOPES = {"preconsultation", "declarations", "consultations"}
 DEFAULT_SCOPES = ["preconsultation", "declarations"]
 PENDING_GRANT_TTL = timedelta(days=7)
 REFUSED_GRANT_COOLDOWN = timedelta(days=30)
+# Les jetons expirés ou utilisés ne servent plus à rien : ils sont purgés après ce délai (commande `cleanup_access_qr_tokens`).
+QR_TOKEN_RETENTION = timedelta(days=1)
+QR_INVALID_MESSAGE = "Ce QR est expiré, déjà utilisé ou invalide."
+QR_REQUIRED_MESSAGE = "Scannez le QR affiché par le patient : il est exigé pour chaque demande d’accès."
 
 
 @transaction.atomic
 def create_patient_qr_token(*, patient):
+    """Crée le QR courant du patient. Un seul QR est valable à la fois : les précédents, non utilisés, sont invalidés."""
+    now = timezone.now()
+    PatientAccessQrToken.objects.filter(patient=patient, consumed_at__isnull=True, expires_at__gt=now).update(expires_at=now)
+    PatientAccessQrToken.objects.filter(patient=patient, expires_at__lt=now - QR_TOKEN_RETENTION).delete()
     raw = secrets.token_urlsafe(32)
     PatientAccessQrToken.objects.create(
         patient=patient,
         token_hash=PatientAccessQrToken.digest(raw),
-        expires_at=timezone.now() + timedelta(seconds=QR_TOKEN_TTL_SECONDS),
+        expires_at=now + timedelta(seconds=QR_TOKEN_TTL_SECONDS),
     )
     return raw
 
 
-def patient_from_qr_token(raw_token):
-    token = PatientAccessQrToken.objects.select_related("patient").filter(
+def patient_from_qr_token(raw_token, *, for_update=False):
+    """Retrouve un jeton valable. `for_update=True` verrouille la ligne jusqu’à la fin de la transaction."""
+    queryset = PatientAccessQrToken.objects.select_related("patient")
+    if for_update:
+        queryset = queryset.select_for_update(of=("self",))
+    token = queryset.filter(
         token_hash=PatientAccessQrToken.digest(raw_token),
         consumed_at__isnull=True,
         expires_at__gt=timezone.now(),
     ).first()
     if not token:
-        raise ValidationError("Ce QR est expiré, déjà utilisé ou invalide.")
+        raise ValidationError(QR_INVALID_MESSAGE)
     return token
 
 
+def consume_qr_token(token):
+    """Marque le jeton utilisé par une mise à jour conditionnelle : un seul appelant peut réussir, même sans verrou de ligne."""
+    now = timezone.now()
+    consumed = PatientAccessQrToken.objects.filter(pk=token.pk, consumed_at__isnull=True, expires_at__gt=now).update(consumed_at=now)
+    if consumed != 1:
+        raise ValidationError(QR_INVALID_MESSAGE)
+
+
 @transaction.atomic
-def create_professional_grant(*, professional, patient_id=None, qr_token=None, scope=None):
+def create_professional_grant(*, professional, qr_token=None, scope=None):
+    """Ouvre une demande d’accès. Le QR du patient est exigé à chaque demande : aucun identifiant de patient n’est accepté."""
     access_error = professional_clinical_access_error(professional)
     if access_error:
         raise ValidationError(access_error)
     establishment = professional.active_establishment
-    token = patient_from_qr_token(qr_token) if qr_token else None
-    patient = token.patient if token else PatientProfile.objects.filter(id=patient_id).first()
-    if not patient:
-        raise ValidationError("Patient introuvable dans le carnet demandé.")
+    if not isinstance(qr_token, str) or not qr_token.strip():
+        raise ValidationError(QR_REQUIRED_MESSAGE)
+    token = patient_from_qr_token(qr_token.strip(), for_update=True)
+    patient = token.patient
     requested_scope = list(dict.fromkeys(scope or DEFAULT_SCOPES))
     if not requested_scope or any(item not in ALLOWED_SCOPES for item in requested_scope):
         raise ValidationError("Le périmètre demandé contient une valeur non autorisée en V1.")
@@ -93,7 +113,5 @@ def create_professional_grant(*, professional, patient_id=None, qr_token=None, s
         ).exists():
             raise ValidationError("Une demande active existe déjà pour ce patient et cet établissement.") from None
         raise
-    if token:
-        token.consumed_at = timezone.now()
-        token.save(update_fields=("consumed_at",))
+    consume_qr_token(token)
     return grant

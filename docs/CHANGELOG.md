@@ -1,3 +1,12 @@
+## 2026-10-14 — carte d’urgence virtuelle, QR exigé côté serveur, durcissement du QR
+
+- Carte d’urgence virtuelle refaite : carte responsive (nom, prénom, groupe sanguin, ville, allergies, traitements, contact) avec QR à côté ; même carte téléchargeable en PNG ; page publique du scan restylée avec bouton d’appel. Nouveau champ `city` (migration `patients.0007`).
+- API : `qr_token` obligatoire pour toute demande professionnelle ; `patient_id` retiré des réponses destinées au professionnel (référence courte à la place).
+- QR de consultation : jeton verrouillé et consommé atomiquement, anciens QR invalidés à chaque nouveau, création limitée (30/h), commande de purge `cleanup_access_qr_tokens`. Page publique de carte d’urgence limitée par IP (120/h).
+- UI : le QR de consultation n’apparaît plus en haut de toutes les pages ; il vit dans l’onglet « Accès et QR ».
+- Régression V1.9 corrigée : des règles de `globals.css` présentes en V1.8 avaient disparu (taille du texte, police des titres, assistant de pré-consultation, listes professionnelles compactes, boutons de consentement) ; elles sont restaurées et protégées par un test.
+- Tests, mesurés sur la base 1.9 des correctifs **avant fusion dans la 1.10** : 169 Django (3 ignorés), 46 web ; `npm audit --omit=dev` : 0 vulnérabilité. `next build` à rejouer sur la machine de développement. Chiffres après fusion : voir `MODIFICATIONS-2026-10-15-fusion-correctifs-1.9.md`.
+
 ## 2026-10-14 — parcours d'établissement par nom + e‑mail, login PC/mobile, confirmations et cookies (sur la 1.9)
 
 - **Établissement :** l'équipe saisit le nom vérifié et l'e‑mail du responsable ; l'établissement complète sa fiche dans son onboarding (`/etablissement/fiche`), puis enchaîne sur l'étape « sécurité » de la 1.9 si la récupération n'est pas configurée. Suivi des invitations, renvoi, révocation, code interne `ETB-XXXXXX`, refus des doublons. Décision : [ADR-003](adr/ADR-003-fiche-etablissement-completee-par-l-etablissement.md).

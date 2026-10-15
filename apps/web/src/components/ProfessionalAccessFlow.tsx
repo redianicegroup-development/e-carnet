@@ -11,7 +11,7 @@ type Grant = {
   status: string;
   starts_at: string | null;
   expires_at: string | null;
-  patient_id?: string;
+  reference?: string;
 };
 
 const API = "";

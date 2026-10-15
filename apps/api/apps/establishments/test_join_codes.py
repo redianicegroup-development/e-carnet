@@ -6,6 +6,7 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.care.models import AccessGrant
+from apps.care.services import create_patient_qr_token
 from apps.audit.models import AuditEvent
 from apps.identity.models import AccountContext
 from apps.patients.models import PatientProfile
@@ -96,7 +97,9 @@ class EstablishmentJoinCodeTests(TestCase):
         patient_user = User.objects.create_user(username="patient-join", password="patient-password")
         patient = PatientProfile.objects.create(user=patient_user)
         self.client.force_authenticate(self.doctor)
-        response = self.client.post("/api/v1/patient/care/professional/access-grants/", {"patient_id": str(patient.id), "scope": ["preconsultation"]}, format="json")
+        # Une demande d’accès exige désormais le QR affiché par le patient (jeton à usage unique), jamais son identifiant.
+        qr_token = create_patient_qr_token(patient=patient)
+        response = self.client.post("/api/v1/patient/care/professional/access-grants/", {"qr_token": qr_token, "scope": ["preconsultation"]}, format="json")
         self.assertEqual(response.status_code, 201)
         self.assertEqual(AccessGrant.objects.get().establishment_id, self.establishment.id)
         membership.status = "terminated"
