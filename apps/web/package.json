@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start --hostname 0.0.0.0",
     "lint": "eslint .",
-    "test": "node --experimental-strip-types --no-warnings --test tests/auth.test.mjs tests/csrf.test.mjs tests/theme.test.mjs tests/greeting.test.mjs tests/legal.test.mjs tests/site.test.mjs tests/ux-flows.test.mjs tests/session.test.mjs tests/emergency-card.test.mjs tests/fusion-correctifs.test.mjs"
+    "test": "node --experimental-strip-types --no-warnings --test tests/auth.test.mjs tests/csrf.test.mjs tests/theme.test.mjs tests/greeting.test.mjs tests/legal.test.mjs tests/site.test.mjs tests/ux-flows.test.mjs tests/session.test.mjs tests/emergency-card.test.mjs tests/fusion-correctifs.test.mjs tests/contact.test.mjs tests/landing.test.mjs"
   },
   "dependencies": {
     "@ecarnet/ui": "0.1.0",

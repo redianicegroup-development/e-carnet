@@ -38,13 +38,13 @@ Le 08/10/2026, la suite Django a réussi sur PostgreSQL 16 local : 77 tests, zé
 
 ## OAuth (non activé sans credentials)
 
-Le backend lit les variables ci-dessous; les valeurs de `.env.example` sont des placeholders, **pas des secrets valides** :
+Le backend lit les variables ci-dessous; les valeurs des exemples sont des placeholders, **pas des secrets valides**. Pour les variables de production, voir [`apps/api/.env.production.example`](../apps/api/.env.production.example) et [`apps/web/.env.production.example`](../apps/web/.env.production.example) :
 
 | Fournisseur | Variables |
 |---|---|
 | Google | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` |
 | Facebook | `FACEBOOK_CLIENT_ID`, `FACEBOOK_CLIENT_SECRET` |
-| Apple | `APPLE_CLIENT_ID`, `APPLE_CLIENT_SECRET`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY_PATH` |
+| Apple | `APPLE_CLIENT_ID`, `APPLE_CLIENT_SECRET` |
 
 Déclarer chaque URL de callback exacte côté fournisseur, conformément au domaine staging/production. Les callbacks sont générés sur `/api/v1/identity/oauth/<provider>/callback/`. Garder les secrets dans le gestionnaire de secrets ou variables d’environnement, jamais dans Git. L’implémentation possède les routes, le retour UI, l’identité externe, la liaison/déliaison et l’audit ; les tests fournisseurs et les credentials réels sont à fournir. Apple exige un client secret au format et à la durée conformes au setup Sign in with Apple et un compte Developer valide.
 
@@ -105,8 +105,8 @@ Configurer ensuite les variables suivantes (sans slash final) :
 - Render : inclure `api.mon-carnet.ci` **et** le hostname `*.onrender.com` dans `DJANGO_ALLOWED_HOSTS` (sans protocole).
 - Render : `WEB_ORIGIN=https://app.mon-carnet.ci`, `CORS_ALLOWED_ORIGINS=https://app.mon-carnet.ci` et `CSRF_TRUSTED_ORIGINS=https://app.mon-carnet.ci`.
 - Garder `SESSION_COOKIE_SAMESITE=None` et `CSRF_COOKIE_SAMESITE=None` en production ; les cookies sont `Secure`. Le `None` de la session permet aussi le callback OAuth Apple en POST. Ces valeurs ne rendent pas sûrs les domaines fournisseur croisés : le domaine personnalisé commun est impératif.
-- Laisser `SESSION_COOKIE_DOMAIN` et `CSRF_COOKIE_DOMAIN` vides. Django émet ainsi des cookies host-only pour `api.mon-carnet.ci`. Les sous-domaines `app` et `api` sont same-site ; aucun cookie partagé sur tout le domaine parent n'est requis.
-- Enregistrer auprès de chaque fournisseur OAuth le callback exact `https://api.mon-carnet.ci/api/v1/identity/oauth/<fournisseur>/callback/`.
+- Ne pas définir `SESSION_COOKIE_DOMAIN` ni `CSRF_COOKIE_DOMAIN`. Le navigateur reçoit les cookies host-only sur l'origine `app.` via le proxy Next.js ; aucun cookie partagé sur le domaine parent n'est requis.
+- Enregistrer auprès de chaque fournisseur OAuth le callback exact `https://app.mon-carnet.ci/api/v1/identity/oauth/<fournisseur>/callback/` (l'API est atteinte via le proxy Next.js).
 
 La configuration CORS/CSRF reste nécessaire, car `app.` et `api.` sont deux origines différentes même s'ils sont same-site. Tester connexion, déconnexion, rafraîchissement de page et OAuth dans Safari sur iOS avant ouverture.
 

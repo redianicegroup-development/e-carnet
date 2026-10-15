@@ -19,7 +19,7 @@ export function PublicFooter() {
           </div>
           <div className="pub-footer__columns">
             <div><h3>Découvrir</h3><nav aria-label="Découvrir"><Link href="/#parcours">Comment ça marche</Link><Link href="/#profils">Pour qui</Link><Link href="/securite">Sécurité</Link><Link href="/a-propos">À propos</Link></nav></div>
-            <div><h3>Ressources</h3><nav aria-label="Ressources"><Link href="/faq">Centre d’aide</Link><Link href="/aide">Guides et aide</Link><Link href="/credits">Crédits</Link><Link href="/connexion">Se connecter</Link></nav></div>
+            <div><h3>Ressources</h3><nav aria-label="Ressources"><Link href="/faq">Centre d’aide</Link><Link href="/aide">Guides et aide</Link><Link href="/credits">Crédits</Link><Link href="/#contact">Nous contacter</Link><Link href="/connexion">Se connecter</Link></nav></div>
           </div>
         </div>
         <div aria-hidden="true" className="pub-footer__watermark">E‑CARNET</div>
@@ -34,12 +34,13 @@ export function PublicFooter() {
   );
 }
 
-export function PublicShell({ children }: { children: ReactNode }) {
+/** `bleed` : la page gère elle-même ses largeurs (sections pleine largeur, comme la landing) au lieu de la colonne centrée par défaut. */
+export function PublicShell({ children, bleed = false }: { children: ReactNode; bleed?: boolean }) {
   return (
     <div className="pub">
       <a className="skip-link" href="#contenu">Aller au contenu</a>
       <PublicHeader />
-      <main id="contenu" className="pub-main">{children}</main>
+      <main id="contenu" className={bleed ? "pub-main pub-main--bleed" : "pub-main"}>{children}</main>
       <PublicFooter />
     </div>
   );

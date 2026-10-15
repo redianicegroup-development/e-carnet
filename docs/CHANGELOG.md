@@ -1,3 +1,10 @@
+## 2026-10-15 — landing complète, FAQ enrichie et formulaire de contact
+
+- Landing : le visuel du hero (scène de l’application) démarre petit dans le coin bas-droit, grossit jusqu’au plein écran puis rétrécit en carte, lié au défilement (GSAP ScrollTrigger + Lenis, réversible). Nouvelles sections : repères chiffrés, fonctionnalités, FAQ à rubriques, contact. Voir `MODIFICATIONS-2026-10-15.md`.
+- API : `POST /api/v1/identity/contact/` (modèle `ContactMessage`, migration 0016), limitation par IP, champ leurre anti-robot, notification facultative sans donnée personnelle. 16 tests.
+- Contact : **case de consentement obligatoire** (politique de confidentialité, lien ouvert à part). Exigée aussi par l'API : sans `consent: true` (booléen JSON strict), réponse 400 et rien n'est enregistré. 2 tests web et 2 tests API ajoutés.
+- Web : `lib/contact.ts` et `lib/landing-content.ts` (testables seuls), 2 fichiers de tests ajoutés ; ancres internes gérées par un seul déplacement (plus d’arrivée aléatoire).
+
 ## 2026-10-14 — carte d’urgence virtuelle, QR exigé côté serveur, durcissement du QR
 
 - Carte d’urgence virtuelle refaite : carte responsive (nom, prénom, groupe sanguin, ville, allergies, traitements, contact) avec QR à côté ; même carte téléchargeable en PNG ; page publique du scan restylée avec bouton d’appel. Nouveau champ `city` (migration `patients.0007`).

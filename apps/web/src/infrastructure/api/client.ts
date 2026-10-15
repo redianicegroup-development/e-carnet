@@ -2,10 +2,13 @@ export const API_URL = "";
 
 export class ApiError extends Error {
   status: number;
-  constructor(message: string, status: number) {
+  /** Corps JSON renvoyé par l'API (ex. `errors` champ par champ) : permet aux formulaires de désigner le champ fautif. */
+  details: unknown;
+  constructor(message: string, status: number, details?: unknown) {
     super(message);
     this.name = "ApiError";
     this.status = status;
+    this.details = details;
   }
 }
 
@@ -48,7 +51,7 @@ async function parse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const detail = payload?.message ?? flatten(payload?.detail ?? payload);
     const fallback = response.status === 429 ? "Trop de tentatives. Patientez quelques minutes avant de réessayer." : "Le service est momentanément indisponible.";
-    throw new ApiError(detail || fallback, response.status);
+    throw new ApiError(detail || fallback, response.status, payload);
   }
   return payload.data as T;
 }

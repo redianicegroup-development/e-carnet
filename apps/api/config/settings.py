@@ -64,6 +64,7 @@ REST_FRAMEWORK = {
         "visitor_clicks": os.environ.get("ECARNET_RATE_CLICKS", "2400/hour"),
         "visitor_feedback": os.environ.get("ECARNET_RATE_FEEDBACK", "5/hour"),
         "visitor_survey": os.environ.get("ECARNET_RATE_SURVEY", "5/hour"),
+        "contact": os.environ.get("ECARNET_RATE_CONTACT", "5/hour"),
     },
     # Nombre de proxys de confiance devant l'API (Render, Vercel rewrite…). Mal réglé, l'IP client est falsifiable.
     "NUM_PROXIES": int(os.environ["DRF_NUM_PROXIES"]) if os.environ.get("DRF_NUM_PROXIES", "").isdigit() else (None if DEBUG else 1),
@@ -99,6 +100,8 @@ EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
 EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "false").lower() == "true"
 EMAIL_USE_SSL = os.environ.get("EMAIL_USE_SSL", "false").lower() == "true"
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "no-reply@e-carnet.local")
+# Destinataires (séparés par des virgules) prévenus d'un nouveau message de contact. Vide = aucune notification ; l'e-mail ne contient aucune donnée personnelle.
+ECARNET_CONTACT_NOTIFY_TO = os.environ.get("ECARNET_CONTACT_NOTIFY_TO", "")
 ECARNET_INVITATION_BASE_URL = os.environ.get("ECARNET_INVITATION_BASE_URL", f"{WEB_ORIGIN}/etablissement/activation")
 
 

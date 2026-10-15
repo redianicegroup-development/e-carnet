@@ -1,6 +1,7 @@
 from django.urls import path
 from .auth_views import AccountAvatarView, ContextSelectView, CurrentAccountView, IdentityProfileView, LoginView, LogoutView, OAuthIdentityListView, OAuthIdentityUnlinkView, PatientOnboardingView, RecoverySetupView, RegisterView
 from .oauth_views import OAuthCallbackView, OAuthStartView
+from .contact_views import PublicContactView
 from .views import CurrentAccountThemeView
 from .visitor_views import AnonymousClickView, AnonymousVisitView, ProductActionSurveyTriggerView, ProductExperienceSurveySubmitView, ProductSurveySubmitView, ProductSurveySummaryView, PublicFeedbackView
 from .admin_views import AdminDashboardView, AdminFeedbackStatusView
@@ -10,6 +11,7 @@ urlpatterns = [
     path("analytics/visits/", AnonymousVisitView.as_view(), name="anonymous-visitor-visit"),
     path("analytics/clicks/", AnonymousClickView.as_view(), name="anonymous-visitor-click"),
     path("feedback/", PublicFeedbackView.as_view(), name="public-feedback"),
+    path("contact/", PublicContactView.as_view(), name="public-contact"),
     path("feedback2/summary/", ProductSurveySummaryView.as_view(), name="product-survey-summary"),
     path("feedback2/", ProductSurveySubmitView.as_view(), name="product-survey-submit"),
     path("analytics/product-action/", ProductActionSurveyTriggerView.as_view(), name="product-action-survey-trigger"),

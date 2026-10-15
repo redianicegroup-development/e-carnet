@@ -137,6 +137,44 @@ class SiteFeedback(models.Model):
         return f"Feedback {self.category} · {self.submitted_at:%Y-%m-%d %H:%M}"
 
 
+class ContactMessage(models.Model):
+    """Message écrit depuis le formulaire de contact de la landing.
+
+    Contrairement à SiteFeedback (anonyme), celui-ci contient des données personnelles : nom, prénom et un moyen de
+    réponse. On ne garde que ce qui sert à répondre : ni IP, ni user-agent, ni page d'origine."""
+    SUBJECT_CHOICES = (
+        ("question", "Une question sur E-Carnet"),
+        ("patient", "Je suis patient : besoin d’aide"),
+        ("professional", "Je suis professionnel de santé"),
+        ("establishment", "Ouvrir un espace établissement"),
+        ("problem", "Signaler un problème"),
+        ("privacy", "Mes données personnelles"),
+        ("partnership", "Partenariat ou presse"),
+        ("other", "Autre demande"),
+    )
+    CONTACT_KIND_CHOICES = (("email", "E-mail"), ("phone", "Téléphone"))
+    STATUS_CHOICES = (("new", "Nouveau"), ("in_progress", "En cours"), ("resolved", "Traité"))
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    first_name = models.CharField("prénom", max_length=80)
+    last_name = models.CharField("nom", max_length=80)
+    contact_kind = models.CharField("type de coordonnée", max_length=10, choices=CONTACT_KIND_CHOICES)
+    contact_value = models.CharField("coordonnée", max_length=254)
+    subject = models.CharField("objet", max_length=20, choices=SUBJECT_CHOICES)
+    message = models.TextField(max_length=2000)
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="new", db_index=True)
+    submitted_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-submitted_at",)
+        verbose_name = "message de contact"
+        verbose_name_plural = "messages de contact"
+
+    def __str__(self):
+        return f"Contact {self.subject} · {self.submitted_at:%Y-%m-%d %H:%M}"
+
+
 class ProductSurveyResponse(models.Model):
     APPRECIATED_CHOICES = (
         ("organized_carnet", "Carnet clair et bien organisé"),

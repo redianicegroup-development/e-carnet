@@ -28,7 +28,7 @@ const sections = [
   },
   {
     id: "etablissements", title: "Établissement", items: [
-      ["Ouvrir un espace", "L’ouverture est gérée par l’équipe E‑Carnet. Utilisez le bouton Votre avis pour demander les étapes de création."],
+      ["Ouvrir un espace", "L’ouverture est gérée par l’équipe E‑Carnet. Écrivez-nous depuis le formulaire de contact de l’accueil, objet « Ouvrir un espace établissement »."],
       ["Inviter un médecin", "Depuis Médecins, générez un code à usage unique et transmettez-le directement au médecin."],
       ["Traiter une demande", "Dans Demandes, vérifiez le profil puis acceptez ou refusez le rattachement. L’espace établissement ne donne pas accès aux carnets patients."],
     ],
@@ -51,7 +51,7 @@ const sections = [
   },
   {
     id: "retours", title: "Questions et retours", items: [
-      ["J’ai une question", "Le bouton Votre avis ouvre ce centre d’aide pour les questions. Pour une suggestion ou un problème, envoyez un retour depuis le bouton flottant."],
+      ["J’ai une question", "Pour une question qui appelle une réponse, utilisez le formulaire de contact de l’accueil. Pour une suggestion ou un problème, envoyez un retour depuis le bouton flottant Votre avis."],
       ["Enquêtes d’amélioration", "Une enquête courte peut apparaître après cinq pages publiques. Une seconde enquête est proposée une fois après une première action réussie dans un espace connecté."],
       ["Confidentialité des retours", "Les retours et réponses d’enquête sont pseudonymes ou anonymes côté administration. N’y indiquez aucun nom, identifiant ou renseignement médical."],
     ],

@@ -57,7 +57,8 @@ export function PublicHeader() {
         <Link href="/#parcours">Comment ça marche</Link>
         <Link href="/#profils">Pour qui</Link>
         <Link href="/securite">Sécurité</Link>
-        <Link href="/aide">Aide</Link>
+        <Link href="/#questions">Questions</Link>
+        <Link href="/#contact">Contact</Link>
       </nav>
       <div className="pub-actions">
         <Link className="button ghost small" href="/connexion">Se connecter</Link>

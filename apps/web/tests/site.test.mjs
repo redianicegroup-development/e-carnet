@@ -193,7 +193,8 @@ test("landing : FAQ visible et structurée, métadonnées indexables et liens ca
   const robots = read("public/robots.txt");
   const llms = read("public/llms.txt");
   assert.match(home, /FAQPage/);
-  assert.match(home, /<section className="lp-section lp-faq-section"/);
+  assert.match(home, /<FaqSection \/>/);
+  assert.match(read("src/components/landing/FaqSection.tsx"), /<section className="lp-section lp-wrap lp-faq-section" id="questions"/);
   assert.match(home, /metadataBase: new URL\(SITE_URL\)/);
   assert.match(home, /alternates: \{ canonical: "\/" \}/);
   assert.match(home, /données fictives/);

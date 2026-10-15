@@ -127,10 +127,10 @@ Le fichier [`render.yaml`](../render.yaml) configure le service Render à partir
    https://app.mon-carnet.ci
    ```
 
-8. Garder `SESSION_COOKIE_SAMESITE=None` et `CSRF_COOKIE_SAMESITE=None` (cookies Secure), mais laisser `SESSION_COOKIE_DOMAIN` et `CSRF_COOKIE_DOMAIN` vides pour conserver des cookies host-only sur `api.`.
+8. Garder `SESSION_COOKIE_SAMESITE=None` et `CSRF_COOKIE_SAMESITE=None` (cookies Secure), sans définir `SESSION_COOKIE_DOMAIN` ni `CSRF_COOKIE_DOMAIN` : les cookies restent host-only sur l'origine `app.` exposée par le proxy Next.js.
 9. Définir dans Vercel `NEXT_PUBLIC_API_URL=https://api.mon-carnet.ci`, puis redéployer le frontend.
 10. Configurer SMTP avant de tester les invitations établissement.
-11. Enregistrer OAuth avec le callback `https://api.mon-carnet.ci/api/v1/identity/oauth/<fournisseur>/callback/` chez chaque fournisseur.
+11. Enregistrer OAuth avec le callback `https://app.mon-carnet.ci/api/v1/identity/oauth/<fournisseur>/callback/` chez chaque fournisseur ; Next.js transmet le chemin à l'API.
 
 ### Configuration Docker Render
 
