@@ -83,10 +83,56 @@ test("connectés : Paramètres › En savoir plus renvoie vers les pages légale
   }
 });
 
-test("crédits : Redianice est identifiée comme startup ayant contacté AKATech Studio", () => {
+test("crédits : Redianice porte le projet, AKATech Studio le développe, l'équipe est décrite par rôles", () => {
   assert.deepEqual(credits.CREDITS_ORIGINS.map((c) => c.name), ["Redianice", "AKATech Studio"]);
   assert.match(credits.CREDITS_UPDATED, /^\d{4}-\d{2}-\d{2}$/);
-  assert.match(read("src/app/credits/page.tsx"), /Redianice, une startup, a contacté AKATech Studio/);
+  assert.equal(credits.AKATECH_URL, "https://akatech.vercel.app/");
+  assert.deepEqual(credits.CREDITS_TEAM.map((m) => m.id), ["chef-de-projet", "developpement", "juridique", "identite-visuelle"]);
+  const page = read("src/app/credits/page.tsx");
+  assert.match(page, /porté par Redianice/);
+  assert.match(page, /CREDITS_TEAM\.map/);
+  assert.doesNotMatch(page, /a contacté AKATech Studio/, "l'ancien récit (collaboration proposée) ne correspond plus à l'équipe");
+});
+
+test("à propos : constat, solution et équipe, sans promesse écartée par la revue juridique", () => {
+  const page = read("src/app/a-propos/page.tsx");
+  for (const id of ["constat", "solution", "equipe"]) assert.ok(page.includes(`id="${id}"`), `à propos : section #${id} manquante`);
+  assert.match(page, /CREDITS_TEAM\.map/);
+  assert.match(page, /Redianice/);
+  assert.match(page, /fini ou rempli/);
+  assert.doesNotMatch(page, /à tout moment|100 ?%|garanti|sécurité absolue|infaillible|conforme à/i);
+});
+
+test("pied de page : colonne des pages légales, copyright et crédit « créé par » avec le logo au survol", () => {
+  const footer = read("src/components/public/PublicShell.tsx");
+  assert.match(footer, /<h3>Informations légales<\/h3>/);
+  assert.match(footer, /href="\/conditions-rattachement"/);
+  assert.match(footer, /© 2026 Mon E.Carnet/);
+  assert.match(footer, /Créé par <strong>Redianice<\/strong> et <FooterCredit \/>/);
+  const credit = read("src/components/public/FooterCredit.tsx");
+  assert.match(credit, /AKATECH_URL/);
+  assert.match(credit, /rel="noopener noreferrer"/);
+  assert.match(credit, /onPointerDown/, "le doigt déclenche l'apparition");
+  assert.match(credit, /onFocus/, "le clavier aussi");
+  assert.match(credit, /prefers-reduced-motion/);
+  assert.ok(existsSync(`${root}public/brand/akatech-studio-logo.webp`), "logo AKATech Studio manquant dans public/brand");
+  const styles = read("src/app/site-pages.css");
+  assert.match(styles, /\.credit-reveal__card\[data-open="true"\]/);
+  assert.match(styles, /\.credit-reveal__frame \{[^}]*pointer-events|\.credit-reveal__card \{[^}]*pointer-events: none/);
+  assert.match(styles, /\.pub-footer__col--legal/);
+});
+
+test("en-tête public : menu mobile accessible, lien À propos et section courante signalée", () => {
+  const header = read("src/components/public/PublicHeader.tsx");
+  assert.match(header, /aria-expanded=\{menuOpen\}/);
+  assert.match(header, /aria-controls="pub-menu"/);
+  assert.match(header, /Escape/);
+  assert.match(header, /href="\/a-propos"/);
+  assert.match(header, /aria-current/);
+  const styles = read("src/app/site-pages.css");
+  assert.match(styles, /\.pub-burger \{/);
+  assert.match(styles, /\.pub-menu\[data-open="true"\]/);
+  assert.match(styles, /@media \(min-width: 1200px\)/);
 });
 
 test("marque : l'ancienne tuile « + » n'est plus dessinée, le logo est le composant BrandMark", () => {

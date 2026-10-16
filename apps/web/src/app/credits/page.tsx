@@ -5,12 +5,12 @@ import { ContactLine } from "../../components/public/ContactLine";
 import { PublicShell } from "../../components/public/PublicShell";
 import { BrandLogo } from "../../components/ui/BrandLogo";
 import { Icon } from "../../components/ui/Icon";
-import { CREDITS_BUILT_WITH, CREDITS_ORIGINS, CREDITS_UPDATED } from "../../lib/credits";
+import { CREDITS_BUILT_WITH, CREDITS_ORIGINS, CREDITS_TEAM, CREDITS_UPDATED } from "../../lib/credits";
 import { formatLegalDate } from "../../lib/legal/config";
 
 export const metadata: Metadata = {
   title: "Crédits et remerciements — Mon Carnet Numérique",
-  description: "Découvrez l’équipe à l’origine d’E-Carnet, les contributions au projet et les outils utilisés pour le développer.",
+  description: "Les personnes et les structures à l’origine de Mon Carnet Numérique : l’équipe Redianice, AKATech Studio et les outils sur lesquels le service s’appuie.",
   robots: { index: false, follow: true },
 };
 
@@ -22,12 +22,29 @@ export default function CreditsPage() {
         <header className="credits__head">
           <BrandLogo height={60} />
           <span className="eyebrow">Crédits et remerciements</span>
-          <h1>Une idée portée par une startup, construite avec des compétences complémentaires.</h1>
-          <p className="lead">E-Carnet est un projet porté par Redianice pour répondre à un problème concret : la perte et la dispersion des informations lorsque les carnets de santé papier se perdent ou sont remplacés une fois remplis. Sa conception réunit développement numérique, accompagnement juridique, pilotage de projet et design graphique.</p>
+          <h1>Merci à celles et ceux qui ont rendu ce carnet possible.</h1>
+          <p className="lead">Mon Carnet Numérique est porté par Redianice, une startup qui construit des outils simples au service de la santé. L’application est développée par AKATech Studio, dont le fondateur fait partie de l’équipe.</p>
         </header>
 
+        <section className="stack" aria-labelledby="equipe">
+          <h2 id="equipe">L’équipe</h2>
+          <p>Une petite équipe, avec des rôles clairs : du pilotage du projet au logo, en passant par le code et le cadre juridique.</p>
+          <ul className="credits__team">
+            {CREDITS_TEAM.map((member) => (
+              <li className="credits__member" key={member.id}>
+                <span className="setting-item__icon" aria-hidden="true"><Icon name={member.icon} /></span>
+                <div>
+                  <h3>{member.role}</h3>
+                  <span className="credits__role">{member.org}</span>
+                  <p className="muted">{member.text}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+
         <section className="stack" aria-labelledby="origine">
-          <h2 id="origine">Les contributions au projet</h2>
+          <h2 id="origine">Les structures</h2>
           <div className="credits__grid">
             {CREDITS_ORIGINS.map((entry) => (
               <article className="card credits__card" key={entry.id}>
@@ -35,6 +52,7 @@ export default function CreditsPage() {
                 <h3>{entry.name}</h3>
                 <span className="credits__role">{entry.role}</span>
                 <p className="muted">{entry.text}</p>
+                {entry.href && <a className="credits__ext" href={entry.href} target="_blank" rel="noopener noreferrer">Visiter le site<span className="sr-only"> d’{entry.name} (s’ouvre dans un nouvel onglet)</span><Icon name="chevron" size={14} /></a>}
               </article>
             ))}
           </div>
@@ -42,12 +60,12 @@ export default function CreditsPage() {
 
         <section className="stack" aria-labelledby="remerciements">
           <h2 id="remerciements">Remerciements</h2>
-          <p>Merci aux personnes qui prennent le temps de partager leurs retours et leurs besoins. Ces contributions aident l’équipe à faire évoluer le projet en gardant comme priorités la clarté, l’utilité et la place centrale du patient.</p>
+          <p>Merci aux patients, aux professionnels de santé et aux établissements qui testent le pilote et partagent leurs retours. Leurs remarques orientent chaque amélioration, pour que l’expérience reste simple, claire et sous le contrôle du patient.</p>
         </section>
 
         <section className="stack" aria-labelledby="identite">
           <h2 id="identite">Identité visuelle</h2>
-          <p>L’identité visuelle d’E-Carnet a été pensée pour exprimer une idée simple : un carnet personnel, organisé et placé sous le contrôle de son utilisateur. Le branding, le logo et les choix graphiques sont travaillés pour donner au service une identité cohérente sur l’ensemble de ses interfaces.</p>
+          <p>Le logo, le branding et l’identité visuelle sont l’œuvre de deux graphistes de l’équipe. Le signe réunit un carnet relié et un interrupteur : c’est mon carnet, et c’est moi qui décide. Il accompagne toute l’application, de la page d’accueil aux paramètres.</p>
         </section>
 
         <section className="stack" aria-labelledby="outils">
@@ -58,13 +76,14 @@ export default function CreditsPage() {
         <section className="card" aria-labelledby="contact">
           <span className="eyebrow">Nous écrire</span>
           <h2 id="contact">Une question, une idée ?</h2>
-          <p className="muted">Contact : <ContactLine />. Pour le fonctionnement du service, consultez d’abord l’<Link href="/faq">aide</Link>. L’éditeur légal du service est indiqué dans les <Link href="/mentions-legales">mentions légales</Link>.</p>
+          <p className="muted">Contact : <ContactLine />. Pour le fonctionnement du service, consultez d’abord l’<Link href="/faq">aide</Link>. L’éditeur légal du service est indiqué dans les <Link href="/mentions-legales">mentions légales</Link>. Pour comprendre d’où vient le projet, lisez la page <Link href="/a-propos">À propos</Link>.</p>
         </section>
 
         <p className="muted credits__updated">Page mise à jour le <time dateTime={CREDITS_UPDATED}>{formatLegalDate(CREDITS_UPDATED)}</time>.</p>
 
         <nav className="legal__others" aria-label="Autres informations">
           <span>À lire aussi :</span>
+          <Link href="/a-propos">À propos</Link>
           <Link href="/faq">Aide</Link>
           <Link href="/mentions-legales">Mentions légales</Link>
           <Link href="/confidentialite">Confidentialité</Link>

@@ -1,3 +1,10 @@
+## 2026-10-16 — À propos, Crédits, en-tête et pied de page publics
+
+- À propos réécrite : le constat (un carnet papier se perd, et quand il est fini ou rempli on en commence un autre, donc pas de suivi sur la durée), la solution, les publics et l’équipe par rôles. Redianice est mise en avant comme startup porteuse ; le développeur est présenté comme fondateur d’AKATech Studio.
+- Crédits : l’ancien récit « Redianice a contacté AKATech Studio » est remplacé (le fondateur d’AKATech fait partie de l’équipe). Équipe par rôles (chef de projet, développement, juridique, deux graphistes), structures, lien vers AKATech Studio. Données dans `lib/credits.ts`.
+- En-tête public : menu mobile accessible (bouton, Échap, focus), lien « À propos », section courante soulignée sur la landing, barre de liens à partir de 1200 px.
+- Pied de page : colonne « Informations légales » (mentions, confidentialité, conditions d’utilisation, rattachement, cookies) ; bas de page « © 2026 Mon E‑Carnet — Créé par Redianice et AKATech Studio » ; au survol (souris), au doigt posé et au clavier, le logo d’AKATech Studio apparaît (`FooterCredit.tsx`, `public/brand/akatech-studio-logo.webp`). Voir `MODIFICATIONS-2026-10-16-a-propos-credits-pied-de-page.md`.
+
 ## 2026-10-15 — landing complète, FAQ enrichie et formulaire de contact
 
 - Landing : le visuel du hero (scène de l’application) démarre petit dans le coin bas-droit, grossit jusqu’au plein écran puis rétrécit en carte, lié au défilement (GSAP ScrollTrigger + Lenis, réversible). Nouvelles sections : repères chiffrés, fonctionnalités, FAQ à rubriques, contact. Voir `MODIFICATIONS-2026-10-15.md`.

@@ -1,113 +1,107 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PublicShell } from "../../components/public/PublicShell";
+import { Icon, type IconName } from "../../components/ui/Icon";
+import { CREDITS_TEAM } from "../../lib/credits";
 
 export const metadata: Metadata = {
-  title: "À propos — E-Carnet",
-  description:
-    "Découvrez pourquoi E-Carnet a été créé : garder un suivi de santé organisé dans la durée, au-delà des carnets papier.",
+  title: "À propos — Mon Carnet Numérique",
+  description: "Pourquoi E‑Carnet existe : les carnets de santé papier se perdent et coupent le suivi. Le problème, la solution et l’équipe de la startup Redianice.",
   robots: { index: true, follow: true },
 };
+
+const SOLUTION: { icon: IconName; title: string; text: string }[] = [
+  { icon: "folder", title: "Un historique qui continue", text: "Antécédents, allergies, traitements et consultations restent au même endroit, d’une année à l’autre. Il n’y a plus de carnet à remplacer." },
+  { icon: "lock", title: "Des accès que vous choisissez", text: "Un professionnel envoie une demande. Vous autorisez ou refusez, pour un contenu précis et une durée limitée." },
+  { icon: "pencil", title: "Des consultations préparées", text: "Notez le motif et vos observations avant le rendez-vous, pour que le temps de consultation serve à l’essentiel." },
+  { icon: "stethoscope", title: "Un lien avec les professionnels", text: "Les professionnels et leurs établissements ont chacun leur espace. Ils consultent ce que le patient a autorisé, pas davantage." },
+];
+
+const AUDIENCES = [
+  { label: "Patients", text: "Préparez vos rendez-vous et gardez vos informations au même endroit." },
+  { label: "Professionnels", text: "Consultez uniquement les informations autorisées par le patient." },
+  { label: "Établissements", text: "Gérez les rattachements des professionnels de votre structure." },
+];
 
 export default function AboutPage() {
   return (
     <PublicShell>
-      <article className="hero-page">
-        <span className="eyebrow">À propos d’E-Carnet</span>
-        <h1>Le suivi de santé ne devrait pas s’arrêter à la dernière page d’un carnet.</h1>
-        <p className="lead">
-          E-Carnet est né d’un constat simple : un carnet de santé papier peut se perdre,
-          s’abîmer ou être rempli. Quand on le remplace par un nouveau, les informations
-          se retrouvent dispersées entre plusieurs supports. Retrouver l’historique et
-          garder une continuité dans le temps devient alors plus difficile.
-        </p>
+      <article className="about">
+        <header className="about__head">
+          <span className="eyebrow">À propos</span>
+          <h1>Un carnet qui suit votre santé dans la durée.</h1>
+          <p className="lead">E‑Carnet est un carnet de santé numérique porté par la startup Redianice. Il garde vos informations au même endroit, et c’est vous qui décidez qui peut les consulter.</p>
+        </header>
 
-        <section className="stack" aria-labelledby="constat">
-          <h2 id="constat">Le problème : des informations qui se dispersent</h2>
-          <div className="grid">
-            <section className="card">
-              <h3>Un carnet peut se perdre</h3>
-              <p className="muted">
-                Les informations importantes peuvent devenir difficiles à retrouver lorsque
-                le carnet papier est égaré ou endommagé.
-              </p>
-            </section>
-            <section className="card">
-              <h3>Un carnet se remplace</h3>
-              <p className="muted">
-                Une fois rempli, le carnet laisse souvent place à un autre. L’historique se
-                retrouve alors réparti sur plusieurs livrets et périodes.
-              </p>
-            </section>
-            <section className="card">
-              <h3>Le suivi manque de continuité</h3>
-              <p className="muted">
-                Reconstituer le parcours de santé sur plusieurs années peut demander du temps
-                et dépendre des documents conservés par chacun.
-              </p>
-            </section>
+        <section className="about__block about__problem" aria-labelledby="constat">
+          <div className="about__copy">
+            <h2 id="constat">Le constat : un carnet papier ne suit pas toute une vie</h2>
+            <p>Les carnets de santé se perdent. Et quand le petit livre est fini ou rempli, on en commence un autre.</p>
+            <p>Chaque nouveau carnet repart de zéro. L’historique est coupé en morceaux, et il n’y a pas de suivi sur une longue période.</p>
           </div>
+          <figure className="about-chain" role="img" aria-label="Schéma : des carnets papier successifs séparés par des coupures, dont un perdu, face à un historique continu dans E‑Carnet">
+            <div className="about-chain__row" aria-hidden="true">
+              <span className="about-chain__label">Carnets papier</span>
+              <div className="about-chain__track">
+                <i className="about-chain__seg">Carnet 1</i>
+                <i className="about-chain__seg about-chain__seg--lost">Carnet 2 perdu</i>
+                <i className="about-chain__seg">Carnet 3</i>
+              </div>
+            </div>
+            <div className="about-chain__row about-chain__row--ok" aria-hidden="true">
+              <span className="about-chain__label">E‑Carnet</span>
+              <div className="about-chain__track"><i className="about-chain__seg about-chain__seg--full">Un seul historique</i></div>
+            </div>
+          </figure>
         </section>
 
-        <section className="stack" aria-labelledby="solution">
-          <h2 id="solution">La solution : un carnet numérique pensé dans la durée</h2>
-          <p>
-            E-Carnet a été développé pour aider chacun à retrouver ses informations de santé
-            dans un espace numérique organisé, à préparer ses consultations et à mieux suivre
-            son historique au fil du temps. Le patient reste au centre : les accès aux
-            informations sont encadrés et peuvent être autorisés selon les fonctionnalités
-            proposées par le service.
-          </p>
-          <div className="grid">
-            <section className="card">
-              <h3>Pour les patients</h3>
-              <p className="muted">
-                Regrouper les informations disponibles, préparer les rendez-vous et retrouver
-                plus facilement les éléments utiles à son suivi.
-              </p>
-            </section>
-            <section className="card">
-              <h3>Pour les professionnels de santé</h3>
-              <p className="muted">
-                Accéder aux informations autorisées par le patient afin de faciliter la
-                préparation et la continuité des échanges lors des consultations.
-              </p>
-            </section>
-            <section className="card">
-              <h3>Pour les établissements</h3>
-              <p className="muted">
-                Disposer d’un cadre organisé pour rattacher les professionnels à leur structure
-                et soutenir l’utilisation du service.
-              </p>
-            </section>
+        <section className="about__block" aria-labelledby="solution">
+          <div className="about__intro">
+            <h2 id="solution">La solution : un seul carnet, qui continue</h2>
+            <p className="muted">C’est pour cela que la startup a développé E‑Carnet : garder le suivi sur la durée, sans jamais perdre le fil, avec le patient aux commandes.</p>
           </div>
+          <ul className="about-points">
+            {SOLUTION.map((item) => (
+              <li className="about-point" key={item.title}>
+                <span className="about-point__icon" aria-hidden="true"><Icon name={item.icon} size={22} /></span>
+                <h3>{item.title}</h3>
+                <p className="muted">{item.text}</p>
+              </li>
+            ))}
+          </ul>
         </section>
 
-        <section className="stack" aria-labelledby="creation">
-          <h2 id="creation">Un projet construit à plusieurs compétences</h2>
-          <p>
-            E-Carnet est porté par la startup Redianice et développé grâce à une équipe
-            pluridisciplinaire. Le projet réunit des compétences en développement numérique,
-            en droit et en conformité juridique, en pilotage de projet ainsi qu’en design
-            graphique. Cette collaboration vise à faire avancer ensemble l’utilité du service,
-            son cadre juridique et la clarté de son identité visuelle.
-          </p>
-          <p>
-            La réalisation technique est assurée par le fondateur d’AKATech Studio, qui
-            contribue au projet au sein de cette collaboration. Deux graphistes participent
-            au branding, au logo et à l’identité visuelle, tandis que le volet juridique et le
-            pilotage sont accompagnés par les membres concernés de l’équipe.
-          </p>
-          <p className="muted">
-            Pour découvrir les contributions de l’équipe et les outils utilisés, consultez les
-            <Link href="/credits"> crédits du projet</Link>.
-          </p>
+        <section className="about__block" aria-labelledby="pour-qui">
+          <div className="about__intro"><h2 id="pour-qui">Pour qui</h2></div>
+          <dl className="about-audiences">
+            {AUDIENCES.map((item) => <div key={item.label}><dt>{item.label}</dt><dd className="muted">{item.text}</dd></div>)}
+          </dl>
         </section>
 
-        <p className="actions">
-          <Link className="button" href="/aide">Centre d’aide</Link>
-          <Link className="button" href="/securite">Sécurité et accès</Link>
-        </p>
+        <section className="about__block" aria-labelledby="equipe">
+          <div className="about__intro">
+            <h2 id="equipe">L’équipe</h2>
+            <p className="muted">Une petite équipe, réunie autour de la startup Redianice. Le développeur du projet est aussi le fondateur d’AKATech Studio.</p>
+          </div>
+          <ul className="about-team">
+            {CREDITS_TEAM.map((member) => (
+              <li className="about-team__member" key={member.id}>
+                <h3>{member.role}</h3>
+                <span className="about-team__org">{member.org}</span>
+                <p className="muted">{member.text}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <footer className="about__foot">
+          <p className="muted">Version pilote : utilisez uniquement des données fictives pour le moment.</p>
+          <p className="actions">
+            <Link className="button primary" href="/credits">Crédits et remerciements</Link>
+            <Link className="button" href="/securite">Sécurité</Link>
+            <Link className="button" href="/aide">Centre d’aide</Link>
+          </p>
+        </footer>
       </article>
     </PublicShell>
   );
