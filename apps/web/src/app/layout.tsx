@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import {
   Bricolage_Grotesque,
+  Caveat,
   Fredoka,
   JetBrains_Mono,
   Manrope,
@@ -33,7 +34,9 @@ const quicksand = Quicksand({ subsets: ["latin"], weight: "400", variable: "--fo
 const bricolageGrotesque = Bricolage_Grotesque({ subsets: ["latin"], weight: "400", variable: "--font-bricolage-grotesque", display: "swap", preload: false });
 const fredoka = Fredoka({ subsets: ["latin"], weight: "400", variable: "--font-fredoka", display: "swap", preload: false });
 const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], weight: ["400", "600"], variable: "--font-jetbrains-mono", display: "swap", preload: false });
-const localFontClasses = [jetbrainsMono, manrope, sora, mooli, quicksand, bricolageGrotesque, fredoka]
+// Écriture manuscrite : uniquement les titres du pied de page public (variable --font-script).
+const caveat = Caveat({ subsets: ["latin"], weight: "600", variable: "--font-script", display: "swap", preload: false });
+const localFontClasses = [jetbrainsMono, manrope, sora, mooli, quicksand, bricolageGrotesque, fredoka, caveat]
   .map((font) => font.variable)
   .join(" ");
 

@@ -1,9 +1,9 @@
 /* Modals Mon E-Carnet : illustrations d'humeur, confirmation (remplace window.confirm) et message d'accueil.
    Couleurs : uniquement les variables du thème (--surface, --border, --primary, --danger…) → suit la palette choisie. */
 
-/* ---------- Illustration (SVG du dossier .modal, utilisé comme masque et coloré par currentColor) ---------- */
+/* ---------- Illustration (SVG du dossier .modal, dessin monochrome colorié par currentColor, animé : voir illustration.css) ---------- */
 .modal-illustration { --illu-size: 72px; --illu-bg: var(--surface-tint); --illu-ink: var(--primary-text); display: grid; place-items: center; flex: 0 0 auto; width: calc(var(--illu-size) * 1.3); aspect-ratio: 1; border-radius: 50%; background: var(--illu-bg); color: var(--illu-ink); }
-.modal-illustration::before { content: ""; width: var(--illu-size); height: var(--illu-size); background-color: currentColor; -webkit-mask: var(--modal-illustration) center / contain no-repeat; mask: var(--modal-illustration) center / contain no-repeat; }
+.modal-illustration > svg { display: block; width: var(--illu-size); height: var(--illu-size); overflow: visible; }
 .modal-illustration--sm { --illu-size: 40px; }
 .modal-illustration--md { --illu-size: 72px; }
 .modal-illustration--lg { --illu-size: 104px; }

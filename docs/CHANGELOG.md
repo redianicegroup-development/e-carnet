@@ -1,3 +1,9 @@
+## 2026-10-17 — Pied de page en deux cartes, illustrations de modal animées
+
+- Pied de page public refait sur le modèle fourni : carte de marque en dégradé (logo, accroche, « Restons en contact ! » avec accès contact / aide / sécurité, installation de l’app), carte de liens (titres manuscrits, icône d’app flottante, colonnes Découvrir / Ressources / Informations légales), bloc d’appel à l’action vers la création de carnet, copyright, « Créé par Redianice et AKATech Studio » (logo au survol conservé) et grand filigrane rogné. Adapté de 320 px à grand écran. Police manuscrite Caveat (`--font-script`).
+- Illustrations de modal : les 9 humeurs sont animées comme le personnage du login — respiration, tête qui s’incline, clignement des yeux, geste propre à chaque scène (salut de la main, répétition d’haltères, ondes de calme, « ? » flottant, panneaux qui grincent, hochements de tête, ondes sonores, tremblement). « success » réutilise le personnage du login. Mouvement réservé à `prefers-reduced-motion: no-preference`.
+- Correction : les tracés copiés des SVG ne reprenaient que le contour ; le second `<path>` (visage : yeux, bouche…) est maintenant inclus. Test `tests/modal-illustrations.test.mjs`. Voir `MODIFICATIONS-2026-10-17-pied-de-page-illustrations.md`.
+
 ## 2026-10-16 — « Mon E‑Carnet » : peau de carnet, pré‑consultation clôturée par le médecin, carte virtuelle simplifiée
 
 - **Nom** : le produit s'appelle **Mon E‑Carnet** partout dans l'interface, les e‑mails, le manifeste PWA, les textes légaux et `llms.txt` (identifiants techniques inchangés : `ecarnet:*`, `@ecarnet/ui`, cookies). Le logotype dessiné en tracés (`logo-horizontal.svg`) lit encore « e‑carnet » : à redessiner.

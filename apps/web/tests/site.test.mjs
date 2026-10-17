@@ -105,7 +105,7 @@ test("à propos : constat, solution et équipe, sans promesse écartée par la r
 
 test("pied de page : colonne des pages légales, copyright et crédit « créé par » avec le logo au survol", () => {
   const footer = read("src/components/public/PublicShell.tsx");
-  assert.match(footer, /<h3>Informations légales<\/h3>/);
+  assert.match(footer, /<h3 className="pub-footer__script">Informations légales<\/h3>/);
   assert.match(footer, /href="\/conditions-rattachement"/);
   assert.match(footer, /© 2026 Mon E.Carnet/);
   assert.match(footer, /Créé par <strong>Redianice<\/strong> et <FooterCredit \/>/);
@@ -120,6 +120,20 @@ test("pied de page : colonne des pages légales, copyright et crédit « créé 
   assert.match(styles, /\.credit-reveal__card\[data-open="true"\]/);
   assert.match(styles, /\.credit-reveal__frame \{[^}]*pointer-events|\.credit-reveal__card \{[^}]*pointer-events: none/);
   assert.match(styles, /\.pub-footer__col--legal/);
+});
+
+test("pied de page : deux cartes (marque, liens), filigrane, mise en page adaptée mobile et ordinateur", () => {
+  const footer = read("src/components/public/PublicShell.tsx");
+  assert.match(footer, /pub-footer__card pub-footer__card--brand/);
+  assert.match(footer, /pub-footer__card pub-footer__card--links/);
+  assert.match(footer, /className="pub-footer__watermark"/);
+  assert.match(footer, /href="\/connexion\?mode=register"/, "l'appel à l'action mène à la création de carnet");
+  assert.doesNotMatch(footer, /<form|type="email"/i, "aucun faux formulaire d'abonnement : il n'y a pas de lettre d'information");
+  const styles = read("src/app/site-pages.css");
+  assert.match(styles, /@media \(min-width: 1000px\) \{\s*\.pub-footer__cards \{ grid-template-columns/);
+  assert.match(styles, /@media \(max-width: 559px\)/);
+  assert.match(styles, /prefers-reduced-motion: no-preference\) \{\s*\.pub-footer__app img \{ animation/);
+  assert.match(read("src/app/layout.tsx"), /variable: "--font-script"/);
 });
 
 test("en-tête public : menu mobile accessible, lien À propos et section courante signalée", () => {
