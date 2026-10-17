@@ -23,6 +23,11 @@ class LoginEmailThrottle(SimpleRateThrottle):
         return self.cache_format % {"scope": self.scope, "ident": hashlib.sha256(email.encode()).hexdigest()[:32]}
 
 
+class RecoveryEmailThrottle(LoginEmailThrottle):
+    """Récupération de compte : limite par adresse ciblée, que le compte existe ou non (la réponse reste uniforme)."""
+    scope = "auth_recovery_email"
+
+
 class IpScopedThrottle(ScopedRateThrottle):
     """Compte par adresse IP même si la session est connectée.
 

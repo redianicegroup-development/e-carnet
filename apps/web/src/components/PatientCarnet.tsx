@@ -122,8 +122,8 @@ export function PatientCarnet() {
                     <strong className="declaration__label">{item.label}</strong>
                     {item.details && (item.kind === "emergency_contact" ? <p className="declaration__details"><a href={`tel:${item.details.replace(/[^+\d]/g, "")}`}>{item.details}</a></p> : <p className="muted declaration__details">{item.details}</p>)}
                   </div>
-                  {/* Le tampon passe sous le texte et garde toujours sa forme, quelle que soit la longueur de la déclaration. */}
-                  <span className="badge declared stamp">{item.provenance.label}</span>
+                  {/* La provenance passe sous le texte et garde toujours sa forme, quelle que soit la longueur de la déclaration. */}
+                  <span className="badge declared">{item.provenance.label}</span>
                 </article>
               ))}
             </div>

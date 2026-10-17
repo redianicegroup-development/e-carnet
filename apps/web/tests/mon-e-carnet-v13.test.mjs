@@ -36,21 +36,36 @@ test("le logo de la connexion ramène à l'accueil, sans bouton « Retour », ni
   assert.doesNotMatch(read("src/app/connexion/auth-immersive.css"), /\.ax-stage__eyebrow, \.ax-stage__home|\.ax-brand, \.ax-stage__eyebrow/);
 });
 
-test("« Récupérer mon compte » : lien dans la connexion, page au même cadre, demande adressée à l'équipe sans réinitialisation automatique", () => {
+test("« Récupérer mon compte » : lien dans la connexion, page au même cadre, réinitialisation par question secrète en deux étapes", () => {
   assert.match(read("src/components/AuthForms.tsx"), /login && <p className="ax-forgot"[^>]*><Link href="\/connexion\/recuperation">Récupérer mon compte<\/Link>/);
   const page = read("src/app/connexion/recuperation/page.tsx");
   assert.match(page, /auth-immersive\.css/);
   assert.match(page, /className="ax-frame"/);
   assert.match(page, /className="ax-brand"/);
+  assert.match(page, /<RecoveryFlow \/>/);
   assert.match(page, /robots: \{ index: false/);
   assert.doesNotMatch(page, /\/credits/);
-  const form = read("src/components/auth/RecoveryRequestForm.tsx");
-  assert.match(form, /apiPost\("\/api\/v1\/identity\/contact\/"/);
-  assert.match(form, /subject: "problem"/);
-  assert.match(form, /\[Récupération de compte\]/);
-  assert.match(form, /ax-submit/);
-  assert.match(form, /name="website"/); // leurre anti-robots, comme le formulaire de contact
-  assert.doesNotMatch(form, /type="password"|autoComplete="(current|new)-password"/); // la demande ne collecte jamais de mot de passe
+  const flow = read("src/components/auth/RecoveryFlow.tsx");
+  // étape 1 : la question ; étape 2 : la réponse + un nouveau mot de passe
+  assert.match(flow, /apiPost<\{ question: string \}>\("\/api\/v1\/identity\/recovery\/question\/"/);
+  assert.match(flow, /apiPost\("\/api\/v1\/identity\/recovery\/reset\/", \{ email: email\.trim\(\), answer, new_password: password \}\)/);
+  assert.match(flow, /autoComplete="new-password"/);
+  assert.match(flow, /MIN_PASSWORD = 12/);
+  assert.match(flow, /Les deux mots de passe ne sont pas identiques/);
+  assert.match(flow, /error\.status === 429/);
+  // le mot de passe et la réponse ne restent pas en mémoire une fois la réinitialisation faite
+  assert.match(flow, /setAnswer\(""\); setPassword\(""\); setConfirm\(""\);/);
+  // l'écran ne dit jamais si un compte existe : il affiche la question reçue, quelle qu'elle soit
+  assert.doesNotMatch(flow, /compte introuvable|aucun compte|n’existe pas/i);
+  // dernier recours : écrire à l'équipe, avec l'ancien formulaire (leurre anti-robots, sujet « problem », pas de mot de passe)
+  assert.match(flow, /<RecoveryRequestForm onBack=/);
+  assert.match(flow, /Je ne me souviens plus de ma réponse/);
+  const help = read("src/components/auth/RecoveryRequestForm.tsx");
+  assert.match(help, /apiPost\("\/api\/v1\/identity\/contact\/"/);
+  assert.match(help, /subject: "problem"/);
+  assert.match(help, /\[Récupération de compte\]/);
+  assert.match(help, /name="website"/);
+  assert.doesNotMatch(help, /type="password"/);
 });
 
 test("les trois paires de polices portent des noms courts, la première reste la valeur par défaut", () => {
@@ -77,28 +92,31 @@ test("la pré-consultation n'a plus d'établissement à choisir ni de clôture c
   assert.match(read("src/application/professional-access-grants.ts"), /status: "draft" \| "closed"/);
 });
 
-test("les déclarations gardent un tampon de provenance indéformable et couvrent la ville et le contact d'urgence", () => {
+test("les déclarations gardent une pastille de provenance indéformable et couvrent la ville et le contact d'urgence", () => {
   const carnet = read("src/components/PatientCarnet.tsx");
   assert.match(carnet, /city: "Ville", emergency_contact: "Contact d’urgence"/);
   assert.match(carnet, /SINGLETON: Kind\[\] = \["blood_group", "city", "emergency_contact"\]/);
   assert.match(carnet, /id="carte-urgence"|aria-labelledby="card-fields-title"/);
-  assert.match(carnet, /className="badge declared stamp"/);
+  assert.match(carnet, /className="badge declared"/);
+  assert.doesNotMatch(carnet, /stamp|tampon/i);
   assert.match(carnet, /new URLSearchParams\(window\.location\.search\)\.get\("ajouter"\)/);
-  const skin = read("src/app/carnet-skin.css");
-  assert.match(skin, /body \.badge \{ flex: none; max-width: 100%; white-space: nowrap; \}/);
+  const skin = read("src/app/soft-skin.css");
+  assert.match(skin, /body \.badge \{ flex: none; max-width: 100%; white-space: nowrap;/);
   assert.match(skin, /body \.record\.declaration \{ flex-direction: column;/);
 });
 
-test("la peau « carnet » : chargée après globals.css, dérivée du thème, gooey borné et mouvement réduit respecté", () => {
+test("la peau minimaliste et neumorphique : chargée après globals.css, dérivée du thème, gooey borné et mouvement réduit respecté", () => {
   const layout = read("src/app/layout.tsx");
-  assert.ok(layout.indexOf('import "./globals.css"') < layout.indexOf('import "./carnet-skin.css"'));
+  assert.ok(layout.indexOf('import "./globals.css"') < layout.indexOf('import "./soft-skin.css"'));
   assert.match(layout, /<GooeyFilters \/>/);
-  const skin = read("src/app/carnet-skin.css");
+  const skin = read("src/app/soft-skin.css");
   // tout est préfixé par body : la peau l'emporte sur les feuilles chargées plus tard, sans !important sur la mise en page
   const selectors = skin.replace(/\/\*[\s\S]*?\*\//g, "").split("\n").map((line) => line.trim()).filter((line) => /^[.a-z]/.test(line) && line.includes("{"));
   assert.deepEqual(selectors.filter((line) => !/^(body|@)/.test(line) && !line.startsWith("0%")), []);
   assert.doesNotMatch(skin, /localStorage|@import|url\(["']?https?:/);
-  assert.match(skin, /--leather: color-mix\(in srgb, var\(--primary\)/);
+  assert.match(skin, /--raise-lg: 10px 10px 24px var\(--neu-dark\), -10px -10px 24px var\(--neu-light\)/);
+  // minimalisme : plus de papier, cuir, couture, ruban adhésif, tampon, signet ni bouton de gel
+  assert.doesNotMatch(skin.replace(/\/\*[\s\S]*?\*\//g, ""), /leather|--paper|grain|stitch|dashed|clip-path|::before|::after|goo-rise|jelly/);
   assert.match(skin, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(skin, /filter: url\(#ecarnet-gooey\)/);
   assert.match(skin, /filter: url\(#ecarnet-gooey-soft\)/);
@@ -120,5 +138,5 @@ test("le menu du compte en goutte est accessible au clavier et au toucher", () =
   assert.match(menu, /ArrowDown/);
   assert.match(read("src/components/shell/SpaceShell.tsx"), /<GooeyAccountMenu account=/);
   // la goutte de la barre basse n'existe que sur mobile ; sur grand écran l'onglet actif garde son fond
-  assert.match(read("src/app/carnet-skin.css"), /@media \(max-width: 919px\) \{\s*body \.sb__goo \{ display: block;/);
+  assert.match(read("src/app/soft-skin.css"), /@media \(max-width: 919px\) \{[^@]*body \.sb__goo \{ display: block;/);
 });

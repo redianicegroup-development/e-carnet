@@ -23,7 +23,7 @@ import { CookieConsentBanner } from "../components/CookieConsentBanner";
 import "./cookie-consent.css";
 import "./screen-loader.css";
 import "../components/modal/modal.css";
-import "./carnet-skin.css";
+import "./soft-skin.css";
 
 // Polices auto-hébergées par Next au build : une seule paire est utilisée à l’écran,
 // sans requête Google Fonts à l’exécution ni préchargement des autres paires.

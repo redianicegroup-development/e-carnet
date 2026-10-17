@@ -5,13 +5,12 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ApiError, apiPost } from "../../infrastructure/api/client";
 import { EMPTY_CONTACT, contactPayload, fieldErrorsFromApi, validateContact, type ContactErrors, type ContactField, type ContactFields } from "../../lib/contact";
 
-/* Demande de récupération de compte.
-   Il n'existe volontairement aucune réinitialisation automatique : une question secrète seule ne prouve pas l'identité d'une personne
-   (docs/ARCHITECTURE.md). La demande arrive dans la boîte de contact de l'équipe, qui vérifie la personne avant toute réouverture.
+/* Dernier recours de « Récupérer mon compte » : la personne ne se souvient plus de sa réponse secrète.
+   La demande arrive dans la boîte de contact de l'équipe, qui vérifie la personne avant toute réouverture.
    Même apparence que la connexion (classes ax-*). */
 const MARK = "[Récupération de compte] ";
 
-export function RecoveryRequestForm() {
+export function RecoveryRequestForm({ onBack }: { onBack?: () => void } = {}) {
   const [fields, setFields] = useState<ContactFields>({ ...EMPTY_CONTACT, subject: "problem" });
   const [errors, setErrors] = useState<ContactErrors>({});
   const [status, setStatus] = useState<"idle" | "sending" | "sent">("idle");
@@ -60,10 +59,9 @@ export function RecoveryRequestForm() {
   const invalid = (key: ContactField) => errors[key] ? { "aria-invalid": true, "aria-describedby": `rec-${key}-error` } : {};
   return <div className="ax-card" data-step="form" data-status={status === "sending" ? "busy" : "idle"}>
     <form className="ax-form" onSubmit={submit} aria-busy={sending} noValidate>
-      <div className="ax-form__top"><Link className="ax-back ax-back--always" href="/connexion"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M19 12H6M11 6l-6 6 6 6" /></svg>Connexion</Link></div>
-      <h2 className="ax-title">Récupérer mon compte</h2>
-      <p className="ax-subtitle">Dites-nous comment vous joindre. L’équipe vérifie votre identité avant de rouvrir l’accès : rien n’est réinitialisé automatiquement.</p>
-      <p className="ax-note" data-ax-item>Inscrit avec Google, Facebook ou Apple ? Essayez d’abord de vous <Link href="/connexion?mode=login">reconnecter avec ce même fournisseur</Link>.</p>
+      <div className="ax-form__top">{onBack ? <button type="button" className="ax-back ax-back--always" onClick={onBack}><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M19 12H6M11 6l-6 6 6 6" /></svg>Retour</button> : <Link className="ax-back ax-back--always" href="/connexion"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M19 12H6M11 6l-6 6 6 6" /></svg>Connexion</Link>}</div>
+      <h2 className="ax-title">Écrire à l’équipe</h2>
+      <p className="ax-subtitle">Vous ne vous souvenez plus de votre réponse ? Dites-nous comment vous joindre : l’équipe vérifie votre identité avant de rouvrir l’accès.</p>
       <div className="ax-names">
         <label className="ax-field" data-ax-item><span>Prénom</span><input required autoComplete="given-name" value={fields.firstName} onChange={(e) => update("firstName", e.target.value)} {...invalid("firstName")} />{fieldError("firstName")}</label>
         <label className="ax-field" data-ax-item><span>Nom</span><input required autoComplete="family-name" value={fields.lastName} onChange={(e) => update("lastName", e.target.value)} {...invalid("lastName")} />{fieldError("lastName")}</label>

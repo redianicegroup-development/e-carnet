@@ -74,7 +74,7 @@ export function SidebarAvatar({ account }: { account: SidebarAccount }) {
 
 /* Barre basse mobile : la pastille de l'onglet actif est une goutte (filtre gooey) qui glisse d'un onglet à l'autre.
    Deux gouttes : la première arrive vite, la seconde la rattrape en rebondissant, et le filtre les fond en une seule matière qui s'étire.
-   Seules `--x` et `--y` sont écrites ici ; les transitions (et leur suppression en mouvement réduit) sont dans carnet-skin.css. */
+   Seules `--x` et `--y` sont écrites ici ; les transitions (et leur suppression en mouvement réduit) sont dans soft-skin.css. */
 function useGooeyIndicator(activeId: string | undefined, count: number) {
   const scroll = useRef<HTMLDivElement>(null);
   const placed = useRef(false);

@@ -54,6 +54,8 @@ REST_FRAMEWORK = {
         "auth_login": os.environ.get("ECARNET_RATE_LOGIN", "20/hour"),
         "auth_login_email": os.environ.get("ECARNET_RATE_LOGIN_EMAIL", "8/hour"),
         "auth_register": os.environ.get("ECARNET_RATE_REGISTER", "10/hour"),
+        "auth_recovery": os.environ.get("ECARNET_RATE_RECOVERY", "12/hour"),
+        "auth_recovery_email": os.environ.get("ECARNET_RATE_RECOVERY_EMAIL", "8/hour"),
         "representation_changes": os.environ.get("ECARNET_RATE_REPRESENTATION", "20/hour"),
         "representation_transfer": os.environ.get("ECARNET_RATE_REPRESENTATION_TRANSFER", "5/hour"),
         "code_redeem": os.environ.get("ECARNET_RATE_CODE", "10/hour"),

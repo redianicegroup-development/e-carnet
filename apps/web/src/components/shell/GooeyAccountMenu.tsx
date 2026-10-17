@@ -3,10 +3,10 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { MenuEntry, SidebarAvatar, type SidebarAccount, type SidebarMenuItem } from "./AppSidebar";
 
-/* Menu du compte de la barre haute mobile : le bouton rond (avatar) se déploie en un panneau de cuir, relié au bouton par un col de matière
+/* Menu du compte de la barre haute mobile : le bouton rond (avatar) se déploie en un panneau doux (même matière que la page), relié au bouton par un col de matière
    (filtre SVG « gooey », défini une fois dans GooeyFilters). Inspiré du menu à goutte de l'exemple Gemini, adapté au tactile :
    il s'ouvre au toucher (pas au survol), se ferme avec Échap ou en touchant ailleurs, et rend le focus au bouton.
-   Le mouvement vit entièrement dans carnet-skin.css (transitions + ressort) ; ici on ne mesure que la taille du contenu. */
+   Le mouvement vit entièrement dans soft-skin.css (transitions + ressort) ; ici on ne mesure que la taille du contenu. */
 export function GooeyAccountMenu({ account, menu, notice }: { account: SidebarAccount; menu: SidebarMenuItem[]; notice?: string }) {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);

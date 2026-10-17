@@ -131,6 +131,22 @@ class RecoverySetupSerializer(serializers.Serializer):
         return attrs
 
 
+class RecoveryQuestionSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def validate_email(self, value):
+        return value.strip().casefold()
+
+
+class RecoveryResetSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    answer = serializers.CharField(max_length=200, write_only=True, trim_whitespace=True)
+    new_password = serializers.CharField(min_length=12, max_length=128, write_only=True, trim_whitespace=False)
+
+    def validate_email(self, value):
+        return value.strip().casefold()
+
+
 class LinkedIdentitySerializer(serializers.ModelSerializer):
     class Meta:
         model = AuthIdentity

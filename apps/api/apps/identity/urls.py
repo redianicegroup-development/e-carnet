@@ -1,5 +1,5 @@
 from django.urls import path
-from .auth_views import AccountAvatarView, ContextSelectView, CurrentAccountView, IdentityProfileView, LoginView, LogoutView, OAuthIdentityListView, OAuthIdentityUnlinkView, PatientOnboardingView, RecoverySetupView, RegisterView
+from .auth_views import AccountAvatarView, ContextSelectView, CurrentAccountView, IdentityProfileView, LoginView, LogoutView, OAuthIdentityListView, OAuthIdentityUnlinkView, PatientOnboardingView, RecoveryQuestionView, RecoveryResetView, RecoverySetupView, RegisterView
 from .oauth_views import OAuthCallbackView, OAuthStartView
 from .contact_views import PublicContactView
 from .views import CurrentAccountThemeView
@@ -25,5 +25,6 @@ urlpatterns = [
     path("me/account-requests/", CurrentAccountActionRequestsView.as_view(), name="current-account-action-requests"),
     path("oauth/identities/", OAuthIdentityListView.as_view()), path("oauth/identities/<str:provider>/", OAuthIdentityUnlinkView.as_view()),
     path("contexts/select/", ContextSelectView.as_view()), path("onboarding/patient/", PatientOnboardingView.as_view()), path("me/recovery/", RecoverySetupView.as_view()),
+    path("recovery/question/", RecoveryQuestionView.as_view(), name="recovery-question"), path("recovery/reset/", RecoveryResetView.as_view(), name="recovery-reset"),
     path("oauth/<str:provider>/start/", OAuthStartView.as_view()), path("oauth/<str:provider>/callback/", OAuthCallbackView.as_view()),
 ]

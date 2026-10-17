@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { RecoveryRequestForm } from "../../../components/auth/RecoveryRequestForm";
+import { RecoveryFlow } from "../../../components/auth/RecoveryFlow";
 import { AuthUiProvider } from "../../../components/auth/AuthUiContext";
 import { AuthMotion } from "../../../components/motion/AuthMotion";
 import { PulseLine } from "../../../components/motion/PulseLine";
@@ -20,11 +20,11 @@ export default function AccountRecoveryPage() {
       <div className="ax-stage__copy">
         <p className="ax-stage__eyebrow" data-auth-item>Un souci d’accès ?</p>
         <h1 id="auth-title">Retrouvons ensemble l’accès à votre carnet.</h1>
-        <p className="ax-stage__lead" data-auth-item><span className="ax-lead-long">Pour protéger vos données, l’équipe vérifie qu’il s’agit bien de vous avant de rouvrir un compte. Votre demande ne contient jamais d’information de santé.</span><span className="ax-lead-short">L’équipe vérifie votre identité avant de rouvrir l’accès.</span></p>
+        <p className="ax-stage__lead" data-auth-item><span className="ax-lead-long">Répondez à la question secrète que vous avez choisie pour définir un nouveau mot de passe. Aucune information de santé n’est jamais demandée.</span><span className="ax-lead-short">Répondez à votre question secrète pour choisir un nouveau mot de passe.</span></p>
       </div>
     </section>
     <div id="recuperation" className="ax-panel">
-      <RecoveryRequestForm />
+      <RecoveryFlow />
       <nav className="auth-legal-links" aria-label="Informations légales"><Link href="/mentions-legales">Mentions légales</Link><Link href="/confidentialite">Confidentialité</Link><Link href="/cgu">Conditions d’utilisation</Link><Link href="/faq">Aide</Link></nav>
     </div>
   </div></main></AuthMotion></AuthUiProvider>;

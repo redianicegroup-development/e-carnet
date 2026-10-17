@@ -25,6 +25,9 @@ class AccountProfile(models.Model):
     avatar_data = models.TextField(blank=True)
     recovery_question = models.CharField(max_length=200, blank=True)
     recovery_answer_hash = models.CharField(max_length=256, blank=True)
+    # Protection contre les tentatives de devinette de la réponse (voir identity/recovery.py) : compteur durable, remis à zéro au succès.
+    recovery_failures = models.PositiveSmallIntegerField(default=0)
+    recovery_locked_until = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
 

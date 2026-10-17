@@ -1,0 +1,178 @@
+/* =====================================================================================================
+   « Mon E‑Carnet » — peau minimaliste et neumorphique.
+   Chargée APRÈS globals.css. Les surfaces ont la couleur du fond (--bg) et se détachent par deux ombres : une claire en haut à gauche,
+   une sombre en bas à droite (relief) ; inversées, elles creusent (champs, puits). Tout est dérivé des variables du thème actif :
+   les cinq palettes gardent leur identité, aucune couleur sémantique (statuts, danger) n'est touchée.
+
+   Règles de conduite
+   - Chaque sélecteur est préfixé par `body` : la peau l'emporte sur les feuilles chargées plus tard (sidebar.css, modal.css…) sans !important.
+   - Le neumorphisme seul manque de contraste : les champs et boutons secondaires gardent un liseré (--border-strong), le texte ne dépend jamais
+     d'une ombre, et le focus clavier reste un anneau plein bien visible.
+   - Le filtre gooey n'est posé que sur des calques décoratifs (aria-hidden) ; le texte reste net.
+   - prefers-reduced-motion : aucune animation, mêmes états finaux.
+   ===================================================================================================== */
+
+body {
+  --neu-light: rgb(255 255 255 / .92);
+  --neu-dark: color-mix(in srgb, var(--text) 20%, transparent);
+  --neu-dark-soft: color-mix(in srgb, var(--text) 13%, transparent);
+  --raise-lg: 10px 10px 24px var(--neu-dark), -10px -10px 24px var(--neu-light);
+  --raise-md: 6px 6px 14px var(--neu-dark), -6px -6px 14px var(--neu-light);
+  --raise-sm: 3px 3px 8px var(--neu-dark), -3px -3px 8px var(--neu-light);
+  --press: inset 5px 5px 11px var(--neu-dark), inset -5px -5px 11px var(--neu-light);
+  --press-sm: inset 2px 2px 5px var(--neu-dark), inset -2px -2px 5px var(--neu-light);
+  --accent-shadow: 4px 5px 12px color-mix(in srgb, var(--primary) 42%, transparent), -3px -3px 8px var(--neu-light);
+  /* ressorts (transitions) : rebond franc pour le menu, plus doux pour la goutte de navigation */
+  --spring: cubic-bezier(.34, 1.45, .64, 1);
+  --spring-soft: cubic-bezier(.3, 1.25, .5, 1);
+}
+@supports (transition-timing-function: linear(0, 1)) {
+  body {
+    --spring: linear(0, 0.069, 0.235, 0.443, 0.652, 0.835, 0.977, 1.074, 1.128, 1.147, 1.141, 1.119, 1.088, 1.057, 1.029, 1.007, 0.991, 0.982, 0.978, 0.979, 0.982, 0.986, 0.991, 0.995, 0.998, 1.001, 1.002, 1.003, 1.003, 1.003, 1);
+    --spring-soft: linear(0, 0.077, 0.248, 0.448, 0.636, 0.792, 0.907, 0.984, 1.029, 1.05, 1.054, 1.049, 1.04, 1.029, 1.019, 1.011, 1.004, 1.001, 0.998, 0.997, 0.997, 0.997, 0.998, 0.999, 0.999, 0.999, 1, 1, 1, 1, 1);
+  }
+}
+body .goo-defs { position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; }
+
+/* ---------- Surfaces en relief ---------- */
+body .card { background: var(--bg); border-color: transparent; border-radius: 26px; box-shadow: var(--raise-lg); }
+body .card-link { transition: transform .2s ease, box-shadow .2s ease; }
+body .card-link:hover { transform: translateY(-2px); box-shadow: 12px 12px 28px var(--neu-dark), -12px -12px 28px var(--neu-light); }
+/* éléments d'une liste : des puits creusés dans la carte */
+body .record, body .item, body .list-row, body .notice { background: var(--bg); border-color: transparent; border-radius: 18px; box-shadow: var(--press-sm); }
+body .empty { border: 0; border-radius: 18px; background: var(--bg); box-shadow: var(--press-sm); }
+body .skeleton i { border-radius: 14px; }
+
+/* ---------- Étiquettes et pastilles ---------- */
+body .eyebrow { padding: 5px 14px; border-radius: 999px; background: var(--bg); color: var(--text-muted); font-weight: 650; box-shadow: var(--press-sm); }
+body .count-badge { background: var(--bg); color: var(--text); box-shadow: var(--raise-sm); }
+/* Une pastille ne se déforme jamais, quelle que soit la longueur du texte voisin. */
+body .badge { flex: none; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Déclaration : le texte prend toute la largeur, la provenance passe dessous. */
+body .record.declaration { flex-direction: column; align-items: stretch; gap: 10px; }
+body .declaration__body { display: grid; gap: 2px; min-width: 0; }
+body .declaration__kind { color: var(--text-muted); font-family: var(--font-mono); font-size: .7rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; }
+body .declaration__label { font-size: 1.1rem; line-height: 1.3; overflow-wrap: anywhere; }
+body .declaration__details { margin: 2px 0 0; overflow-wrap: anywhere; word-break: break-word; }
+body .record.declaration > .badge { align-self: flex-start; }
+/* Pré‑consultation (lecture par le médecin, brouillon du patient) */
+body .preconsult-read { display: grid; gap: 8px; }
+body .preconsult-read__label { font-size: .8125rem; font-weight: 700; color: var(--text-muted); }
+body .preconsult-read__item { align-items: flex-start; }
+body .preconsult-read__item p { margin: 4px 0 0; overflow-wrap: anywhere; }
+body .preconsult-draft__text { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+/* « Ma carte virtuelle » : ce que la carte affiche, modifiable depuis le carnet */
+body .carnet-card-fields__list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+body .carnet-card-fields__list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 12px; padding: 12px 14px; border-radius: 18px; background: var(--bg); box-shadow: var(--press-sm); }
+body .carnet-card-fields__name { grid-column: 1; color: var(--text-muted); font-size: .78rem; font-weight: 700; }
+body .carnet-card-fields__value { grid-column: 1; min-width: 0; font-weight: 700; overflow-wrap: anywhere; }
+body .carnet-card-fields__value.is-empty { color: var(--text-muted); font-weight: 500; font-style: italic; }
+body .carnet-card-fields__list .button { grid-column: 2; grid-row: 1 / span 2; }
+
+/* ---------- Champs : creusés, avec un liseré qui garde la frontière lisible ---------- */
+body .field input, body .field select, body .field textarea, body .ax-field input, body .ax-field textarea {
+  background: var(--bg); border: 1.5px solid var(--border-strong); border-radius: 14px; box-shadow: var(--press-sm);
+}
+body .field input:focus-visible, body .field select:focus-visible, body .field textarea:focus-visible, body .ax-field input:focus-visible, body .ax-field textarea:focus-visible {
+  border-color: var(--primary); box-shadow: var(--press-sm), 0 0 0 4px color-mix(in srgb, var(--primary) 20%, transparent);
+}
+
+/* ---------- Boutons : relief doux, enfoncés au toucher ---------- */
+body .button { border: 1px solid color-mix(in srgb, var(--border-strong) 60%, transparent); border-radius: 16px; background: var(--bg); box-shadow: var(--raise-sm); transition: box-shadow .15s ease, transform .15s ease, background-color .2s ease; }
+body .button:hover { background: var(--bg); box-shadow: var(--raise-md); }
+body .button:active { transform: translateY(1px); box-shadow: var(--press-sm); }
+body .button.ghost { background: transparent; border-color: transparent; box-shadow: none; }
+body .button.ghost:hover { background: var(--bg); box-shadow: var(--raise-sm); }
+body .button:disabled, body .button[aria-disabled="true"] { box-shadow: none; }
+/* Principal : aplat de la couleur d'accent, relief teinté */
+body .button.primary, body .ax-submit { border-color: transparent; background: var(--primary); color: var(--on-primary); box-shadow: var(--accent-shadow); }
+body .button.primary:hover, body .ax-submit:hover:not(:disabled) { filter: none; background: color-mix(in srgb, var(--primary) 92%, #fff); box-shadow: 6px 7px 16px color-mix(in srgb, var(--primary) 46%, transparent), -4px -4px 10px var(--neu-light); }
+body .button.primary:active, body .ax-submit:active:not(:disabled) { transform: translateY(1px); box-shadow: inset 3px 3px 8px color-mix(in srgb, var(--primary) 55%, #000), inset -2px -2px 6px color-mix(in srgb, var(--primary) 70%, #fff); }
+
+/* ---------- Connexion ---------- */
+body .ax-frame { border-color: transparent; border-radius: 34px; background: var(--bg); box-shadow: var(--raise-lg); }
+body .ax-social { background: var(--bg); border-color: color-mix(in srgb, var(--border-strong) 60%, transparent); box-shadow: var(--raise-sm); }
+body .ax-social:hover { box-shadow: var(--raise-md); }
+
+/* =====================================================================================================
+   Navigation : barre basse mobile, sidebar desktop, barre haute mobile
+   ===================================================================================================== */
+body .sb__item { color: var(--text-muted); transition: color .2s ease, box-shadow .2s ease, transform .15s ease; }
+body .sb__item:hover { color: var(--text); }
+body .sb__item:active { transform: scale(.94); }
+body .sb__item.is-active { color: var(--primary-text); }
+body .sb__menu { background: var(--bg); border-color: transparent; border-radius: 20px; box-shadow: var(--raise-lg); }
+body .sb__menu-item:hover, body .sb__menu-item:focus-visible { background: var(--bg); box-shadow: var(--press-sm); }
+
+/* la goutte (mobile uniquement) : l'onglet actif est une goutte d'accent qui glisse et se fond d'un onglet à l'autre */
+body .sb__goo { display: none; }
+@media (max-width: 919px) {
+  body .sb__scroll { position: relative; border: 0; background: var(--bg); box-shadow: var(--raise-md); }
+  body .sb__list { position: relative; z-index: 1; }
+  body .sb__goo { display: block; position: absolute; inset: 0; z-index: 0; border-radius: inherit; pointer-events: none; filter: url(#ecarnet-gooey-soft) drop-shadow(3px 4px 6px color-mix(in srgb, var(--primary) 40%, transparent)); }
+  body .sb__blob { position: absolute; left: 0; top: 0; display: block; width: var(--size, 48px); height: var(--size, 48px); border-radius: 50%; background: var(--primary); transform: translate(var(--x, 0), var(--y, 0)); will-change: transform; }
+  body .sb__blob--lead { transition: transform .34s cubic-bezier(.2, .9, .25, 1); }
+  body .sb__blob--trail { transition: transform .62s var(--spring-soft); }
+  body .sb__goo[data-still="true"] .sb__blob { transition: none; }
+  /* La goutte prend le relais du fond de l'onglet actif (tant qu'elle est en place) ; l'icône passe en couleur « sur accent ». */
+  body .sb__scroll[data-goo="on"] .sb__item.is-active { background: transparent; box-shadow: none; color: var(--on-primary); }
+  body .sb__scroll:not([data-goo="on"]) .sb__item.is-active { background: var(--primary); color: var(--on-primary); box-shadow: var(--accent-shadow); }
+}
+
+/* Sidebar desktop : même matière que la page, séparée par une ombre douce ; l'entrée active est enfoncée */
+@media (min-width: 920px) {
+  body .sb, body .sb.is-bare { background: var(--bg); border-right: 0; box-shadow: 10px 0 24px -8px var(--neu-dark), inset -1px 0 0 var(--neu-light); }
+  body .sb__item:hover { background: var(--bg); box-shadow: var(--press-sm); }
+  body .sb__item.is-active { background: var(--bg); box-shadow: var(--press-sm); color: var(--primary-text); }
+}
+
+/* Barre haute mobile : une plaque douce, le menu du compte en goutte à droite */
+@media (max-width: 919px) {
+  body .space-mobile-header {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 4px; min-height: 60px; padding: 8px 16px; overflow-x: clip;
+    background: var(--bg); border-radius: 0 0 26px 26px; box-shadow: 0 10px 20px -10px var(--neu-dark);
+  }
+}
+
+/* ---------- Menu du compte en goutte (mobile) ---------- */
+body .gm { position: relative; flex: 0 0 auto; width: 46px; height: 46px; z-index: 5; }
+body .gm__trigger { position: relative; z-index: 3; display: grid; place-items: center; width: 46px; height: 46px; padding: 0; border: 0; border-radius: 50%; background: var(--bg); cursor: pointer; box-shadow: var(--raise-sm); transition: box-shadow .15s ease, transform .15s ease; }
+body .gm__trigger:active { transform: scale(.95); box-shadow: var(--press-sm); }
+body .gm__trigger:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+body .gm__trigger .sb__avatar { width: 38px; height: 38px; flex: none; border-radius: 50%; object-fit: cover; font-size: .8rem; }
+/* calque filtré : deux gouttes de la couleur du fond (l'ancre sous le bouton, la masse qui s'étire et descend) ; seules les ombres les dessinent */
+body .gm__goo { position: absolute; z-index: 1; top: -30px; right: -30px; width: calc(46px + 60px); height: calc(46px + 60px); pointer-events: none; filter: url(#ecarnet-gooey) drop-shadow(7px 8px 12px var(--neu-dark)) drop-shadow(-6px -6px 10px var(--neu-light)); transition: width 0s .75s, height 0s .75s; }
+body .gm[data-open="true"] .gm__goo { width: calc(var(--gm-w, 300px) + 60px); height: calc(var(--gm-h, 200px) + 96px + 60px); transition: none; }
+body .gm__anchor, body .gm__blob { position: absolute; top: 30px; right: 30px; display: block; width: 46px; height: 46px; border-radius: 23px; background: var(--bg); }
+body .gm__blob { transform: translateY(0); transition: width .7s var(--spring), height .7s var(--spring), transform .7s var(--spring), border-radius .7s var(--spring); }
+body .gm[data-open="true"] .gm__blob { width: var(--gm-w, 300px); height: var(--gm-h, 200px); border-radius: 26px; transform: translateY(60px); }
+/* panneau net (texte non filtré), même taille que la goutte */
+body .gm__panel { position: absolute; z-index: 2; top: 0; right: 0; width: 46px; height: 46px; overflow: hidden; border-radius: 23px; pointer-events: none; visibility: hidden; transform: translateY(0);
+  transition: width .7s var(--spring), height .7s var(--spring), transform .7s var(--spring), border-radius .7s var(--spring), visibility 0s .75s; }
+body .gm[data-open="true"] .gm__panel { width: var(--gm-w, 300px); height: var(--gm-h, 200px); border-radius: 26px; transform: translateY(60px); pointer-events: auto; visibility: visible; transition-delay: 0s; }
+body .gm__content { position: absolute; top: 0; right: 0; width: var(--gm-w, 300px); display: grid; gap: 2px; padding: 16px 14px 14px; color: var(--text); }
+body .gm__item { opacity: 0; transform: translateY(14px); filter: blur(6px); transition: opacity .2s ease, transform .2s ease, filter .2s ease; }
+body .gm[data-open="true"] .gm__item { opacity: 1; transform: none; filter: blur(0); transition: opacity .4s ease calc(.16s + var(--i, 0) * .055s), transform .5s var(--spring-soft) calc(.16s + var(--i, 0) * .055s), filter .4s ease calc(.16s + var(--i, 0) * .055s); }
+body .gm__who { display: grid; gap: 1px; margin: 0 0 6px; padding: 0 8px 10px; border-bottom: 1px solid var(--border); min-width: 0; }
+body .gm__who strong { font-size: 1rem; overflow-wrap: anywhere; }
+body .gm__who small { color: var(--text-muted); font-size: .78rem; overflow-wrap: anywhere; }
+body .gm__sep { height: 1px; margin: 4px 8px; background: var(--border); }
+body .gm__notice { margin: 4px 8px 0; font-size: .78rem; color: var(--danger-text, var(--text)); }
+body .gm .sb__menu-item { min-height: 44px; border-radius: 14px; }
+@media (min-width: 920px) { body .gm { display: none; } }
+
+/* ---------- Carte d'urgence ---------- */
+body .ecard { box-shadow: var(--raise-md); }
+body .ecard__photo-frame { box-shadow: inset 0 0 0 4px #fff, 0 2px 8px -3px rgb(0 0 0 / .35); }
+body .ecard-qr { background: var(--bg); border-color: transparent; border-radius: 22px; box-shadow: var(--raise-sm); }
+body .ecard-qr__box { box-shadow: var(--press-sm); }
+body .ecard-qr__off { display: grid; gap: 10px; justify-items: start; padding: 16px; }
+body .ecard-qr__off p { margin: 0; }
+
+/* ---------- Mouvement réduit : mêmes états, sans animation ---------- */
+@media (prefers-reduced-motion: reduce) {
+  body .sb__blob, body .gm__blob, body .gm__panel, body .gm__item, body .gm__goo, body .gm__trigger, body .sb__item, body .button, body .card-link { transition: none !important; animation: none !important; }
+  body .gm__item { filter: none; }
+}
+@media print { body .card, body .record, body .ecard { box-shadow: none; background: #fff; } }

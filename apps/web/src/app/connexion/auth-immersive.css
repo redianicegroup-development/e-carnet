@@ -92,6 +92,12 @@
 .ax-card[data-status="success"] .ax-submit { filter: saturate(1.15); }
 .ax-socials:not(.ax-socials--labeled) { grid-template-columns: repeat(3, 1fr); }
 /* Lien « Récupérer mon compte » et page de récupération : mêmes champs, même bouton, même carte que la connexion. */
+.ax-title:focus { outline: none; }
+.ax-question { display: grid; gap: 4px; margin: 0; padding: 12px 14px; border-radius: 14px; background: color-mix(in srgb, var(--primary) 8%, var(--surface)); }
+.ax-question span { color: var(--text-muted); font-size: .78rem; font-weight: 700; }
+.ax-question strong { font-size: 1rem; line-height: 1.4; overflow-wrap: anywhere; }
+.ax-linkbutton { justify-self: start; min-height: 44px; padding: 0 2px; border: 0; background: none; color: var(--primary-text); font: inherit; font-size: .88rem; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.ax-linkbutton:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: 6px; }
 .ax-forgot { margin: -4px 0 0; text-align: right; }
 .ax-forgot a, .ax-note a { color: var(--primary-text); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
 .ax-forgot a { display: inline-flex; align-items: center; min-height: 36px; padding: 0 2px; font-size: .88rem; }

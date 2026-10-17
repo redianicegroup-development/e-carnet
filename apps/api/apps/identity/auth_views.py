@@ -4,14 +4,15 @@ from django.contrib.auth import authenticate, get_user_model, login, logout
 from django.contrib.auth.hashers import make_password
 from django.http import HttpResponse, Http404
 from django.db import transaction
-from .throttles import IpScopedThrottle, LoginEmailThrottle
+from .recovery import GENERIC_FAILURE, question_for, reset_password_with_answer, validate_new_password
+from .throttles import IpScopedThrottle, LoginEmailThrottle, RecoveryEmailThrottle
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from apps.audit.services import record_event
 from apps.patients.models import PatientProfile
-from .auth_serializers import AccountIdentitySerializer, AccountSerializer, LinkedIdentitySerializer, LoginSerializer, PatientOnboardingSerializer, RecoverySetupSerializer, RegisterSerializer
+from .auth_serializers import AccountIdentitySerializer, AccountSerializer, LinkedIdentitySerializer, LoginSerializer, PatientOnboardingSerializer, RecoveryQuestionSerializer, RecoveryResetSerializer, RecoverySetupSerializer, RegisterSerializer
 from .models import AccountContext, AccountProfile, AuthIdentity
 from .visitor_tracking import track_auth_response
 
@@ -149,6 +150,40 @@ class RecoverySetupView(APIView):
             metadata={"action": "configured"},
         )
         return Response({"success": True, "data": {"configured": True}})
+
+
+class RecoveryQuestionView(APIView):
+    """Étape 1 de « Récupérer mon compte » : la question à laquelle répondre.
+
+    Réponse identique pour tout le monde (voir identity/recovery.py) : adresse inconnue, compte sans question ou compte exclu
+    reçoivent une question « leurre » stable. On ne peut donc pas s'en servir pour savoir si une adresse a un compte."""
+    throttle_classes = [IpScopedThrottle, RecoveryEmailThrottle]
+    throttle_scope = "auth_recovery"
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = RecoveryQuestionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response({"success": True, "data": {"question": question_for(serializer.validated_data["email"])}})
+
+
+class RecoveryResetView(APIView):
+    """Étape 2 : la bonne réponse permet de choisir un nouveau mot de passe.
+
+    Toute autre issue (adresse inconnue, compte verrouillé, mauvaise réponse…) renvoie le même message : l'appelant n'apprend rien.
+    Le titulaire est alerté par e-mail, ses autres sessions sont fermées ; l'OTP s'ajoutera dans recovery.verify_recovery_proof."""
+    throttle_classes = [IpScopedThrottle, RecoveryEmailThrottle]
+    throttle_scope = "auth_recovery"
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = RecoveryResetSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        validate_new_password(data["new_password"])
+        if not reset_password_with_answer(email=data["email"], answer=data["answer"], new_password=data["new_password"]):
+            return Response({"success": False, "message": GENERIC_FAILURE}, status=400)
+        return Response({"success": True, "data": {"reset": True}})
 
 
 class ContextSelectView(APIView):
