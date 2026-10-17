@@ -1,3 +1,14 @@
+## 2026-10-16 — « Mon E‑Carnet » : peau de carnet, pré‑consultation clôturée par le médecin, carte virtuelle simplifiée
+
+- **Nom** : le produit s'appelle **Mon E‑Carnet** partout dans l'interface, les e‑mails, le manifeste PWA, les textes légaux et `llms.txt` (identifiants techniques inchangés : `ecarnet:*`, `@ecarnet/ui`, cookies). Le logotype dessiné en tracés (`logo-horizontal.svg`) lit encore « e‑carnet » : à redessiner.
+- **Design** : `app/carnet-skin.css` (peau skeuomorphe : papier, cuir cousu, ruban adhésif, tampons, boutons de gel, signet) dérivée des variables du thème, donc fidèle aux 5 palettes ; effet **gooey** (filtres SVG `GooeyFilters`) sur la goutte de la barre basse mobile, sur un menu du compte qui se déploie en goutte (`GooeyAccountMenu`, tactile, clavier, Échap) et sur les boutons principaux. Mouvement réduit respecté.
+- **Pré‑consultation** : plus de choix d'établissement ni de clôture par le patient. Un brouillon à la fois (409 sinon), modifiable par le patient ou par l'infirmier avec son téléphone. Le médecin le lit par le QR (dernier brouillon) et **sa signature clôture la pré‑consultation** : établissement posé par le serveur, révision enregistrée, événement `preconsultation.closed`, le tout dans une transaction.
+- **Carte d'urgence** : QR unique et statique (plus de renouvellement, la version ne change plus ; couper puis rallumer redonne le même QR), pliable ; carte imprimable retirée ; ville et contact d'urgence deviennent des déclarations du carnet (migration `patients.0008`, avec recopie des valeurs existantes) ; PNG téléchargé avec la photo de profil ou l'avatar à la place du QR ; « Ma carte virtuelle » ne garde qu'un lien « Modifier ma carte ».
+- **Déclarations** : le tampon de provenance garde sa forme quelle que soit la longueur du texte.
+- **Connexion** : logo cliquable vers l'accueil (plus de bouton « Retour »), lien « Récupérer mon compte » et page `/connexion/recuperation` au même cadre (demande à l'équipe, aucune réinitialisation automatique), lien Crédits et bouton de feedback retirés des pages d'entrée.
+- **Réglages** : paires de polices renommées « Sora and Bricolage (par défaut) », « Mooli and Manrope », « Fredoka and Quicksand ».
+- **Sécurité / qualité** : `require_scope()` (porte unique des lectures cliniques, avec garde‑fou de test contre les contrôles manuels) ; audit `clinical_data.read` regroupé (un événement par patient et par requête, avec `resource_count`) ; dépendances Python : `requirements.in` + `make lock` + contrôle CI du verrouillage.
+
 ## 2026-10-16 — À propos, Crédits, en-tête et pied de page publics
 
 - À propos réécrite : le constat (un carnet papier se perd, et quand il est fini ou rempli on en commence un autre, donc pas de suivi sur la durée), la solution, les publics et l’équipe par rôles. Redianice est mise en avant comme startup porteuse ; le développeur est présenté comme fondateur d’AKATech Studio.

@@ -53,4 +53,4 @@ class Command(BaseCommand):
             raise CommandError("Un compte concurrent utilise déjà cette adresse ou cet identifiant.") from exc
 
         self.stdout.write(self.style.SUCCESS(f"Superadmin créé. Identifiant de connexion : {email}"))
-        self.stdout.write("Ouvrez la console E-Carnet côté application : https://e-carnetci.vercel.app/admin/.")
+        self.stdout.write("Ouvrez la console Mon E-Carnet côté application : https://e-carnetci.vercel.app/admin/.")

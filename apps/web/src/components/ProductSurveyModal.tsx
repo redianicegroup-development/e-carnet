@@ -16,7 +16,7 @@ const personaOptions = [
   ["patient", "Patient ou proche"],
   ["professional", "Professionnel de santé"],
   ["establishment", "Établissement de santé"],
-  ["discovery", "Je découvre E‑Carnet"],
+  ["discovery", "Je découvre Mon E‑Carnet"],
 ] as const;
 
 type Props = { open: boolean; onClose: () => void };

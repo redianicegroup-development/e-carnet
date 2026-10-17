@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { BrandMark } from "../../components/ui/BrandMark";
 
 export const metadata: Metadata = {
-  title: "V1 — Cœur sûr et utilisable | Mon Carnet Numérique",
+  title: "V1 — Cœur sûr et utilisable | Mon E-Carnet",
   description: "Vue d’ensemble de la V1 stable du produit : sécurité, consentement, traçabilité et parcours patient/professionnel restreints.",
   robots: { index: false, follow: false },
 };
@@ -13,7 +13,7 @@ const included = [
   "Onboarding patient et professionnel en parcours guidé",
   "Vérification de contexte, rattachement et établissement actif",
   "Consentement patient via AccessGrant limité dans le temps",
-  "Pré-consultation clôturée et consultation professionnelle traçable",
+  "Pré-consultation clôturée par le médecin et consultation professionnelle traçable",
   "Audit des accès et des décisions sensibles",
   "Isolation stricte entre établissements et donnée fictive uniquement",
 ];
@@ -47,7 +47,7 @@ export default function V1Page() {
       <header className="topbar">
         <p className="brand">
           <BrandMark />
-          Mon Carnet Numérique
+          Mon E-Carnet
         </p>
         <div className="header-links">
           <Link href="/" className="button small">Accueil</Link>

@@ -88,7 +88,9 @@ class RepresentationTransferRequest(models.Model):
 
 class ClinicalDeclaration(models.Model):
     """Déclaration patient dont la provenance initiale reste visible."""
-    KIND_CHOICES = (("antecedent", "Antécédent"), ("allergy", "Allergie"), ("treatment", "Traitement"), ("blood_group", "Groupe sanguin"))
+    KIND_CHOICES = (("antecedent", "Antécédent"), ("allergy", "Allergie"), ("treatment", "Traitement"), ("blood_group", "Groupe sanguin"), ("city", "Ville"), ("emergency_contact", "Contact d’urgence"))
+    # Une seule valeur active à la fois : la nouvelle remplace l’ancienne (qui reste dans l’historique, annulée).
+    SINGLETON_KINDS = ("blood_group", "city", "emergency_contact")
     STATUS_CHOICES = (("declared", "Déclaré par le patient"), ("cancelled", "Annulé avec historique"))
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name="declarations")
@@ -105,7 +107,13 @@ class ClinicalDeclaration(models.Model):
 
 
 class PatientEmergencyCard(models.Model):
-    """Carte d’urgence facultative, publiée uniquement par QR à la demande du patient."""
+    """Carte d’urgence facultative, publiée uniquement par QR à la demande du patient.
+
+    Le QR est unique et statique : il ne change jamais (`qr_version` n’est plus incrémenté). Il ne contient aucune donnée,
+    seulement l’identifiant de la carte signé ; ce que le scan affiche est lu en direct dans le carnet, donc toute mise à
+    jour est immédiate. La ville et le contact d’urgence sont des déclarations du carnet (`city`, `emergency_contact`) ;
+    `city`, `contact_name`, `contact_phone` et `offline_declaration_ids` ci-dessous sont des colonnes héritées, conservées
+    pour pouvoir revenir en arrière et à retirer dans une migration ultérieure."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     patient = models.OneToOneField(PatientProfile, on_delete=models.CASCADE, related_name="emergency_card")
     city = models.CharField(max_length=120, blank=True)

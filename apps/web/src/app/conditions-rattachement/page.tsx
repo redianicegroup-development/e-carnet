@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "Conditions de rattachement médecin — Mon Carnet Numérique",
+  title: "Conditions de rattachement médecin — Mon E-Carnet",
   robots: { index: false, follow: false },
 };
 

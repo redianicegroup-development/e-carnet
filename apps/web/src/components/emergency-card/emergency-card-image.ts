@@ -1,15 +1,17 @@
-import { EMERGENCY_CARD_FOOTNOTE, emergencyCardFullName, type EmergencyCardView } from "./EmergencyCardVisual";
+import { EMERGENCY_CARD_FOOTNOTE, emergencyCardFullName, type EmergencyCardPhoto, type EmergencyCardView } from "./EmergencyCardVisual";
 
 /*
  * Export PNG de la carte d’urgence : même contenu et même mise en page que <EmergencyCardVisual />, dessinés en canvas
  * (aucune dépendance supplémentaire, rien n’est envoyé à un serveur). L’image est large de 1600 px : nette sur un écran
- * de verrouillage comme à l’impression. Elle contient le QR : à partager avec précaution.
+ * de verrouillage comme à l’impression. À la place du QR, la carte porte la photo de profil (ou l’avatar) du titulaire : l’image
+ * ne donne accès à rien d’autre que ce qu’elle montre. Elle affiche pourtant identité, allergies et contact : à partager avec précaution.
  */
 const W = 1600;
 const PAD = 72;
 const BAND = 132;
 const MIN_HEIGHT = 900;
-const QR_BOX = 468;
+const PHOTO_W = 400;
+const PHOTO_H = 500;
 const INK = "#17231f";
 const MUTED = "#5a6b64";
 const LINE = "#dfe7e3";
@@ -17,6 +19,7 @@ const DANGER = "#b42318";
 
 type Ctx = CanvasRenderingContext2D & { letterSpacing?: string };
 type Style = { heading: string; body: string; accent: string; onAccent: string };
+type LoadedPhoto = { image: HTMLImageElement | null; initials: string };
 let currentBody = "system-ui, sans-serif"; // police du corps de texte, fixée au début de chaque dessin
 
 function probe<T>(apply: (el: HTMLElement) => void, read: (style: CSSStyleDeclaration) => T): T {
@@ -108,7 +111,51 @@ function chips(ctx: Ctx, items: string[], x: number, y: number, maxWidth: number
   return (Math.min(row, MAX_ROWS - 1) + 1) * (H + GAP) - GAP;
 }
 
-function paint(ctx: Ctx, card: EmergencyCardView, qrCanvas: HTMLCanvasElement, style: Style): number {
+/** Charge la photo sans jamais faire échouer l’export : sans réponse, ou si le serveur d’images n’autorise pas la lecture (CORS), on dessine les initiales. */
+function loadPhoto(url?: string): Promise<HTMLImageElement | null> {
+  if (!url) return Promise.resolve(null);
+  return new Promise((resolve) => {
+    const image = new Image();
+    const finish = (value: HTMLImageElement | null) => { window.clearTimeout(timer); image.onload = null; image.onerror = null; resolve(value); };
+    const timer = window.setTimeout(() => finish(null), 6000);
+    // Une image d’un autre domaine ne se dessine « lisiblement » que si elle est demandée avec CORS ; sinon le canvas serait marqué
+    // comme souillé et toBlob échouerait. Les data: et blob: n’en ont pas besoin.
+    if (!/^(data|blob):/i.test(url)) image.crossOrigin = "anonymous";
+    image.referrerPolicy = "no-referrer";
+    image.onload = () => finish(image.naturalWidth > 0 ? image : null);
+    image.onerror = () => finish(null);
+    image.src = url;
+  });
+}
+
+/** Cadre photo d’identité : image recadrée au centre (object-fit: cover) ou monogramme sur fond d’accent. */
+function drawPhoto(ctx: Ctx, photo: LoadedPhoto, x: number, y: number, style: Style) {
+  roundRect(ctx, x, y, PHOTO_W, PHOTO_H, 28);
+  ctx.save();
+  ctx.clip();
+  if (photo.image) {
+    const scale = Math.max(PHOTO_W / photo.image.naturalWidth, PHOTO_H / photo.image.naturalHeight);
+    const w = photo.image.naturalWidth * scale, h = photo.image.naturalHeight * scale;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(photo.image, x + (PHOTO_W - w) / 2, y + (PHOTO_H - h) / 2, w, h);
+  } else {
+    ctx.fillStyle = style.accent;
+    ctx.fillRect(x, y, PHOTO_W, PHOTO_H);
+    ctx.fillStyle = style.onAccent;
+    ctx.font = `800 170px ${style.heading}`;
+    ctx.textAlign = "center";
+    ctx.fillText(photo.initials, x + PHOTO_W / 2, y + PHOTO_H / 2 + 60);
+    ctx.textAlign = "left";
+  }
+  ctx.restore();
+  roundRect(ctx, x, y, PHOTO_W, PHOTO_H, 28);
+  ctx.lineWidth = 6; ctx.strokeStyle = "#ffffff"; ctx.stroke();
+  roundRect(ctx, x - 2, y - 2, PHOTO_W + 4, PHOTO_H + 4, 30);
+  ctx.lineWidth = 3; ctx.strokeStyle = LINE; ctx.stroke();
+}
+
+function paint(ctx: Ctx, card: EmergencyCardView, photo: LoadedPhoto, style: Style): number {
   currentBody = style.body;
   const heading = style.heading;
   ctx.textBaseline = "alphabetic";
@@ -129,7 +176,7 @@ function paint(ctx: Ctx, card: EmergencyCardView, qrCanvas: HTMLCanvasElement, s
   ctx.textAlign = "left";
   ctx.fillStyle = style.onAccent;
   ctx.font = `800 46px ${heading}`;
-  ctx.fillText("E‑Carnet", PAD + mark + 22, BAND / 2 + 16);
+  ctx.fillText("Mon E‑Carnet", PAD + mark + 22, BAND / 2 + 16);
   ctx.font = `800 26px ${style.body}`;
   ctx.letterSpacing = "5px";
   ctx.textAlign = "right";
@@ -139,24 +186,19 @@ function paint(ctx: Ctx, card: EmergencyCardView, qrCanvas: HTMLCanvasElement, s
 
   const top = BAND + PAD;
 
-  // QR à droite (marge blanche de 4 modules déjà incluse dans le canvas du QR)
-  const qrX = W - PAD - QR_BOX;
-  roundRect(ctx, qrX, top, QR_BOX, QR_BOX, 24);
-  ctx.fillStyle = "#ffffff"; ctx.fill();
-  ctx.lineWidth = 3; ctx.strokeStyle = LINE; ctx.stroke();
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = "high";
-  ctx.drawImage(qrCanvas, qrX + 14, top + 14, QR_BOX - 28, QR_BOX - 28);
+  // photo de profil à droite, à la place du QR
+  const photoX = W - PAD - PHOTO_W;
+  drawPhoto(ctx, photo, photoX, top, style);
   ctx.fillStyle = MUTED;
   ctx.font = `700 28px ${style.body}`;
   ctx.textAlign = "center";
-  ctx.fillText("Scannez pour afficher la carte", qrX + QR_BOX / 2, top + QR_BOX + 46);
+  ctx.fillText("Titulaire de la carte", photoX + PHOTO_W / 2, top + PHOTO_H + 46);
   ctx.textAlign = "left";
-  const qrBottom = top + QR_BOX + 66;
+  const photoBottom = top + PHOTO_H + 66;
 
   // informations à gauche
   const x = PAD;
-  const width = qrX - 56 - PAD;
+  const width = photoX - 56 - PAD;
   let y = top;
 
   const fullName = emergencyCardFullName(card);
@@ -212,7 +254,7 @@ function paint(ctx: Ctx, card: EmergencyCardView, qrCanvas: HTMLCanvasElement, s
   ctx.font = `500 25px ${style.body}`;
   const footLines = wrap(ctx, EMERGENCY_CARD_FOOTNOTE, W - PAD * 2);
   const footH = 34 + footLines.length * 34 + 22;
-  const footTop = Math.max(Math.max(y, qrBottom) + 24, MIN_HEIGHT - footH);
+  const footTop = Math.max(Math.max(y, photoBottom) + 24, MIN_HEIGHT - footH);
   ctx.fillStyle = "#f5f8f6";
   ctx.fillRect(0, footTop, W, footH);
   ctx.fillStyle = LINE;
@@ -222,7 +264,7 @@ function paint(ctx: Ctx, card: EmergencyCardView, qrCanvas: HTMLCanvasElement, s
   return footTop + footH;
 }
 
-export async function renderEmergencyCardPng(card: EmergencyCardView, qrCanvas: HTMLCanvasElement): Promise<Blob> {
+export async function renderEmergencyCardPng(card: EmergencyCardView, photoSource: EmergencyCardPhoto): Promise<Blob> {
   const heading = cssFont("var(--font-heading, var(--font-body))", "system-ui, sans-serif");
   const body = cssFont("var(--font-body)", "system-ui, sans-serif");
   try {
@@ -234,22 +276,23 @@ export async function renderEmergencyCardPng(card: EmergencyCardView, qrCanvas: 
     accent: cssColor("var(--primary)", "#d99a1e"),
     onAccent: cssColor("var(--on-primary)", "#1b1500"),
   };
+  const photo: LoadedPhoto = { image: await loadPhoto(photoSource.url), initials: photoSource.initials };
   // 1er passage : mesurer la hauteur nécessaire ; 2e passage : dessiner sur un canvas à la bonne taille.
   const measure = document.createElement("canvas");
   measure.width = W; measure.height = 3600;
   const measureCtx = measure.getContext("2d") as Ctx | null;
   if (!measureCtx) throw new Error("Le dessin de la carte n’est pas disponible sur cet appareil.");
-  const height = Math.ceil(paint(measureCtx, card, qrCanvas, style));
+  const height = Math.ceil(paint(measureCtx, card, photo, style));
   const out = document.createElement("canvas");
   out.width = W; out.height = height;
   const ctx = out.getContext("2d") as Ctx | null;
   if (!ctx) throw new Error("Le dessin de la carte n’est pas disponible sur cet appareil.");
-  paint(ctx, card, qrCanvas, style);
+  paint(ctx, card, photo, style);
   return new Promise((resolve, reject) => out.toBlob((blob) => blob ? resolve(blob) : reject(new Error("L’image n’a pas pu être créée.")), "image/png"));
 }
 
-export async function downloadEmergencyCardPng(card: EmergencyCardView, qrCanvas: HTMLCanvasElement, filename = "carte-urgence-e-carnet.png"): Promise<void> {
-  const blob = await renderEmergencyCardPng(card, qrCanvas);
+export async function downloadEmergencyCardPng(card: EmergencyCardView, photo: EmergencyCardPhoto, filename = "carte-urgence-mon-e-carnet.png"): Promise<void> {
+  const blob = await renderEmergencyCardPng(card, photo);
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;

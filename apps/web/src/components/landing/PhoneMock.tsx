@@ -7,7 +7,7 @@ export function PhoneMock({ decorative = false }: { decorative?: boolean }) {
   return (
     <div className="lp-phone" {...(decorative ? { "aria-hidden": true } : { role: "img", "aria-label": "Aperçu de l’espace patient" })}>
       <div className="lp-phone__screen" aria-hidden="true">
-        <div className="mk-bar"><span className="mk-brand"><i>＋</i>E-carnet</span><span className="mk-avatar">EC</span></div>
+        <div className="mk-bar"><span className="mk-brand"><i>＋</i>Mon E-Carnet</span><span className="mk-avatar">EC</span></div>
         <div className="mk-body">
           <p className="mk-hello"><small>Mon espace</small><strong>Mon carnet</strong></p>
           <div className="mk-alert"><strong>Demande d’accès</strong><span>À examiner</span><b>Voir</b></div>

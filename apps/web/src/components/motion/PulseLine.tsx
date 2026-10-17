@@ -1,6 +1,6 @@
 import "./motion.css";
 
-/* Ligne de rythme cardiaque décorative : le « fil de santé » de E-Carnet.
+/* Ligne de rythme cardiaque décorative : le « fil de santé » de Mon E-Carnet.
    Trois tracés superposés : le rail discret, le tracé dessiné au chargement/défilement, et l'étincelle qui court dessus.
    Aucune donnée réelle : c'est une illustration (aria-hidden). Couleur = currentColor, donc elle suit la palette choisie. */
 

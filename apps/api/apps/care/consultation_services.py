@@ -5,11 +5,17 @@ from xml.etree import ElementTree
 from rest_framework.exceptions import ValidationError
 
 from apps.professionals.access import professional_clinical_access_error
-from .models import AccessGrant, CareEncounter, Consultation, ConsultationRevision
+from .models import AccessGrant, CareEncounter, Consultation, ConsultationRevision, PreConsultationRevision
+from .services import require_scope
 
 
 @transaction.atomic
 def validate_consultation(*, professional, data):
+    """Termine la consultation : le médecin signe, et la pré-consultation du patient est clôturée du même geste.
+
+    Le patient (ou la personne qui l’aide, souvent un infirmier sans compte) ne fait que préparer un brouillon. C’est la
+    signature du médecin qui clôture ce brouillon, le rattache à l’établissement du médecin et crée la consultation :
+    tout se met à jour en une seule transaction, ou rien."""
     access_error = professional_clinical_access_error(professional)
     if access_error:
         raise ValidationError(access_error)
@@ -20,13 +26,12 @@ def validate_consultation(*, professional, data):
     grant.refresh_expiration()
     if grant.status != "active" or grant.establishment_id != establishment.id:
         raise ValidationError("L’AccessGrant n’est plus actif dans votre établissement courant.")
-    if "preconsultation" not in grant.scope:
-        raise ValidationError("Le périmètre de cet AccessGrant n’autorise pas la pré-consultation.")
-    encounter = CareEncounter.objects.filter(id=data["source_encounter_id"], patient=grant.patient, establishment_id=grant.establishment_id).first()
-    if not encounter or encounter.status != "closed":
-        raise ValidationError("La pré-consultation doit être clôturée par le patient et relever du même établissement que l’autorisation.")
-    if Consultation.objects.filter(access_grant=grant, source_encounter=encounter).exists():
-        raise ValidationError("Cette pré-consultation a déjà donné lieu à une consultation.")
+    require_scope(grant, "preconsultation")
+    encounter = CareEncounter.objects.select_for_update().filter(id=data["source_encounter_id"], patient=grant.patient).first()
+    if not encounter:
+        raise ValidationError("Cette pré-consultation n’existe pas pour ce patient.")
+    if encounter.status != "draft" or Consultation.objects.filter(source_encounter=encounter).exists():
+        raise ValidationError("Cette pré-consultation est déjà clôturée : elle a déjà donné lieu à une consultation.")
     from .svg_sanitizer import sanitize_svg
     attestation = sanitize_svg(data["attestation_svg"].strip())
     signed_at = timezone.now()
@@ -50,5 +55,12 @@ def validate_consultation(*, professional, data):
         attestation_signed_at=signed_at,
         validated_at=signed_at,
     )
+    # Clôture par le médecin : l’établissement vient de la session du médecin, jamais d’un choix du patient.
+    encounter.status = "closed"
+    encounter.closed_at = signed_at
+    encounter.establishment = establishment
+    encounter.facility_label = establishment.name
+    encounter.save(update_fields=("status", "closed_at", "establishment", "facility_label", "updated_at"))
+    PreConsultationRevision.objects.create(encounter=encounter, snapshot={"reason": encounter.reason, "observations": encounter.observations, "facility_label": encounter.facility_label, "recorded_with_help": encounter.recorded_with_help, "closed_by": "professional", "professional_id": str(professional.id), "access_grant_id": str(grant.id)})
     ConsultationRevision.objects.create(consultation=consultation, snapshot={"reason": consultation.reason, "observations": consultation.observations, "conclusion": consultation.conclusion, "care_plan": consultation.care_plan, "professional_id": str(professional.id), "establishment_id": str(establishment.id), "access_grant_id": str(grant.id), "source_encounter_id": str(encounter.id)})
     return consultation

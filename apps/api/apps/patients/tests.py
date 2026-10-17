@@ -4,7 +4,6 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
 from apps.care.models import CareEncounter, PreConsultationRevision
-from apps.establishments.models import Establishment
 from apps.audit.models import AuditEvent
 from apps.identity.models import AccountContext
 from .models import ClinicalDeclaration, PatientProfile, PatientRepresentation, RepresentationTransferRequest
@@ -39,13 +38,19 @@ class PatientOwnedDataTests(TestCase):
         self.assertEqual(card.data["data"]["blood_group"], "O−")
         self.assertFalse(card.data["data"]["qr_enabled"])
 
-    def test_emergency_qr_only_exposes_selected_fields_and_can_be_revoked_or_rotated(self):
+    def declare(self, kind, label, details=""):
+        return self.client.post("/api/v1/patient/declarations/", {"kind": kind, "label": label, "details": details}, format="json")
+
+    def test_emergency_qr_is_static_reads_the_carnet_live_and_can_only_be_switched_off(self):
         self.client.force_authenticate(self.a)
-        self.client.post("/api/v1/patient/declarations/", {"kind": "blood_group", "label": "AB+", "details": ""}, format="json")
-        self.client.post("/api/v1/patient/declarations/", {"kind": "allergy", "label": "Pénicilline", "details": "Réaction cutanée"}, format="json")
-        self.client.post("/api/v1/patient/declarations/", {"kind": "treatment", "label": "Traitement fictif", "details": "1 fois par jour"}, format="json")
-        self.client.patch("/api/v1/patient/emergency-card/", {"city": "Abidjan", "contact_name": "Contact fictif", "contact_phone": "+225 00 00 00 00", "qr_enabled": True}, format="json")
+        self.declare("blood_group", "AB+")
+        self.declare("allergy", "Pénicilline", "Réaction cutanée")
+        self.declare("treatment", "Traitement fictif", "1 fois par jour")
+        self.declare("city", "Abidjan")
+        self.declare("emergency_contact", "Contact fictif", "+225 00 00 00 00")
+        self.client.patch("/api/v1/patient/emergency-card/", {"qr_enabled": True}, format="json")
         first_token = self.client.get("/api/v1/patient/emergency-card/").data["data"]["qr_token"]
+        self.assertTrue(first_token)
 
         self.client.force_authenticate(None)
         public = self.client.get(f"/api/v1/patient/emergency-card/qr/{first_token}/")
@@ -54,6 +59,7 @@ class PatientOwnedDataTests(TestCase):
         self.assertEqual(public.data["data"]["allergies"][0]["label"], "Pénicilline")
         self.assertEqual(public.data["data"]["treatments"][0]["label"], "Traitement fictif")
         self.assertEqual(public.data["data"]["contact_name"], "Contact fictif")
+        self.assertEqual(public.data["data"]["contact_phone"], "+225 00 00 00 00")
         self.assertEqual(public.data["data"]["city"], "Abidjan")
         self.assertEqual(set(public.data["data"]), {"first_name", "last_name", "city", "blood_group", "allergies", "treatments", "contact_name", "contact_phone", "updated_at"})
         # Jamais de date de naissance, d’adresse, de téléphone du patient ni d’identifiant interne sur la carte publique.
@@ -63,63 +69,108 @@ class PatientOwnedDataTests(TestCase):
         self.assertIn("noindex", public["X-Robots-Tag"])
         self.assertEqual(self.client.get("/api/v1/patient/emergency-card/qr/not-a-token/").status_code, 404)
 
+        # Mise à jour automatique : le même QR affiche tout de suite la nouvelle ville et le nouveau contact.
         self.client.force_authenticate(self.a)
-        rotated = self.client.post("/api/v1/patient/emergency-card/", {}, format="json")
-        new_token = rotated.data["data"]["qr_token"]
+        self.declare("city", "Bouaké")
+        self.declare("emergency_contact", "Autre contact", "+225 11 11 11 11")
+        self.assertEqual(self.client.get("/api/v1/patient/emergency-card/").data["data"]["qr_token"], first_token)
+        self.client.force_authenticate(None)
+        live = self.client.get(f"/api/v1/patient/emergency-card/qr/{first_token}/").data["data"]
+        self.assertEqual((live["city"], live["contact_name"], live["contact_phone"]), ("Bouaké", "Autre contact", "+225 11 11 11 11"))
+
+        # Plus de renouvellement : le QR est unique et statique.
+        self.client.force_authenticate(self.a)
+        self.assertEqual(self.client.post("/api/v1/patient/emergency-card/", {}, format="json").status_code, 405)
+        self.assertEqual(self.client.get("/api/v1/patient/emergency-card/").data["data"]["qr_token"], first_token)
+
+        # Couper le QR le rend muet ; le rallumer redonne exactement le même QR.
+        self.client.patch("/api/v1/patient/emergency-card/", {"qr_enabled": False}, format="json")
+        self.assertEqual(self.client.get("/api/v1/patient/emergency-card/").data["data"]["qr_token"], "")
         self.client.force_authenticate(None)
         self.assertEqual(self.client.get(f"/api/v1/patient/emergency-card/qr/{first_token}/").status_code, 404)
-        self.assertEqual(self.client.get(f"/api/v1/patient/emergency-card/qr/{new_token}/").status_code, 200)
-
         self.client.force_authenticate(self.a)
-        self.client.patch("/api/v1/patient/emergency-card/", {"qr_enabled": False}, format="json")
+        self.client.patch("/api/v1/patient/emergency-card/", {"qr_enabled": True}, format="json")
+        self.assertEqual(self.client.get("/api/v1/patient/emergency-card/").data["data"]["qr_token"], first_token)
         self.client.force_authenticate(None)
-        self.assertEqual(self.client.get(f"/api/v1/patient/emergency-card/qr/{new_token}/").status_code, 404)
+        self.assertEqual(self.client.get(f"/api/v1/patient/emergency-card/qr/{first_token}/").status_code, 200)
+        self.assertFalse(AuditEvent.objects.filter(event_type="patient.emergency_card.qr_rotated").exists())
 
-    def test_preconsultation_closure_is_idempotent_and_immutable(self):
+    def test_city_and_emergency_contact_are_carnet_declarations_with_one_active_value(self):
         self.client.force_authenticate(self.a)
-        site = Establishment.objects.create(created_by=self.a, name="Centre fictif", establishment_type="Centre", city="Abidjan", address="A", phone="0", email="patient-test@example.test", responsible_name="Responsable", status="active")
-        created = self.client.post("/api/v1/patient/care/encounters/", {"establishment_id": str(site.id), "reason": "Motif fictif", "observations": "Observation fictive"}, format="json")
+        self.assertEqual(self.declare("city", "Abidjan").status_code, 201)
+        self.assertEqual(self.declare("city", "Yamoussoukro").status_code, 201)
+        self.assertEqual(self.declare("emergency_contact", "Awa Koné", "+225 07 00 00 00 00").status_code, 201)
+        self.assertEqual(self.declare("emergency_contact", "Awa Koné", "+225 05 00 00 00 00").status_code, 200)
+        active = ClinicalDeclaration.objects.filter(patient__user=self.a, status="declared")
+        self.assertEqual(list(active.filter(kind="city").values_list("label", flat=True)), ["Yamoussoukro"])
+        contact = active.get(kind="emergency_contact")
+        self.assertEqual((contact.label, contact.details), ("Awa Koné", "+225 05 00 00 00 00"))
+        listed = self.client.get("/api/v1/patient/declarations/").data["data"]
+        self.assertEqual({item["kind"] for item in listed}, {"city", "emergency_contact"})
+        card = self.client.get("/api/v1/patient/emergency-card/").data["data"]
+        self.assertEqual((card["city"], card["contact_name"], card["contact_phone"]), ("Yamoussoukro", "Awa Koné", "+225 05 00 00 00 00"))
+        # Une déclaration de patient n’écrase jamais celle d’un autre.
+        self.client.force_authenticate(self.b)
+        self.assertEqual(self.client.get("/api/v1/patient/declarations/").data["data"], [])
+
+    def test_emergency_contact_needs_a_valid_phone_and_city_has_no_details(self):
+        self.client.force_authenticate(self.a)
+        for phone in ("", "abc", "07", "<script>"):
+            self.assertEqual(self.declare("emergency_contact", "Contact", phone).status_code, 400, phone)
+        self.assertEqual(self.declare("emergency_contact", "N" * 121, "+225 07 00 00 00 00").status_code, 400)
+        self.assertEqual(self.declare("city", "V" * 121).status_code, 400)
+        created = self.declare("city", "Abidjan", "détail ignoré")
+        self.assertEqual(created.status_code, 201)
+        self.assertEqual(created.data["data"]["details"], "")
+
+    def test_card_settings_only_accept_the_qr_switch_and_refuse_the_moved_fields(self):
+        self.client.force_authenticate(self.a)
+        for payload in ({"city": "Abidjan"}, {"contact_name": "X"}, {"contact_phone": "+225 07 00 00 00 00"}, {"offline_declaration_ids": []}):
+            self.assertEqual(self.client.patch("/api/v1/patient/emergency-card/", payload, format="json").status_code, 400, payload)
+        self.assertEqual(self.client.patch("/api/v1/patient/emergency-card/", {"qr_enabled": True}, format="json").status_code, 200)
+        data = self.client.get("/api/v1/patient/emergency-card/").data["data"]
+        self.assertNotIn("offline_options", data)
+        self.assertNotIn("offline_declaration_ids", data)
+
+    def test_the_printable_offline_card_no_longer_exists(self):
+        self.client.force_authenticate(self.a)
+        self.assertEqual(self.client.get("/api/v1/patient/emergency-card/offline/").status_code, 404)
+
+    def test_migration_copies_the_old_card_city_and_contact_into_declarations_without_clearing_the_card(self):
+        import importlib
+        from django.apps import apps as django_apps
+        from .models import PatientEmergencyCard
+        profile = PatientProfile.objects.create(user=self.a)
+        PatientEmergencyCard.objects.create(patient=profile, city="Abidjan", contact_name="Contact hérité", contact_phone="+225 00 00 00 00")
+        silent = PatientProfile.objects.create(user=self.b)
+        PatientEmergencyCard.objects.create(patient=silent)
+        migration = importlib.import_module("apps.patients.migrations.0008_declarations_city_and_emergency_contact")
+        migration.copy_card_details_to_declarations(django_apps, None)
+        migration.copy_card_details_to_declarations(django_apps, None)  # idempotent
+        rows = ClinicalDeclaration.objects.filter(patient=profile)
+        self.assertEqual(sorted(rows.values_list("kind", "label", "details")), [("city", "Abidjan", ""), ("emergency_contact", "Contact hérité", "+225 00 00 00 00")])
+        self.assertFalse(ClinicalDeclaration.objects.filter(patient=silent).exists())
+        self.assertEqual(PatientEmergencyCard.objects.get(patient=profile).city, "Abidjan")
+
+    def test_patient_cannot_close_a_preconsultation_and_a_closed_one_is_immutable(self):
+        self.client.force_authenticate(self.a)
+        created = self.client.post("/api/v1/patient/care/encounters/", {"reason": "Motif fictif", "observations": "Observation fictive"}, format="json")
+        self.assertEqual(created.status_code, 201)
         pk = created.data["data"]["id"]
-        first = self.client.post(f"/api/v1/patient/care/encounters/{pk}/", {}, format="json")
-        second = self.client.post(f"/api/v1/patient/care/encounters/{pk}/", {}, format="json")
-        self.assertEqual(first.status_code, 200)
-        self.assertEqual(second.status_code, 200)
-        self.assertEqual(PreConsultationRevision.objects.filter(encounter_id=pk).count(), 1)
+        # La clôture appartient au médecin : l’ancienne route patient n’existe plus.
+        self.assertEqual(self.client.post(f"/api/v1/patient/care/encounters/{pk}/", {}, format="json").status_code, 405)
+        self.assertEqual(CareEncounter.objects.get(pk=pk).status, "draft")
+        self.assertEqual(PreConsultationRevision.objects.filter(encounter_id=pk).count(), 0)
+        # Clôturée par le médecin (voir les tests de consultation), elle n’est plus modifiable par le patient.
+        CareEncounter.objects.filter(pk=pk).update(status="closed", closed_at=timezone.now())
         blocked = self.client.patch(f"/api/v1/patient/care/encounters/{pk}/", {"reason": "Modification interdite"}, format="json")
         self.assertEqual(blocked.status_code, 409)
+        # Le brouillon étant clos, le patient peut préparer la pré-consultation suivante.
+        self.assertEqual(self.client.post("/api/v1/patient/care/encounters/", {"reason": "Nouveau motif"}, format="json").status_code, 201)
 
     def test_anonymous_patient_data_is_forbidden(self):
         self.assertEqual(self.client.get("/api/v1/patient/profile/").status_code, 403)
         self.assertEqual(self.client.get("/api/v1/patient/emergency-card/").status_code, 403)
-
-    def test_offline_card_contains_only_selected_declarations_and_is_private(self):
-        self.client.force_authenticate(self.a)
-        profile = self.client.get("/api/v1/patient/profile/").data["data"]
-        self.client.patch("/api/v1/patient/profile/", {"birth_date": "1990-01-01"}, format="json")
-        allergy = self.client.post("/api/v1/patient/declarations/", {"kind": "allergy", "label": "Allergie fictive", "details": "Détail choisi"}, format="json").data["data"]
-        treatment = self.client.post("/api/v1/patient/declarations/", {"kind": "treatment", "label": "Traitement fictif", "details": "Détail à exclure"}, format="json").data["data"]
-        self.client.patch("/api/v1/patient/emergency-card/", {
-            "contact_name": "Contact fictif",
-            "contact_phone": "+22500000000",
-            "offline_declaration_ids": [allergy["id"]],
-        }, format="json")
-
-        offline = self.client.get("/api/v1/patient/emergency-card/offline/")
-        self.assertEqual(offline.status_code, 200)
-        self.assertEqual(offline.data["data"]["birth_date"], "1990-01-01")
-        self.assertEqual([item["label"] for item in offline.data["data"]["allergies"]], ["Allergie fictive"])
-        self.assertEqual(offline.data["data"]["treatments"], [])
-        self.assertTrue(offline.data["data"]["may_be_outdated"])
-        self.assertIn("no-store", offline["Cache-Control"])
-        self.assertTrue(AuditEvent.objects.filter(event_type="patient.emergency_card.offline_exported", patient_id=profile["id"]).exists())
-        self.assertTrue(profile["id"])
-
-        invalid = self.client.patch("/api/v1/patient/emergency-card/", {
-            "offline_declaration_ids": [treatment["id"], "00000000-0000-0000-0000-000000000000"],
-        }, format="json")
-        self.assertEqual(invalid.status_code, 400)
-        unchanged = self.client.get("/api/v1/patient/emergency-card/offline/")
-        self.assertEqual(unchanged.data["data"]["treatments"], [])
 
 
 class PatientRepresentationTests(TestCase):

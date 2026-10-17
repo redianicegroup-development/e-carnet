@@ -1,0 +1,284 @@
+/* =====================================================================================================
+   « Mon E‑Carnet » — la peau du vrai carnet : papier, cuir, coutures, tampons, étiquettes, boutons de gel, et de la matière « gooey ».
+   Chargée APRÈS globals.css. Tout est dérivé des variables du thème actif (--bg, --surface, --primary, --text…) : les cinq palettes
+   gardent leur identité, le cuir prend la teinte de la palette. Aucune couleur sémantique n'est touchée (statuts, danger).
+
+   Règles de conduite
+   - Chaque sélecteur est préfixé par `body` : la peau l'emporte sur les feuilles chargées plus tard (sidebar.css, modal.css…) sans !important.
+   - Le contraste du texte ne dépend jamais d'une texture : papier clair + encre du thème ; texte crème sur cuir sombre (≥ 7:1 sur les 5 palettes).
+   - Le filtre gooey n'est posé que sur des calques décoratifs (aria-hidden) ; le texte reste net. Il est retiré hors animation quand c'est possible.
+   - prefers-reduced-motion : aucune animation, mêmes états finaux.
+   ===================================================================================================== */
+
+/* ---------- Matières ---------- */
+body {
+  /* papier : la surface du thème, réchauffée */
+  --paper: color-mix(in srgb, var(--surface) 80%, #fff4d9);
+  --paper-hi: color-mix(in srgb, var(--paper) 55%, #fff);
+  --paper-edge: color-mix(in srgb, var(--paper) 72%, #5b4426);
+  --paper-ink-shadow: 0 1px 0 rgb(255 255 255 / .7);
+  --desk: color-mix(in srgb, var(--bg) 90%, #8a6d49);
+  /* cuir : la couleur de la palette, assombrie */
+  --leather: color-mix(in srgb, var(--primary) 34%, #1b130d);
+  --leather-hi: color-mix(in srgb, var(--leather) 80%, #fff);
+  --leather-lo: color-mix(in srgb, var(--leather) 72%, #000);
+  --cream: #f8edd3;
+  --cream-dim: color-mix(in srgb, var(--cream) 80%, transparent);
+  --thread: #ebd292;
+  --brass: #c9a24b;
+  --brass-hi: #f3dc9a;
+  --brass-lo: #8b6a21;
+  /* grain de papier (bruit fractal discret, intégré, aucune requête réseau) */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .42 0 0 0 0 .32 0 0 0 0 .2 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  /* grain plus gros pour le cuir */
+  --grain-leather: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.55' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .9 0 0 0 0 .75 0 0 0 .5 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --lift-sm: 0 1px 1px rgb(60 40 10 / .12), 0 5px 12px -6px rgb(60 40 10 / .22);
+  --lift-md: 0 1px 1px rgb(60 40 10 / .12), 0 8px 16px -8px rgb(60 40 10 / .26), 0 22px 34px -22px rgb(60 40 10 / .3);
+  --deboss: inset 0 2px 4px rgb(60 40 10 / .16), inset 0 -1px 0 rgb(255 255 255 / .75);
+  /* ressorts (transitions) : rebond franc pour le menu, plus doux pour la goutte de navigation */
+  --spring: cubic-bezier(.34, 1.45, .64, 1);
+  --spring-soft: cubic-bezier(.3, 1.25, .5, 1);
+}
+@supports (transition-timing-function: linear(0, 1)) {
+  body {
+    --spring: linear(0, 0.069, 0.235, 0.443, 0.652, 0.835, 0.977, 1.074, 1.128, 1.147, 1.141, 1.119, 1.088, 1.057, 1.029, 1.007, 0.991, 0.982, 0.978, 0.979, 0.982, 0.986, 0.991, 0.995, 0.998, 1.001, 1.002, 1.003, 1.003, 1.003, 1);
+    --spring-soft: linear(0, 0.077, 0.248, 0.448, 0.636, 0.792, 0.907, 0.984, 1.029, 1.05, 1.054, 1.049, 1.04, 1.029, 1.019, 1.011, 1.004, 1.001, 0.998, 0.997, 0.997, 0.997, 0.998, 0.999, 0.999, 0.999, 1, 1, 1, 1, 1);
+  }
+}
+
+/* Le bureau : la couleur de fond du thème, un peu de grain et une vignette qui ne bouge pas. */
+body { background: var(--grain), var(--desk); background-blend-mode: soft-light, normal; }
+body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; background: radial-gradient(120% 90% at 50% 0%, rgb(255 255 255 / .38), transparent 55%), radial-gradient(140% 100% at 50% 100%, transparent 55%, rgb(60 40 10 / .12)); }
+body .goo-defs { position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; }
+
+/* ---------- Pages de papier ---------- */
+body .card, body .record, body .item, body .notice, body .list-row {
+  background: var(--grain), linear-gradient(180deg, var(--paper-hi), var(--paper));
+  background-blend-mode: soft-light, normal;
+  border-color: var(--paper-edge);
+  /* dos de la page à gauche (reliure), bord libre arrondi à droite */
+  border-radius: 8px 20px 20px 8px;
+  box-shadow: inset 1px 0 0 rgb(255 255 255 / .8), inset 14px 0 14px -14px rgb(60 40 10 / .28), inset 0 1px 0 rgb(255 255 255 / .85), var(--lift-md);
+}
+body .record, body .item, body .list-row { border-radius: 6px 14px 14px 6px; box-shadow: inset 1px 0 0 rgb(255 255 255 / .8), inset 10px 0 12px -12px rgb(60 40 10 / .26), inset 0 1px 0 rgb(255 255 255 / .85), var(--lift-sm); }
+body .record, body .item { background: var(--grain), linear-gradient(180deg, color-mix(in srgb, var(--paper-hi) 75%, var(--paper)), color-mix(in srgb, var(--paper) 92%, var(--surface-tint))); background-blend-mode: soft-light, normal; }
+body .notice { border-radius: 6px 14px 14px 6px; box-shadow: var(--lift-sm); }
+body .card-link:hover { transform: translateY(-3px) rotate(-.25deg); box-shadow: inset 1px 0 0 rgb(255 255 255 / .8), inset 14px 0 14px -14px rgb(60 40 10 / .28), 0 2px 2px rgb(60 40 10 / .12), 0 16px 26px -12px rgb(60 40 10 / .38); }
+body .empty { border-style: dashed; border-color: color-mix(in srgb, var(--paper-edge) 70%, transparent); background: color-mix(in srgb, var(--paper) 55%, transparent); box-shadow: var(--deboss); }
+body .skeleton i { border-radius: 6px 14px 14px 6px; }
+
+/* Signet : un ruban de couleur pend en haut à droite de l'en-tête de chaque page. */
+body .space-main .page-header, body .space-main > .hero-page { position: relative; }
+body .space-main .page-header::after, body .space-main > .hero-page::after { content: ""; position: absolute; top: -18px; right: 14px; width: 22px; height: 64px; background: linear-gradient(90deg, color-mix(in srgb, var(--primary) 78%, #000), var(--primary) 45%, color-mix(in srgb, var(--primary) 82%, #fff)); clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%); filter: drop-shadow(0 3px 2px rgb(60 40 10 / .35)); pointer-events: none; }
+
+/* ---------- Étiquettes : ruban adhésif de papeterie ---------- */
+body .eyebrow {
+  position: relative; padding: 6px 16px; border-radius: 3px; color: var(--text); font-weight: 650;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--primary) 30%, #fff4d6), color-mix(in srgb, var(--primary) 42%, #f3e2b6));
+  box-shadow: 0 1px 1px rgb(60 40 10 / .22), inset 0 1px 0 rgb(255 255 255 / .6); transform: rotate(-1.1deg);
+  /* extrémités dentelées du washi tape */
+  clip-path: polygon(0 0, 3px 12%, 0 25%, 3px 38%, 0 50%, 3px 62%, 0 75%, 3px 88%, 0 100%, 100% 100%, calc(100% - 3px) 88%, 100% 75%, calc(100% - 3px) 62%, 100% 50%, calc(100% - 3px) 38%, 100% 25%, calc(100% - 3px) 12%, 100% 0);
+}
+/* Pastille de comptage : petit disque de laiton embouti. */
+body .count-badge { color: #3a2a08; background: radial-gradient(circle at 32% 25%, var(--brass-hi), var(--brass) 55%, var(--brass-lo)); box-shadow: inset 0 1px 0 rgb(255 255 255 / .6), inset 0 -2px 3px rgb(0 0 0 / .25), 0 2px 3px rgb(60 40 10 / .35); text-shadow: 0 1px 0 rgb(255 255 255 / .45); }
+
+/* ---------- Tampons : la provenance garde toujours sa forme ---------- */
+body .badge { flex: none; max-width: 100%; white-space: nowrap; }
+body .badge.stamp, body .record .badge, body .item .badge, body .preconsult-draft .badge {
+  position: relative; overflow: hidden; text-overflow: ellipsis; margin: 3px; padding: 4px 11px; border: 1.5px solid currentColor; border-radius: 6px; background: transparent !important; box-shadow: none;
+  outline: 1px solid color-mix(in srgb, currentColor 50%, transparent); outline-offset: 2px;
+  font-family: var(--font-mono); font-size: .7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; transform: rotate(-2deg); opacity: .94; mix-blend-mode: multiply;
+}
+/* Un enregistrement avec tampon : le texte prend toute la largeur, le tampon passe dessous, jamais déformé. */
+body .record.declaration { flex-direction: column; align-items: stretch; gap: 10px; }
+body .declaration__body { display: grid; gap: 2px; min-width: 0; }
+body .declaration__kind { color: var(--text-muted); font-family: var(--font-mono); font-size: .7rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; }
+body .declaration__label { font-size: 1.1rem; line-height: 1.3; overflow-wrap: anywhere; }
+body .declaration__details { margin: 2px 0 0; overflow-wrap: anywhere; word-break: break-word; }
+body .record.declaration > .badge { align-self: flex-start; }
+/* Lecture seule d'une pré-consultation côté médecin */
+body .preconsult-read { display: grid; gap: 8px; }
+body .preconsult-read__label { font-size: .8125rem; font-weight: 700; color: var(--text-muted); }
+body .preconsult-read__item { align-items: flex-start; }
+body .preconsult-read__item p { margin: 4px 0 0; overflow-wrap: anywhere; }
+body .preconsult-draft__text { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+/* « Ma carte d'urgence » : ce que la carte affiche, modifiable depuis le carnet */
+body .carnet-card-fields__list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+body .carnet-card-fields__list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 12px; padding: 10px 12px; border-radius: 6px 12px 12px 6px; background: color-mix(in srgb, var(--paper) 60%, transparent); box-shadow: var(--deboss); }
+body .carnet-card-fields__name { grid-column: 1; color: var(--text-muted); font-size: .78rem; font-weight: 700; }
+body .carnet-card-fields__value { grid-column: 1; min-width: 0; font-weight: 700; overflow-wrap: anywhere; }
+body .carnet-card-fields__value.is-empty { color: var(--text-muted); font-weight: 500; font-style: italic; }
+body .carnet-card-fields__list .button { grid-column: 2; grid-row: 1 / span 2; }
+
+/* ---------- Champs : creusés dans le papier ---------- */
+body .field input, body .field select, body .field textarea, body .ax-field input, body .ax-field textarea {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--paper) 90%, var(--text)), var(--paper-hi));
+  border: 1px solid color-mix(in srgb, var(--paper-edge) 80%, var(--text)); box-shadow: var(--deboss); border-radius: 12px;
+}
+body .field input:focus-visible, body .field select:focus-visible, body .field textarea:focus-visible, body .ax-field input:focus-visible, body .ax-field textarea:focus-visible {
+  border-color: var(--primary); box-shadow: var(--deboss), 0 0 0 4px color-mix(in srgb, var(--primary) 18%, transparent);
+}
+
+/* ---------- Boutons ---------- */
+/* Clé de papier relevée : bords biseautés, enfoncée au toucher. */
+body .button {
+  position: relative; isolation: isolate; overflow: hidden; border: 1px solid color-mix(in srgb, var(--paper-edge) 75%, var(--text)); border-radius: 14px;
+  background: linear-gradient(180deg, var(--paper-hi), color-mix(in srgb, var(--paper) 88%, var(--surface-tint)));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .95), inset 0 -2px 0 rgb(60 40 10 / .12), 0 1px 1px rgb(60 40 10 / .2), 0 4px 8px -4px rgb(60 40 10 / .3);
+  transition: transform .12s ease, box-shadow .12s ease, background-color .2s ease;
+}
+body .button:hover { background: linear-gradient(180deg, #fff, color-mix(in srgb, var(--paper) 80%, var(--surface-tint))); border-color: color-mix(in srgb, var(--primary) 50%, var(--paper-edge)); }
+body .button:active { transform: translateY(2px); box-shadow: inset 0 2px 4px rgb(60 40 10 / .25), 0 0 0 rgb(0 0 0 / 0); }
+body .button.ghost { background: transparent; border-color: transparent; box-shadow: none; }
+body .button.ghost:hover { background: color-mix(in srgb, var(--paper) 80%, transparent); }
+body .button.danger { background: color-mix(in srgb, var(--paper) 85%, transparent); }
+body .button:disabled, body .button[aria-disabled="true"] { box-shadow: none; }
+
+/* Bouton principal : gel / cuir cousu. Reflet en haut, couture pointillée à l'intérieur, goutte gooey qui monte au survol. */
+body .button.primary, body .ax-submit {
+  border: 1px solid color-mix(in srgb, var(--primary) 55%, #000); color: var(--on-primary); text-shadow: 0 1px 0 rgb(0 0 0 / .28);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--primary) 78%, #fff), var(--primary) 46%, color-mix(in srgb, var(--primary) 82%, #000));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .55), inset 0 -3px 0 rgb(0 0 0 / .2), 0 1px 0 rgb(0 0 0 / .25), 0 8px 14px -6px color-mix(in srgb, var(--primary) 70%, #000);
+}
+body .button.primary:hover, body .ax-submit:hover:not(:disabled) { filter: none; background: linear-gradient(180deg, color-mix(in srgb, var(--primary) 70%, #fff), color-mix(in srgb, var(--primary) 96%, #fff) 46%, color-mix(in srgb, var(--primary) 76%, #000)); }
+body .button.primary:active, body .ax-submit:active:not(:disabled) { box-shadow: inset 0 3px 6px rgb(0 0 0 / .35), 0 1px 0 rgb(255 255 255 / .2); }
+/* Le bouton .ax-submit de la connexion garde ses propres reflets (auth-immersive.css). Pour .button.primary : */
+/* ::before = patch de cuir cousu (couture pointillée) + reflet de gel en haut */
+body .button.primary::before { content: ""; position: absolute; z-index: -1; inset: 3px; border-radius: 11px; border: 1.5px dashed rgb(255 255 255 / .36); background: linear-gradient(180deg, rgb(255 255 255 / .38), rgb(255 255 255 / .03) 48%, transparent 48%); pointer-events: none; }
+/* ::after = trois bulles de matière (filtre gooey) qui montent dans le bouton et se fondent au survol ou à la mise au point */
+body .button.primary::after { content: ""; position: absolute; z-index: -1; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; filter: url(#ecarnet-gooey-soft); background-repeat: no-repeat;
+  background-image: radial-gradient(circle at 14% 120%, rgb(255 255 255 / .34) 0 15px, transparent 16px), radial-gradient(circle at 42% 130%, rgb(255 255 255 / .3) 0 21px, transparent 22px), radial-gradient(circle at 70% 125%, rgb(255 255 255 / .34) 0 17px, transparent 18px), radial-gradient(circle at 92% 135%, rgb(255 255 255 / .28) 0 13px, transparent 14px); }
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  body .button.primary:not(:disabled):hover, body .button.primary:not(:disabled):focus-visible { animation: jelly-press .5s var(--spring-soft); }
+  body .button.primary:not(:disabled):hover::after, body .button.primary:not(:disabled):focus-visible::after { animation: goo-rise 1s ease-out both; }
+}
+@keyframes goo-rise { 0% { opacity: 1; background-position: 0 14px, 0 22px, 0 18px, 0 26px; } 100% { opacity: .9; background-position: 0 -62px, 0 -54px, 0 -66px, 0 -58px; } }
+@keyframes jelly-press { 0% { transform: scale(1, 1); } 30% { transform: scale(1.035, .955); } 60% { transform: scale(.985, 1.03); } 100% { transform: scale(1, 1); } }
+
+/* ---------- Provenance dans le login et cartes d'accueil de connexion ---------- */
+body .ax-frame { border-radius: 10px 30px 30px 10px; background: var(--grain), linear-gradient(180deg, var(--paper-hi), var(--paper)); background-blend-mode: soft-light, normal; border-color: var(--paper-edge); box-shadow: inset 12px 0 14px -14px rgb(60 40 10 / .3), inset 0 1px 0 rgb(255 255 255 / .9), var(--lift-md); }
+body .ax-social { background: linear-gradient(180deg, var(--paper-hi), var(--paper)); border-color: color-mix(in srgb, var(--paper-edge) 75%, var(--text)); box-shadow: inset 0 1px 0 #fff, inset 0 -2px 0 rgb(60 40 10 / .1), 0 3px 6px -3px rgb(60 40 10 / .3); }
+body .ax-stage { box-shadow: inset 0 0 0 1px rgb(255 255 255 / .35), inset 0 0 0 7px transparent, inset 0 -18px 30px -24px rgb(60 40 10 / .5); }
+body .ax-stage::after { content: ""; position: absolute; inset: 9px; z-index: 0; border-radius: 18px; border: 1.5px dashed color-mix(in srgb, var(--text) 26%, transparent); pointer-events: none; }
+body .ax-brand .brand-mark { filter: drop-shadow(0 2px 2px rgb(60 40 10 / .3)); }
+
+/* =====================================================================================================
+   Cuir : navigation (barre basse mobile, sidebar desktop) et barre haute mobile
+   On redéfinit les variables de texte DANS ces zones : tout ce qu'elles contiennent (icônes, libellés, menus) devient crème sur cuir.
+   ===================================================================================================== */
+body .sb, body .space-mobile-header {
+  --text: var(--cream);
+  --text-muted: color-mix(in srgb, var(--cream) 80%, var(--leather));
+  --bg: var(--leather);
+  --surface: var(--leather-hi);
+  --surface-tint: color-mix(in srgb, var(--leather) 82%, #fff);
+  --border: rgb(255 255 255 / .16);
+  --border-strong: rgb(255 255 255 / .28);
+  --sb-hover: rgb(255 255 255 / .09);
+  --sb-active: rgb(255 255 255 / .16);
+  --sb-line: rgb(255 255 255 / .14);
+  color: var(--cream);
+}
+body .sb__menu { background: var(--leather-hi); border-color: rgb(255 255 255 / .2); box-shadow: 0 18px 32px -12px rgb(20 10 0 / .6), inset 0 1px 0 rgb(255 255 255 / .14); }
+
+/* Barre basse (mobile) : une sangle de cuir cousue, avec la goutte de l'onglet actif */
+@media (max-width: 919px) {
+  body .sb__scroll {
+    position: relative; border: 1px solid rgb(0 0 0 / .45);
+    background: var(--grain-leather), linear-gradient(180deg, var(--leather-hi), var(--leather) 45%, var(--leather-lo));
+    background-blend-mode: soft-light, normal;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / .22), inset 0 -3px 5px rgb(0 0 0 / .4), 0 2px 0 rgb(0 0 0 / .25), 0 14px 24px -10px rgb(20 10 0 / .65);
+  }
+  body .sb__scroll::after { content: ""; position: absolute; inset: 2px; z-index: 2; border-radius: inherit; border: 1.5px dashed color-mix(in srgb, var(--thread) 72%, transparent); pointer-events: none; }
+  body .sb__list { position: relative; z-index: 1; }
+}
+body .sb__item { color: var(--cream-dim); transition: color .2s ease, transform .15s ease; }
+body .sb__item:hover { color: var(--cream); }
+body .sb__item:active { transform: scale(.92); }
+body .sb__item.is-active { color: var(--cream); background: var(--sb-active); box-shadow: inset 0 0 0 1px rgb(255 255 255 / .18); }
+/* la goutte (mobile uniquement) */
+body .sb__goo { display: none; }
+@media (max-width: 919px) {
+  body .sb__goo { display: block; position: absolute; inset: 0; z-index: 0; border-radius: inherit; pointer-events: none; filter: url(#ecarnet-gooey-soft); }
+  body .sb__blob { position: absolute; left: 0; top: 0; display: block; width: var(--size, 48px); height: var(--size, 48px); border-radius: 50%; background: radial-gradient(circle at 35% 28%, #fff7e2, var(--cream) 55%, #e2cf9f); transform: translate(var(--x, 0), var(--y, 0)); will-change: transform; }
+  body .sb__blob--lead { transition: transform .34s cubic-bezier(.2, .9, .25, 1); }
+  body .sb__blob--trail { transition: transform .62s var(--spring-soft); }
+  body .sb__goo[data-still="true"] .sb__blob { transition: none; }
+  /* La goutte prend le relais du fond de l'onglet actif (tant qu'elle est en place) ; l'icône passe en encre sur crème. */
+  body .sb__scroll[data-goo="on"] .sb__item.is-active { background: transparent; box-shadow: none; color: var(--leather-lo); }
+  body .sb__scroll:not([data-goo="on"]) .sb__item.is-active { background: radial-gradient(circle at 35% 28%, #fff7e2, var(--cream) 55%, #e2cf9f); color: var(--leather-lo); box-shadow: none; }
+  body .sb__item.is-active .icon { filter: drop-shadow(0 1px 0 rgb(255 255 255 / .6)); }
+}
+
+/* Sidebar desktop : couverture de cuir, couture sur le dos */
+@media (min-width: 920px) {
+  body .sb, body .sb.is-bare {
+    background: var(--grain-leather), linear-gradient(90deg, var(--leather-lo), var(--leather) 14%, var(--leather-hi) 96%, var(--leather));
+    background-blend-mode: soft-light, normal; border-right: 1px solid rgb(0 0 0 / .5);
+    box-shadow: inset -1px 0 0 rgb(255 255 255 / .12), 6px 0 18px -8px rgb(20 10 0 / .5);
+  }
+  body .sb::after { content: ""; position: absolute; top: 10px; bottom: 10px; right: 8px; width: 0; border-right: 2px dashed color-mix(in srgb, var(--thread) 60%, transparent); pointer-events: none; }
+  body .sb__item { color: var(--cream-dim); }
+  body .sb__item .icon, body .sb__item.is-active .icon { color: inherit; }
+  body .sb__item.is-active .icon { color: var(--brass-hi); }
+  body .sb__item.is-active { background: linear-gradient(180deg, rgb(255 255 255 / .2), rgb(255 255 255 / .1)); color: var(--cream); box-shadow: inset 0 1px 0 rgb(255 255 255 / .22), inset 3px 0 0 var(--brass), 0 1px 2px rgb(0 0 0 / .35); }
+  body .space-main::before { content: ""; position: fixed; top: 0; bottom: 0; left: var(--sb-w, 288px); width: 22px; z-index: 0; pointer-events: none; background: linear-gradient(90deg, rgb(60 40 10 / .22), transparent); }
+  body .space--nav-collapsed .space-main::before { left: var(--sb-w-rail, 60px); }
+}
+
+/* Barre haute mobile : le haut de la couverture, coutures en bas, menu en goutte à droite */
+@media (max-width: 919px) {
+  body .space-mobile-header {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 4px; min-height: 60px; padding: 8px 16px; overflow-x: clip;
+    background: var(--grain-leather), linear-gradient(180deg, var(--leather-hi), var(--leather) 70%, var(--leather-lo)); background-blend-mode: soft-light, normal;
+    border-radius: 0 0 22px 22px; box-shadow: inset 0 -1px 0 rgb(0 0 0 / .4), 0 10px 18px -10px rgb(20 10 0 / .6);
+  }
+  body .space-mobile-header::after { content: ""; position: absolute; left: 14px; right: 14px; bottom: 5px; height: 0; border-bottom: 1.5px dashed color-mix(in srgb, var(--thread) 66%, transparent); pointer-events: none; }
+  body .space-mobile-header__brand small { color: var(--cream-dim); }
+}
+
+/* ---------- Menu du compte en goutte (mobile) ---------- */
+body .gm { position: relative; flex: 0 0 auto; width: 46px; height: 46px; z-index: 5; }
+body .gm__trigger { position: relative; z-index: 3; display: grid; place-items: center; width: 46px; height: 46px; padding: 0; border: 2px solid var(--thread); border-radius: 50%; background: var(--leather-lo); cursor: pointer; box-shadow: inset 0 1px 0 rgb(255 255 255 / .25), 0 3px 6px rgb(0 0 0 / .4); transition: transform .15s ease; }
+body .gm__trigger:active { transform: scale(.92); }
+body .gm__trigger:focus-visible { outline: 3px solid var(--cream); outline-offset: 3px; }
+body .gm__trigger .sb__avatar { width: 100%; height: 100%; flex: none; border-radius: 50%; object-fit: cover; font-size: .85rem; }
+/* calque filtré : deux gouttes (l'ancre sous le bouton, la masse qui s'étire et descend) */
+body .gm__goo { position: absolute; z-index: 1; top: -30px; right: -30px; width: calc(46px + 60px); height: calc(46px + 60px); pointer-events: none; filter: url(#ecarnet-gooey) drop-shadow(0 14px 18px rgb(20 10 0 / .45)); transition: width 0s .75s, height 0s .75s; }
+body .gm[data-open="true"] .gm__goo { width: calc(var(--gm-w, 300px) + 60px); height: calc(var(--gm-h, 200px) + 96px + 60px); transition: none; }
+body .gm__anchor, body .gm__blob { position: absolute; top: 30px; right: 30px; display: block; width: 46px; height: 46px; border-radius: 23px; background: var(--leather); }
+body .gm__blob { transform: translateY(0); transition: width .7s var(--spring), height .7s var(--spring), transform .7s var(--spring), border-radius .7s var(--spring); }
+body .gm[data-open="true"] .gm__blob { width: var(--gm-w, 300px); height: var(--gm-h, 200px); border-radius: 26px; transform: translateY(60px); }
+/* panneau net (texte non filtré), même taille que la goutte */
+body .gm__panel { position: absolute; z-index: 2; top: 0; right: 0; width: 46px; height: 46px; overflow: hidden; border-radius: 23px; pointer-events: none; visibility: hidden; transform: translateY(0);
+  transition: width .7s var(--spring), height .7s var(--spring), transform .7s var(--spring), border-radius .7s var(--spring), visibility 0s .75s; }
+body .gm[data-open="true"] .gm__panel { width: var(--gm-w, 300px); height: var(--gm-h, 200px); border-radius: 26px; transform: translateY(60px); pointer-events: auto; visibility: visible; transition-delay: 0s; box-shadow: inset 0 1px 0 rgb(255 255 255 / .22), inset 0 -2px 3px rgb(0 0 0 / .25); }
+body .gm[data-open="true"] .gm__panel::after { content: ""; position: absolute; inset: 7px; border-radius: 20px; border: 1.5px dashed color-mix(in srgb, var(--thread) 55%, transparent); pointer-events: none; }
+body .gm__content { position: absolute; top: 0; right: 0; width: var(--gm-w, 300px); display: grid; gap: 2px; padding: 16px 14px 14px; color: var(--cream); }
+body .gm__item { opacity: 0; transform: translateY(14px); filter: blur(6px); transition: opacity .2s ease, transform .2s ease, filter .2s ease; }
+body .gm[data-open="true"] .gm__item { opacity: 1; transform: none; filter: blur(0); transition: opacity .4s ease calc(.16s + var(--i, 0) * .055s), transform .5s var(--spring-soft) calc(.16s + var(--i, 0) * .055s), filter .4s ease calc(.16s + var(--i, 0) * .055s); }
+body .gm__who { display: grid; gap: 1px; margin: 0 0 6px; padding: 0 8px 10px; border-bottom: 1px solid rgb(255 255 255 / .16); min-width: 0; }
+body .gm__who strong { font-size: 1rem; overflow-wrap: anywhere; }
+body .gm__who small { color: var(--cream-dim); font-size: .78rem; overflow-wrap: anywhere; }
+body .gm__sep { height: 1px; margin: 4px 8px; background: rgb(255 255 255 / .16); }
+body .gm__notice { margin: 4px 8px 0; font-size: .78rem; color: #ffd8cf; }
+body .gm .sb__menu-item { min-height: 44px; border-radius: 12px; color: var(--cream); }
+body .gm .sb__menu-item .icon { color: var(--brass-hi); }
+body .gm .sb__menu-item:hover, body .gm .sb__menu-item:focus-visible { background: rgb(255 255 255 / .12); outline: none; box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / .35); }
+body .gm .sb__menu-item--danger { color: #ffd8cf; }
+@media (min-width: 920px) { body .gm { display: none; } }
+
+/* ---------- Carte d'urgence : une vraie carte plastifiée ---------- */
+body .ecard { box-shadow: inset 0 1px 0 rgb(255 255 255 / .9), 0 1px 2px rgb(60 40 10 / .25), 0 14px 26px -14px rgb(60 40 10 / .5); }
+body .ecard__photo-frame { box-shadow: inset 0 0 0 4px #fff, inset 0 0 0 5px color-mix(in srgb, var(--paper-edge) 70%, transparent), 0 3px 8px -3px rgb(60 40 10 / .5); }
+body .ecard-qr { background: var(--grain), linear-gradient(180deg, var(--paper-hi), var(--paper)); background-blend-mode: soft-light, normal; border-color: var(--paper-edge); border-radius: 8px 18px 18px 8px; box-shadow: var(--lift-sm), inset 0 1px 0 #fff; }
+body .ecard-qr__box { box-shadow: var(--deboss); }
+body .ecard-qr__off { display: grid; gap: 10px; justify-items: start; padding: 16px; }
+body .ecard-qr__off p { margin: 0; }
+
+/* ---------- Mouvement réduit : mêmes états, sans animation ---------- */
+@media (prefers-reduced-motion: reduce) {
+  body .sb__blob, body .gm__blob, body .gm__panel, body .gm__item, body .gm__goo, body .gm__trigger, body .sb__item, body .button, body .card-link { transition: none !important; animation: none !important; }
+  body .gm__item { filter: none; }
+}
+@media print { body::before, body .page-header::after, body .hero-page::after { display: none; } body .card, body .record { box-shadow: none; background: #fff; } }

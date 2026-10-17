@@ -175,7 +175,7 @@ export default function AdminPage() {
   if (loading && !dashboard) return <main className="admin-loader"><ScreenLoader label="Vérification de la session administrateur…" /></main>;
 
   if (!dashboard) return <main className="shell admin-shell"><section className="admin-login card">
-    <span className="eyebrow">E‑Carnet · Administration</span><h1>Console d’administration</h1>
+    <span className="eyebrow">Mon E‑Carnet · Administration</span><h1>Console d’administration</h1>
     <p className="muted">Accès réservé aux superadministrateurs autorisés.</p>
     <form className="stack" onSubmit={signIn}>
       <label className="field"><span>Email administrateur</span><input type="email" autoComplete="username" required value={email} onChange={(event) => setEmail(event.target.value)} /></label>
@@ -228,7 +228,7 @@ export default function AdminPage() {
   return <div className={`space space--admin${navCollapsed ? " space--nav-collapsed" : ""}`}>
     <AppSidebar
       ariaLabel="Navigation de l’administration"
-      brand={{ href: "/admin/", title: "E-carnet", subtitle: "Console admin" }}
+      brand={{ href: "/admin/", title: "Mon E-Carnet", subtitle: "Console admin" }}
       items={sidebarItems}
       listRole="tablist"
       listLabel="Sections de l’administration"
@@ -239,12 +239,12 @@ export default function AdminPage() {
     />
     <main className="space-main admin-space-main">
       <header className="space-mobile-header">
-        <Link className="space-mobile-header__brand" href="/admin/" aria-label="E-Carnet, accueil administration">
+        <Link className="space-mobile-header__brand" href="/admin/" aria-label="Mon E-Carnet, accueil administration">
           <BrandMark />
-          <span><strong>E-Carnet</strong><small>Administration</small></span>
+          <span><strong>Mon E-Carnet</strong><small>Administration</small></span>
         </Link>
       </header>
-      <header className="admin-page-heading"><div><span className="eyebrow">Console privée</span><h1>Administration E‑Carnet</h1><p className="muted">Actualisé {formatDate(dashboard.generated_at)} · synchronisation automatique toutes les 2 min</p></div><button type="button" className={`admin-refresh-icon${manualRefreshing ? " is-refreshing" : ""}`} aria-label="Actualiser les données" title="Actualiser les données" aria-busy={manualRefreshing} disabled={manualRefreshing} onClick={() => void loadDashboard(true, true)}><Icon name="refresh" size={20} /></button></header>
+      <header className="admin-page-heading"><div><span className="eyebrow">Console privée</span><h1>Administration Mon E‑Carnet</h1><p className="muted">Actualisé {formatDate(dashboard.generated_at)} · synchronisation automatique toutes les 2 min</p></div><button type="button" className={`admin-refresh-icon${manualRefreshing ? " is-refreshing" : ""}`} aria-label="Actualiser les données" title="Actualiser les données" aria-busy={manualRefreshing} disabled={manualRefreshing} onClick={() => void loadDashboard(true, true)}><Icon name="refresh" size={20} /></button></header>
       {refreshMessage && <p className="admin-refresh-note" role="status">{refreshMessage}</p>}
       <div className="admin-workspace__content">
 
@@ -303,7 +303,7 @@ export default function AdminPage() {
     </section>}
 
     {activeTab === "establishments" && <section id="admin-panel-establishments" role="tabpanel" aria-labelledby="admin-tab-establishments" className="grid admin-management-grid">
-      <AdminEstablishmentsClient aside={<article className="card"><span className="eyebrow">Limites du rôle</span><h2>Contrôle administratif, pas clinique</h2><p className="muted">Le staff E‑Carnet ne vérifie pas les justificatifs personnels du médecin dans ce parcours. L’établissement vérifie ses médecins, émet un code temporaire et décide des demandes de rattachement. L’espace établissement n’accède jamais aux dossiers médicaux.</p></article>} />
+      <AdminEstablishmentsClient aside={<article className="card"><span className="eyebrow">Limites du rôle</span><h2>Contrôle administratif, pas clinique</h2><p className="muted">Le staff Mon E‑Carnet ne vérifie pas les justificatifs personnels du médecin dans ce parcours. L’établissement vérifie ses médecins, émet un code temporaire et décide des demandes de rattachement. L’espace établissement n’accède jamais aux dossiers médicaux.</p></article>} />
     </section>}
     {activeTab === "account-requests" && <section id="admin-panel-account-requests" role="tabpanel" aria-labelledby="admin-tab-account-requests"><AdminAccountActionRequestsClient /></section>}
     {activeTab === "representation-transfers" && <section id="admin-panel-representation-transfers" role="tabpanel" aria-labelledby="admin-tab-representation-transfers"><AdminRepresentationTransfersClient /></section>}

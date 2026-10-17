@@ -36,12 +36,12 @@ export function ProfessionalAccess() {
 
   return (
     <div className="stack-lg">
-      <PageHeader eyebrow="Établissement" title="Mon rattachement" lead="L’établissement vérifie le médecin et ses justificatifs en interne. E‑Carnet ne collecte pas ces pièces : l’application enregistre la décision de rattachement prise par l’établissement." />
+      <PageHeader eyebrow="Établissement" title="Mon rattachement" lead="L’établissement vérifie le médecin et ses justificatifs en interne. Mon E‑Carnet ne collecte pas ces pièces : l’application enregistre la décision de rattachement prise par l’établissement." />
 
       <section className="card" aria-labelledby="profile-title">
         <span className="eyebrow">Profil déclaratif</span>
         <h2 id="profile-title">{profile.professional_title} · {profile.specialty || "Spécialité à renseigner"}</h2>
-        <p className="muted">Cette spécialité est déclarée par vous et n’est pas certifiée par E‑Carnet. La vérification professionnelle relève de l’établissement.</p>
+        <p className="muted">Cette spécialité est déclarée par vous et n’est pas certifiée par Mon E‑Carnet. La vérification professionnelle relève de l’établissement.</p>
         <Link className="text-link" href="/professionnel/onboarding">Modifier mon profil →</Link>
       </section>
 

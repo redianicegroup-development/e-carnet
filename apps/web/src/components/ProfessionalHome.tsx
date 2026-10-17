@@ -19,7 +19,7 @@ export function ProfessionalHome() {
   const active = memberships.find((item) => item.establishment_id === profile?.active_establishment);
 
   const steps: { title: string; text: string; state: StepState }[] = [
-    { title: "Profil professionnel", text: hasProfile ? `${profile?.specialty || "Spécialité à renseigner"} · déclarée, non certifiée par E‑Carnet.` : "Déclarez votre profession et votre spécialité, sans numéro ni pièce justificative.", state: hasProfile ? "done" : "current" },
+    { title: "Profil professionnel", text: hasProfile ? `${profile?.specialty || "Spécialité à renseigner"} · déclarée, non certifiée par Mon E‑Carnet.` : "Déclarez votre profession et votre spécialité, sans numéro ni pièce justificative.", state: hasProfile ? "done" : "current" },
     { title: "Vérification interne", text: attached ? "L’établissement a confirmé votre rattachement. Sa vérification médicale relève de ses procédures internes." : pending ? "Votre établissement examine votre demande en interne." : "L’établissement vous remet un code après sa vérification interne.", state: attached ? "done" : pending ? "current" : "todo" },
     { title: "Établissement actif", text: ready ? "Vos accès cliniques sont ouverts dans ce périmètre." : "L’accès clinique dépend d’un rattachement actif et de l’autorisation du patient.", state: ready ? "done" : attached ? "current" : "todo" },
   ];

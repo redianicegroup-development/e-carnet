@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { BrandMark } from "../ui/BrandMark";
 import { Icon, type IconName } from "../ui/Icon";
 import "./sidebar.css";
@@ -67,9 +67,49 @@ export type AppSidebarProps = {
   bare?: boolean;
 };
 
-function SidebarAvatar({ account }: { account: SidebarAccount }) {
+export function SidebarAvatar({ account }: { account: SidebarAccount }) {
   // eslint-disable-next-line @next/next/no-img-element -- avatar externe fourni par le compte
   return account.avatarUrl ? <img className="sb__avatar" src={account.avatarUrl} alt="" referrerPolicy="no-referrer" /> : <span className="sb__avatar" aria-hidden="true">{account.initials}</span>;
+}
+
+/* Barre basse mobile : la pastille de l'onglet actif est une goutte (filtre gooey) qui glisse d'un onglet à l'autre.
+   Deux gouttes : la première arrive vite, la seconde la rattrape en rebondissant, et le filtre les fond en une seule matière qui s'étire.
+   Seules `--x` et `--y` sont écrites ici ; les transitions (et leur suppression en mouvement réduit) sont dans carnet-skin.css. */
+function useGooeyIndicator(activeId: string | undefined, count: number) {
+  const scroll = useRef<HTMLDivElement>(null);
+  const placed = useRef(false);
+
+  const place = useCallback((animate: boolean) => {
+    const host = scroll.current;
+    const active = host?.querySelector<HTMLElement>(".sb__item.is-active");
+    const goo = host?.querySelector<HTMLElement>(".sb__goo");
+    if (!host) return;
+    // Sur grand écran la sidebar est verticale et la goutte masquée : l'onglet actif garde alors son propre fond.
+    if (!active || !goo || goo.offsetParent === null) { host.removeAttribute("data-goo"); return; }
+    if (!animate) goo.dataset.still = "true";
+    const a = active.getBoundingClientRect();
+    const h = host.getBoundingClientRect();
+    const size = Math.min(a.width, a.height);
+    goo.style.setProperty("--size", `${size}px`);
+    goo.style.setProperty("--x", `${a.left - h.left + (a.width - size) / 2}px`);
+    goo.style.setProperty("--y", `${a.top - h.top + (a.height - size) / 2}px`);
+    host.dataset.goo = "on";
+    if (!animate) { void goo.offsetWidth; requestAnimationFrame(() => { delete goo.dataset.still; }); }
+  }, []);
+
+  // Premier placement et changement d'onglet : seul le changement d'onglet est animé.
+  useEffect(() => { place(placed.current); placed.current = true; }, [activeId, count, place]);
+  // Rotation, redimensionnement, polices qui s'installent : la goutte se repositionne sans animation.
+  useEffect(() => {
+    const host = scroll.current;
+    if (!host) return;
+    const onResize = () => place(false);
+    window.addEventListener("resize", onResize);
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(onResize);
+    observer?.observe(host);
+    return () => { window.removeEventListener("resize", onResize); observer?.disconnect(); };
+  }, [place]);
+  return scroll;
 }
 
 function ItemBody({ item }: { item: SidebarItem }) {
@@ -116,7 +156,7 @@ function onTabsKeyDown(event: KeyboardEvent<HTMLUListElement>) {
   tabs[next].click();
 }
 
-function MenuEntry({ entry, onDone }: { entry: SidebarMenuItem; onDone: () => void }) {
+export function MenuEntry({ entry, onDone }: { entry: SidebarMenuItem; onDone: () => void }) {
   const className = `sb__menu-item${entry.tone === "danger" ? " sb__menu-item--danger" : ""}`;
   const body = <><Icon name={entry.icon} size={18} /><span>{entry.label}</span></>;
   if (entry.href && entry.external) return <a role="menuitem" className={className} href={entry.href} target="_blank" rel="noopener noreferrer" onClick={onDone}>{body}</a>;
@@ -186,6 +226,7 @@ function AccountMenu({ account, menu, notice, collapsed }: { account: SidebarAcc
 export function AppSidebar({ ariaLabel, brand, items, listRole, listLabel, account, accountHref, menu, notice, collapsed, onToggle, bare = false }: AppSidebarProps) {
   const tabs = listRole === "tablist";
   const rail = collapsed && !bare;
+  const scroll = useGooeyIndicator(items.find((item) => item.active)?.id, items.length);
   return (
     <nav className={`sb${rail ? " is-collapsed" : ""}${bare ? " is-bare" : ""}`} aria-label={ariaLabel}>
       <div className="sb__head">
@@ -199,7 +240,8 @@ export function AppSidebar({ ariaLabel, brand, items, listRole, listLabel, accou
       </div>
 
       {!bare && (
-        <div className="sb__scroll">
+        <div className="sb__scroll" ref={scroll}>
+          <span className="sb__goo" aria-hidden="true"><i className="sb__blob sb__blob--lead" /><i className="sb__blob sb__blob--trail" /></span>
           <ul className="sb__list" role={tabs ? "tablist" : undefined} aria-label={tabs ? listLabel : undefined} onKeyDown={tabs ? onTabsKeyDown : undefined}>
             {items.map((item) => (
               <li key={item.id} className="sb__row" role={tabs ? "presentation" : undefined}>

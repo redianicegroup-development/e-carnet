@@ -16,11 +16,13 @@ import { ThemeBootstrap } from "../components/ThemeBootstrap";
 import { PwaRegister } from "../components/PwaRegister";
 import { AnonymousVisitorTracker } from "../components/AnonymousVisitorTracker";
 import { LandingFeedbackWidget } from "../components/LandingFeedbackWidget";
+import { GooeyFilters } from "../components/ui/GooeyFilters";
 import { ConfirmProvider } from "../components/modal/ConfirmProvider";
 import { CookieConsentBanner } from "../components/CookieConsentBanner";
 import "./cookie-consent.css";
 import "./screen-loader.css";
 import "../components/modal/modal.css";
+import "./carnet-skin.css";
 
 // Polices auto-hébergées par Next au build : une seule paire est utilisée à l’écran,
 // sans requête Google Fonts à l’exécution ni préchargement des autres paires.
@@ -36,15 +38,15 @@ const localFontClasses = [jetbrainsMono, manrope, sora, mooli, quicksand, bricol
   .join(" ");
 
 export const metadata: Metadata = {
-  title: "Mon Carnet Numérique",
+  title: "Mon E-Carnet",
   description: "Un carnet médical personnel, sous le contrôle du patient.",
   robots: { index: false, follow: false },
-  applicationName: "Mon Carnet Numérique",
+  applicationName: "Mon E-Carnet",
   manifest: "/manifest.webmanifest",
 };
 
 export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#FFF7E6" };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
-  return <html lang="fr" className={localFontClasses}><body><ThemeBootstrap /><AnonymousVisitorTracker /><PwaRegister /><ConfirmProvider>{children}</ConfirmProvider><CookieConsentBanner /><LandingFeedbackWidget /></body></html>;
+  return <html lang="fr" className={localFontClasses}><body><GooeyFilters /><ThemeBootstrap /><AnonymousVisitorTracker /><PwaRegister /><ConfirmProvider>{children}</ConfirmProvider><CookieConsentBanner /><LandingFeedbackWidget /></body></html>;
 }

@@ -9,8 +9,8 @@ import { CREDITS_BUILT_WITH, CREDITS_ORIGINS, CREDITS_TEAM, CREDITS_UPDATED } fr
 import { formatLegalDate } from "../../lib/legal/config";
 
 export const metadata: Metadata = {
-  title: "Crédits et remerciements — Mon Carnet Numérique",
-  description: "Les personnes et les structures à l’origine de Mon Carnet Numérique : l’équipe Redianice, AKATech Studio et les outils sur lesquels le service s’appuie.",
+  title: "Crédits et remerciements — Mon E-Carnet",
+  description: "Les personnes et les structures à l’origine de Mon E-Carnet : l’équipe Redianice, AKATech Studio et les outils sur lesquels le service s’appuie.",
   robots: { index: false, follow: true },
 };
 
@@ -23,7 +23,7 @@ export default function CreditsPage() {
           <BrandLogo height={60} />
           <span className="eyebrow">Crédits et remerciements</span>
           <h1>Merci à celles et ceux qui ont rendu ce carnet possible.</h1>
-          <p className="lead">Mon Carnet Numérique est porté par Redianice, une startup qui construit des outils simples au service de la santé. L’application est développée par AKATech Studio, dont le fondateur fait partie de l’équipe.</p>
+          <p className="lead">Mon E-Carnet est porté par Redianice, une startup qui construit des outils simples au service de la santé. L’application est développée par AKATech Studio, dont le fondateur fait partie de l’équipe.</p>
         </header>
 
         <section className="stack" aria-labelledby="equipe">

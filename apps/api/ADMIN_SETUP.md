@@ -2,7 +2,7 @@
 
 ## Console admin côté application
 
-La console personnalisée est servie par le frontend E‑Carnet : **https://e-carnetci.vercel.app/admin/**. Elle utilise la session de connexion habituelle, puis l’API n’autorise le dashboard qu’aux comptes dont `is_superuser=True`. Les comptes simplement `is_staff` ne peuvent pas l’ouvrir.
+La console personnalisée est servie par le frontend Mon E‑Carnet : **https://e-carnetci.vercel.app/admin/**. Elle utilise la session de connexion habituelle, puis l’API n’autorise le dashboard qu’aux comptes dont `is_superuser=True`. Les comptes simplement `is_staff` ne peuvent pas l’ouvrir.
 
 La console comporte cinq sections : **Vue d’ensemble** (KPI, facilité moyenne et courbes sur 30 jours), **Visites & clics** (recherche parmi les 200 visiteurs récents), **Feedback** (recherche et suivi du statut des retours), **Enquêtes** (découverte visiteurs et expérience produit, distribution et réponses) et **Établissements** (création et invitation du responsable). Les courbes présentent les nouveaux visiteurs, feedbacks et réponses quotidiennes aux deux enquêtes, ainsi que la facilité moyenne quotidienne après usage. Elles s’appuient sur les événements réellement horodatés : les compteurs cumulés de pages et de clics ne sont pas ventilés par jour, car aucun historique quotidien n’est conservé. Les données sont rechargées discrètement toutes les deux minutes lorsque la page admin est visible. La console ne donne pas accès aux dossiers patients. La route `/admin/` de Django Admin n’est plus exposée par l’API.
 

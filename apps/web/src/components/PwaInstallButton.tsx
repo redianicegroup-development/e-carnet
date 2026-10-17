@@ -29,7 +29,7 @@ export function PwaInstallButton() {
     setPromptEvent(null);
   }
 
-  if (installed) return <p className="pwa-install-note" role="status">E‑Carnet est installé sur cet appareil.</p>;
+  if (installed) return <p className="pwa-install-note" role="status">Mon E‑Carnet est installé sur cet appareil.</p>;
   return <div className="pwa-install-wrap">
     <button className="pwa-install-button" type="button" onClick={() => void install()}><Icon name="plus" size={17} /> Installer l’application</button>
     {help && <p className="pwa-install-note" role="status">Dans le menu de votre navigateur, choisissez « Installer l’application » ou « Ajouter à l’écran d’accueil ».</p>}

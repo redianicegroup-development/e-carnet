@@ -5,6 +5,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1
 WORKDIR /app
 
+# requirements.txt est le fichier verrouillé (make lock) : dès qu'il porte des empreintes, pip refuse tout paquet non listé ou modifié.
 COPY apps/api/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 COPY apps/api/ /app/

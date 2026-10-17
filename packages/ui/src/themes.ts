@@ -6,9 +6,9 @@
  */
 
 export const FONT_PAIRS = {
-  "sora-bricolage": { label: "Sora (titres) · Bricolage Grotesque (texte)", heading: "Sora", body: "Bricolage Grotesque" },
-  "mooli-manrope": { label: "Mooli (titres) · Manrope (texte)", heading: "Mooli", body: "Manrope" },
-  "fredoka-quicksand": { label: "Fredoka (titres) · Quicksand (texte, arrondi)", heading: "Fredoka", body: "Quicksand" },
+  "sora-bricolage": { label: "Sora and Bricolage", heading: "Sora", body: "Bricolage Grotesque" },
+  "mooli-manrope": { label: "Mooli and Manrope", heading: "Mooli", body: "Manrope" },
+  "fredoka-quicksand": { label: "Fredoka and Quicksand", heading: "Fredoka", body: "Quicksand" },
 } as const;
 export type FontPairId = keyof typeof FONT_PAIRS;
 export type FontName = (typeof FONT_PAIRS)[FontPairId]["body"] | (typeof FONT_PAIRS)[FontPairId]["heading"];

@@ -14,7 +14,7 @@ PROFILE_FIELDS = ("establishment_type", "city", "address", "phone", "email")
 
 
 def generate_internal_code():
-    """Code interne lisible (ETB-XXXXXX) attribué par l'équipe E‑Carnet pour distinguer deux structures homonymes."""
+    """Code interne lisible (ETB-XXXXXX) attribué par l'équipe Mon E‑Carnet pour distinguer deux structures homonymes."""
     for _ in range(12):
         code = "ETB-" + "".join(secrets.choice(INTERNAL_CODE_ALPHABET) for _ in range(6))
         if not Establishment.objects.filter(internal_code=code).exists():
@@ -27,7 +27,7 @@ class Establishment(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=180)
-    # Renseignés par l'établissement lui‑même (fiche d'onboarding) : vides à la création par l'équipe E‑Carnet.
+    # Renseignés par l'établissement lui‑même (fiche d'onboarding) : vides à la création par l'équipe Mon E‑Carnet.
     establishment_type = models.CharField(max_length=100, blank=True, default="")
     city = models.CharField(max_length=120, blank=True, default="")
     address = models.CharField(max_length=240, blank=True, default="")

@@ -10,6 +10,7 @@ import { useConfirm } from "../modal/ConfirmProvider";
 import { GreetingModal } from "../modal/GreetingModal";
 import { BrandMark } from "../ui/BrandMark";
 import { ScreenLoader } from "../ui/ScreenLoader";
+import { GooeyAccountMenu } from "./GooeyAccountMenu";
 import { AppSidebar, type SidebarItem, type SidebarMenuItem } from "./AppSidebar";
 
 export type SpaceAccount = {
@@ -182,7 +183,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
     <div className={`space space--${space}${bare ? " space--bare" : ""}${navCollapsed && !bare ? " space--nav-collapsed" : ""}`}>
       <AppSidebar
         ariaLabel={`Navigation de l’${config.label.toLowerCase()}`}
-        brand={{ href: bare || state.status !== "ready" ? "/" : config.home, title: "E-carnet", subtitle: config.label }}
+        brand={{ href: bare || state.status !== "ready" ? "/" : config.home, title: "Mon E-Carnet", subtitle: config.label }}
         items={items}
         account={state.status === "ready" ? { name: displayName(state.account), email: state.account.email, initials: initials(state.account), avatarUrl: state.account.avatar_url || undefined } : null}
         accountHref={moi.href}
@@ -196,10 +197,12 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
       <main className="space-main" id="contenu">
         {!bare && (
           <header className="space-mobile-header">
-            <Link className="space-mobile-header__brand" href={config.home} aria-label={`E-Carnet, accueil ${config.label.toLowerCase()}`}>
+            <Link className="space-mobile-header__brand" href={config.home} aria-label={`Mon E-Carnet, accueil ${config.label.toLowerCase()}`}>
               <BrandMark />
-              <span><strong>E-Carnet</strong><small>{config.label}</small></span>
+              <span><strong>Mon E‑Carnet</strong><small>{config.label}</small></span>
             </Link>
+            {/* Menu du compte en goutte (barre haute mobile) : sur grand écran, le même menu est dans la sidebar. */}
+            {state.status === "ready" && <GooeyAccountMenu account={{ name: displayName(state.account), email: state.account.email, initials: initials(state.account), avatarUrl: state.account.avatar_url || undefined }} menu={menu} notice={logoutMessage} />}
           </header>
         )}
         {state.status === "loading" && <ScreenLoader label={state.label} />}

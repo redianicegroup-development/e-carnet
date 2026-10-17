@@ -1,4 +1,4 @@
-# Mon Carnet Numérique — V1 en construction
+# Mon E-Carnet — V1 en construction
 
 Monorepo d’une application web/PWA mobile-first : Next.js 16, API Django/DRF et PostgreSQL cible.
 

@@ -24,7 +24,7 @@ const sections: SettingsNavItem[] = [
   { id: "proches", title: "Proches et personnes représentées", description: "Gérer les dossiers distincts des enfants représentés.", icon: "users" },
   { id: "compte", title: "Paramètres du compte", description: "Personnaliser l’apparence de l’application.", icon: "sparkle" },
   { id: "securite", title: "Sécurité et connexion", description: "Gérer les fournisseurs liés au compte.", icon: "lock" },
-  { id: "en-savoir-plus", title: "En savoir plus", description: "Aide, informations et documents E‑Carnet.", icon: "help" },
+  { id: "en-savoir-plus", title: "En savoir plus", description: "Aide, informations et documents Mon E‑Carnet.", icon: "help" },
   { id: "avis", title: "Votre avis", description: "Partager une suggestion ou signaler un problème.", icon: "pencil" },
 ];
 function titleFor(id: string) { return sections.find((section) => section.id === id)?.title ?? "Paramètres"; }
@@ -115,7 +115,7 @@ export function AccountSettingsClient() {
       <SettingsDirectory items={sections} activeId={activeSection} onSelect={setActiveSection} onLogout={() => void logout()} logoutDisabled={signingOut} />
 
       {activeSection === "personnel" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section">
-        <span className="eyebrow">Mon identité</span><p className="muted">Votre nom et votre photo sont rattachés à votre compte E‑Carnet.</p>
+        <span className="eyebrow">Mon identité</span><p className="muted">Votre nom et votre photo sont rattachés à votre compte Mon E‑Carnet.</p>
         <form className="settings-form" onSubmit={saveIdentity}>
           <div className="auth-name-grid"><label className="field"><span>Prénom</span><input name="first_name" required autoComplete="given-name" defaultValue={account.first_name} disabled={busy} /></label><label className="field"><span>Nom</span><input name="last_name" required autoComplete="family-name" defaultValue={account.last_name} disabled={busy} /></label></div>
           <label className="field"><span>Photo de profil</span><AvatarPicker value={avatarValue} onChange={(value) => { setAvatarValue(value); setAvatarChanged(true); }} fallback={initials(account)} disabled={busy} /><small className="muted">Touchez la photo pour en choisir une nouvelle.</small></label>
@@ -146,7 +146,7 @@ export function AccountSettingsClient() {
       </div></SettingsModal>}
 
       {activeSection === "en-savoir-plus" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><SettingsMoreSection /></SettingsModal>}
-      {activeSection === "avis" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Amélioration continue</span><p className="muted">Votre retour aide l’équipe E‑Carnet à améliorer l’application. N’indiquez aucune information personnelle ou médicale.</p><LandingFeedbackWidget inline /></div></SettingsModal>}
+      {activeSection === "avis" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Amélioration continue</span><p className="muted">Votre retour aide l’équipe Mon E‑Carnet à améliorer l’application. N’indiquez aucune information personnelle ou médicale.</p><LandingFeedbackWidget inline /></div></SettingsModal>}
     </div>
   );
 }

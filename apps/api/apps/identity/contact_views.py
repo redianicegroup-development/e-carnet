@@ -89,7 +89,7 @@ def notify_team(contact: ContactMessage) -> None:
         return
     try:
         send_mail(
-            subject="E-Carnet : nouveau message de contact",
+            subject="Mon E-Carnet : nouveau message de contact",
             message=f"Un nouveau message est arrivé (objet : {SUBJECTS[contact.subject]}).\nLisez-le dans l’administration, rubrique « Messages de contact ».",
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=recipients,

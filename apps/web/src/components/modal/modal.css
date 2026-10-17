@@ -1,4 +1,4 @@
-/* Modals E-Carnet : illustrations d'humeur, confirmation (remplace window.confirm) et message d'accueil.
+/* Modals Mon E-Carnet : illustrations d'humeur, confirmation (remplace window.confirm) et message d'accueil.
    Couleurs : uniquement les variables du thème (--surface, --border, --primary, --danger…) → suit la palette choisie. */
 
 /* ---------- Illustration (SVG du dossier .modal, utilisé comme masque et coloré par currentColor) ---------- */

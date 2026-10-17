@@ -38,7 +38,7 @@ function followUp(item: Item): { label: string; tone: string } {
 const when = (value: string | null) => (value ? new Date(value).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" }) : "—");
 const errorText = (error: unknown, fallback: string) => (error instanceof Error ? error.message : fallback);
 
-/* L'équipe E‑Carnet saisit le nom vérifié de la structure et l'e‑mail de son responsable : l'invitation part par e‑mail
+/* L'équipe Mon E‑Carnet saisit le nom vérifié de la structure et l'e‑mail de son responsable : l'invitation part par e‑mail
    (le lien n'est jamais affiché) et c'est l'établissement qui complète ensuite sa fiche dans son onboarding. */
 export function AdminEstablishmentsClient({ aside }: { aside?: ReactNode }) {
   const confirm = useConfirm();

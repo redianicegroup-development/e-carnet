@@ -1,5 +1,5 @@
 /**
- * Signe E-carnet « carnet à bouton » (dos relié + interrupteur évidé).
+ * Signe Mon E-Carnet « carnet à bouton » (dos relié + interrupteur évidé).
  * Même tracé que public/brand/logo-symbol.svg. Couleurs de marque par défaut ; surchargeables avec
  * --brand-cover / --brand-spine si le signe doit un jour suivre le thème. Décoratif : le nom est écrit à côté.
  */

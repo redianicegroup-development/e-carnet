@@ -78,9 +78,9 @@ export const FAQ_GROUPS: FaqGroup[] = [
     id: "start",
     title: "Premiers pas",
     items: [
-      { id: "purpose", origin: "landing", q: "À quoi sert Mon Carnet Numérique ?", a: "E‑Carnet aide à organiser des informations de santé, préparer les consultations et gérer les demandes d’accès au carnet. Le service ne remplace pas un avis médical ni les services d’urgence." },
+      { id: "purpose", origin: "landing", q: "À quoi sert Mon E-Carnet ?", a: "Mon E‑Carnet aide à organiser des informations de santé, préparer les consultations et gérer les demandes d’accès au carnet. Le service ne remplace pas un avis médical ni les services d’urgence." },
       { id: "account", origin: "landing", q: "Comment créer un compte patient ou professionnel ?", a: "Ouvrez Connexion ou inscription, choisissez Nouveau compte, puis le rôle souhaité. Les moyens de connexion disponibles sont présentés dans le formulaire.", link: { href: "/connexion?mode=register", label: "Créer mon compte" } },
-      { id: "phone", origin: "composed", q: "Puis-je l’utiliser sur mon téléphone ?", a: "Oui. E‑Carnet s’ouvre dans le navigateur d’un téléphone ou d’un ordinateur, et peut s’installer comme une application lorsque votre navigateur le permet. Hors connexion, aucune donnée médicale n’est conservée." },
+      { id: "phone", origin: "composed", q: "Puis-je l’utiliser sur mon téléphone ?", a: "Oui. Mon E‑Carnet s’ouvre dans le navigateur d’un téléphone ou d’un ordinateur, et peut s’installer comme une application lorsque votre navigateur le permet. Hors connexion, aucune donnée médicale n’est conservée." },
     ],
   },
   {
@@ -98,11 +98,11 @@ export const FAQ_GROUPS: FaqGroup[] = [
     id: "pros",
     title: "Professionnels et établissements",
     items: [
-      { id: "verified", origin: "help", q: "Un professionnel est-il vérifié par E-Carnet ?", a: "Non. E-Carnet ne certifie ni l’identité, ni les diplômes, ni la compétence d’un professionnel. L’établissement confirme le rattachement du professionnel à sa structure." },
+      { id: "verified", origin: "help", q: "Un professionnel est-il vérifié par Mon E-Carnet ?", a: "Non. Mon E-Carnet ne certifie ni l’identité, ni les diplômes, ni la compétence d’un professionnel. L’établissement confirme le rattachement du professionnel à sa structure." },
       { id: "join", origin: "composed", q: "Comment un médecin rejoint-il un établissement ?", a: "L’administrateur de l’établissement lui remet un code à usage unique, valable 48 h. Le médecin le saisit dans son espace : sa demande est envoyée à l’établissement. Tant que le rattachement n’est pas confirmé, il ne peut demander l’accès à aucun carnet." },
       { id: "all-records", origin: "help", q: "Un médecin peut-il lire tous les carnets de l’établissement ?", a: "Non. Un rattachement ne donne accès à aucun dossier : chaque patient autorise ou refuse, demande par demande." },
       { id: "admin-records", origin: "help", q: "L’administrateur d’un établissement voit-il les dossiers ?", a: "Non. Il gère l’établissement et les rattachements, mais ne consulte pas les dossiers depuis son espace." },
-      { id: "open-establishment", origin: "composed", q: "Comment ouvrir l’espace de mon établissement ?", a: "L’ouverture est gérée par l’équipe E‑Carnet. Écrivez-nous avec les informations de l’établissement. Nous créons votre accès administrateur et vous envoyons une invitation personnelle valable 48 h.", link: { href: "#contact", label: "Nous écrire", subject: "establishment" } },
+      { id: "open-establishment", origin: "composed", q: "Comment ouvrir l’espace de mon établissement ?", a: "L’ouverture est gérée par l’équipe Mon E‑Carnet. Écrivez-nous avec les informations de l’établissement. Nous créons votre accès administrateur et vous envoyons une invitation personnelle valable 48 h.", link: { href: "#contact", label: "Nous écrire", subject: "establishment" } },
     ],
   },
   {

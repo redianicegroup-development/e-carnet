@@ -2,7 +2,7 @@ import { PageHeader } from "../../../components/ui/PageHeader";
 import { PatientConsultations } from "../../../components/PatientConsultations";
 import { PatientPreconsultations } from "../../../components/PatientPreconsultations";
 
-export const metadata = { title: "Consultations — Mon Carnet Numérique", robots: { index: false, follow: false } };
+export const metadata = { title: "Consultations — Mon E-Carnet", robots: { index: false, follow: false } };
 
 export default function PatientConsultationsPage() {
   return (

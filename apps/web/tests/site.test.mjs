@@ -249,7 +249,7 @@ test("landing : FAQ visible et structurée, métadonnées indexables et liens ca
   assert.match(robots, /Disallow: \/admin\n/);
   assert.match(robots, /Disallow: \/patient\n/);
   assert.match(robots, /Sitemap: https:\/\/e-carnetci\.vercel\.app\/sitemap\.xml/);
-  assert.match(llms, /^# Mon Carnet Numérique/m);
+  assert.match(llms, /^# Mon E[‑-]Carnet/m);
   assert.match(llms, /uniquement des données fictives/);
   assert.match(llms, /ne remplace pas un avis médical/);
   assert.doesNotMatch(llms, /localhost/);

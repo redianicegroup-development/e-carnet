@@ -5,8 +5,8 @@ import { CookiePreferencesLink } from "../../components/CookieConsentBanner";
 import { COOKIES, HOSTS, TECH_VALIDITY } from "../../lib/legal/config";
 
 export const metadata: Metadata = {
-  title: "Politique de confidentialité — Mon Carnet Numérique",
-  description: "Données traitées, finalités, destinataires, prestataires, conservation, droits et cookies du service Mon Carnet Numérique.",
+  title: "Politique de confidentialité — Mon E-Carnet",
+  description: "Données traitées, finalités, destinataires, prestataires, conservation, droits et cookies du service Mon E-Carnet.",
   robots: { index: false, follow: true },
 };
 
@@ -52,15 +52,15 @@ const sections: LegalSectionDef[] = [
             ["Rôle et usage", "Rôle choisi (patient, professionnel, établissement), état d’avancement de l’activation du profil.", "Vous, le service", "Nécessaire"],
             ["Profil patient", "Téléphone, date de naissance, adresse, organisme de couverture santé, numéro et date d’expiration de la couverture.", "Vous", "Facultatif selon les champs du formulaire"],
             [<>Déclarations du patient {HEALTH}</>, "Antécédents, allergies, traitements : intitulé et détails libres. Le statut « déclaré par le patient » est conservé.", "Le patient", "Facultatif"],
-            [<>Pré-consultation {HEALTH}</>, "Établissement destinataire, motif, observations, mention éventuelle de la personne ayant aidé à la saisie, statut, historique des clôtures et corrections.", "Le patient, ou une personne qui l’aide dans son compte", "Facultatif"],
+            [<>Pré-consultation {HEALTH}</>, "Motif, observations, mention éventuelle de la personne ayant aidé à la saisie, statut, établissement du médecin qui la clôture, historique des clôtures et corrections.", "Le patient, ou une personne qui l’aide dans son compte", "Facultatif"],
             ["Autorisations d’accès", "Professionnel et établissement concernés, périmètre, statut, dates de demande, de début, de fin, de prolongation, de refus ou de révocation. Pour le QR code, seule l’empreinte du jeton est conservée.", "Le patient, le professionnel, le service", "Nécessaire au fonctionnement"],
             [<>Consultations {HEALTH}</>, "Motif, observations, conclusion, plan de soins, attestation graphique (SVG) avec son empreinte et son horodatage, historique des révisions.", "Le professionnel autorisé", "Selon la consultation"],
             ["Profil professionnel", "Titre, spécialité, statut de rattachement, établissement actif, version et date d’acceptation des conditions de rattachement.", "Le professionnel, l’établissement", "Nécessaire au rattachement"],
-            ["Établissement", "Nom, type, ville, adresse, téléphone, e-mail, nom du responsable ; administrateurs successifs ; invitations (e-mail, prénom, nom, empreinte du lien) ; codes de rattachement (empreinte) ; demandes de rattachement.", "L’établissement, l’équipe d’E-Carnet", "Nécessaire"],
+            ["Établissement", "Nom, type, ville, adresse, téléphone, e-mail, nom du responsable ; administrateurs successifs ; invitations (e-mail, prénom, nom, empreinte du lien) ; codes de rattachement (empreinte) ; demandes de rattachement.", "L’établissement, l’équipe de Mon E-Carnet", "Nécessaire"],
             ["Journal d’audit", "Type d’événement, compte auteur et son rôle, éléments concernés (patient, établissement, autorisation, consultation), date, informations limitées (action, périmètre, statut, fournisseur). Il ne reprend pas le contenu médical.", "Le service", "Nécessaire à la sécurité et à la traçabilité"],
             ["Données techniques", "Identifiant de session ; compteurs de limitation des tentatives (adresse IP, adresse e-mail sous forme d’empreinte) conservés pendant la fenêtre de limitation, au plus une heure dans la configuration par défaut ; journaux techniques des hébergeurs.", "Le service, les hébergeurs", "Nécessaire"],
             ["Mesure de fréquentation", "Identifiant aléatoire de visiteur (dans un cookie de 30 jours), nombre de pages vues, dates de première et de dernière visite, dernière catégorie de page vue (accueil, page publique, connexion, espace patient, professionnel ou établissement) et compteurs d’événements de connexion (page de connexion vue, connexion réussie ou échouée, inscription, connexion ou liaison d’un fournisseur). Ni adresse complète de page, ni adresse IP, ni identifiant de dossier : l’identifiant n’est pas rattaché à votre compte dans la base.", "Le service, dès la première visite", "Non demandé à ce jour (voir « Cookies »)"],
-            ["Pièces justificatives d’une structure", "Documents envoyés par e-mail à l’adresse officielle d’E-Carnet, en dehors de l’application.", "L’établissement", "Nécessaire à l’ouverture d’un espace établissement"],
+            ["Pièces justificatives d’une structure", "Documents envoyés par e-mail à l’adresse officielle de Mon E-Carnet, en dehors de l’application.", "L’établissement", "Nécessaire à l’ouverture d’un espace établissement"],
           ]}
         />
         <p>Les journaux techniques des hébergeurs : <Fill k="privacy.hostLogs" />.</p>
@@ -100,8 +100,8 @@ const sections: LegalSectionDef[] = [
             ["Vous", "Les informations de votre compte et de votre carnet.", "Connexion à votre compte."],
             ["Professionnel autorisé", "Le périmètre autorisé : pré-consultation et déclarations ; consultations si le patient les sélectionne. Les documents ne sont pas accessibles dans cette version.", `Rattachement actif à un établissement actif, autorisation du patient, durée limitée (${TECH_VALIDITY.accessInitial}, ${TECH_VALIDITY.accessExtension}).`],
             ["Administrateur d’établissement", "Les données de son établissement, les demandes de rattachement et leur statut.", "Il ne consulte pas les dossiers patients depuis son espace, selon les contrôles d’accès actifs."],
-            ["Équipe d’E-Carnet (console interne)", "Les demandes d’établissements et de rattachements et leurs statuts.", <>Règles d’accès aux autres données : <Fill key="s" k="privacy.staffAccess" /></>],
-            ["Superadministrateurs d’E-Carnet", "Les statistiques de visites : total, visiteurs actifs sur 24 heures et liste des visiteurs les plus récents sous forme pseudonymisée.", "Console d’administration réservée aux comptes superadministrateurs ; elle n’affiche pas de dossier patient."],
+            ["Équipe de Mon E-Carnet (console interne)", "Les demandes d’établissements et de rattachements et leurs statuts.", <>Règles d’accès aux autres données : <Fill key="s" k="privacy.staffAccess" /></>],
+            ["Superadministrateurs de Mon E-Carnet", "Les statistiques de visites : total, visiteurs actifs sur 24 heures et liste des visiteurs les plus récents sous forme pseudonymisée.", "Console d’administration réservée aux comptes superadministrateurs ; elle n’affiche pas de dossier patient."],
             ["Prestataires techniques", "Les données nécessaires à l’hébergement, à la base de données et à l’envoi d’e-mails.", <>Voir la section « Prestataires » ci-dessous.</>],
           ]}
         />

@@ -3,7 +3,7 @@ from datetime import timedelta
 from django.conf import settings
 from django.db import IntegrityError, transaction
 from django.utils import timezone
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from apps.professionals.access import professional_clinical_access_error
 from .models import AccessGrant, PatientAccessQrToken
@@ -16,8 +16,30 @@ PENDING_GRANT_TTL = timedelta(days=7)
 REFUSED_GRANT_COOLDOWN = timedelta(days=30)
 # Les jetons expirés ou utilisés ne servent plus à rien : ils sont purgés après ce délai (commande `cleanup_access_qr_tokens`).
 QR_TOKEN_RETENTION = timedelta(days=1)
+SCOPE_NOT_GRANTED_MESSAGE = "Cette autorisation ne couvre pas cette information."
+GRANT_NOT_ACTIVE_MESSAGE = "L’autorisation du patient n’est plus active."
 QR_INVALID_MESSAGE = "Ce QR est expiré, déjà utilisé ou invalide."
 QR_REQUIRED_MESSAGE = "Scannez le QR affiché par le patient : il est exigé pour chaque demande d’accès."
+
+
+def require_scope(grant, scope):
+    """Porte unique de lecture clinique : l’autorisation est active **et** couvre ce périmètre.
+
+    Tout endpoint qui lit une donnée du patient pour un professionnel passe par ici avec le périmètre qu’il expose
+    (`preconsultation`, `declarations`, `consultations`). Le patient accorde ces périmètres à l’acceptation ; sans cette
+    vérification, un périmètre refusé resterait lisible. Lève `PermissionDenied` (403) : l’appelant n’a rien d’autre à tester.
+
+    Ne vérifie pas l’établissement ni le professionnel : ces contrôles dépendent du contexte de la requête et restent à l’appelant.
+    """
+    if scope not in ALLOWED_SCOPES:
+        # Une faute de frappe côté code ne doit jamais ouvrir ni fermer un accès par hasard.
+        raise ValueError(f"Périmètre inconnu : {scope!r}")
+    grant.refresh_expiration()
+    if grant.status != "active":
+        raise PermissionDenied(GRANT_NOT_ACTIVE_MESSAGE)
+    if scope not in (grant.scope or []):
+        raise PermissionDenied(SCOPE_NOT_GRANTED_MESSAGE)
+    return grant
 
 
 @transaction.atomic

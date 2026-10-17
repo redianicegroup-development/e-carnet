@@ -11,6 +11,8 @@ type FeedbackCategory = "bug" | "idea" | "question" | "other";
 export function LandingFeedbackWidget({ inline = false }: { inline?: boolean }) {
   const pathname = usePathname();
   const inWorkspace = /^\/(patient|professionnel|etablissement|admin|staff)(\/|$)/.test(pathname);
+  // Pas de bouton flottant sur les pages d'entrée (connexion, inscription, récupération du compte) : rien ne doit distraire de la saisie.
+  const onAuthPage = /^\/(connexion|inscription)(\/|$)/.test(pathname);
   const [open, setOpen] = useState(false);
   const [category, setCategory] = useState<FeedbackCategory>("idea");
   const [message, setMessage] = useState("");
@@ -62,7 +64,7 @@ export function LandingFeedbackWidget({ inline = false }: { inline?: boolean }) 
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.message ?? payload.detail ?? "Envoi impossible. Réessayez plus tard.");
-      setSent(true); setNotice("Merci, votre retour a bien été transmis à l’équipe E‑Carnet.");
+      setSent(true); setNotice("Merci, votre retour a bien été transmis à l’équipe Mon E‑Carnet.");
       setMessage("");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Envoi impossible. Réessayez plus tard.");
@@ -71,12 +73,12 @@ export function LandingFeedbackWidget({ inline = false }: { inline?: boolean }) 
   }
 
   return <>
-    {(inline || !inWorkspace) && <button ref={opener} type="button" className={inline ? "button primary feedback-inline-trigger" : "feedback-fab"} aria-label="Donner votre avis" aria-haspopup="dialog" aria-expanded={open} data-track="feedback_open" onClick={() => { setOpen(true); setCategory("idea"); setSent(false); setNotice(""); }}>
+    {(inline || (!inWorkspace && !onAuthPage)) && <button ref={opener} type="button" className={inline ? "button primary feedback-inline-trigger" : "feedback-fab"} aria-label="Donner votre avis" aria-haspopup="dialog" aria-expanded={open} data-track="feedback_open" onClick={() => { setOpen(true); setCategory("idea"); setSent(false); setNotice(""); }}>
       <Icon name="pencil" size={18} /><span>Donner votre avis</span>
     </button>}
     {open && <div className="feedback-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) close(); }}>
       <section ref={dialog} className="feedback-dialog" role="dialog" aria-modal="true" aria-labelledby="feedback-title" aria-describedby={category === "question" ? undefined : "feedback-privacy"}>
-        <header className="feedback-dialog__header"><ModalIllustration mood={category === "question" ? "question" : failed ? "oops" : "listening"} size="sm" /><div><span className="eyebrow">E‑Carnet</span><h2 id="feedback-title">Votre avis</h2></div><button className="feedback-dialog__close" type="button" aria-label="Fermer le formulaire" disabled={busy} onClick={close}>×</button></header>
+        <header className="feedback-dialog__header"><ModalIllustration mood={category === "question" ? "question" : failed ? "oops" : "listening"} size="sm" /><div><span className="eyebrow">Mon E‑Carnet</span><h2 id="feedback-title">Votre avis</h2></div><button className="feedback-dialog__close" type="button" aria-label="Fermer le formulaire" disabled={busy} onClick={close}>×</button></header>
         {category === "question" && !sent ? <div className="feedback-success"><p>Retrouvez les réponses et guides dans le centre d’aide.</p><div className="actions"><Link className="button primary" href="/aide" onClick={close}>Ouvrir le centre d’aide</Link><button className="button" type="button" onClick={close}>Fermer</button></div></div> : sent ? <div className="feedback-success"><ModalIllustration mood="success" size="md" /><p className="notice" role="status">{notice}</p><button className="button primary" type="button" onClick={close}>Fermer</button></div> : <form className="feedback-form" onSubmit={submit}>
           <label className="field"><span>Type de retour</span><select value={category} onChange={(event) => setCategory(event.target.value as FeedbackCategory)}><option value="idea">Suggestion</option><option value="bug">Signaler un problème</option><option value="question">Question</option><option value="other">Autre</option></select></label>
           <label className="field"><span>Votre message</span><textarea ref={textarea} required minLength={5} maxLength={2000} rows={5} value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Décrivez le problème ou votre idée…" /></label>

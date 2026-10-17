@@ -61,7 +61,7 @@ export function EstablishmentInvitationActivation() {
         {load.status === "invalid" && (
           <>
             <p className="notice error" role="alert">{load.message}</p>
-            <p className="muted">Demandez à l’équipe E‑Carnet de vous renvoyer une invitation : chaque lien est personnel, à usage unique et valable 48 heures.</p>
+            <p className="muted">Demandez à l’équipe Mon E‑Carnet de vous renvoyer une invitation : chaque lien est personnel, à usage unique et valable 48 heures.</p>
           </>
         )}
         {load.status === "ready" && (
@@ -69,7 +69,7 @@ export function EstablishmentInvitationActivation() {
             <p className="muted">Vous êtes invité(e) à administrer <strong>{load.preview.establishment_name}</strong> avec l’adresse {load.preview.email_hint}. Le lien est personnel et à usage unique. Vous compléterez ensuite la fiche de votre établissement.</p>
             {load.preview.account_exists ? (
               <div className="grid">
-                <p className="notice" role="note">Un compte E‑Carnet existe déjà avec cette adresse. Par sécurité, ce lien ne le modifie pas : connectez‑vous avec ce compte, puis revenez sur cette page pour activer l’accès.</p>
+                <p className="notice" role="note">Un compte Mon E‑Carnet existe déjà avec cette adresse. Par sécurité, ce lien ne le modifie pas : connectez‑vous avec ce compte, puis revenez sur cette page pour activer l’accès.</p>
                 <Link className="button" href={`/connexion?next=${encodeURIComponent(here)}`}>Me connecter avec ce compte</Link>
                 <button className="button primary" type="button" disabled={busy} onClick={() => void accept({}, (result) => (result.profile_required ? "/etablissement/fiche" : "/etablissement"))}>J’ai activé ma session : activer l’accès</button>
               </div>

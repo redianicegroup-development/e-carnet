@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PublicShell } from "../../components/public/PublicShell";
 
-export const metadata: Metadata = { title: "Sécurité — Mon Carnet Numérique", description: "Accès au carnet, consentement patient et protection des données.", robots: { index: true, follow: true } };
+export const metadata: Metadata = { title: "Sécurité — Mon E-Carnet", description: "Accès au carnet, consentement patient et protection des données.", robots: { index: true, follow: true } };
 
 export default function SecurityPage() {
   return <PublicShell><article className="hero-page">
@@ -14,7 +14,7 @@ export default function SecurityPage() {
       <section className="card"><h2>Historique</h2><p className="muted">Les demandes et décisions d’accès sont conservées dans le carnet.</p></section>
       <section className="card"><h2>Suivi du site</h2><p className="muted">Les statistiques utilisent des catégories de page et des clics publics, sans conserver les URL complètes ni les adresses IP.</p></section>
     </div>
-    <aside className="notice help-data-note"><strong>Pour le moment :</strong> utilisez uniquement des données fictives. E‑Carnet ne remplace pas un avis médical ni les services d’urgence.</aside>
+    <aside className="notice help-data-note"><strong>Pour le moment :</strong> utilisez uniquement des données fictives. Mon E‑Carnet ne remplace pas un avis médical ni les services d’urgence.</aside>
     <p className="actions"><Link className="button" href="/aide#confidentialite">Détails sur les données</Link><Link className="button" href="/aide">Centre d’aide</Link></p>
   </article></PublicShell>;
 }

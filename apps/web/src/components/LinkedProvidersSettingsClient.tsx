@@ -39,7 +39,7 @@ export function LinkedProvidersSettingsClient({ nextPath }: Props) {
         if (!response.ok) throw new Error(payload.message ?? "Impossible de charger les méthodes de connexion.");
         if (active) setIdentities((payload.data as Account).auth_identities ?? []);
       })
-      .then(() => { if (active) setMessage("Gérez les comptes externes associés à votre compte E‑Carnet."); })
+      .then(() => { if (active) setMessage("Gérez les comptes externes associés à votre compte Mon E‑Carnet."); })
       .catch((error: unknown) => { if (active) setMessage(error instanceof Error ? error.message : "Méthodes de connexion indisponibles."); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
@@ -68,14 +68,14 @@ export function LinkedProvidersSettingsClient({ nextPath }: Props) {
 
   async function askUnlink(provider: Provider) {
     const label = providers.find((item) => item.id === provider)?.label ?? provider;
-    const ok = await confirm({ title: `Délier ${label} ?`, message: `Vous ne pourrez plus vous connecter à E‑Carnet avec ${label}.`, note: "Votre compte et vos données ne sont pas supprimés. Si c’est votre dernière méthode de connexion, ajoutez d’abord un mot de passe.", confirmLabel: "Délier", cancelLabel: "Garder", tone: "danger", mood: "decision" });
+    const ok = await confirm({ title: `Délier ${label} ?`, message: `Vous ne pourrez plus vous connecter à Mon E‑Carnet avec ${label}.`, note: "Votre compte et vos données ne sont pas supprimés. Si c’est votre dernière méthode de connexion, ajoutez d’abord un mot de passe.", confirmLabel: "Délier", cancelLabel: "Garder", tone: "danger", mood: "decision" });
     if (ok) await unlink(provider);
   }
 
   const linked = new Set(identities.map((identity) => identity.provider));
   return (
     <div className="settings-subsection">
-      <p className="muted">La liaison se fait depuis une session authentifiée. E‑Carnet ne fusionne pas automatiquement deux comptes par adresse e-mail.</p>
+      <p className="muted">La liaison se fait depuis une session authentifiée. Mon E‑Carnet ne fusionne pas automatiquement deux comptes par adresse e-mail.</p>
       <div className="settings-provider-list">
         {providers.map((provider) => (
           <div className="record settings-provider" key={provider.id}>

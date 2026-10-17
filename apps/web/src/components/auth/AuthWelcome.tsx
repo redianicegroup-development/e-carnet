@@ -13,8 +13,8 @@ function hello(now: Date) {
 
 function cycle(mode: AuthMode, now: Date): string[] {
   return mode === "register"
-    ? ["Bienvenue sur E‑Carnet", "Créons votre carnet", "Quelques secondes suffisent"]
-    : ["Bienvenue sur E‑Carnet", `${hello(now)} !`, "Votre carnet vous attend"];
+    ? ["Bienvenue sur Mon E‑Carnet", "Créons votre carnet", "Quelques secondes suffisent"]
+    : ["Bienvenue sur Mon E‑Carnet", `${hello(now)} !`, "Votre carnet vous attend"];
 }
 
 /* Le personnage de la scène te souhaite la bienvenue : il change de mine selon ce qui se passe (attente, erreur, connexion

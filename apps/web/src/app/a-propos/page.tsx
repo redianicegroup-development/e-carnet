@@ -5,8 +5,8 @@ import { Icon, type IconName } from "../../components/ui/Icon";
 import { CREDITS_TEAM } from "../../lib/credits";
 
 export const metadata: Metadata = {
-  title: "À propos — Mon Carnet Numérique",
-  description: "Pourquoi E‑Carnet existe : les carnets de santé papier se perdent et coupent le suivi. Le problème, la solution et l’équipe de la startup Redianice.",
+  title: "À propos — Mon E-Carnet",
+  description: "Pourquoi Mon E‑Carnet existe : les carnets de santé papier se perdent et coupent le suivi. Le problème, la solution et l’équipe de la startup Redianice.",
   robots: { index: true, follow: true },
 };
 
@@ -30,7 +30,7 @@ export default function AboutPage() {
         <header className="about__head">
           <span className="eyebrow">À propos</span>
           <h1>Un carnet qui suit votre santé dans la durée.</h1>
-          <p className="lead">E‑Carnet est un carnet de santé numérique porté par la startup Redianice. Il garde vos informations au même endroit, et c’est vous qui décidez qui peut les consulter.</p>
+          <p className="lead">Mon E‑Carnet est un carnet de santé numérique porté par la startup Redianice. Il garde vos informations au même endroit, et c’est vous qui décidez qui peut les consulter.</p>
         </header>
 
         <section className="about__block about__problem" aria-labelledby="constat">
@@ -39,7 +39,7 @@ export default function AboutPage() {
             <p>Les carnets de santé se perdent. Et quand le petit livre est fini ou rempli, on en commence un autre.</p>
             <p>Chaque nouveau carnet repart de zéro. L’historique est coupé en morceaux, et il n’y a pas de suivi sur une longue période.</p>
           </div>
-          <figure className="about-chain" role="img" aria-label="Schéma : des carnets papier successifs séparés par des coupures, dont un perdu, face à un historique continu dans E‑Carnet">
+          <figure className="about-chain" role="img" aria-label="Schéma : des carnets papier successifs séparés par des coupures, dont un perdu, face à un historique continu dans Mon E‑Carnet">
             <div className="about-chain__row" aria-hidden="true">
               <span className="about-chain__label">Carnets papier</span>
               <div className="about-chain__track">
@@ -49,7 +49,7 @@ export default function AboutPage() {
               </div>
             </div>
             <div className="about-chain__row about-chain__row--ok" aria-hidden="true">
-              <span className="about-chain__label">E‑Carnet</span>
+              <span className="about-chain__label">Mon E‑Carnet</span>
               <div className="about-chain__track"><i className="about-chain__seg about-chain__seg--full">Un seul historique</i></div>
             </div>
           </figure>
@@ -58,7 +58,7 @@ export default function AboutPage() {
         <section className="about__block" aria-labelledby="solution">
           <div className="about__intro">
             <h2 id="solution">La solution : un seul carnet, qui continue</h2>
-            <p className="muted">C’est pour cela que la startup a développé E‑Carnet : garder le suivi sur la durée, sans jamais perdre le fil, avec le patient aux commandes.</p>
+            <p className="muted">C’est pour cela que la startup a développé Mon E‑Carnet : garder le suivi sur la durée, sans jamais perdre le fil, avec le patient aux commandes.</p>
           </div>
           <ul className="about-points">
             {SOLUTION.map((item) => (

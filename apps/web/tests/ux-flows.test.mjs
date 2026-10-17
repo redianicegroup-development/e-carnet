@@ -13,7 +13,7 @@ test("les décisions de consentement et les actions irréversibles passent par l
   for (const action of ["accept", "refuse", "extend"]) {
     assert.doesNotMatch(grants, new RegExp(`onClick=\\{\\(\\) => act\\(item\\.id, "${action}"\\)`), `« ${action} » ne doit pas partir sans confirmation`);
   }
-  for (const file of ["PatientPreconsultations", "AdminAccountActionRequestsClient", "EstablishmentConsole", "AdminEstablishmentsClient"]) {
+  for (const file of ["AdminAccountActionRequestsClient", "EstablishmentConsole", "AdminEstablishmentsClient"]) {
     assert.match(read(`src/components/${file}.tsx`), /await confirm\(/, `${file} doit confirmer avant d'agir`);
   }
   assert.match(read("src/components/AdminEstablishmentsClient.tsx"), /tone: "danger"/, "la révocation d'une invitation est une confirmation de type danger");

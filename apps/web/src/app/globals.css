@@ -1,5 +1,5 @@
 /* =====================================================================================================
-   Mon Carnet Numérique — feuille de style de l'application
+   Mon E-Carnet — feuille de style de l'application
    Mobile d'abord (maquettes : barre basse à 5 entrées, cartes, pastilles de provenance), adaptée ensuite au
    bureau (rail latéral). Tous les réglages de couleur passent par les variables de packages/ui/tokens.css,
    que le thème du compte remplace à l'exécution. Rien n'est écrit en dur ici hors couleurs sémantiques.
@@ -330,7 +330,7 @@ a.setting-item:hover, button.setting-item:hover { border-color: var(--primary); 
 .auth-mode-switch button.is-selected { color: var(--text, #17212b); background: var(--surface, #fff); box-shadow: 0 1px 4px #15253620; }
 .auth-submit:disabled { opacity: .65; cursor: wait; }
 
-/* ---------- Console d'administration E-Carnet ---------- */
+/* ---------- Console d'administration Mon E-Carnet ---------- */
 .admin-shell { width: min(100% - 32px, 1280px); margin-inline: auto; padding-block: clamp(24px, 5vw, 56px); }
 .admin-login { width: min(100%, 480px); margin: clamp(28px, 9vh, 100px) auto; padding: clamp(22px, 5vw, 36px); }
 .admin-login h1 { margin-top: 4px; }

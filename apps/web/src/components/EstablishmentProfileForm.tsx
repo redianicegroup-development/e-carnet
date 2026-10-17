@@ -26,7 +26,7 @@ const TYPES = ["Clinique", "Hôpital", "Centre de santé", "Cabinet médical", "
 const next = "/connexion?next=%2Fetablissement%2Ffiche";
 
 /* Fiche de l'établissement : étape d'onboarding après l'activation, puis page de modification. Le nom et le responsable
-   sont vérifiés par l'équipe E‑Carnet et affichés en lecture seule. Le serveur refuse toute modification de ces champs. */
+   sont vérifiés par l'équipe Mon E‑Carnet et affichés en lecture seule. Le serveur refuse toute modification de ces champs. */
 export function EstablishmentProfileForm() {
   const router = useRouter();
   const [load, setLoad] = useState<Load>({ status: "loading" });
@@ -101,7 +101,7 @@ export function EstablishmentProfileForm() {
               <div><dt>Responsable</dt><dd>{load.profile.responsible_name || "—"}</dd></div>
               {load.profile.internal_code && <div><dt>Code interne</dt><dd>{load.profile.internal_code}</dd></div>}
             </dl>
-            <p className="muted">Le nom et le responsable sont vérifiés par l’équipe E‑Carnet. Pour les modifier, écrivez‑lui.</p>
+            <p className="muted">Le nom et le responsable sont vérifiés par l’équipe Mon E‑Carnet. Pour les modifier, écrivez‑lui.</p>
             <label className="field"><span>Type de structure</span>
               <select required value={values.establishment_type} onChange={(event) => set("establishment_type", event.target.value)}>
                 {[...new Set([values.establishment_type, ...TYPES])].filter(Boolean).map((type) => <option key={type} value={type}>{type}</option>)}

@@ -15,7 +15,10 @@ export type EmergencyCardView = {
   contact_phone: string;
 };
 
-export const EMERGENCY_CARD_FOOTNOTE = "Informations déclarées par le titulaire, non vérifiées par E‑Carnet. Elles ne remplacent ni un avis médical ni les services de secours.";
+/** Photo de profil ou avatar du titulaire : affichée à la place du QR sur la carte téléchargée. */
+export type EmergencyCardPhoto = { url?: string; initials: string };
+
+export const EMERGENCY_CARD_FOOTNOTE = "Informations déclarées par le titulaire, non vérifiées par Mon E‑Carnet. Elles ne remplacent ni un avis médical ni les services de secours.";
 
 export function emergencyCardFullName(card: Pick<EmergencyCardView, "first_name" | "last_name">) {
   return [card.first_name, card.last_name].filter(Boolean).join(" ").trim();
@@ -26,18 +29,18 @@ function Chips({ items, tone }: { items: EmergencyCardItem[]; tone: "allergy" | 
 }
 
 /**
- * Carte d’urgence : identité, groupe sanguin, ville, allergies et contact à gauche, QR à côté.
+ * Carte d’urgence : identité, groupe sanguin, ville, allergies et contact à gauche, QR (scan public) ou photo du titulaire (carte téléchargée) à côté.
  * Elle se met en colonne toute seule quand son conteneur est étroit (container query), sans dépendre de la taille de l’écran.
  * Le même visuel est dessiné en PNG par emergency-card-image.ts.
  */
-export function EmergencyCardVisual({ card, qrUrl = "", showQr = true }: { card: EmergencyCardView; qrUrl?: string; showQr?: boolean }) {
+export function EmergencyCardVisual({ card, qrUrl = "", showQr = true, photo }: { card: EmergencyCardView; qrUrl?: string; showQr?: boolean; photo?: EmergencyCardPhoto }) {
   const name = emergencyCardFullName(card);
   const hasContact = Boolean(card.contact_name || card.contact_phone);
   return (
     <div className="ecard-wrap">
-      <article className={`ecard${showQr ? "" : " ecard--solo"}`} aria-label="Carte d’urgence">
+      <article className={`ecard${showQr || photo ? "" : " ecard--solo"}`} aria-label="Carte d’urgence">
         <header className="ecard__band">
-          <span className="ecard__brand"><span className="ecard__mark" aria-hidden="true">+</span>E‑Carnet</span>
+          <span className="ecard__brand"><span className="ecard__mark" aria-hidden="true">+</span>Mon E‑Carnet</span>
           <span className="ecard__tag">Carte d’urgence</span>
         </header>
         <div className="ecard__body">
@@ -66,6 +69,15 @@ export function EmergencyCardVisual({ card, qrUrl = "", showQr = true }: { card:
                   <strong>QR désactivé</strong>
                   <span>Activez-le pour partager cette carte.</span>
                 </div>}
+            </div>
+          )}
+          {!showQr && photo && (
+            <div className="ecard__photo">
+              <div className="ecard__photo-frame">
+                {/* eslint-disable-next-line @next/next/no-img-element -- avatar du compte, éventuellement externe */}
+                {photo.url ? <img src={photo.url} alt="" referrerPolicy="no-referrer" /> : <span aria-hidden="true">{photo.initials}</span>}
+              </div>
+              <p>Titulaire de la carte</p>
             </div>
           )}
         </div>

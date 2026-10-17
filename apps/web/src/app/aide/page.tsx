@@ -3,7 +3,7 @@ import Link from "next/link";
 import { PublicShell } from "../../components/public/PublicShell";
 
 export const metadata: Metadata = {
-  title: "Centre d’aide — Mon Carnet Numérique",
+  title: "Centre d’aide — Mon E-Carnet",
   description: "Guides pratiques pour le carnet patient, les professionnels, les établissements, le compte et la sécurité.",
   robots: { index: true, follow: true },
 };
@@ -28,14 +28,14 @@ const sections = [
   },
   {
     id: "etablissements", title: "Établissement", items: [
-      ["Ouvrir un espace", "L’ouverture est gérée par l’équipe E‑Carnet. Écrivez-nous depuis le formulaire de contact de l’accueil, objet « Ouvrir un espace établissement »."],
+      ["Ouvrir un espace", "L’ouverture est gérée par l’équipe Mon E‑Carnet. Écrivez-nous depuis le formulaire de contact de l’accueil, objet « Ouvrir un espace établissement »."],
       ["Inviter un médecin", "Depuis Médecins, générez un code à usage unique et transmettez-le directement au médecin."],
       ["Traiter une demande", "Dans Demandes, vérifiez le profil puis acceptez ou refusez le rattachement. L’espace établissement ne donne pas accès aux carnets patients."],
     ],
   },
   {
     id: "compte", title: "Compte et préférences", items: [
-      ["Connexion ou inscription", "Une seule page sert à entrer dans E‑Carnet. Choisissez « J’ai déjà un compte » ou « Nouveau compte », puis utilisez l’email ou un fournisseur proposé."],
+      ["Connexion ou inscription", "Une seule page sert à entrer dans Mon E‑Carnet. Choisissez « J’ai déjà un compte » ou « Nouveau compte », puis utilisez l’email ou un fournisseur proposé."],
       ["Nom et photo", "Dans Paramètres → Informations personnelles, modifiez votre nom ou sélectionnez une nouvelle photo d’avatar."],
       ["Thème", "Le thème choisi dans Paramètres du compte est enregistré avec votre compte et suit votre connexion sur vos appareils."],
       ["Sécurité et déconnexion", "Les fournisseurs de connexion se gèrent dans Sécurité et connexion. Le bouton Déconnexion est disponible dans chaque espace."],

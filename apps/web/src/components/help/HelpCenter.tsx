@@ -70,7 +70,7 @@ export function HelpNotices() {
   return (
     <div className="notice help__notice" role="note">
       <p><strong>Version de test :</strong> n’enregistrez que des données fictives.</p>
-      <p><strong>En cas d’urgence</strong>, contactez immédiatement les services de secours de votre pays. E-Carnet n’est pas un service d’urgence et ne remplace pas un avis médical.</p>
+      <p><strong>En cas d’urgence</strong>, contactez immédiatement les services de secours de votre pays. Mon E-Carnet n’est pas un service d’urgence et ne remplace pas un avis médical.</p>
     </div>
   );
 }

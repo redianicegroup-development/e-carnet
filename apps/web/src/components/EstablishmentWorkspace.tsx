@@ -57,7 +57,7 @@ export function EstablishmentWorkspace() {
 
   if (needsLogin) return <section className="card settings-auth-gate">
     <span className="eyebrow">Espace établissement</span><h2>Connexion requise</h2>
-    <p className="muted">L’espace est réservé au responsable nominatif invité par E‑Carnet.</p>
+    <p className="muted">L’espace est réservé au responsable nominatif invité par Mon E‑Carnet.</p>
     <div className="actions"><Link className="button primary" href="/connexion?next=%2Fetablissement">Se connecter</Link><Link className="button" href="/aide#etablissements">Aide établissement</Link></div>
   </section>;
 
@@ -67,7 +67,7 @@ export function EstablishmentWorkspace() {
     <p className="notice" role="status" aria-live="polite">{message}</p>
 
     {loading ? <div className="card empty" role="status">Chargement…</div> : items.length === 0 ? <section className="card establishment-empty">
-      <h2>Aucun établissement associé</h2><p className="muted">Pour ouvrir un espace, consultez le guide et contactez l’équipe E‑Carnet.</p><Link className="button primary" href="/aide#etablissements">Voir les étapes</Link>
+      <h2>Aucun établissement associé</h2><p className="muted">Pour ouvrir un espace, consultez le guide et contactez l’équipe Mon E‑Carnet.</p><Link className="button primary" href="/aide#etablissements">Voir les étapes</Link>
     </section> : <div className="grid establishment-request-grid">{items.map((item) => <article className="card establishment-request" key={item.id}>
       <div className="section-heading"><div><span className="eyebrow">{item.establishment_type}</span><h2>{item.name}</h2></div><span className={`badge ${item.status === "active" ? "active" : item.status === "rejected" ? "rejected" : "pending"}`}>{statusLabel(item.status)}</span></div>
       <p className="muted">{item.city}{item.address ? ` · ${item.address}` : ""}</p>

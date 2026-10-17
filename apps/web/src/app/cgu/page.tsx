@@ -4,8 +4,8 @@ import { Fill, LegalDocument, type LegalSectionDef } from "../../components/publ
 import { TECH_VALIDITY } from "../../lib/legal/config";
 
 export const metadata: Metadata = {
-  title: "Conditions générales d’utilisation — Mon Carnet Numérique",
-  description: "Conditions d’utilisation du service Mon Carnet Numérique : comptes, rôles, accès aux informations, obligations et droit applicable.",
+  title: "Conditions générales d’utilisation — Mon E-Carnet",
+  description: "Conditions d’utilisation du service Mon E-Carnet : comptes, rôles, accès aux informations, obligations et droit applicable.",
   robots: { index: false, follow: true },
 };
 
@@ -24,7 +24,7 @@ const sections: LegalSectionDef[] = [
     title: "Objet et statut du service",
     body: (
       <>
-        <p>Les présentes conditions encadrent l’utilisation du service « Mon Carnet Numérique » (« E-carnet »), édité par <Fill k="publisher.name" /> (voir les <Link href="/mentions-legales">mentions légales</Link>).</p>
+        <p>Les présentes conditions encadrent l’utilisation du service « Mon E‑Carnet », édité par <Fill k="publisher.name" /> (voir les <Link href="/mentions-legales">mentions légales</Link>).</p>
         <p>Le service permet de tenir un carnet de santé personnel, de préparer une consultation et de gérer des autorisations d’accès dans les limites décrites dans le service.</p>
         <p>La version actuellement disponible est une <strong>version de test fermée</strong>. Elle n’est pas destinée à recevoir des dossiers de santé réels. Elle n’a pas fait l’objet d’une validation juridique, médicale et technique complète.</p>
       </>
@@ -35,7 +35,7 @@ const sections: LegalSectionDef[] = [
     title: "Définitions",
     body: (
       <dl>
-        <div><dt>Service</dt><dd>L’application web et mobile « Mon Carnet Numérique ».</dd></div>
+        <div><dt>Service</dt><dd>L’application web et mobile « Mon E-Carnet ».</dd></div>
         <div><dt>Éditeur</dt><dd>La personne identifiée dans les mentions légales.</dd></div>
         <div><dt>Patient</dt><dd>Titulaire d’un carnet. Il décide des accès à son carnet.</dd></div>
         <div><dt>Professionnel</dt><dd>Professionnel de santé rattaché à un établissement, qui peut demander un accès au carnet d’un patient.</dd></div>

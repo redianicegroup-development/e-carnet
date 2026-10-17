@@ -60,7 +60,7 @@ export function FaqSection() {
       <div className="lp-faq-layout">
         <div className="lp-faq-aside" data-reveal>
           <span className="eyebrow">Réponses claires</span>
-          <h2 id="faq-title">Questions fréquentes sur E‑Carnet</h2>
+          <h2 id="faq-title">Questions fréquentes sur Mon E‑Carnet</h2>
           <p className="lead">Les informations essentielles avant de créer votre espace.</p>
           <div className="faq-filters" role="group" aria-label="Filtrer les questions par rubrique">
             <button type="button" className="faq-filter" aria-pressed={group === ALL} onClick={() => changeGroup(ALL)}>Toutes<small>{FAQ_ITEMS.length}</small></button>

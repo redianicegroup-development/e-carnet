@@ -12,10 +12,10 @@ def invitation_url(raw_token: str) -> str:
 def send_establishment_invitation(*, email: str, first_name: str, establishment_name: str, raw_token: str, expires_at) -> None:
     url = invitation_url(raw_token)
     send_mail(
-        subject="Votre invitation administrateur — Mon Carnet Numérique",
+        subject="Votre invitation administrateur — Mon E-Carnet",
         message=(
             f"{'Bonjour ' + first_name if first_name else 'Bonjour'},\n\n"
-            f"L’équipe E-Carnet vous invite à administrer {establishment_name}.\n"
+            f"L’équipe Mon E-Carnet vous invite à administrer {establishment_name}.\n"
             "Cette invitation est personnelle, valable 48 heures et à usage unique. "
             "Depuis le lien suivant, choisissez votre mot de passe puis complétez la fiche de votre établissement "
             "(type, ville, adresse, téléphone) :\n\n"

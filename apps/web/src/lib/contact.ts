@@ -3,7 +3,7 @@
    l'envoi ; l'API reste la seule source de vérité et revalide tout. Aucun import : ce fichier doit rester testable seul. */
 
 export const CONTACT_SUBJECTS = [
-  { value: "question", label: "Une question sur E-Carnet" },
+  { value: "question", label: "Une question sur Mon E-Carnet" },
   { value: "patient", label: "Je suis patient : besoin d’aide" },
   { value: "professional", label: "Je suis professionnel de santé" },
   { value: "establishment", label: "Ouvrir un espace établissement" },

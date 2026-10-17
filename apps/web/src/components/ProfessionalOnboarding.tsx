@@ -55,7 +55,7 @@ export function ProfessionalOnboarding() {
     <form className="card auth-form" onSubmit={submit}>
       <span className="eyebrow">Profil professionnel</span>
       <h1>Déclarez votre rôle clinique.</h1>
-      <p className="muted">E‑Carnet ne vérifie pas les justificatifs médicaux et ne demande ici aucun numéro professionnel. L’établissement effectue ses vérifications en interne ; l’application enregistre ensuite sa décision de rattachement.</p>
+      <p className="muted">Mon E‑Carnet ne vérifie pas les justificatifs médicaux et ne demande ici aucun numéro professionnel. L’établissement effectue ses vérifications en interne ; l’application enregistre ensuite sa décision de rattachement.</p>
 
       <label className="field">
         <span>Profession</span>
@@ -76,7 +76,7 @@ export function ProfessionalOnboarding() {
       {isOther && <label className="field">
         <span>Nouvelle spécialité / rôle</span>
         <input required maxLength={120} value={otherSpecialty} onChange={(event) => setOtherSpecialty(event.target.value)} placeholder="Ex. Pédiatre" disabled={busy} />
-        <small className="muted">Après l’enregistrement, cette option sera ajoutée à la liste partagée. Elle reste déclarative et n’est pas certifiée par E‑Carnet.</small>
+        <small className="muted">Après l’enregistrement, cette option sera ajoutée à la liste partagée. Elle reste déclarative et n’est pas certifiée par Mon E‑Carnet.</small>
       </label>}
 
       <button type="submit" className="button primary" disabled={busy || !specialties}>{busy ? "Enregistrement…" : "Enregistrer mon profil"}</button>

@@ -11,7 +11,7 @@ const GROUPS: MoreGroup[] = [
     title: "Aide et principes",
     items: [
       { href: "/faq", icon: "help", title: "Aide et questions fréquentes", description: "Guides pas à pas, réponses et dépannage." },
-      { href: "/a-propos", icon: "sparkle", title: "À propos", description: "Comprendre le principe et le fonctionnement d’E‑Carnet." },
+      { href: "/a-propos", icon: "sparkle", title: "À propos", description: "Comprendre le principe et le fonctionnement de Mon E‑Carnet." },
       { href: "/securite", icon: "shield", title: "Sécurité et données", description: "Consulter les principes de sécurité du service." },
     ],
   },
@@ -27,15 +27,15 @@ const GROUPS: MoreGroup[] = [
   {
     title: "Remerciements",
     items: [
-      { href: "/credits", icon: "heart", title: "Crédits et remerciements", description: "Les personnes et les équipes derrière E‑Carnet." },
+      { href: "/credits", icon: "heart", title: "Crédits et remerciements", description: "Les personnes et les équipes derrière Mon E‑Carnet." },
     ],
   },
 ];
 
 export function SettingsMoreSection() {
   return (
-    <section className="settings-more-content" aria-label="Ressources E-Carnet">
-      <p className="muted">Aide, informations légales et remerciements d’E‑Carnet.</p>
+    <section className="settings-more-content" aria-label="Ressources Mon E-Carnet">
+      <p className="muted">Aide, informations légales et remerciements de Mon E‑Carnet.</p>
       {GROUPS.map((group) => (
         <div className="settings-more-group" key={group.title} role="group" aria-label={group.title}>
           <h3>{group.title}</h3>

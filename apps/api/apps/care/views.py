@@ -1,26 +1,30 @@
 from django.db import transaction
 from django.db.models import Q
-from uuid import UUID
 from django.utils import timezone
 from apps.identity.throttles import WriteScopedThrottle
 from rest_framework import status
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from apps.patients.models import PatientProfile
 from apps.patients.views import patient_actor_role, profile_for
-from apps.establishments.models import Establishment
 from apps.professionals.access import professional_clinical_access_error
 from apps.professionals.models import ProfessionalProfile
 from apps.audit.models import AuditEvent
 from apps.audit.services import record_event
-from .models import AccessGrant, CareEncounter, Consultation, PreConsultationRevision
+from .models import AccessGrant, CareEncounter, Consultation
 from .serializers import AccessGrantSerializer, CareEncounterSerializer, ConsultationSerializer, ProfessionalAccessGrantSerializer, ProfessionalConsultationCreateSerializer
-from .services import QR_TOKEN_TTL_SECONDS, create_patient_qr_token, create_professional_grant
+from .services import QR_TOKEN_TTL_SECONDS, create_patient_qr_token, create_professional_grant, require_scope
 from .consultation_services import validate_consultation
 
 
 class EncounterListCreateView(APIView):
+    """Pré-consultation du patient : un brouillon, sans établissement.
+
+    Le patient — ou un infirmier qui prend son téléphone, sans compte — ne choisit aucun établissement et ne clôture rien.
+    Le brouillon reste modifiable jusqu’à ce qu’un médecin, qui l’a lu grâce au QR du patient, termine sa consultation :
+    c’est cette signature qui clôture le brouillon et le rattache à l’établissement du médecin."""
     permission_classes = [IsAuthenticated]
     def get(self, request):
         items = CareEncounter.objects.filter(patient=profile_for(request.user, request))
@@ -29,20 +33,19 @@ class EncounterListCreateView(APIView):
     def post(self, request):
         serializer = CareEncounterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        establishment_id = request.data.get("establishment_id")
-        try:
-            establishment_id = UUID(str(establishment_id))
-            establishment = Establishment.objects.filter(id=establishment_id, status="active").first()
-        except (ValueError, TypeError, AttributeError):
-            establishment = None
-        if not establishment:
-            return Response({"success": False, "message": "Choisissez un établissement actif pour associer cette pré-consultation."}, status=400)
-        item = CareEncounter.objects.create(patient=profile_for(request.user, request), establishment=establishment, facility_label=establishment.name, **serializer.validated_data)
+        patient = profile_for(request.user, request)
+        # Un seul brouillon à la fois : le médecin lit « la dernière pré-consultation », elle ne doit pas être ambiguë.
+        # Le verrou sérialise deux créations simultanées du même patient (deux appareils, ou la personne qui aide + le patient).
+        patient = PatientProfile.objects.select_for_update().get(pk=patient.pk)
+        if CareEncounter.objects.filter(patient=patient, status="draft").exists():
+            return Response({"success": False, "message": "Une pré-consultation est déjà en préparation. Modifiez-la : le médecin lira la dernière version."}, status=status.HTTP_409_CONFLICT)
+        item = CareEncounter.objects.create(patient=patient, **serializer.validated_data)
         record_event(event_type="preconsultation.created", actor=request.user, actor_role=patient_actor_role(request), patient=item.patient, metadata={"action": "created", "encounter_id": str(item.id), "status": item.status})
         return Response({"success": True, "data": CareEncounterSerializer(item).data}, status=status.HTTP_201_CREATED)
 
 
 class EncounterDetailView(APIView):
+    """Lecture et modification d’un brouillon. Pas de clôture ici : seul le médecin clôture, en signant sa consultation."""
     permission_classes = [IsAuthenticated]
     def get_object(self, request, pk):
         return CareEncounter.objects.filter(pk=pk, patient=profile_for(request.user, request)).first()
@@ -53,28 +56,16 @@ class EncounterDetailView(APIView):
         return Response({"success": True, "data": CareEncounterSerializer(item).data})
     @transaction.atomic
     def patch(self, request, pk):
-        item = self.get_object(request, pk)
+        item = CareEncounter.objects.select_for_update().filter(pk=pk, patient=profile_for(request.user, request)).first()
         if not item:
             return Response({"success": False, "message": "Prise en charge introuvable."}, status=404)
         if item.status == "closed":
-            return Response({"success": False, "message": "Cette pré-consultation est clôturée et conservée."}, status=409)
+            return Response({"success": False, "message": "Cette pré-consultation a été clôturée par le médecin et est conservée telle quelle."}, status=409)
         serializer = CareEncounterSerializer(item, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         record_event(event_type="preconsultation.updated", actor=request.user, actor_role=patient_actor_role(request), patient=item.patient, metadata={"action": "updated", "encounter_id": str(item.id), "status": item.status})
         return Response({"success": True, "data": serializer.data})
-    @transaction.atomic
-    def post(self, request, pk):
-        item = self.get_object(request, pk)
-        if not item:
-            return Response({"success": False, "message": "Prise en charge introuvable."}, status=404)
-        if item.status != "closed":
-            item.status = "closed"
-            item.closed_at = timezone.now()
-            item.save(update_fields=("status", "closed_at", "updated_at"))
-            PreConsultationRevision.objects.create(encounter=item, snapshot={"reason": item.reason, "observations": item.observations, "facility_label": item.facility_label, "recorded_with_help": item.recorded_with_help})
-            record_event(event_type="preconsultation.closed", actor=request.user, actor_role=patient_actor_role(request), patient=item.patient, metadata={"action": "closed", "encounter_id": str(item.id), "status": item.status})
-        return Response({"success": True, "data": CareEncounterSerializer(item).data})
 
 
 class PatientAccessGrantListView(APIView):
@@ -209,10 +200,16 @@ class ProfessionalConsultationListCreateView(APIView):
         if access_error:
             return Response({"success": False, "message": access_error}, status=403)
         items = list(Consultation.objects.filter(professional=profile, establishment=profile.active_establishment).select_related("establishment", "source_encounter", "patient", "access_grant"))
+        # Un événement par patient concerné (et non un par consultation) : le patient doit pouvoir retrouver chaque lecture de son
+        # dossier dans son journal, mais une liste de vingt consultations ne doit pas écrire vingt lignes à chaque chargement.
+        groups = {}
         for item in items:
-            grant = item.access_grant
+            groups.setdefault((item.patient_id, item.access_grant_id), []).append(item)
+        for group in groups.values():
+            first = group[0]
+            grant = first.access_grant
             duration = int(round((grant.expires_at - grant.starts_at).total_seconds() / 60)) if grant and grant.starts_at and grant.expires_at else None
-            record_event(event_type="clinical_data.read", actor=request.user, actor_role="professional", patient=item.patient, establishment=item.establishment, access_grant=grant, consultation=item, metadata={"action": "read_consultation", "resource_type": "consultation", "resource_id": str(item.id), "resource_count": 1, "authorized_until": grant.expires_at.isoformat() if grant and grant.expires_at else None, "access_duration_minutes": duration})
+            record_event(event_type="clinical_data.read", actor=request.user, actor_role="professional", patient=first.patient, establishment=first.establishment, access_grant=grant, metadata={"action": "read_consultations", "resource_type": "consultation", "resource_count": len(group), "authorized_until": grant.expires_at.isoformat() if grant and grant.expires_at else None, "access_duration_minutes": duration})
         return Response({"success": True, "data": ConsultationSerializer(items, many=True).data})
 
     @transaction.atomic
@@ -228,11 +225,18 @@ class ProfessionalConsultationListCreateView(APIView):
             detail = exc.detail
             message = detail[0] if isinstance(detail, list) else detail
             return Response({"success": False, "message": str(message)}, status=400)
+        except PermissionDenied as exc:
+            return Response({"success": False, "message": str(exc.detail)}, status=403)
         record_event(event_type="consultation.validated", actor=request.user, actor_role="professional", patient=consultation.patient, establishment=consultation.establishment, access_grant=consultation.access_grant, consultation=consultation, metadata={"action": "validated", "source_type": "preconsultation"})
+        record_event(event_type="preconsultation.closed", actor=request.user, actor_role="professional", patient=consultation.patient, establishment=consultation.establishment, access_grant=consultation.access_grant, consultation=consultation, metadata={"action": "closed", "encounter_id": str(consultation.source_encounter_id), "status": "closed"})
         return Response({"success": True, "data": ConsultationSerializer(consultation).data}, status=status.HTTP_201_CREATED)
 
 
 class ProfessionalAuthorizedEncounterListView(APIView):
+    """La dernière pré-consultation en préparation du patient, lisible grâce à son QR (autorisation acceptée).
+
+    Le médecin ne choisit rien : l’autorisation désigne le patient, et le patient n’a qu’un brouillon à la fois.
+    Les pré-consultations déjà clôturées par un autre établissement ne sont jamais renvoyées."""
     permission_classes = [IsAuthenticated]
 
     def get(self, request, pk):
@@ -240,13 +244,15 @@ class ProfessionalAuthorizedEncounterListView(APIView):
         access_error = professional_clinical_access_error(profile)
         if access_error:
             return Response({"success": False, "message": access_error}, status=403)
-        grant = AccessGrant.objects.filter(id=pk, professional=profile, establishment=profile.active_establishment).select_related("establishment").first()
+        grant = AccessGrant.objects.filter(id=pk, professional=profile, establishment=profile.active_establishment).select_related("establishment", "patient").first()
         if not grant:
             return Response({"success": False, "message": "AccessGrant introuvable dans votre périmètre."}, status=404)
-        grant.refresh_expiration()
-        if grant.status != "active" or grant.establishment_id != getattr(profile.active_establishment, "id", None) or "preconsultation" not in grant.scope:
-            return Response({"success": False, "message": "Cette pré-consultation n’est pas accessible avec l’autorisation courante."}, status=403)
-        items = list(CareEncounter.objects.filter(patient=grant.patient, establishment_id=grant.establishment_id, status="closed").order_by("-closed_at"))
+        try:
+            require_scope(grant, "preconsultation")
+        except PermissionDenied as exc:
+            return Response({"success": False, "message": str(exc.detail)}, status=403)
+        latest = CareEncounter.objects.filter(patient=grant.patient, status="draft").order_by("-updated_at", "-created_at").first()
+        items = [latest] if latest else []
         duration = int(round((grant.expires_at - grant.starts_at).total_seconds() / 60)) if grant.starts_at and grant.expires_at else None
         record_event(event_type="clinical_data.read", actor=request.user, actor_role="professional", patient=grant.patient, establishment=grant.establishment, access_grant=grant, metadata={"action": "read_preconsultations", "resource_type": "preconsultation", "resource_count": len(items), "authorized_until": grant.expires_at.isoformat() if grant.expires_at else None, "access_duration_minutes": duration})
         return Response({"success": True, "data": CareEncounterSerializer(items, many=True).data})

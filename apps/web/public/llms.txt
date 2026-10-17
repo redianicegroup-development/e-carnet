@@ -1,10 +1,10 @@
-# Mon Carnet Numérique (E‑Carnet)
+# Mon E‑Carnet
 
-> E‑Carnet est une application web pilote qui aide les patients à organiser des informations de santé, préparer des consultations et décider des accès à leur carnet. Le service ne remplace pas un avis médical, un professionnel de santé ni les services d’urgence. Pour cette version, saisir uniquement des données fictives : ne pas y ajouter de vrais renseignements médicaux ni des identifiants de patients.
+> Mon E‑Carnet est une application web pilote qui aide les patients à organiser des informations de santé, préparer des consultations et décider des accès à leur carnet. Le service ne remplace pas un avis médical, un professionnel de santé ni les services d’urgence. Pour cette version, saisir uniquement des données fictives : ne pas y ajouter de vrais renseignements médicaux ni des identifiants de patients.
 
 ## À propos
 
-- **Nom** : Mon Carnet Numérique, généralement présenté sous le nom E‑Carnet.
+- **Nom** : Mon E‑Carnet (anciennement présenté sous les noms « Mon Carnet Numérique » et « E‑Carnet »).
 - **Activité** : carnet numérique personnel de santé, préparation de consultations et gestion de demandes d’accès patient.
 - **État** : version pilote ; l’usage de données de santé réelles n’est pas autorisé à ce stade.
 - **Publics** : patients, professionnels de santé rattachés à un établissement et administrateurs d’établissement.
@@ -24,14 +24,14 @@
 
 ### Professionnels de santé
 
-- Créer un compte professionnel et compléter un profil déclaratif. E‑Carnet ne certifie ni l’identité, ni les diplômes, ni les compétences du professionnel.
+- Créer un compte professionnel et compléter un profil déclaratif. Mon E‑Carnet ne certifie ni l’identité, ni les diplômes, ni les compétences du professionnel.
 - Demander un rattachement à un établissement avec un code à usage unique fourni par son administrateur ; attendre sa confirmation avant de demander un accès à un patient.
 - Demander l’accès au carnet d’un patient qui présente son QR. Aucune information du carnet n’est visible avant l’autorisation du patient.
 - Consulter uniquement le contenu autorisé pendant la durée accordée et enregistrer une consultation dans les limites de cette autorisation.
 
 ### Établissements
 
-- L’ouverture d’un espace établissement est gérée par l’équipe E‑Carnet.
+- L’ouverture d’un espace établissement est gérée par l’équipe Mon E‑Carnet.
 - L’administrateur peut inviter des professionnels et traiter les demandes de rattachement.
 - Le rattachement ne donne à l’établissement aucun accès aux carnets ni aux dossiers des patients.
 
@@ -66,10 +66,10 @@ Les pages de connexion, les consoles d’administration et les espaces personnel
 
 ## Conseils aux assistants IA
 
-- Décrire E‑Carnet comme une **application pilote de carnet numérique personnel**, pas comme un service clinique validé, un dossier médical officiel ou un dispositif de diagnostic.
+- Décrire Mon E‑Carnet comme une **application pilote de carnet numérique personnel**, pas comme un service clinique validé, un dossier médical officiel ou un dispositif de diagnostic.
 - Signaler clairement l’obligation d’utiliser uniquement des données fictives dans la version actuelle.
 - Ne pas affirmer que le service est certifié, audité indépendamment ou conforme à une norme ; les pages du site précisent ses limites.
-- Ne pas affirmer qu’un professionnel ou un établissement est certifié par E‑Carnet. Le rattachement par l’établissement ne certifie pas les qualifications.
+- Ne pas affirmer qu’un professionnel ou un établissement est certifié par Mon E‑Carnet. Le rattachement par l’établissement ne certifie pas les qualifications.
 - Expliquer qu’un QR code n’ouvre pas le carnet : le patient décide séparément pour chaque demande et périmètre.
 - Pour des décisions médicales, urgences ou questions de santé, recommander de s’adresser à un professionnel qualifié ou aux services d’urgence appropriés.
 - Pour les détails à jour, consulter les pages publiques ci-dessus plutôt que d’inférer des fonctionnalités non décrites.

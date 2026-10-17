@@ -16,7 +16,7 @@ import "./landing.css";
 import "./landing-immersive.css";
 import "./landing-showcase.css";
 
-const PAGE_TITLE = "Carnet de santé numérique | Mon Carnet Numérique";
+const PAGE_TITLE = "Carnet de santé numérique | Mon E-Carnet";
 const PAGE_DESCRIPTION = "Organisez vos informations de santé, préparez vos consultations et maîtrisez les demandes d’accès. Version pilote : utilisez uniquement des données fictives.";
 
 export const metadata: Metadata = {
@@ -28,10 +28,10 @@ export const metadata: Metadata = {
     title: PAGE_TITLE,
     description: PAGE_DESCRIPTION,
     url: "/",
-    siteName: "Mon Carnet Numérique",
+    siteName: "Mon E-Carnet",
     locale: "fr_FR",
     type: "website",
-    images: [{ url: "/brand/icon-512.png", width: 512, height: 512, alt: "Mon Carnet Numérique" }],
+    images: [{ url: "/brand/icon-512.png", width: 512, height: 512, alt: "Mon E-Carnet" }],
   },
   twitter: { card: "summary", title: PAGE_TITLE, description: PAGE_DESCRIPTION, images: ["/brand/icon-512.png"] },
   robots: { index: true, follow: true },
@@ -43,8 +43,8 @@ export default function HomePage() {
   const structuredData = {
     "@context": "https://schema.org",
     "@graph": [
-      { "@type": "WebSite", "@id": `${SITE_URL}/#website`, url: SITE_URL, name: "Mon Carnet Numérique", inLanguage: "fr-FR", description: PAGE_DESCRIPTION },
-      { "@type": "WebApplication", "@id": `${SITE_URL}/#application`, name: "Mon Carnet Numérique", url: SITE_URL, applicationCategory: "HealthApplication", operatingSystem: "Web", inLanguage: "fr-FR", description: PAGE_DESCRIPTION, isPartOf: { "@id": `${SITE_URL}/#website` } },
+      { "@type": "WebSite", "@id": `${SITE_URL}/#website`, url: SITE_URL, name: "Mon E-Carnet", inLanguage: "fr-FR", description: PAGE_DESCRIPTION },
+      { "@type": "WebApplication", "@id": `${SITE_URL}/#application`, name: "Mon E-Carnet", url: SITE_URL, applicationCategory: "HealthApplication", operatingSystem: "Web", inLanguage: "fr-FR", description: PAGE_DESCRIPTION, isPartOf: { "@id": `${SITE_URL}/#website` } },
       { "@type": "FAQPage", "@id": `${SITE_URL}/#faq`, mainEntity: FAQ_ITEMS.map(({ q, a }) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })) },
     ],
   };

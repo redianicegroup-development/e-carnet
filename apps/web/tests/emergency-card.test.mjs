@@ -19,22 +19,35 @@ test("la carte d’urgence affiche identité, groupe sanguin, ville, allergies, 
   assert.match(styles, /@container ecard \(max-width: 430px\) \{[^}]*\.ecard__body \{ grid-template-columns: minmax\(0, 1fr\)/);
 });
 
-test("les réglages utilisent la carte, l’export PNG sans dépendance et l’édition de la ville", () => {
+test("les réglages montrent la carte avec la photo du titulaire, un QR statique pliable et un simple lien vers le carnet", () => {
   const settings = read("src/components/PatientEmergencyCardSettingsClient.tsx");
   const image = read("src/components/emergency-card/emergency-card-image.ts");
+  const visual = read("src/components/emergency-card/EmergencyCardVisual.tsx");
   const account = read("src/components/AccountSettingsClient.tsx");
-  assert.match(settings, /<EmergencyCardVisual card=\{card\} qrUrl=\{publicUrl\}/);
-  assert.match(settings, /downloadEmergencyCardPng\(card, qrCanvas\)/);
+  assert.match(settings, /<EmergencyCardVisual card=\{card\} showQr=\{false\} photo=\{photo\} \/>/);
+  assert.match(settings, /downloadEmergencyCardPng\(card, photo\)/);
   assert.match(settings, /Télécharger en PNG/);
-  assert.match(settings, /city: city\.trim\(\)/);
-  // le PNG n’est proposé que si le QR est actif, et le QR n’est jamais généré sans lien public
-  assert.match(settings, /card\.qr_enabled\s*\?[\s\S]*Télécharger en PNG/);
-  assert.match(settings, /\{publicUrl && <QRCodeCanvas/);
+  // « Ma carte virtuelle » ne porte plus qu'un lien : ville, contact et le reste se modifient dans les déclarations du carnet
+  assert.match(settings, /href="\/patient\/carnet#carte-urgence">Modifier ma carte</);
+  assert.doesNotMatch(settings, /city: city|setCity|setContactName|setContactPhone|<input/);
+  // le QR est unique et statique : ni renouvellement ni carte imprimable
+  assert.doesNotMatch(settings, /Renouveler|rotate|offline|Carte imprimable|<details|ecard-details/i);
+  assert.doesNotMatch(read("src/components/emergency-card/emergency-card.css"), /ecard-details|ecard-offline/);
+  // le QR se plie et se déplie, et n'est généré que s'il y a un lien public
+  assert.match(settings, /aria-expanded=\{qrOpen\}/);
+  assert.match(settings, /aria-controls=\{qrPanelId\}/);
+  assert.match(settings, /card\.qr_enabled && publicUrl/);
+  assert.match(settings, /<QRCodeSVG value=\{publicUrl\}/);
+  // le PNG remplace le QR par la photo de profil ou l'avatar (monogramme si l'image est illisible), sans dépendance ni réseau applicatif
+  assert.doesNotMatch(image, /qrCanvas|QRCode/);
+  assert.match(image, /function loadPhoto/);
+  assert.match(image, /crossOrigin = "anonymous"/);
+  assert.match(image, /photo\.initials/);
   assert.match(image, /canvas\.toBlob|out\.toBlob/);
   assert.match(image, /type: ?"image\/png"|"image\/png"/);
   assert.doesNotMatch(image, /fetch\(/);
+  assert.match(visual, /ecard__photo/);
   assert.match(account, /<PatientEmergencyCardSettingsClient \/>/);
-  // la carte vit dans sa propre section, plus à l’intérieur du résumé du compte
   assert.match(account, /<\/section>\s*<PatientEmergencyCardSettingsClient \/>/);
 });
 

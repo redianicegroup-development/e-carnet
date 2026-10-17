@@ -123,9 +123,9 @@ export function PublicHeader() {
 
   return (
     <header className="pub-header" ref={headerRef}>
-      <Link className="brand" href="/" aria-label="Mon Carnet Numérique, accueil" onClick={close}>
+      <Link className="brand" href="/" aria-label="Mon E-Carnet, accueil" onClick={close}>
         <BrandMark />
-        <span className="brand-text"><strong>E-carnet</strong><small>Mon Carnet Numérique</small></span>
+        <span className="brand-text"><strong>Mon E‑Carnet</strong><small>Carnet de santé numérique</small></span>
       </Link>
       <div className="pub-menu" id="pub-menu" ref={menuRef} data-open={menuOpen ? "true" : "false"}>
         <nav className="pub-nav" aria-label="Navigation principale">

@@ -1,5 +1,9 @@
+import re
+
 from rest_framework import serializers
 from .models import ClinicalDeclaration, PatientEmergencyCard, PatientProfile
+
+PHONE_PATTERN = re.compile(r"^\+?[0-9][0-9 ().\-]{4,30}$")
 
 
 class PatientProfileSerializer(serializers.ModelSerializer):
@@ -34,21 +38,23 @@ class ClinicalDeclarationSerializer(serializers.ModelSerializer):
         label = attrs.get("label", getattr(self.instance, "label", ""))
         if kind == "blood_group" and label not in {"A+", "A−", "B+", "B−", "AB+", "AB−", "O+", "O−", "Inconnu"}:
             raise serializers.ValidationError({"label": "Choisissez un groupe sanguin valide."})
+        if kind == "city":
+            if len(label.strip()) > 120:
+                raise serializers.ValidationError({"label": "La ville ne peut pas dépasser 120 caractères."})
+            attrs["details"] = ""
+        if kind == "emergency_contact":
+            phone = str(attrs.get("details", getattr(self.instance, "details", ""))).strip()
+            if len(label.strip()) > 120:
+                raise serializers.ValidationError({"label": "Le nom du contact ne peut pas dépasser 120 caractères."})
+            if not PHONE_PATTERN.match(phone):
+                raise serializers.ValidationError({"details": "Saisissez un numéro de téléphone valide (chiffres, espaces, + au début)."})
+            attrs["details"] = phone
         return attrs
 
 
 class PatientEmergencyCardSerializer(serializers.ModelSerializer):
-    offline_declaration_ids = serializers.ListField(
-        child=serializers.UUIDField(),
-        required=False,
-        max_length=40,
-    )
+    """Seul réglage restant de la carte : activer ou couper le QR. Tout le reste vient du carnet."""
 
     class Meta:
         model = PatientEmergencyCard
-        fields = ("city", "contact_name", "contact_phone", "qr_enabled", "offline_declaration_ids")
-
-    def validate_offline_declaration_ids(self, value):
-        if len(value) != len(set(value)):
-            raise serializers.ValidationError("Une déclaration ne peut être sélectionnée qu’une seule fois.")
-        return value
+        fields = ("qr_enabled",)

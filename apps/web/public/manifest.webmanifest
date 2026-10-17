@@ -1,6 +1,6 @@
 {
-  "name": "Mon Carnet Numérique",
-  "short_name": "E-carnet",
+  "name": "Mon E-Carnet",
+  "short_name": "Mon E-Carnet",
   "lang": "fr",
   "start_url": "/",
   "display": "standalone",

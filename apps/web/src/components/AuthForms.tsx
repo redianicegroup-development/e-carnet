@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
@@ -128,6 +129,7 @@ export function AuthForms() {
         </span>
         {!login && <><span className="ax-meter" aria-hidden="true"><i data-full={strength >= 1} style={{ transform: `scaleX(${strength})` }} /></span><small id="auth-password-hint" className="ax-hint">12 caractères minimum ({Math.min(form.password.length, 12)}/12). Choisissez un mot de passe que vous n’utilisez pas ailleurs.</small></>}
       </label>
+      {login && <p className="ax-forgot" data-ax-item><Link href="/connexion/recuperation">Récupérer mon compte</Link></p>}
       <button className={`ax-submit${status === "busy" ? " is-loading" : ""}`} type="submit" disabled={busy} data-ax-item><span className="ax-submit__label">{status === "success" ? "Bienvenue !" : busy ? "Connexion sécurisée…" : login ? "Se connecter" : "Créer mon compte"}</span><svg className="ax-submit__arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6" /></svg><span className="ax-submit__spinner" aria-hidden="true" /></button>
       <div className="ax-divider" data-ax-item><span>ou continuer avec</span></div>
       <Socials labeled={false} oauthNext={oauthNext} />

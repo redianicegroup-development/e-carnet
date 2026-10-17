@@ -4,8 +4,8 @@ import { Fill, LegalDocument, LegalTable, type LegalSectionDef } from "../../com
 import { HOSTS, fieldValue } from "../../lib/legal/config";
 
 export const metadata: Metadata = {
-  title: "Mentions légales — Mon Carnet Numérique",
-  description: "Identification de l’éditeur, de l’hébergeur et conditions générales d’information du service Mon Carnet Numérique.",
+  title: "Mentions légales — Mon E-Carnet",
+  description: "Identification de l’éditeur, de l’hébergeur et conditions générales d’information du service Mon E-Carnet.",
   robots: { index: false, follow: true },
 };
 
@@ -15,7 +15,7 @@ const sections: LegalSectionDef[] = [
     title: "Éditeur du service",
     body: (
       <>
-        <p>Le service « Mon Carnet Numérique » (nom court : « E-carnet ») est édité et exploité par :</p>
+        <p>Le service « Mon E‑Carnet » est édité et exploité par :</p>
         <dl>
           <div><dt>Dénomination ou nom</dt><dd><Fill k="publisher.name" /></dd></div>
           <div><dt>Forme juridique</dt><dd><Fill k="publisher.legalForm" /></dd></div>

@@ -18,7 +18,11 @@
 /* ---------- Mobile : une carte, comme une application ---------- */
 .ax-frame { width: min(100%, 440px); margin: 0 auto; display: grid; gap: 4px; padding: 26px 22px 20px; border: 1px solid var(--border); border-radius: 30px; background: var(--surface); box-shadow: 0 30px 70px -44px color-mix(in srgb, var(--text) 55%, transparent); }
 .ax-stage { position: relative; isolation: isolate; display: grid; justify-items: center; gap: 12px; text-align: center; }
-.ax-blob, .ax-stage__pulse, .ax-brand, .ax-stage__eyebrow, .ax-stage__home { display: none; }
+.ax-blob, .ax-stage__pulse, .ax-stage__eyebrow { display: none; }
+/* Le logo ramène à la page d'accueil, sur mobile comme sur grand écran (il n'y a plus de lien « Retour à l'accueil »). */
+.ax-brand { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 44px; margin: 0; padding: 4px 10px; border-radius: 14px; color: var(--text); font-weight: 800; letter-spacing: -.01em; text-decoration: none; }
+.ax-brand .brand-mark svg { width: 28px; height: 28px; }
+.ax-brand:hover { background: color-mix(in srgb, var(--text) 7%, transparent); }
 .ax-welcome { position: relative; display: grid; justify-items: center; gap: 6px; }
 .ax-welcome__character { display: grid; place-items: center; width: 132px; aspect-ratio: 1; border-radius: 50%; background: color-mix(in srgb, var(--primary) 11%, var(--surface)); color: var(--primary-text); padding: 14px 18px 0; overflow: hidden; transition: width .4s cubic-bezier(.2, .8, .2, 1); }
 .ax-welcome__bubble { position: relative; max-width: 100%; padding: 8px 14px; border-radius: 16px; background: var(--primary); color: var(--on-primary); font-size: .82rem; font-weight: 700; line-height: 1.25; }
@@ -87,6 +91,23 @@
 .ax-submit.is-loading .ax-submit__arrow { opacity: 0; }
 .ax-card[data-status="success"] .ax-submit { filter: saturate(1.15); }
 .ax-socials:not(.ax-socials--labeled) { grid-template-columns: repeat(3, 1fr); }
+/* Lien « Récupérer mon compte » et page de récupération : mêmes champs, même bouton, même carte que la connexion. */
+.ax-forgot { margin: -4px 0 0; text-align: right; }
+.ax-forgot a, .ax-note a { color: var(--primary-text); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.ax-forgot a { display: inline-flex; align-items: center; min-height: 36px; padding: 0 2px; font-size: .88rem; }
+.ax-forgot a:focus-visible, .ax-note a:focus-visible, .ax-back:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: 6px; }
+.ax-note { margin: 0; color: var(--text-muted); font-size: .85rem; line-height: 1.5; }
+.ax-field textarea { width: 100%; min-height: 108px; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 14px; background: color-mix(in srgb, var(--surface-tint) 70%, var(--surface)); color: var(--text); font: inherit; line-height: 1.45; resize: vertical; }
+.ax-field textarea::placeholder { color: color-mix(in srgb, var(--text-muted) 70%, transparent); }
+.ax-field textarea:hover { border-color: var(--border-strong); }
+.ax-field textarea:focus-visible { outline: none; border-color: var(--primary); background: var(--surface); box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 14%, transparent); }
+.ax-field [aria-invalid="true"] { border-color: var(--danger, #b3261e); }
+.ax-error { color: var(--danger, #b3261e); font-size: .8rem; font-weight: 650; line-height: 1.35; }
+.ax-check { display: flex; align-items: flex-start; gap: 10px; font-size: .88rem; line-height: 1.45; cursor: pointer; }
+.ax-check input { flex: 0 0 auto; width: 22px; height: 22px; margin-top: 1px; accent-color: var(--primary); }
+.ax-hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.ax-back--always { display: inline-flex !important; text-decoration: none; }
+.ax-submit--link { text-decoration: none; color: inherit; }
 .ax-message { margin: 0; color: var(--text-muted); font-size: .85rem; text-align: center; }
 .ax-panel .auth-legal-links { justify-content: center; margin-top: 4px; }
 
@@ -104,8 +125,7 @@
   .ax-blob--b { width: 70%; aspect-ratio: 1; left: -22%; bottom: -26%; background: radial-gradient(closest-side, color-mix(in srgb, var(--primary) 52%, transparent), transparent); }
   .ax-blob--c { width: 40%; aspect-ratio: 1; left: 34%; top: 30%; background: radial-gradient(closest-side, color-mix(in srgb, var(--brand-4, var(--brand-3)) 60%, transparent), transparent); }
   .ax-stage__pulse { display: block; position: absolute; z-index: -1; left: 0; right: 0; bottom: -46px; height: 110px; color: var(--primary); opacity: .28; pointer-events: none; }
-  .ax-brand { display: flex; align-items: center; gap: 10px; margin: 0; font-weight: 800; letter-spacing: -.01em; }
-  .ax-brand .brand-mark svg { width: 26px; height: 26px; }
+  .ax-brand { justify-self: start; margin-left: -10px; }
   .ax-welcome { justify-self: center; align-self: center; gap: 10px; margin-block: 4px; }
   .ax-welcome__character { width: clamp(150px, 15vw, 190px); padding: 18px 22px 0; background: color-mix(in srgb, var(--surface) 62%, transparent); box-shadow: 0 18px 40px -26px color-mix(in srgb, var(--text) 60%, transparent), inset 0 0 0 1px color-mix(in srgb, var(--surface) 70%, transparent); backdrop-filter: blur(6px); }
   .ax-welcome__bubble { font-size: .9rem; padding: 10px 16px; border-radius: 18px; }
@@ -115,12 +135,11 @@
   .ax-stage__lead { color: color-mix(in srgb, var(--text) 72%, transparent); max-width: 38ch; font-size: .92rem; }
   .ax-lead-long { display: inline; }
   .ax-lead-short { display: none; }
-  .ax-stage__home { display: inline-flex; align-items: center; min-height: 36px; color: var(--text); font-weight: 650; font-size: .88rem; text-decoration: underline; text-underline-offset: 3px; }
   .ax-panel { align-content: center; padding: clamp(20px, 3.2vw, 44px); }
   .ax-card { width: min(100%, 410px); margin: 0 auto; padding-top: 0; }
   /* Le formulaire est toujours là, l'écran d'accueil mobile n'existe pas. */
   .ax-card[data-step="welcome"] .ax-form { display: grid; }
-  .ax-welcome-actions, .ax-back { display: none !important; }
+  .ax-welcome-actions, .ax-back:not(.ax-back--always) { display: none !important; }
   .auth-root[data-step="form"] .ax-stage__copy, .auth-root[data-step="form"] .ax-welcome__bubble { display: grid; }
   .auth-root[data-step="form"] .ax-welcome__character { width: clamp(150px, 15vw, 190px); padding: 18px 22px 0; }
   .ax-glyph { width: 38px; height: 38px; }

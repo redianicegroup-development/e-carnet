@@ -1,7 +1,7 @@
 import { PublicEmergencyCard } from "../../../components/PublicEmergencyCard";
 
 export const metadata = {
-  title: "Carte d’urgence — E‑Carnet",
+  title: "Carte d’urgence — Mon E‑Carnet",
   robots: { index: false, follow: false, noarchive: true },
   referrer: "no-referrer",
 };

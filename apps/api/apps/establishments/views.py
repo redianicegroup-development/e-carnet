@@ -139,7 +139,7 @@ class EstablishmentCreateView(APIView):
 
     def post(self, request):
         return Response(
-            {"success": False, "message": "La création d’un établissement est réservée à l’équipe E‑Carnet."},
+            {"success": False, "message": "La création d’un établissement est réservée à l’équipe Mon E‑Carnet."},
             status=status.HTTP_403_FORBIDDEN,
         )
 
@@ -158,7 +158,7 @@ def establishment_stage(establishment, administrator):
 
 
 class StaffEstablishmentCreateView(APIView):
-    """Création par l'équipe E‑Carnet : le nom vérifié et l'e‑mail du responsable suffisent. C'est l'établissement qui
+    """Création par l'équipe Mon E‑Carnet : le nom vérifié et l'e‑mail du responsable suffisent. C'est l'établissement qui
     renseigne ensuite sa fiche (type, ville, adresse, téléphone) dans son onboarding."""
     permission_classes = [IsAuthenticated, IsAdminUser]
 
@@ -335,7 +335,7 @@ class EstablishmentInvitationAcceptView(APIView):
                 return Response({
                     "success": False,
                     "code": "account_exists",
-                    "message": "Un compte E‑Carnet existe déjà avec cette adresse. Connectez‑vous avec ce compte, puis rouvrez ce lien d’invitation.",
+                    "message": "Un compte Mon E‑Carnet existe déjà avec cette adresse. Connectez‑vous avec ce compte, puis rouvrez ce lien d’invitation.",
                 }, status=409)
             user = existing
         else:
@@ -386,7 +386,7 @@ class EstablishmentDetailView(APIView):
 
 class EstablishmentProfileView(APIView):
     """Fiche de l'établissement, complétée par son administrateur (onboarding) et modifiable ensuite.
-    Le nom et le responsable, vérifiés par l'équipe E‑Carnet, sont verrouillés."""
+    Le nom et le responsable, vérifiés par l'équipe Mon E‑Carnet, sont verrouillés."""
     permission_classes = [IsAuthenticated]
     LOCKED_FIELDS = ("name", "responsible_name")
 
@@ -409,7 +409,7 @@ class EstablishmentProfileView(APIView):
         establishment = Establishment.objects.select_for_update().get(pk=admin.establishment_id)
         for field in self.LOCKED_FIELDS:
             if field in request.data and str(request.data[field]).strip() != getattr(establishment, field):
-                return Response({"success": False, "message": "Le nom de l’établissement et le responsable sont vérifiés par l’équipe E‑Carnet : écrivez‑lui pour les modifier."}, status=400)
+                return Response({"success": False, "message": "Le nom de l’établissement et le responsable sont vérifiés par l’équipe Mon E‑Carnet : écrivez‑lui pour les modifier."}, status=400)
         serializer = EstablishmentProfileSerializer(establishment, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         establishment = serializer.save()

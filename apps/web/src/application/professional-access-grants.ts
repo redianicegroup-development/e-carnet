@@ -1,7 +1,7 @@
 import { apiGet, apiPost } from "../infrastructure/api/client";
 
 export type ProfessionalGrant = { id: string; reference: string; professional_id: string | null; establishment_id: string | null; professional_name: string; facility_label: string; scope: string[]; status: "pending" | "active" | "refused" | "expired" | "revoked"; starts_at: string | null; expires_at: string | null; extension_count: number };
-export type Encounter = { id: string; reason: string; observations: string; status: "closed"; facility_label: string; provenance: { label: string } };
+export type Encounter = { id: string; reason: string; observations: string; recorded_with_help?: string; status: "draft" | "closed"; facility_label: string; provenance: { label: string } };
 export type Consultation = { id: string; professional_name: string; facility_label: string; reason: string; conclusion: string; care_plan: string; validated_at: string; provenance: { label: string } };
 
 export function listProfessionalGrants(): Promise<ProfessionalGrant[]> {
@@ -12,6 +12,7 @@ export function requestProfessionalGrant(scope: string[], qrToken: string): Prom
   return apiPost<ProfessionalGrant>("/api/v1/patient/care/professional/access-grants/", { scope, qr_token: qrToken });
 }
 
+/** La dernière pré-consultation en préparation du patient (au plus une), lisible tant que l'autorisation est active. */
 export function listAuthorizedEncounters(grantId: string): Promise<Encounter[]> {
   return apiGet<Encounter[]>(`/api/v1/patient/care/professional/access-grants/${grantId}/encounters/`);
 }

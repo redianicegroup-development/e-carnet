@@ -385,14 +385,17 @@ class DeclarationListCreateView(APIView):
     def post(self, request):
         serializer = ClinicalDeclarationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        if serializer.validated_data["kind"] == "blood_group":
+        kind = serializer.validated_data["kind"]
+        if kind in ClinicalDeclaration.SINGLETON_KINDS:
+            # Groupe sanguin, ville, contact d’urgence : une seule valeur active, la nouvelle remplace l’ancienne.
             patient = profile_for(request.user, request)
-            ClinicalDeclaration.objects.filter(patient=patient, kind="blood_group", status="declared").update(status="cancelled")
-            previous = ClinicalDeclaration.objects.filter(patient=patient, kind="blood_group", label=serializer.validated_data["label"]).first()
+            ClinicalDeclaration.objects.filter(patient=patient, kind=kind, status="declared").update(status="cancelled")
+            previous = ClinicalDeclaration.objects.filter(patient=patient, kind=kind, label=serializer.validated_data["label"]).first()
             if previous:
                 previous.details = serializer.validated_data.get("details", "")
                 previous.status = "declared"
                 previous.save(update_fields=("details", "status", "updated_at"))
+                record_event(event_type="clinical_declaration.created", actor=request.user, actor_role=patient_actor_role(request), patient=patient, metadata={"action": "created", "declaration_id": str(previous.id), "status": previous.status})
                 return Response({"success": True, "data": ClinicalDeclarationSerializer(previous).data}, status=status.HTTP_200_OK)
         try:
             item = ClinicalDeclaration.objects.create(patient=profile_for(request.user, request), **serializer.validated_data)
@@ -422,18 +425,20 @@ def qr_signature(card_id, version):
 
 
 def emergency_card_data(card, *, public=False):
+    """Ce que la carte montre, lu en direct dans le carnet : aucune copie, donc aucune mise à jour à pousser."""
     declarations = ClinicalDeclaration.objects.filter(patient=card.patient, status="declared")
-    blood = declarations.filter(kind="blood_group").order_by("-updated_at").first()
+    latest = lambda kind: declarations.filter(kind=kind).order_by("-updated_at").first()
+    blood, city, contact = latest("blood_group"), latest("city"), latest("emergency_contact")
     data = {
         # Carte d’urgence virtuelle : identité minimale (nom, prénom, ville) choisie par le titulaire, affichée telle quelle au scan.
         "first_name": card.patient.display_first_name(),
         "last_name": card.patient.display_last_name(),
-        "city": card.city,
+        "city": city.label if city else "",
         "blood_group": blood.label if blood else "",
         "allergies": list(declarations.filter(kind="allergy").values("label", "details")),
         "treatments": list(declarations.filter(kind="treatment").values("label", "details")),
-        "contact_name": card.contact_name,
-        "contact_phone": card.contact_phone,
+        "contact_name": contact.label if contact else "",
+        "contact_phone": contact.details if contact else "",
         "updated_at": max(
             card.updated_at,
             card.patient.updated_at,
@@ -443,61 +448,27 @@ def emergency_card_data(card, *, public=False):
     if not public:
         data.update({
             "qr_enabled": card.qr_enabled,
+            # Unique et statique : la version ne change plus jamais, le jeton non plus.
             "qr_token": f"{card.id}.{card.qr_version}.{qr_signature(card.id, card.qr_version)}" if card.qr_enabled else "",
-            "offline_declaration_ids": [str(item) for item in card.offline_declaration_ids],
-            "offline_options": list(declarations.filter(kind__in=("allergy", "treatment")).values("id", "kind", "label", "details")),
         })
     return data
 
 
-def offline_card_data(card):
-    selected_ids = [str(item) for item in card.offline_declaration_ids]
-    declarations = list(ClinicalDeclaration.objects.filter(
-        patient=card.patient,
-        status="declared",
-        id__in=selected_ids,
-        kind__in=("allergy", "treatment"),
-    ).values("kind", "label", "details"))
-    return {
-        "first_name": card.patient.display_first_name(),
-        "last_name": card.patient.display_last_name(),
-        "birth_date": card.patient.birth_date.isoformat() if card.patient.birth_date else "",
-        "allergies": [item for item in declarations if item["kind"] == "allergy"],
-        "treatments": [item for item in declarations if item["kind"] == "treatment"],
-        "contact_name": card.contact_name,
-        "contact_phone": card.contact_phone,
-        "updated_at": emergency_card_data(card)["updated_at"],
-        "generated_at": timezone.now().isoformat(),
-        "may_be_outdated": True,
-    }
-
-
 class PatientEmergencyCardView(APIView):
     permission_classes = [IsAuthenticated]
+    MOVED_TO_CARNET = ("city", "contact_name", "contact_phone", "offline_declaration_ids")
 
     def get(self, request):
         card, _ = PatientEmergencyCard.objects.get_or_create(patient=profile_for(request.user, request))
         return Response({"success": True, "data": emergency_card_data(card)})
 
     def patch(self, request):
+        # Une ancienne version de l’application (PWA en cache) peut encore envoyer ces champs : mieux vaut refuser que les ignorer en silence.
+        if any(key in request.data for key in self.MOVED_TO_CARNET):
+            return Response({"success": False, "message": "La ville et le contact d’urgence se modifient maintenant dans votre carnet. Actualisez l’application."}, status=400)
         card, _ = PatientEmergencyCard.objects.get_or_create(patient=profile_for(request.user, request))
         serializer = PatientEmergencyCardSerializer(card, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        if "offline_declaration_ids" in serializer.validated_data:
-            requested_ids = serializer.validated_data["offline_declaration_ids"]
-            selected_ids = set(requested_ids)
-            eligible_ids = set(ClinicalDeclaration.objects.filter(
-                patient=card.patient,
-                status="declared",
-                kind__in=("allergy", "treatment"),
-                id__in=selected_ids,
-            ).values_list("id", flat=True))
-            if selected_ids != eligible_ids:
-                return Response({"success": False, "message": "La carte ne peut inclure que vos allergies et traitements déclarés actifs."}, status=400)
-            serializer.validated_data["offline_declaration_ids"] = [str(item) for item in requested_ids]
-        enabling = serializer.validated_data.get("qr_enabled")
-        if enabling is not None and enabling != card.qr_enabled:
-            card.qr_version += 1
         serializer.save()
         record_event(
             event_type="patient.emergency_card.updated",
@@ -507,32 +478,6 @@ class PatientEmergencyCardView(APIView):
             metadata={"action": "updated", "scope": sorted(serializer.validated_data.keys()), "resource_type": "emergency_card", "resource_id": str(card.id)},
         )
         return Response({"success": True, "data": emergency_card_data(card)})
-
-    def post(self, request):
-        card, _ = PatientEmergencyCard.objects.get_or_create(patient=profile_for(request.user, request))
-        card.qr_version += 1
-        card.qr_enabled = True
-        card.save(update_fields=("qr_version", "qr_enabled", "updated_at"))
-        record_event(event_type="patient.emergency_card.qr_rotated", actor=request.user, actor_role=patient_actor_role(request), patient=card.patient, metadata={"action": "qr_rotated", "resource_type": "emergency_card", "resource_id": str(card.id)})
-        return Response({"success": True, "data": emergency_card_data(card)})
-
-
-class PatientOfflineEmergencyCardView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        card, _ = PatientEmergencyCard.objects.get_or_create(patient=profile_for(request.user, request))
-        record_event(
-            event_type="patient.emergency_card.offline_exported",
-            actor=request.user,
-            actor_role="guardian" if request.session.get("active_patient_profile_id") else "patient",
-            patient=card.patient,
-            metadata={"action": "offline_exported", "resource_type": "emergency_card"},
-        )
-        response = Response({"success": True, "data": offline_card_data(card)})
-        response["Cache-Control"] = "private, no-store, max-age=0"
-        response["X-Robots-Tag"] = "noindex, nofollow, noarchive"
-        return response
 
 
 class EmergencyCardQrView(APIView):

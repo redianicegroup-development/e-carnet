@@ -13,7 +13,7 @@ export const CREDITS_ORIGINS: { id: string; name: string; role: string; icon: Ic
     name: "Redianice",
     role: "Startup porteuse du projet",
     icon: "heart",
-    text: "Startup à l’origine d’E‑Carnet. Elle réunit l’équipe du projet et construit des outils simples au service du domaine de la santé.",
+    text: "Startup à l’origine de Mon E‑Carnet. Elle réunit l’équipe du projet et construit des outils simples au service du domaine de la santé.",
   },
   {
     id: "akatech",
@@ -53,7 +53,7 @@ export const CREDITS_TEAM: { id: string; role: string; org: string; icon: IconNa
     role: "Branding et identité visuelle",
     org: "Deux graphistes",
     icon: "pencil",
-    text: "Ont dessiné le logo, le branding et l’identité visuelle d’E‑Carnet.",
+    text: "Ont dessiné le logo, le branding et l’identité visuelle de Mon E‑Carnet.",
   },
 ];
 
