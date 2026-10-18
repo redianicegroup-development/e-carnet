@@ -19,7 +19,7 @@ test("la carte d’urgence affiche identité, groupe sanguin, ville, allergies, 
   assert.match(styles, /@container ecard \(max-width: 430px\) \{[^}]*\.ecard__body \{ grid-template-columns: minmax\(0, 1fr\)/);
 });
 
-test("les réglages montrent la carte avec la photo du titulaire, un QR statique pliable et un simple lien vers le carnet", () => {
+test("les réglages montrent la carte avec la photo du titulaire et laissent le QR public dans la carte compte", () => {
   const settings = read("src/components/PatientEmergencyCardSettingsClient.tsx");
   const image = read("src/components/emergency-card/emergency-card-image.ts");
   const visual = read("src/components/emergency-card/EmergencyCardVisual.tsx");
@@ -30,14 +30,17 @@ test("les réglages montrent la carte avec la photo du titulaire, un QR statique
   // « Ma carte virtuelle » ne porte plus qu'un lien : ville, contact et le reste se modifient dans les déclarations du carnet
   assert.match(settings, /href="\/patient\/carnet#carte-urgence">Modifier ma carte</);
   assert.doesNotMatch(settings, /city: city|setCity|setContactName|setContactPhone|<input/);
-  // le QR est unique et statique : ni renouvellement ni carte imprimable
+  // Le QR public ne fait plus partie de l’accordéon de la carte : ni renouvellement ni panneau QR local.
   assert.doesNotMatch(settings, /Renouveler|rotate|offline|Carte imprimable|<details|ecard-details/i);
   assert.doesNotMatch(read("src/components/emergency-card/emergency-card.css"), /ecard-details|ecard-offline/);
-  // le QR se plie et se déplie, et n'est généré que s'il y a un lien public
-  assert.match(settings, /aria-expanded=\{qrOpen\}/);
-  assert.match(settings, /aria-controls=\{qrPanelId\}/);
-  assert.match(settings, /card\.qr_enabled && publicUrl/);
-  assert.match(settings, /<QRCodeSVG value=\{publicUrl\}/);
+  assert.doesNotMatch(settings, /QRCodeSVG|ecard-qr|qrOpen|qrPanelId|publicUrl/);
+  assert.match(settings, /Le QR public de cette carte se trouve désormais dans votre carte compte\/identité/);
+  // L’activation et la désactivation du QR stable restent dans la carte compte, avec l’API e-carte.
+  assert.match(account, /<QRCodeSVG value=\{emergencyPublicUrl\}/);
+  assert.match(account, /settings-account-summary__emergency-qr/);
+  assert.match(account, /apiGet<EmergencyCardQr>\("\/api\/v1\/patient\/emergency-card\//);
+  assert.match(account, /apiPatch<EmergencyCardQr>\("\/api\/v1\/patient\/emergency-card\//);
+  assert.match(account, /qr_enabled/);
   // le PNG remplace le QR par la photo de profil ou l'avatar (monogramme si l'image est illisible), sans dépendance ni réseau applicatif
   assert.doesNotMatch(image, /qrCanvas|QRCode/);
   assert.match(image, /function loadPhoto/);
@@ -48,7 +51,6 @@ test("les réglages montrent la carte avec la photo du titulaire, un QR statique
   assert.doesNotMatch(image, /fetch\(/);
   assert.match(visual, /ecard__photo/);
   assert.match(account, /<PatientEmergencyCardSettingsClient \/>/);
-  assert.match(account, /<\/section>\s*<PatientEmergencyCardSettingsClient \/>/);
 });
 
 test("la page publique du scan réutilise la même carte et propose d’appeler le contact", () => {
@@ -58,14 +60,21 @@ test("la page publique du scan réutilise la même carte et propose d’appeler 
   assert.match(pub, /first_name|EmergencyCardView/);
 });
 
-test("le QR de consultation n’est affiché que dans l’onglet Accès, jamais au-dessus des autres pages", () => {
+test("le QR temporaire de visite reste dans Partage et le compte ne porte aucun lien visit-qr", () => {
   const shell = read("src/components/shell/SpaceShell.tsx");
   const grants = read("src/components/PatientAccessGrants.tsx");
+  const settings = read("src/components/AccountSettingsClient.tsx");
+  const home = read("src/components/PatientHome.tsx");
   const styles = read("src/app/globals.css");
   assert.doesNotMatch(shell, /QRCodeSVG/);
   assert.doesNotMatch(shell, /patient-active-qr/);
   assert.match(shell, /export function usePatientAccessQr/);
-  assert.match(grants, /<ActiveAccessQr token=\{qr\.token\}/);
+  assert.match(grants, /QRCodeSVG|ActiveAccessQr|access-qr\//);
+  assert.match(grants, /id="qr"/);
+  assert.match(grants, /documents médicaux .* explicitement demandé et autorisé/);
+  assert.doesNotMatch(settings, /ActiveAccessQr|usePatientAccessQr|access-qr\/|visit-qr/);
+  assert.match(home, /href: "\/patient\/acces#qr"/);
+  assert.doesNotMatch(styles, /settings-account-summary__visit-qr|settings-visit-qr-modal/);
   assert.doesNotMatch(styles, /\.patient-active-qr \{[^}]*position: sticky/);
 });
 

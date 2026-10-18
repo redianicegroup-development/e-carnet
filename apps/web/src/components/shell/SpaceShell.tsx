@@ -10,6 +10,7 @@ import { useConfirm } from "../modal/ConfirmProvider";
 import { GreetingModal } from "../modal/GreetingModal";
 import { BrandMark } from "../ui/BrandMark";
 import { ScreenLoader } from "../ui/ScreenLoader";
+import { NotificationBell } from "../notifications/NotificationBell";
 import { GooeyAccountMenu } from "./GooeyAccountMenu";
 import { AppSidebar, type SidebarItem, type SidebarMenuItem } from "./AppSidebar";
 
@@ -190,6 +191,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
         accountHref={moi.href}
         menu={menu}
         notice={logoutMessage}
+        tools={space === "patient" && state.status === "ready" ? <NotificationBell placement="sidebar" /> : null}
         collapsed={navCollapsed}
         onToggle={toggleNav}
         bare={bare}
@@ -203,7 +205,10 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
               <span><strong>Mon E‑Carnet</strong><small>{config.label}</small></span>
             </Link>
             {/* Menu du compte en goutte (barre haute mobile) : sur grand écran, le même menu est dans la sidebar. */}
-            {state.status === "ready" && <GooeyAccountMenu account={{ name: displayName(state.account), email: state.account.email, initials: initials(state.account), avatarUrl: state.account.avatar_url || undefined }} menu={menu} notice={logoutMessage} />}
+            <div className="space-mobile-header__actions">
+              {space === "patient" && state.status === "ready" && <NotificationBell placement="mobile" />}
+              {state.status === "ready" && <GooeyAccountMenu account={{ name: displayName(state.account), email: state.account.email, initials: initials(state.account), avatarUrl: state.account.avatar_url || undefined }} menu={menu} notice={logoutMessage} />}
+            </div>
           </header>
         )}
         {state.status === "loading" && <ScreenLoader label={state.label} />}

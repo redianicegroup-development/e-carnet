@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { BrandMark } from "../ui/BrandMark";
 import { Icon, type IconName } from "../ui/Icon";
 import "./sidebar.css";
@@ -62,6 +62,8 @@ export type AppSidebarProps = {
   menu: SidebarMenuItem[];
   /** Message d’erreur affiché sous le compte (ex. déconnexion échouée). */
   notice?: string;
+  /** Outils de l’espace, hors de la liste des onglets (ex. notifications patient). */
+  tools?: ReactNode;
   collapsed: boolean;
   onToggle: () => void;
   bare?: boolean;
@@ -223,7 +225,7 @@ function AccountMenu({ account, menu, notice, collapsed }: { account: SidebarAcc
   );
 }
 
-export function AppSidebar({ ariaLabel, brand, items, listRole, listLabel, account, accountHref, menu, notice, collapsed, onToggle, bare = false }: AppSidebarProps) {
+export function AppSidebar({ ariaLabel, brand, items, listRole, listLabel, account, accountHref, menu, notice, tools, collapsed, onToggle, bare = false }: AppSidebarProps) {
   const tabs = listRole === "tablist";
   const rail = collapsed && !bare;
   const scroll = useGooeyIndicator(items.find((item) => item.active)?.id, items.length);
@@ -252,6 +254,8 @@ export function AppSidebar({ ariaLabel, brand, items, listRole, listLabel, accou
           </ul>
         </div>
       )}
+
+      {!bare && <div className="sb__tools">{tools}</div>}
 
       {account && (bare
         ? (

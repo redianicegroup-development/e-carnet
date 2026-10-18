@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
+from django.utils import timezone
 from rest_framework.test import APIClient
 from apps.patients.models import PatientProfile
 from .models import HealthMeasurement, MedicationReminder, PatientNotification
@@ -37,6 +38,27 @@ class V2TrackingTests(TestCase):
         response = self.client.patch(f"/api/v1/patient/care/notifications/{notification.id}/read/", {}, format="json")
         self.assertEqual(response.status_code, 200)
         self.assertIsNotNone(response.data["data"]["read_at"])
+
+    def test_notification_inbox_has_global_unread_count_and_only_recent_patient_items(self):
+        for index in range(12):
+            PatientNotification.objects.create(
+                patient=self.profile,
+                kind="notice",
+                title=f"Alerte {index}",
+                body="Contenu privé",
+                read_at=timezone.now() if index == 0 else None,
+            )
+        other_profile = PatientProfile.objects.get(user=self.other)
+        PatientNotification.objects.create(patient=other_profile, kind="notice", title="Ne pas exposer", body="Autre patient")
+
+        response = self.client.get("/api/v1/patient/care/notifications/inbox/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Cache-Control"], "private, no-store")
+        self.assertEqual(response.data["data"]["unread_count"], 11)
+        items = response.data["data"]["items"]
+        self.assertEqual(len(items), 10)
+        self.assertNotIn("Ne pas exposer", [item["title"] for item in items])
 
     def test_patient_can_request_and_cancel_appointment(self):
         response = self.client.post("/api/v1/patient/care/appointments/", {"reason": "Contrôle", "starts_at": "2026-10-20T10:00:00Z"}, format="json")

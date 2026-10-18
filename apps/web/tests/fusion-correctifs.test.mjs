@@ -5,12 +5,20 @@ import test from "node:test";
 
 const read = (rel) => readFileSync(new URL(`../src/${rel}`, import.meta.url), "utf8");
 
-test("le QR de consultation vit dans l'onglet « Accès et QR », plus dans le shell", () => {
+test("le QR temporaire de visite reste dans Partage et le QR d’urgence vit dans la carte compte", () => {
   const shell = read("components/shell/SpaceShell.tsx");
   const grants = read("components/PatientAccessGrants.tsx");
+  const settings = read("components/AccountSettingsClient.tsx");
+  const home = read("components/PatientHome.tsx");
+  const css = readFileSync(new URL("../src/app/globals.css", import.meta.url), "utf8");
   assert.doesNotMatch(shell, /QRCodeSVG|patient-active-qr/, "le QR est revenu dans le shell");
-  assert.match(grants, /function ActiveAccessQr[\s\S]*QRCodeSVG/);
-  assert.match(grants, /<ActiveAccessQr token=\{qr\.token\}/);
+  assert.match(grants, /QRCodeSVG|ActiveAccessQr|access-qr\//);
+  assert.match(grants, /id="qr"/);
+  assert.match(settings, /<QRCodeSVG value=\{emergencyPublicUrl\}/);
+  assert.match(settings, /apiPatch<EmergencyCardQr>\("\/api\/v1\/patient\/emergency-card\//);
+  assert.doesNotMatch(settings, /usePatientAccessQr|Mon QR de visite|access-qr\/|visit-qr/);
+  assert.match(home, /\/patient\/acces#qr/);
+  assert.doesNotMatch(css, /\.settings-account-summary__visit-qr|\.settings-visit-qr-modal/);
 });
 
 test("les parties de la 1.10 survivent à la fusion", () => {

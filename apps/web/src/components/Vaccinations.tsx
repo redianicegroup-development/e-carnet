@@ -101,7 +101,7 @@ export function Vaccinations() {
     }
   }
 
-  return <section className="card" aria-labelledby="vaccinations-title">
+  return <section className="card" id="vaccinations" aria-labelledby="vaccinations-title">
     <div className="section-heading"><div><span className="eyebrow">Carnet de vaccination</span><h2 id="vaccinations-title">Mes vaccins</h2></div><span className="count-badge">{items?.length ?? "…"}</span></div>
     <p className="muted">Une vaccination sans pièce reste « déclarée ». Un justificatif la rend « documentée » ; seul un professionnel autorisé peut la confirmer. Une vaccination ancienne inconnue n’est jamais considérée automatiquement comme non effectuée.</p>
     <form className="stack" onSubmit={submit}>

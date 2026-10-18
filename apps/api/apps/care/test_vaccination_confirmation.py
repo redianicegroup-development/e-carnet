@@ -8,7 +8,7 @@ from rest_framework.test import APIClient
 
 from apps.audit.models import AuditEvent
 from apps.patients.models import PatientProfile
-from .models import MedicalDocument, Vaccination
+from .models import MedicalDocument, PatientNotification, Vaccination
 from .tests import make_clinic_doctor, make_grant
 
 User = get_user_model()
@@ -100,6 +100,8 @@ class ProfessionalVaccinationConfirmationTests(TestCase):
         self.assertEqual(item.confirmed_access_grant_id, grant.id)
         self.assertIsNotNone(item.confirmed_at)
         self.assertTrue(AuditEvent.objects.filter(event_type="vaccination.confirmed", patient=self.patient, access_grant=grant).exists())
+        notice = PatientNotification.objects.get(patient=self.patient, kind="vaccination.confirmed")
+        self.assertIn("Fièvre jaune", notice.body)
 
     def test_attached_document_requires_the_separate_documents_scope_before_confirmation(self):
         document = MedicalDocument.objects.create(patient=self.patient, original_name="carnet.pdf", document_type="vaccination", content_type="application/pdf", size_bytes=20)

@@ -40,4 +40,14 @@
 ## Recette technique
 
 - Web : 118 tests passés, TypeScript validé, ESLint réussi avec 5 avertissements non bloquants, build Next.js production réussi.
-- API : 103 tests `care` et `professionals` passés (1 ignoré) ; `manage.py check` et `makemigrations --check --dry-run` sans anomalie. Après les dernières retouches PDF, les 16 tests documents/ordonnance/profil professionnel ont aussi passé.
+- API : 104 tests `care` et `professionals` passés (1 ignoré) ; `manage.py check` et `makemigrations --check --dry-run` sans anomalie. Les 12 tests de notifications et confirmation vaccinale ciblés ont aussi passé.
+
+
+## Ajout UI — QR de la carte virtuelle et cloche de notifications — terminé
+
+- Le QR temporaire de visite reste dans Partage, avec son jeton opaque à usage unique et son expiration de cinq minutes. Seul le QR public stable de la carte d’urgence a été déplacé dans la zone à droite de la carte d’identité/compte patient ; il y garde ses contrôles d’activation/désactivation, sans afficher le jeton en texte. L’accordéon de carte virtuelle replie uniquement le visuel de la carte.
+- L’accueil continue de pointer vers le QR temporaire de visite dans Partage ; il ne doit pas le confondre avec le QR public de la carte d’urgence.
+- Cloche Gooey accessible dans les outils de sidebar sur ordinateur et dans l’en-tête patient sur mobile ; elle n’ajoute pas d’entrée aux quatre onglets.
+- API inbox limitée au patient courant, compteur non lu, dix notifications récentes, lecture individuelle et réponse `private, no-store`. Le panneau affiche titre, contenu, date et liens contextuels, avec actualisation au focus/visibilité et périodique ; pas de carillon.
+- La confirmation vaccinale professionnelle crée une notification patient. Les notifications de vaccins et médicaments pointent vers leurs rubriques réelles du carnet.
+- Navigation patient vérifiée à quatre entrées (« Accueil », « Mon carnet », « Visites », « Partage ») ; le bouton public Remonter n’est pas dupliqué ; Avis/Remonter restent en icône seule sur mobile et inchangés sur ordinateur.

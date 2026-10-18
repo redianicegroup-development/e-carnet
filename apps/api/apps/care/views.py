@@ -405,6 +405,25 @@ class PatientMedicationIntakeCreateView(APIView):
         return Response({"success": True, "data": MedicationIntakeSerializer(intake).data}, status=201)
 
 
+class PatientNotificationInboxView(APIView):
+    """Résumé privé destiné à la cloche de l’espace patient."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        notifications = PatientNotification.objects.filter(patient=profile_for(request.user, request))
+        unread_count = notifications.filter(read_at__isnull=True).count()
+        recent = notifications.order_by("-created_at")[:10]
+        response = Response({
+            "success": True,
+            "data": {
+                "items": PatientNotificationSerializer(recent, many=True).data,
+                "unread_count": unread_count,
+            },
+        })
+        response["Cache-Control"] = "private, no-store"
+        return response
+
+
 class PatientNotificationListView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -892,5 +911,12 @@ class ProfessionalVaccinationConfirmView(APIView):
             establishment=grant.establishment,
             access_grant=grant,
             metadata={"action": "confirmed", "vaccination_id": str(item.id), "status": item.status, "evidence": "attached_document" if item.document_id else "professional_review"},
+        )
+        PatientNotification.objects.create(
+            patient=grant.patient,
+            kind="vaccination.confirmed",
+            title="Vaccination confirmée",
+            body=f"La vaccination « {item.vaccine_name} » a été confirmée par un professionnel.",
+            metadata={"vaccination_id": str(item.id)},
         )
         return Response({"success": True, "data": VaccinationSerializer(item).data})

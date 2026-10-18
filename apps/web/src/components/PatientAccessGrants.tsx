@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { notifyProductActionCompleted, primeCsrf, readCsrfToken } from "../infrastructure/api/client";
-import { usePatientAccessQr } from "./shell/SpaceShell";
 import { useConfirm } from "./modal/ConfirmProvider";
+import { usePatientAccessQr } from "./shell/SpaceShell";
 
 type Grant = {
   id: string;
@@ -80,15 +80,6 @@ function eventDescription(event: AccessEvent): string {
   return labels[event.action] ?? actionLabels[event.action] ?? "Événement lié à un accès.";
 }
 
-async function getData<T>(path: string): Promise<T> {
-  const response = await fetch(`${API}${path}`, { credentials: "include", cache: "no-store" });
-  const payload = await response.json();
-  if (!response.ok) throw new Error(payload.message ?? "Demandes indisponibles.");
-  return payload.data as T;
-}
-
-/* QR temporaire affiché dans son propre onglet : il reste valable (et revient tel quel) si le patient change d’onglet
-   puis revient, mais ne s’affiche jamais au-dessus des autres pages de l’espace. */
 function ActiveAccessQr({ token, expiresAt, busy, onRenew }: { token: string; expiresAt: number; busy: boolean; onRenew: () => void }) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -110,6 +101,13 @@ function ActiveAccessQr({ token, expiresAt, busy, onRenew }: { token: string; ex
       </div>
     </div>
   );
+}
+
+async function getData<T>(path: string): Promise<T> {
+  const response = await fetch(`${API}${path}`, { credentials: "include", cache: "no-store" });
+  const payload = await response.json();
+  if (!response.ok) throw new Error(payload.message ?? "Demandes indisponibles.");
+  return payload.data as T;
 }
 
 export function PatientAccessGrants() {
@@ -204,7 +202,7 @@ export function PatientAccessGrants() {
       <p className="muted">Chaque demande affiche le professionnel, l’établissement, le périmètre et la durée. Aucun accès n’est ouvert avant votre choix.</p>
       <p className="notice" role="status" aria-live="polite">{message}</p>
 
-      <section className="card" aria-labelledby="qr-heading">
+      <section id="qr" className="card" aria-labelledby="qr-heading">
         <span className="eyebrow">Accès temporaire</span>
         <h2 id="qr-heading">Présenter mon QR à un professionnel</h2>
         <p className="muted">Le QR contient uniquement un jeton opaque à usage unique. Il ne contient aucune donnée médicale.</p>
@@ -226,7 +224,7 @@ export function PatientAccessGrants() {
                   <span className={item.status === "active" ? "badge verified" : "badge declared"}>{statusLabels[item.status] ?? item.status}</span>
                 </div>
                 <p className="muted">Périmètre demandé : {item.scope.map((scope) => scopeLabels[scope] ?? scope).join(", ") || "À préciser"}</p>
-                {item.status === "pending" && <p className="consent-explanation">Si vous autorisez : accès pendant <strong>2 heures</strong>, prolongeable deux fois d’une heure. Le professionnel ne verra que le périmètre affiché ci-dessus. Les documents sont exclus. <strong>Aucune donnée n’est accessible avant votre décision.</strong></p>}
+                {item.status === "pending" && <p className="consent-explanation">Si vous autorisez : accès pendant <strong>2 heures</strong>, prolongeable deux fois d’une heure. Seuls les périmètres affichés ci-dessus seront partagés ; les documents médicaux ne le seront que si « Documents médicaux (lecture seule) » est explicitement demandé et autorisé. <strong>Aucune donnée n’est accessible avant votre décision.</strong></p>}
                 <p className="muted">Durée initiale : 2 h, prolongeable deux fois d’1 h. {item.status === "active" && item.expires_at ? `Expiration : ${new Date(item.expires_at).toLocaleString("fr-FR")}.` : ""}</p>
                 <div className="actions">
                   {item.status === "pending" && <>
