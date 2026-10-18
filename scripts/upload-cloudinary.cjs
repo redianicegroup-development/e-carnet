@@ -2,8 +2,24 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-// Charge .env.local sans dépendance supplémentaire. Les secrets ne sont jamais écrits dans le dépôt.
-for (const envPath of [path.join(__dirname, '..', '.env.local'), path.join(__dirname, '..', 'apps', 'web', '.env.local')]) {
+// Les variables déjà injectées par le shell ou la plateforme de production restent prioritaires.
+const projectRoot = path.join(__dirname, '..');
+const envFiles = [
+  '.env.production.local',
+  'apps/api/.env.production.local',
+  'apps/web/.env.production.local',
+  '.env.production',
+  'apps/api/.env.production',
+  'apps/web/.env.production',
+  '.env.local',
+  'apps/api/.env.local',
+  'apps/web/.env.local',
+  '.env',
+  'apps/api/.env',
+  'apps/web/.env',
+];
+for (const relativePath of envFiles) {
+  const envPath = path.join(projectRoot, relativePath);
   if (!fs.existsSync(envPath)) continue;
   fs.readFileSync(envPath, 'utf8').split(/\r?\n/).forEach(line => {
     const trimmed = line.trim();
