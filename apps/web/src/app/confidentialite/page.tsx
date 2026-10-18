@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Fill, LegalDocument, LegalTable, type LegalSectionDef } from "../../components/public/LegalDocument";
 import { CookiePreferencesLink } from "../../components/CookieConsentBanner";
+import { CookiesFigure } from "../../components/public/figures/CookiesFigure";
+import { RecipientsFigure } from "../../components/public/figures/RecipientsFigure";
 import { COOKIES, HOSTS, TECH_VALIDITY } from "../../lib/legal/config";
 
 export const metadata: Metadata = {
@@ -93,6 +95,7 @@ const sections: LegalSectionDef[] = [
     title: "Qui peut recevoir ces données",
     body: (
       <>
+        <RecipientsFigure />
         <LegalTable
           caption="Destinataires des données"
           head={["Destinataire", "Ce qu’il peut recevoir", "Condition"]}
@@ -214,6 +217,7 @@ const sections: LegalSectionDef[] = [
     title: "Cookies et stockage dans le navigateur",
     body: (
       <>
+        <CookiesFigure />
         <LegalTable
           caption="Cookies déposés par le service"
           head={["Nom", "Type", "Finalité", "Durée", "Attributs"]}

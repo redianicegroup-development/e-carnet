@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Fill, LegalDocument, LegalTable, type LegalSectionDef } from "../../components/public/LegalDocument";
+import { HostingFigure } from "../../components/public/figures/HostingFigure";
 import { HOSTS, fieldValue } from "../../lib/legal/config";
 
 export const metadata: Metadata = {
@@ -37,6 +38,7 @@ const sections: LegalSectionDef[] = [
     body: (
       <>
         <p>Les informations ci-dessous concernent l’<strong>environnement actuel</strong>. L’environnement de production pourra utiliser d’autres hébergeurs ; cette page sera alors mise à jour avant toute ouverture.</p>
+        <HostingFigure />
         <LegalTable
           caption="Hébergeurs de l’environnement actuel"
           head={["Rôle", "Hébergeur", "Coordonnées", "Région d’hébergement"]}

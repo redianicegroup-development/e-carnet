@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { InfoPageMotion } from "../../components/motion/InfoPageMotion";
+import { PulseLine } from "../../components/motion/PulseLine";
+import { AboutChainFigure } from "../../components/public/figures/AboutChainFigure";
+import { ActorsFigure } from "../../components/public/figures/ActorsFigure";
 import { PublicShell } from "../../components/public/PublicShell";
 import { Icon, type IconName } from "../../components/ui/Icon";
 import { CREDITS_TEAM } from "../../lib/credits";
@@ -27,10 +31,12 @@ export default function AboutPage() {
   return (
     <PublicShell>
       <article className="about">
+        <InfoPageMotion>
         <header className="about__head">
           <span className="eyebrow">À propos</span>
           <h1>Un carnet qui suit votre santé dans la durée.</h1>
           <p className="lead">Mon E‑Carnet est un carnet de santé numérique porté par la startup Redianice. Il garde vos informations au même endroit, et c’est vous qui décidez qui peut les consulter.</p>
+          <div className="about__pulse" aria-hidden="true"><PulseLine /></div>
         </header>
 
         <section className="about__block about__problem" aria-labelledby="constat">
@@ -39,20 +45,7 @@ export default function AboutPage() {
             <p>Les carnets de santé se perdent. Et quand le petit livre est fini ou rempli, on en commence un autre.</p>
             <p>Chaque nouveau carnet repart de zéro. L’historique est coupé en morceaux, et il n’y a pas de suivi sur une longue période.</p>
           </div>
-          <figure className="about-chain" role="img" aria-label="Schéma : des carnets papier successifs séparés par des coupures, dont un perdu, face à un historique continu dans Mon E‑Carnet">
-            <div className="about-chain__row" aria-hidden="true">
-              <span className="about-chain__label">Carnets papier</span>
-              <div className="about-chain__track">
-                <i className="about-chain__seg">Carnet 1</i>
-                <i className="about-chain__seg about-chain__seg--lost">Carnet 2 perdu</i>
-                <i className="about-chain__seg">Carnet 3</i>
-              </div>
-            </div>
-            <div className="about-chain__row about-chain__row--ok" aria-hidden="true">
-              <span className="about-chain__label">Mon E‑Carnet</span>
-              <div className="about-chain__track"><i className="about-chain__seg about-chain__seg--full">Un seul historique</i></div>
-            </div>
-          </figure>
+          <AboutChainFigure />
         </section>
 
         <section className="about__block" aria-labelledby="solution">
@@ -63,7 +56,7 @@ export default function AboutPage() {
           <ul className="about-points">
             {SOLUTION.map((item) => (
               <li className="about-point" key={item.title}>
-                <span className="about-point__icon" aria-hidden="true"><Icon name={item.icon} size={22} /></span>
+                <span className="about-point__icon" aria-hidden="true" data-draw-icon><Icon name={item.icon} size={22} /></span>
                 <h3>{item.title}</h3>
                 <p className="muted">{item.text}</p>
               </li>
@@ -73,9 +66,12 @@ export default function AboutPage() {
 
         <section className="about__block" aria-labelledby="pour-qui">
           <div className="about__intro"><h2 id="pour-qui">Pour qui</h2></div>
-          <dl className="about-audiences">
-            {AUDIENCES.map((item) => <div key={item.label}><dt>{item.label}</dt><dd className="muted">{item.text}</dd></div>)}
-          </dl>
+          <div className="about__split">
+            <dl className="about-audiences">
+              {AUDIENCES.map((item) => <div key={item.label}><dt>{item.label}</dt><dd className="muted">{item.text}</dd></div>)}
+            </dl>
+            <ActorsFigure variant="about" />
+          </div>
         </section>
 
         <section className="about__block" aria-labelledby="equipe">
@@ -102,6 +98,7 @@ export default function AboutPage() {
             <Link className="button" href="/aide">Centre d’aide</Link>
           </p>
         </footer>
+        </InfoPageMotion>
       </article>
     </PublicShell>
   );

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Fill, LegalDocument, type LegalSectionDef } from "../../components/public/LegalDocument";
+import { ActorsFigure } from "../../components/public/figures/ActorsFigure";
+import { Steps } from "../../components/public/figures/Steps";
 import { TECH_VALIDITY } from "../../lib/legal/config";
 
 export const metadata: Metadata = {
@@ -73,6 +75,7 @@ const sections: LegalSectionDef[] = [
     title: "Rôles et responsabilités de chacun",
     body: (
       <>
+        <ActorsFigure variant="terms" />
         <p><strong>Le patient</strong> décide des accès à son carnet, choisit le périmètre et la durée, et peut refuser ou révoquer une autorisation depuis son espace.</p>
         <p><strong>Le professionnel</strong> n’accède à un carnet que dans le cadre d’une autorisation active. Il reste responsable de ses actes, des informations qu’il saisit et du respect de ses obligations professionnelles, sous réserve du droit applicable et des contrats conclus avec son établissement.</p>
         <p><strong>L’établissement</strong> confirme le rattachement d’un professionnel à sa structure. Cette confirmation ne vaut pas certification par l’éditeur de l’identité, des diplômes ou de la compétence du professionnel. L’administrateur gère l’établissement et les rattachements ; il ne consulte pas les dossiers patients depuis son espace.</p>
@@ -85,6 +88,15 @@ const sections: LegalSectionDef[] = [
     title: "Accès aux informations du carnet",
     body: (
       <>
+        <Steps
+          title="En un coup d’œil"
+          steps={[
+            { icon: "qr", title: "Le patient présente un QR code", text: `Il ne contient aucune donnée médicale. Validité : ${TECH_VALIDITY.qr}.` },
+            { icon: "request", title: "Le professionnel envoie une demande", text: "Le patient voit le professionnel, l’établissement et le périmètre demandé avant de décider." },
+            { icon: "decide", title: "Le patient décide", text: `S’il accepte, l’autorisation est valable ${TECH_VALIDITY.accessInitial}, avec ${TECH_VALIDITY.accessExtension}.` },
+            { icon: "clock", title: "L’autorisation prend fin", text: "À son expiration, ou si le patient la révoque." },
+          ]}
+        />
         <ol>
           <li>Le patient peut présenter un QR code. Ce QR code ne contient aucune donnée médicale : il permet seulement d’initier une demande. Sa validité est de {TECH_VALIDITY.qr}.</li>
           <li>Le professionnel adresse une demande d’accès. Le patient reçoit cette demande, qui indique le professionnel, l’établissement et le périmètre demandé, avant de décider.</li>

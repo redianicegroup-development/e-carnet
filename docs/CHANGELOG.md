@@ -1,3 +1,11 @@
+## 2026-10-18 — Pages d'information : UX/UI, schémas SVG animés, Lenis
+
+- **Pages légales** (mentions, confidentialité, CGU) : sommaire collant sur ordinateur et repliable sur mobile, rubrique active mise en valeur, sections numérotées, durée de lecture, barre de progression, bouton « Haut de page », en-tête illustré, résumé à coches. Les liens d'ancre glissent via Lenis (hook `useSmoothScroll`).
+- **Schémas SVG animés** dessinés à l'arrivée à l'écran : hébergement, destinataires des données, cookies, rôles et parcours d'accès (CGU), rattachement, carnets papier contre historique continu (À propos), organigramme, signe de la marque et pile technique (Crédits). Textes lus dans `HOSTS`, `COOKIES`, `TECH_VALIDITY`, `CREDITS_*` : aucune information inventée, aucun cadenas devant un destinataire qui reçoit des données.
+- **Mouvement réduit / sans JavaScript** : état final toujours affiché ; les états de départ sont posés par GSAP, jamais par le CSS.
+- **Conditions de rattachement** : page intégrée au site (en-tête, pied de page).
+- Tests : `tests/info-pages.test.mjs` (9 tests).
+
 ## 2026-10-18 — Identité du titulaire, constantes, fiche de visite, ordonnance structurée
 
 - **Étape 1 patient = « Identité du titulaire »** (couverture du carnet papier) : nom, prénoms, **ville** obligatoires ; adresse/BP, **profession**, téléphone, naissance et couverture facultatifs ; « Délivré le » affiché automatiquement (date de création du dossier, aucun champ saisi). La ville reste une déclaration du carnet (`city`), pas un doublon. **Pas d'ethnie** : donnée sensible sans utilité clinique. Migration `patients.0009`.

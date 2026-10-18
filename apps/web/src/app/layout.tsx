@@ -13,6 +13,8 @@ import {
 import "@ecarnet/ui/tokens.css";
 import "./globals.css";
 import "./site-pages.css";
+import "./info-pages.css";
+import "./info-pages.css";
 import { ThemeBootstrap } from "../components/ThemeBootstrap";
 import { PwaRegister } from "../components/PwaRegister";
 import { AnonymousVisitorTracker } from "../components/AnonymousVisitorTracker";

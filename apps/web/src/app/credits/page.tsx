@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { BackLink } from "../../components/public/BackLink";
 import { ContactLine } from "../../components/public/ContactLine";
+import { InfoPageMotion } from "../../components/motion/InfoPageMotion";
+import { BrandSwitchFigure, CreditsStackFigure, CreditsTeamFigure } from "../../components/public/figures/CreditsFigures";
 import { PublicShell } from "../../components/public/PublicShell";
 import { BrandLogo } from "../../components/ui/BrandLogo";
 import { Icon } from "../../components/ui/Icon";
@@ -18,6 +20,7 @@ export default function CreditsPage() {
   return (
     <PublicShell>
       <article className="hero-page credits">
+        <InfoPageMotion>
         <BackLink />
         <header className="credits__head">
           <BrandLogo height={60} />
@@ -28,11 +31,14 @@ export default function CreditsPage() {
 
         <section className="stack" aria-labelledby="equipe">
           <h2 id="equipe">L’équipe</h2>
-          <p>Une petite équipe, avec des rôles clairs : du pilotage du projet au logo, en passant par le code et le cadre juridique.</p>
+          <div className="credits__split">
+            <p>Une petite équipe, avec des rôles clairs : du pilotage du projet au logo, en passant par le code et le cadre juridique.</p>
+            <CreditsTeamFigure />
+          </div>
           <ul className="credits__team">
             {CREDITS_TEAM.map((member) => (
               <li className="credits__member" key={member.id}>
-                <span className="setting-item__icon" aria-hidden="true"><Icon name={member.icon} /></span>
+                <span className="setting-item__icon" aria-hidden="true" data-draw-icon><Icon name={member.icon} /></span>
                 <div>
                   <h3>{member.role}</h3>
                   <span className="credits__role">{member.org}</span>
@@ -48,7 +54,7 @@ export default function CreditsPage() {
           <div className="credits__grid">
             {CREDITS_ORIGINS.map((entry) => (
               <article className="card credits__card" key={entry.id}>
-                <span className="setting-item__icon" aria-hidden="true"><Icon name={entry.icon} /></span>
+                <span className="setting-item__icon" aria-hidden="true" data-draw-icon><Icon name={entry.icon} /></span>
                 <h3>{entry.name}</h3>
                 <span className="credits__role">{entry.role}</span>
                 <p className="muted">{entry.text}</p>
@@ -65,12 +71,18 @@ export default function CreditsPage() {
 
         <section className="stack" aria-labelledby="identite">
           <h2 id="identite">Identité visuelle</h2>
-          <p>Le logo, le branding et l’identité visuelle sont l’œuvre de deux graphistes de l’équipe. Le signe réunit un carnet relié et un interrupteur : c’est mon carnet, et c’est moi qui décide. Il accompagne toute l’application, de la page d’accueil aux paramètres.</p>
+          <div className="credits__identity">
+            <BrandSwitchFigure />
+            <p>Le logo, le branding et l’identité visuelle sont l’œuvre de deux graphistes de l’équipe. Le signe réunit un carnet relié et un interrupteur : c’est mon carnet, et c’est moi qui décide. Il accompagne toute l’application, de la page d’accueil aux paramètres.</p>
+          </div>
         </section>
 
         <section className="stack" aria-labelledby="outils">
           <h2 id="outils">Construit avec</h2>
-          <ul className="credits__list">{CREDITS_BUILT_WITH.map((item) => <li key={item}>{item}</li>)}</ul>
+          <div className="credits__split">
+            <ul className="credits__list">{CREDITS_BUILT_WITH.map((item) => <li key={item}>{item}</li>)}</ul>
+            <CreditsStackFigure />
+          </div>
         </section>
 
         <section className="card" aria-labelledby="contact">
@@ -90,6 +102,7 @@ export default function CreditsPage() {
           <Link href="/cgu">Conditions d’utilisation</Link>
           <Link href="/securite">Sécurité</Link>
         </nav>
+        </InfoPageMotion>
       </article>
     </PublicShell>
   );
