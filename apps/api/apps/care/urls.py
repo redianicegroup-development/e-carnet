@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import EncounterDetailView, EncounterListCreateView, EstablishmentPreconsultationTemplateListCreateView, PatientAccessAuditView, PatientAccessGrantActionView, PatientAccessGrantListView, PatientAppointmentDetailView, PatientAppointmentListCreateView, PatientCarnetExportView, PatientAccessQrCreateView, PatientConsultationListView, PatientFollowUpPlanListView, PatientMeasurementListCreateView, PatientMedicalDocumentDownloadView, PatientMedicalDocumentListCreateView, PatientMedicationIntakeCreateView, PatientMedicationReminderDetailView, PatientMedicationReminderListCreateView, PatientNotificationListView, PatientPrescriptionDownloadView, PatientVaccinationListCreateView, ProfessionalAccessGrantListCreateView, ProfessionalAuthorizedEncounterListView, ProfessionalConsultationListCreateView, ProfessionalFollowUpPlanCreateView
+from .views import EncounterDetailView, EncounterListCreateView, EstablishmentPreconsultationTemplateListCreateView, PatientAccessAuditView, PatientAccessGrantActionView, PatientAccessGrantListView, PatientAppointmentDetailView, PatientAppointmentListCreateView, PatientCarnetExportView, PatientAccessQrCreateView, PatientConsultationListView, PatientFollowUpPlanListView, PatientMeasurementListCreateView, PatientMedicalDocumentDeleteView, PatientMedicalDocumentDownloadView, PatientMedicalDocumentListCreateView, ProfessionalMedicalDocumentDownloadView, ProfessionalMedicalDocumentListView, PatientMedicationIntakeCreateView, PatientMedicationReminderDetailView, PatientMedicationReminderListCreateView, PatientNotificationListView, PatientPrescriptionDownloadView, PatientVaccinationListCreateView, ProfessionalAccessGrantListCreateView, ProfessionalAuthorizedEncounterListView, ProfessionalConsultationListCreateView, ProfessionalFollowUpPlanCreateView, ProfessionalVaccinationConfirmView, ProfessionalVaccinationListView
 urlpatterns = [
     path("encounters/", EncounterListCreateView.as_view()), path("encounters/<uuid:pk>/", EncounterDetailView.as_view()),
     path("access-grants/", PatientAccessGrantListView.as_view()), path("access-grants/<uuid:pk>/<str:action>/", PatientAccessGrantActionView.as_view()),
@@ -9,6 +9,7 @@ urlpatterns = [
     path("consultations/<uuid:pk>/prescription/", PatientPrescriptionDownloadView.as_view()),
     path("documents/", PatientMedicalDocumentListCreateView.as_view()),
     path("documents/<uuid:pk>/download/", PatientMedicalDocumentDownloadView.as_view()),
+    path("documents/<uuid:pk>/", PatientMedicalDocumentDeleteView.as_view()),
     path("vaccinations/", PatientVaccinationListCreateView.as_view()),
     path("measurements/", PatientMeasurementListCreateView.as_view()),
     path("follow-up-plans/", PatientFollowUpPlanListView.as_view()),
@@ -24,5 +25,9 @@ urlpatterns = [
     path("professional/access-grants/", ProfessionalAccessGrantListCreateView.as_view()),
     path("professional/consultations/", ProfessionalConsultationListCreateView.as_view()),
     path("professional/access-grants/<uuid:pk>/encounters/", ProfessionalAuthorizedEncounterListView.as_view()),
+    path("professional/access-grants/<uuid:grant_id>/documents/", ProfessionalMedicalDocumentListView.as_view()),
+    path("professional/access-grants/<uuid:grant_id>/documents/<uuid:pk>/download/", ProfessionalMedicalDocumentDownloadView.as_view()),
+    path("professional/access-grants/<uuid:grant_id>/vaccinations/", ProfessionalVaccinationListView.as_view()),
+    path("professional/access-grants/<uuid:grant_id>/vaccinations/<uuid:pk>/confirm/", ProfessionalVaccinationConfirmView.as_view()),
     path("professional/follow-up-plans/", ProfessionalFollowUpPlanCreateView.as_view()),
 ]

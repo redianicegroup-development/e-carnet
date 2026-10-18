@@ -13,7 +13,7 @@ export const SPACES: Record<SpaceId, { label: string; role: string; home: string
     label: "Espace patient", role: "patient", home: "/patient", bare: [],
     tabs: [
       { id: "home", label: "Accueil", long: "Accueil", href: "/patient", icon: "home", match: exact("/patient") },
-      { id: "carnet", label: "Carnet", long: "Mon carnet · documents · vaccins · traitements", href: "/patient/carnet", icon: "folder", match: section("/patient/carnet") },
+      { id: "carnet", label: "Mon carnet", long: "Mon carnet · documents · vaccins · traitements", href: "/patient/carnet", icon: "folder", match: section("/patient/carnet") },
       { id: "consultations", label: "Visites", long: "Visites · consultations · rendez-vous", href: "/patient/consultations", icon: "stethoscope", match: section("/patient/consultations") },
       { id: "acces", label: "Partage", long: "Partage · accès · carte d’urgence", href: "/patient/acces", icon: "share", match: section("/patient/acces") },
       { id: "moi", label: "Moi", long: "Mon compte et paramètres", href: "/patient/parametres", icon: "user", match: section("/patient/parametres") },

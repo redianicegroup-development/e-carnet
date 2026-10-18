@@ -63,6 +63,31 @@ test("les quatre espaces partagent une seule sidebar responsive (logo, navigatio
   assert.doesNotMatch(styles, /space-nav|space-sidebar|admin-sidebar-|admin-nav-link|admin-nav-badge/, "les anciennes règles de sidebar ne doivent plus subsister dans globals.css");
   assert.doesNotMatch(sidebar, /localStorage|sessionStorage|indexedDB/, "l’état replié de la sidebar reste en mémoire (aucun stockage navigateur)");
 });
+test("la sidebar patient expose uniquement Accueil, Mon carnet, Visites et Partage dans cet ordre", () => {
+  const spaces = read("src/lib/spaces.ts");
+  const shell = read("src/components/shell/SpaceShell.tsx");
+  const patient = spaces.slice(spaces.indexOf("  patient:"), spaces.indexOf("  professional:"));
+  const labels = [...patient.matchAll(/\{ id: "(?:home|carnet|consultations|acces|moi)", label: "([^"]+)"/g)].map((match) => match[1]);
+  assert.deepEqual(labels, ["Accueil", "Mon carnet", "Visites", "Partage", "Moi"]);
+  assert.match(shell, /config\.tabs\.filter\(\(tab\) => !\(space === "patient" && tab\.id === "moi"\)\)/);
+  assert.doesNotMatch(shell, /items\.splice\(items\.length - 1, 0, \{ id: "admin"/);
+  assert.match(shell, /href: "https:\/\/e-carnetci\.vercel\.app\/admin\//, "l’accès admin autorisé reste disponible dans le menu du compte");
+});
+test("les pages publiques ont une seule remontée en haut et deux actions flottantes accessibles alignées à droite", () => {
+  const publicShell = read("src/components/public/PublicShell.tsx");
+  const qr = read("src/app/urgence/[token]/page.tsx");
+  const backToTop = read("src/components/public/BackToTopButton.tsx");
+  const feedback = read("src/components/LandingFeedbackWidget.tsx");
+  const globalStyles = read("src/app/globals.css");
+  const siteStyles = read("src/app/site-pages.css");
+  assert.equal((publicShell.match(/<BackToTopButton\s*\/>/g) ?? []).length, 1);
+  assert.equal((qr.match(/<BackToTopButton\s*\/>/g) ?? []).length, 1);
+  assert.match(backToTop, /aria-label="Remonter vers le haut"/);
+  assert.match(backToTop, /className="sr-only">Remonter vers le haut/);
+  assert.match(feedback, /aria-label="Donner votre avis"/);
+  assert.match(globalStyles, /@media \(max-width: 600px\)[\s\S]*\.feedback-fab[\s\S]*\.feedback-fab > span:nth-child\(2\) \{ display: none; \}/);
+  assert.match(siteStyles, /@media \(max-width: 600px\) \{ \.public-scroll-top \{ right: max\(14px/);
+});
 test("visiteurs : le pied de page public renvoie vers les trois pages légales", () => {
   const footer = read("src/components/public/PublicShell.tsx");
   for (const doc of Object.values(legal.LEGAL_DOCS)) assert.ok(footer.includes(`LEGAL_DOCS.${Object.keys(legal.LEGAL_DOCS).find((k) => legal.LEGAL_DOCS[k] === doc)}.path`), `pied de page : lien manquant vers ${doc.path}`);
@@ -289,4 +314,13 @@ test("admin : les nouveaux retours sont annoncés dans la navigation et les indi
   assert.match(sidebar, /sb__badge/);
   assert.match(sidebarStyles, /\.sb__badge/);
   assert.match(styles, /\.space--admin \.admin-metric::before/);
+});
+
+test("les documents médicaux restent un périmètre d’accès séparé, facultatif et lisible pour le patient", () => {
+  const professional = read("src/components/ProfessionalAccessGrants.tsx");
+  const patient = read("src/components/PatientAccessGrants.tsx");
+  assert.match(professional, /useState\(false\)/);
+  assert.match(professional, /includeDocuments \? \["preconsultation", "declarations", "documents"\] : \["preconsultation", "declarations"\]/);
+  assert.match(professional, /Documents médicaux \(lecture seule\)/);
+  assert.match(patient, /documents: "Documents médicaux \(lecture seule\)"/);
 });

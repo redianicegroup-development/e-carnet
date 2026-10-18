@@ -10,7 +10,7 @@ from .models import AccessGrant, PatientAccessQrToken
 
 # Décision A9 V1 : QR opaque, usage unique, valable cinq minutes.
 QR_TOKEN_TTL_SECONDS = int(getattr(settings, "ECARNET_QR_TTL_SECONDS", 300))
-ALLOWED_SCOPES = {"preconsultation", "declarations", "consultations"}
+ALLOWED_SCOPES = {"preconsultation", "declarations", "consultations", "documents"}
 DEFAULT_SCOPES = ["preconsultation", "declarations"]
 PENDING_GRANT_TTL = timedelta(days=7)
 REFUSED_GRANT_COOLDOWN = timedelta(days=30)
@@ -26,7 +26,7 @@ def require_scope(grant, scope):
     """Porte unique de lecture clinique : l’autorisation est active **et** couvre ce périmètre.
 
     Tout endpoint qui lit une donnée du patient pour un professionnel passe par ici avec le périmètre qu’il expose
-    (`preconsultation`, `declarations`, `consultations`). Le patient accorde ces périmètres à l’acceptation ; sans cette
+    (`preconsultation`, `declarations`, `consultations`, `documents`). Le patient accorde ces périmètres à l’acceptation ; sans cette
     vérification, un périmètre refusé resterait lisible. Lève `PermissionDenied` (403) : l’appelant n’a rien d’autre à tester.
 
     Ne vérifie pas l’établissement ni le professionnel : ces contrôles dépendent du contexte de la requête et restent à l’appelant.

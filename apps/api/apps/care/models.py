@@ -195,9 +195,11 @@ class MedicalDocument(models.Model):
         ("certificate", "Certificat"),
         ("report", "Compte rendu"),
         ("other", "Autre"),
+        ("vaccination", "Carnet de vaccination"),
     )
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name="medical_documents")
+    exam_request = models.ForeignKey("ExamRequest", null=True, blank=True, on_delete=models.SET_NULL, related_name="result_documents")
     file = models.FileField(upload_to=medical_document_upload_to, blank=True, null=True)
     cloudinary_public_id = models.CharField(max_length=500, blank=True)
     cloudinary_resource_type = models.CharField(max_length=16, blank=True)
@@ -220,6 +222,10 @@ class Vaccination(models.Model):
     STATUS_CHOICES = (("declared", "Déclarée"), ("documented", "Documentée"), ("confirmed", "Confirmée par un professionnel"))
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name="vaccinations")
+    document = models.ForeignKey(MedicalDocument, null=True, blank=True, on_delete=models.SET_NULL, related_name="vaccination_records")
+    confirmed_by = models.ForeignKey("professionals.ProfessionalProfile", null=True, blank=True, on_delete=models.PROTECT, related_name="confirmed_vaccinations")
+    confirmed_access_grant = models.ForeignKey("AccessGrant", null=True, blank=True, on_delete=models.SET_NULL, related_name="confirmed_vaccinations")
+    confirmed_at = models.DateTimeField(null=True, blank=True)
     vaccine_name = models.CharField(max_length=180)
     dose_number = models.PositiveSmallIntegerField(null=True, blank=True)
     administered_on = models.DateField(null=True, blank=True)
@@ -236,13 +242,20 @@ class Vaccination(models.Model):
 
 
 class HealthMeasurement(models.Model):
-    KIND_CHOICES = (("blood_pressure_systolic", "Tension systolique"), ("blood_pressure_diastolic", "Tension diastolique"), ("glycemia", "Glycémie"), ("weight", "Poids"), ("temperature", "Température"), ("heart_rate", "Pouls"))
+    KIND_CHOICES = (
+        ("blood_pressure", "Tension"), ("glycemia", "Glycémie"), ("weight", "Poids"), ("height", "Taille"),
+        ("temperature", "Température"), ("heart_rate", "Pouls"), ("spo2", "Saturation SpO₂"),
+        # Types historiques gardés pour les plans de suivi déjà enregistrés; l'API de nouvelles mesures les refuse.
+        ("blood_pressure_systolic", "Tension systolique (historique)"),
+        ("blood_pressure_diastolic", "Tension diastolique (historique)"),
+    )
     SOURCE_CHOICES = (("measured", "Mesuré"), ("declared", "Déclaré"))
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name="health_measurements")
     kind = models.CharField(max_length=32, choices=KIND_CHOICES)
-    value = models.DecimalField(max_digits=8, decimal_places=2)
-    unit = models.CharField(max_length=16)
+    value = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    raw_value = models.CharField(max_length=32, blank=True)
+    unit = models.CharField(max_length=16, blank=True)
     source = models.CharField(max_length=12, choices=SOURCE_CHOICES, default="measured")
     measured_at = models.DateTimeField()
     note = models.CharField(max_length=300, blank=True)

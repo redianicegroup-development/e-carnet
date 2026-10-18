@@ -11,8 +11,9 @@ import { LandingFeedbackWidget } from "./LandingFeedbackWidget";
 import { ThemeSettingsClient } from "./ThemeSettingsClient";
 import { AccountActionRequestsSettingsClient } from "./AccountActionRequestsSettingsClient";
 import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
+import { ProfessionalCredentialsSettings } from "./ProfessionalCredentialsSettings";
 
-type Profile = { professional_title: string; specialty: string; active_establishment: string | null };
+type Profile = { professional_title: string; specialty: string; professional_identifier: string; active_establishment: string | null; stamp_uploaded: boolean; signature_uploaded: boolean };
 type Establishment = { id: string; name: string; status: string };
 type Account = { email: string; first_name: string; last_name: string; avatar_url?: string; is_privileged: boolean; contexts: { role: string; is_active: boolean }[] };
 type Envelope<T> = { data?: T; message?: string; detail?: string };
@@ -40,10 +41,10 @@ export function ProfessionalSettingsClient() {
 
   useEffect(() => {
     let active = true;
-    Promise.all([get<Account>("/api/v1/identity/me/"), get<Profile>("/api/v1/professionals/me/"), get<Establishment[]>("/api/v1/establishments/")])
-      .then(([accountData, profileData, establishmentData]) => {
+    Promise.all([get<Account>("/api/v1/identity/me/"), get<Profile>("/api/v1/professionals/me/"), get<Establishment[]>("/api/v1/establishments/"), get<Pick<Profile, "professional_identifier" | "stamp_uploaded" | "signature_uploaded">>("/api/v1/professionals/credentials/")])
+      .then(([accountData, profileData, establishmentData, credentialsData]) => {
         if (!active) return;
-        setAccount(accountData); setProfile(profileData); setEstablishments(establishmentData);
+        setAccount(accountData); setProfile({ ...profileData, ...credentialsData }); setEstablishments(establishmentData);
         setMessage("Profil professionnel chargé depuis votre compte.");
       }).catch((error: unknown) => {
         if (!active) return;
@@ -83,7 +84,7 @@ export function ProfessionalSettingsClient() {
       <section className="card account-summary"><div className="profile-summary"><div className="avatar avatar--large" aria-hidden="true">{account?.avatar_url ? <img src={account.avatar_url} alt="" /> : initials(fullName)}</div><div><span className="eyebrow">Espace professionnel</span><h2>{fullName}</h2><p className="muted">{profile?.professional_title || "Profession à renseigner"} · {profile?.specialty || "Spécialité à renseigner"}</p></div></div><p className="notice" role="status" aria-live="polite">{loading ? "Chargement…" : message}</p></section>
       <SettingsDirectory items={navItems} activeId={activeSection} onSelect={setActiveSection} onLogout={() => void logout()} logoutDisabled={loading || signingOut} />
 
-      {activeSection === "professionnel" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Profil professionnel</span><dl className="settings-details"><div><dt>Profession</dt><dd>{profile?.professional_title || "À renseigner"}</dd></div><div><dt>Spécialité</dt><dd>{profile?.specialty || "À renseigner"}</dd></div></dl><p className="settings-note muted">La spécialité est déclarée par vous. Les justificatifs médicaux ne sont pas collectés par Mon E‑Carnet : leur vérification relève de l’établissement.</p></div></SettingsModal>}
+      {activeSection === "professionnel" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Profil professionnel</span><dl className="settings-details"><div><dt>Profession</dt><dd>{profile?.professional_title || "À renseigner"}</dd></div><div><dt>Spécialité</dt><dd>{profile?.specialty || "À renseigner"}</dd></div></dl><p className="settings-note muted">La spécialité est déclarée par vous. Les justificatifs médicaux ne sont pas collectés par Mon E‑Carnet : leur vérification relève de l’établissement.</p></div>{profile && <ProfessionalCredentialsSettings profile={profile} onSaved={(saved) => setProfile((current) => current ? { ...current, ...saved } : current)} />}</SettingsModal>}
 
       {activeSection === "etablissement" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Rattachement</span><dl className="settings-details"><div><dt>Établissement actif</dt><dd>{activeEstablishment?.name ?? (profile?.active_establishment ? "Établissement actif" : "Aucun établissement actif")}</dd></div><div><dt>Email de connexion</dt><dd>{account?.email ?? (loading ? "Chargement…" : "Non disponible")}</dd></div></dl><div className="actions"><Link className="button" href="/professionnel/etablissements">Gérer les rattachements</Link>{profile?.active_establishment && <Link className="button" href="/etablissement/parametres">Paramètres établissement</Link>}</div></div></SettingsModal>}
 

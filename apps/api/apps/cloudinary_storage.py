@@ -37,6 +37,20 @@ def upload(file_obj, *, folder: str, public_id: str, resource_type: str = "auto"
     )
 
 
+def destroy(public_id: str, *, resource_type: str) -> dict:
+    """Destroy exactly the private asset that was uploaded for a medical document."""
+    require_cloudinary()
+    result = cloudinary.uploader.destroy(
+        public_id,
+        resource_type=resource_type,
+        type="private",
+        invalidate=True,
+    )
+    if result.get("result") != "ok":
+        raise RuntimeError(f"Cloudinary destruction refused ({result.get('result', 'unknown')}).")
+    return result
+
+
 def signed_download(public_id: str, *, resource_type: str, extension: str = "") -> bytes:
     require_cloudinary()
     url = cloudinary.utils.private_download_url(public_id, format=extension.lstrip(".") or "bin", resource_type=resource_type, type="private", attachment=False)

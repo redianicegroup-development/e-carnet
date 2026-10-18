@@ -47,6 +47,7 @@ const scopeLabels: Record<string, string> = {
   preconsultation: "Pré-consultation",
   declarations: "Déclarations",
   consultations: "Consultations",
+  documents: "Documents médicaux (lecture seule)",
 };
 
 export function ProfessionalAccessFlow() {

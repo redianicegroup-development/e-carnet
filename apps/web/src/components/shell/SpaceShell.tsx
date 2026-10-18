@@ -171,11 +171,12 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
   const moi = config.tabs[config.tabs.length - 1];
   const showAdminLink = space === "patient" && state.status === "ready" && state.account.is_admin === true;
 
-  const items: SidebarItem[] = config.tabs.map((tab) => ({ id: tab.id, label: tab.label, long: tab.long, icon: tab.icon, href: tab.href, active: tab.match(pathname), account: tab === moi }));
-  if (showAdminLink) items.splice(items.length - 1, 0, { id: "admin", label: "Admin", long: "Administration", icon: "shield", href: "https://e-carnetci.vercel.app/admin/", external: true, active: false });
+  const visibleTabs = config.tabs.filter((tab) => !(space === "patient" && tab.id === "moi"));
+  const items: SidebarItem[] = visibleTabs.map((tab) => ({ id: tab.id, label: tab.label, long: tab.long, icon: tab.icon, href: tab.href, active: tab.match(pathname), account: tab === moi }));
   const menu: SidebarMenuItem[] = [
     { id: "settings", label: "Profil et paramètres", icon: "sliders", href: moi.href },
     { id: "help", label: "Centre d’aide", icon: "help", href: "/aide" },
+    ...(showAdminLink ? [{ id: "admin", label: "Administration", icon: "shield" as const, href: "https://e-carnetci.vercel.app/admin/", external: true }] : []),
     { id: "logout", label: signingOut ? "Déconnexion…" : "Se déconnecter", icon: "logout", tone: "danger", disabled: signingOut, onSelect: () => void logout() },
   ];
 

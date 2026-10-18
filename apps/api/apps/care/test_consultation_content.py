@@ -21,26 +21,31 @@ class PreconsultationVitalsTests(TestCase):
         self.client.force_authenticate(self.user)
 
     def test_vitals_are_saved_and_every_key_is_returned_even_when_not_measured(self):
-        response = self.client.post(ENCOUNTERS, {"reason": "Fièvre", "vitals": {"weight_kg": 61, "temperature_c": 38.54, "systolic": 110, "diastolic": 70}}, format="json")
+        response = self.client.post(ENCOUNTERS, {"reason": "Fièvre", "vitals": {"weight_kg": 61, "temperature_c": 38.54, "blood_pressure": "12/8", "glycemia": "5,2 mmol/L"}}, format="json")
         self.assertEqual(response.status_code, 201)
         vitals = response.data["data"]["vitals"]
         self.assertEqual(vitals["weight_kg"], 61.0)
         self.assertEqual(vitals["temperature_c"], 38.5)
-        self.assertEqual((vitals["systolic"], vitals["diastolic"]), (110, 70))
+        self.assertEqual(vitals["blood_pressure"], "12/8")
+        self.assertEqual(vitals["glycemia"], "5,2 mmol/L")
         self.assertIsNone(vitals["spo2"])
-        self.assertIsNone(vitals["glycemia_g_l"])
-        self.assertEqual(CareEncounter.objects.get().vitals, {"weight_kg": 61.0, "temperature_c": 38.5, "systolic": 110, "diastolic": 70})
+        self.assertEqual(CareEncounter.objects.get().vitals, {"weight_kg": 61.0, "temperature_c": 38.5, "blood_pressure": "12/8", "glycemia": "5,2 mmol/L"})
 
     def test_a_pre_consultation_without_vitals_stays_valid(self):
         response = self.client.post(ENCOUNTERS, {"reason": "Contrôle"}, format="json")
         self.assertEqual(response.status_code, 201)
         self.assertEqual(CareEncounter.objects.get().vitals, {})
 
-    def test_implausible_values_and_half_a_blood_pressure_are_refused(self):
-        for vitals in ({"temperature_c": 3.7}, {"weight_kg": 610}, {"spo2": 140}, {"systolic": 110}, {"systolic": 70, "diastolic": 110}, "chaud"):
+    def test_implausible_numeric_values_and_uninformative_text_are_refused(self):
+        for vitals in ({"temperature_c": 3.7}, {"weight_kg": 610}, {"spo2": 140}, {"blood_pressure": "mmHg"}, {"glycemia": "x" * 25}, "chaud"):
             response = self.client.post(ENCOUNTERS, {"reason": "Fièvre", "vitals": vitals}, format="json")
             self.assertEqual(response.status_code, 400, vitals)
         self.assertFalse(CareEncounter.objects.exists())
+
+    def test_legacy_numeric_blood_pressure_payload_is_preserved_as_text(self):
+        response = self.client.post(ENCOUNTERS, {"reason": "Contrôle", "vitals": {"systolic": 110, "diastolic": 70, "glycemia_g_l": 0.9}}, format="json")
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(CareEncounter.objects.get().vitals, {"blood_pressure": "110/70", "glycemia": "0.9 g/L"})
 
     def test_patch_replaces_the_whole_set_and_null_removes_a_value(self):
         created = self.client.post(ENCOUNTERS, {"reason": "Fièvre", "vitals": {"weight_kg": 61, "heart_rate": 90}}, format="json")
@@ -96,12 +101,13 @@ class SignedConsultationContentTests(TestCase):
         self.assertEqual(history["exam_requests"][1]["status"], "requested")
 
     def test_each_vital_keeps_its_provenance(self):
-        response = self.sign(vitals={"weight_kg": 61, "temperature_c": 38.9, "heart_rate": 96})
+        response = self.sign(vitals={"weight_kg": 61, "temperature_c": 38.9, "heart_rate": 96, "blood_pressure": "12/8"})
         self.assertEqual(response.status_code, 201)
         vitals = response.data["data"]["vitals"]
         self.assertEqual(vitals["weight_kg"], {"value": 61.0, "source": "preconsultation"})
         self.assertEqual(vitals["temperature_c"], {"value": 38.9, "source": "professional"})
         self.assertEqual(vitals["heart_rate"], {"value": 96, "source": "professional"})
+        self.assertEqual(vitals["blood_pressure"], {"value": "12/8", "source": "professional"})
         self.assertIsNone(vitals["spo2"])
 
     def test_a_value_the_doctor_leaves_out_is_not_kept(self):

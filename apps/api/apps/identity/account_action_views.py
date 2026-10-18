@@ -12,6 +12,7 @@ from rest_framework.views import APIView
 
 from .admin_views import IsSuperuserOnly
 from .models import AccountActionRequest, AccountContext, AccountProfile, AuthIdentity, ThemePreference
+from apps.cloudinary_storage import destroy as cloudinary_destroy
 
 
 SUSPENSION_DAYS = {1, 7, 14, 30, 60, 90}
@@ -50,13 +51,32 @@ def anonymize_and_disable_account(user):
         raise PermissionDenied("Un compte administrateur ou superadministrateur ne peut pas être supprimé.")
 
     from apps.patients.models import ClinicalDeclaration, PatientProfile
-    from apps.care.models import AccessGrant, CareEncounter, PreConsultationRevision
+    from apps.care.models import AccessGrant, Appointment, CareEncounter, FollowUpPlan, HealthMeasurement, MedicalDocument, MedicationReminder, PatientNotification, PreConsultationRevision, Vaccination
     from apps.professionals.models import ProfessionalProfile
     from apps.establishments.models import EstablishmentAdministrator, EstablishmentMembership
 
     now = timezone.now()
     patient = PatientProfile.objects.filter(user=user).first()
     if patient:
+        # External destruction must succeed before database references are removed. A refusal raises and the surrounding
+        # transaction rolls back, so the account is not anonymized with dangling Cloudinary references.
+        documents = list(MedicalDocument.objects.filter(patient=patient))
+        for document in documents:
+            if document.cloudinary_public_id:
+                try:
+                    cloudinary_destroy(document.cloudinary_public_id, resource_type=document.cloudinary_resource_type or "image")
+                except Exception as exc:
+                    raise RuntimeError("La suppression Cloudinary des documents du compte a échoué ; le compte est conservé.") from exc
+        for document in documents:
+            if document.file:
+                document.file.delete(save=False)
+        MedicalDocument.objects.filter(patient=patient).delete()
+        Vaccination.objects.filter(patient=patient).delete()
+        HealthMeasurement.objects.filter(patient=patient).delete()
+        MedicationReminder.objects.filter(patient=patient).delete()
+        FollowUpPlan.objects.filter(patient=patient).delete()
+        Appointment.objects.filter(patient=patient).delete()
+        PatientNotification.objects.filter(patient=patient).delete()
         # Clear patient-entered administrative data; keep the opaque profile anchor for immutable audit references.
         ClinicalDeclaration.objects.filter(patient=patient).delete()
         PreConsultationRevision.objects.filter(encounter__patient=patient).delete()
@@ -65,7 +85,7 @@ def anonymize_and_disable_account(user):
             status="closed", closed_at=now, vitals={},
         )
         PatientProfile.objects.filter(pk=patient.pk).update(
-            phone="", birth_date=None, address="", profession="", coverage_provider="", coverage_number="", coverage_expiry=None,
+            user=None, first_name="", last_name="", phone="", birth_date=None, address="", profession="", coverage_provider="", coverage_number="", coverage_expiry=None,
             updated_at=now,
         )
         AccessGrant.objects.filter(patient=patient, status__in=("pending", "active")).update(status="revoked", revoked_at=now)
@@ -76,8 +96,19 @@ def anonymize_and_disable_account(user):
         EstablishmentMembership.objects.filter(professional=professional, status__in=("pending", "active")).update(
             status="terminated", reviewed_at=now, left_at=now,
         )
+        for public_id, resource_type in (
+            (professional.stamp_cloudinary_public_id, professional.stamp_cloudinary_resource_type),
+            (professional.signature_cloudinary_public_id, professional.signature_cloudinary_resource_type),
+        ):
+            if public_id:
+                try:
+                    cloudinary_destroy(public_id, resource_type=resource_type or "image")
+                except Exception as exc:
+                    raise RuntimeError("La suppression Cloudinary du cachet ou de la signature du compte a échoué ; le compte est conservé.") from exc
         ProfessionalProfile.objects.filter(pk=professional.pk).update(
             professional_title="Compte anonymisé", specialty="", professional_identifier="",
+            stamp_cloudinary_public_id="", stamp_cloudinary_resource_type="image", stamp_cloudinary_version=None,
+            signature_cloudinary_public_id="", signature_cloudinary_resource_type="image", signature_cloudinary_version=None,
             verification_status="rejected", active_establishment=None, updated_at=now,
         )
 
@@ -158,7 +189,11 @@ class CurrentAccountActionRequestsView(APIView):
                     user=user, request_type="deletion", reason=values["reason"], details=values.get("details", ""),
                     status="resolved", reviewed_at=timezone.now(),
                 )
-            anonymize_and_disable_account(user)
+            try:
+                anonymize_and_disable_account(user)
+            except RuntimeError as exc:
+                transaction.set_rollback(True)
+                return Response({"success": False, "message": str(exc)}, status=502)
             item.user = None  # keep the request/reason anonymized in the admin log, not linked to the deleted identity
             item.save(update_fields=("user",))
             logout(request)
@@ -213,7 +248,11 @@ class AdminDeleteRequestedAccountView(APIView):
         user = get_user_model().objects.select_for_update().get(pk=item.user_id)
         if user.is_staff or user.is_superuser:
             return Response({"success": False, "message": "Les comptes staff et superadministrateurs sont protégés contre la suppression."}, status=403)
-        anonymize_and_disable_account(user)
+        try:
+            anonymize_and_disable_account(user)
+        except RuntimeError as exc:
+            transaction.set_rollback(True)
+            return Response({"success": False, "message": str(exc)}, status=502)
         item.user = None
         item.status = "resolved"
         item.reviewed_by = request.user

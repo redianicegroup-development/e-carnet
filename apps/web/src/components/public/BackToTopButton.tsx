@@ -18,11 +18,12 @@ export function BackToTopButton() {
     <button
       className="button primary public-scroll-top"
       type="button"
-      aria-label="Remonter en haut de la page"
+      aria-label="Remonter vers le haut"
       title="Remonter en haut"
       onClick={() => window.scrollTo({ top: 0, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" })}
     >
       <Icon name="arrowUp" size={22} />
+      <span className="sr-only">Remonter vers le haut</span>
     </button>
   );
 }

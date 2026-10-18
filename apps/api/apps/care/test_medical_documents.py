@@ -62,7 +62,7 @@ class MedicalDocumentTests(TestCase):
         self.assertFalse(Vaccination.objects.filter(patient=self.profile, status="not_done").exists())
 
     def test_patient_can_download_a_printable_prescription(self):
-        consultation = Consultation.objects.create(patient=self.profile, professional_name="Dr Test", facility_label="Clinique Test", reason="Fièvre", validated_at=timezone.now())
+        consultation = Consultation.objects.create(patient=self.profile, professional_name="Dr Test", facility_label="Clinique Test", reason="Fièvre", validated_at=timezone.now(), attestation_signed_at=timezone.now())
         PrescriptionLine.objects.create(consultation=consultation, drug_name="Paracétamol", dosage="1 g", posology="1 comprimé matin et soir", duration="3 jours")
         response = self.client.get(f"/api/v1/patient/care/consultations/{consultation.id}/prescription/")
         self.assertEqual(response.status_code, 200)

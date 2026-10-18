@@ -44,7 +44,8 @@ const scopeLabels: Record<string, string> = {
   preconsultation: "Pré-consultation",
   declarations: "Déclarations",
   consultations: "Consultations",
-  };
+  documents: "Documents médicaux (lecture seule)",
+};
 const actionLabels: Record<string, string> = {
   requested: "Demande créée",
   accept: "Accès autorisé",

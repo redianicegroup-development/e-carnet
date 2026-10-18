@@ -767,9 +767,8 @@ def make_grant(patient, profile, establishment, scope, *, status="active", expir
 class ScopeGateTests(TestCase):
     """`require_scope()` est la porte unique des lectures cliniques.
 
-    Le patient accorde des périmètres (`preconsultation`, `declarations`, `consultations`) à l’acceptation. Aujourd’hui seul
-    `preconsultation` est lu ; les deux autres n’ont pas encore d’endpoint. Ces tests figent le contrat pour que le futur
-    endpoint ne puisse pas oublier de vérifier le périmètre."""
+    Le patient accorde les périmètres demandés explicitement ; chaque endpoint ne lit que les données couvertes par son scope.
+    Ces tests figent le contrat pour qu’un endpoint ne puisse pas oublier de vérifier le périmètre."""
 
     def setUp(self):
         self.patient_user = User.objects.create_user(username="patient-scope", password="local-test-password")
@@ -790,9 +789,14 @@ class ScopeGateTests(TestCase):
         from rest_framework.exceptions import PermissionDenied
         from .services import require_scope
         grant = self.grant(["preconsultation"])
-        for scope in ("declarations", "consultations"):
+        for scope in ("declarations", "consultations", "documents"):
             with self.assertRaises(PermissionDenied):
                 require_scope(grant, scope)
+
+    def test_documents_is_an_explicitly_allowed_but_separate_scope(self):
+        from .services import require_scope
+        grant = self.grant(["documents"])
+        self.assertIs(require_scope(grant, "documents"), grant)
 
     def test_refuses_pending_revoked_refused_and_expired_grants(self):
         from rest_framework.exceptions import PermissionDenied
@@ -815,7 +819,7 @@ class ScopeGateTests(TestCase):
     def test_an_unknown_scope_is_a_programming_error_not_a_silent_denial(self):
         from .services import require_scope
         with self.assertRaises(ValueError):
-            require_scope(self.grant(["preconsultation"]), "documents")
+            require_scope(self.grant(["preconsultation"]), "staff_notes")
 
     def test_the_preconsultation_endpoint_refuses_a_grant_without_that_scope(self):
         grant = self.grant(["declarations"])
@@ -839,7 +843,7 @@ class ScopeGateTests(TestCase):
         import re
         from pathlib import Path
         apps_dir = Path(__file__).resolve().parent.parent
-        pattern = re.compile(r"""["'](?:preconsultation|declarations|consultations)["']\s+(?:not\s+)?in\s+[\w.]*scope""")
+        pattern = re.compile(r"""["'](?:preconsultation|declarations|consultations|documents)["']\s+(?:not\s+)?in\s+[\w.]*scope""")
         offenders = []
         for path in apps_dir.rglob("*.py"):
             if "migrations" in path.parts or path.name.startswith("test") or path.name == "tests.py":

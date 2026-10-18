@@ -1,3 +1,5 @@
+from decimal import Decimal, InvalidOperation
+
 from rest_framework import serializers
 from .models import AccessGrant, Appointment, CareEncounter, Consultation, ExamRequest, FollowUpPlan, FollowUpPlanItem, HealthMeasurement, MedicalDocument, MedicationIntake, MedicationReminder, PatientNotification, PreconsultationTemplate, PrescriptionLine, Vaccination
 from .vitals import VitalsField, present_consultation_vitals
@@ -89,7 +91,7 @@ class MedicalDocumentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MedicalDocument
-        fields = ("id", "original_name", "document_type", "document_type_label", "document_date", "issuer", "content_type", "size_bytes", "verified", "created_at", "download_url")
+        fields = ("id", "original_name", "document_type", "document_type_label", "document_date", "issuer", "content_type", "size_bytes", "verified", "exam_request_id", "created_at", "download_url")
         read_only_fields = ("id", "original_name", "content_type", "size_bytes", "verified", "created_at", "download_url")
 
     def get_download_url(self, obj):
@@ -98,11 +100,19 @@ class MedicalDocumentSerializer(serializers.ModelSerializer):
 
 class VaccinationSerializer(serializers.ModelSerializer):
     status_label = serializers.CharField(source="get_status_display", read_only=True)
+    document_id = serializers.PrimaryKeyRelatedField(source="document", queryset=MedicalDocument.objects.all(), required=False, allow_null=True)
+    confirmed_by_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Vaccination
-        fields = ("id", "vaccine_name", "dose_number", "administered_on", "batch_number", "facility", "professional", "next_due_on", "status", "status_label", "notes", "created_at")
-        read_only_fields = ("id", "status", "status_label", "created_at")
+        fields = ("id", "vaccine_name", "dose_number", "administered_on", "batch_number", "facility", "professional", "next_due_on", "document_id", "confirmed_by_name", "confirmed_at", "status", "status_label", "notes", "created_at")
+        read_only_fields = ("id", "confirmed_by_name", "confirmed_at", "status", "status_label", "created_at")
+
+    def get_confirmed_by_name(self, obj):
+        if not obj.confirmed_by_id:
+            return ""
+        name = obj.confirmed_by.user.get_full_name().strip()
+        return f"{obj.confirmed_by.professional_title} {name}".strip()
 
     def validate_vaccine_name(self, value):
         if not value.strip():
@@ -110,23 +120,71 @@ class VaccinationSerializer(serializers.ModelSerializer):
         return value.strip()
 
 
+class MeasurementValueField(serializers.Field):
+    """Valeur d'une mesure : texte brut si fourni, sinon représentation décimale de la valeur numérique."""
+
+    def get_attribute(self, instance):
+        return instance
+
+    def to_representation(self, instance):
+        if instance.raw_value:
+            return instance.raw_value
+        return str(instance.value) if instance.value is not None else ""
+
+    def to_internal_value(self, data):
+        if isinstance(data, bool) or not isinstance(data, (str, int, float, Decimal)):
+            raise serializers.ValidationError("Saisissez une valeur de mesure valide.")
+        value = str(data).strip()
+        if not value or len(value) > 32:
+            raise serializers.ValidationError("La valeur est obligatoire et limitée à 32 caractères.")
+        return value
+
+
 class HealthMeasurementSerializer(serializers.ModelSerializer):
     kind_label = serializers.CharField(source="get_kind_display", read_only=True)
     source_label = serializers.CharField(source="get_source_display", read_only=True)
+    value = MeasurementValueField()
 
     class Meta:
         model = HealthMeasurement
         fields = ("id", "kind", "kind_label", "value", "unit", "source", "source_label", "measured_at", "note", "created_at")
         read_only_fields = ("id", "kind_label", "source_label", "created_at")
 
+    def validate_kind(self, value):
+        if value not in {"blood_pressure", "glycemia", "weight", "height", "temperature", "heart_rate", "spo2"}:
+            raise serializers.ValidationError("Ce type de mesure n'est plus proposé ; saisissez tension ou glycémie dans le champ unifié.")
+        return value
+
     def validate(self, attrs):
-        limits = {"weight": (0.5, 400), "temperature": (25, 45), "heart_rate": (20, 250), "glycemia": (0, 20), "blood_pressure_systolic": (40, 300), "blood_pressure_diastolic": (20, 200)}
-        low, high = limits[attrs["kind"]]
-        if not low <= float(attrs["value"]) <= high:
-            raise serializers.ValidationError({"value": "La valeur ne se situe pas dans une plage plausible."})
-        expected = {"weight": "kg", "temperature": "°C", "heart_rate": "bpm", "glycemia": "g/L", "blood_pressure_systolic": "mmHg", "blood_pressure_diastolic": "mmHg"}[attrs["kind"]]
+        kind = attrs["kind"]
+        value = attrs["value"]
+        if kind in {"blood_pressure", "glycemia"}:
+            if not any(character.isdigit() for character in value):
+                raise serializers.ValidationError({"value": "Indiquez la valeur telle qu’elle apparaît sur le carnet, ou laissez le champ vide."})
+            attrs["raw_value"] = value
+            attrs["value"] = None
+            # L'unité éventuelle fait partie du texte saisi; le serveur n'en ajoute aucune.
+            attrs["unit"] = ""
+            return attrs
+
+        try:
+            numeric = Decimal(value.replace(",", "."))
+        except InvalidOperation:
+            raise serializers.ValidationError({"value": "La valeur doit être numérique pour cette mesure."}) from None
+        rules = {
+            "weight": (Decimal("0.5"), Decimal("400"), Decimal("0.1"), "kg"),
+            "height": (Decimal("20"), Decimal("260"), Decimal("0.1"), "cm"),
+            "temperature": (Decimal("25"), Decimal("45"), Decimal("0.1"), "°C"),
+            "heart_rate": (Decimal("20"), Decimal("300"), Decimal("1"), "bpm"),
+            "spo2": (Decimal("30"), Decimal("100"), Decimal("1"), "%"),
+        }
+        low, high, precision, expected = rules[kind]
+        if not numeric.is_finite() or not low <= numeric <= high:
+            raise serializers.ValidationError({"value": "La valeur ne se situe pas dans la plage technique attendue."})
         if attrs.get("unit") != expected:
             raise serializers.ValidationError({"unit": f"L’unité attendue est {expected}."})
+        attrs["value"] = numeric.quantize(precision)
+        attrs["raw_value"] = ""
         return attrs
 
 
