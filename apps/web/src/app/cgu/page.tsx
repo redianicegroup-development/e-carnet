@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 const summary = (
   <ul>
-    <li>Le service est une <strong>version de test fermée</strong> : seules des données fictives doivent être saisies.</li>
+    <li>Le service est une <strong>version actuellement disponible</strong> : seules des utilisez des informations exactes et gardez votre compte personnel.</li>
     <li>Le service ne pose pas de diagnostic, ne remplace pas un avis médical et n’est pas un service d’urgence.</li>
     <li>Un professionnel ne lit le carnet d’un patient que dans le cadre d’une autorisation de ce patient.</li>
     <li>Chaque utilisateur protège ses identifiants et reste responsable de ce qu’il saisit.</li>
@@ -26,7 +26,7 @@ const sections: LegalSectionDef[] = [
       <>
         <p>Les présentes conditions encadrent l’utilisation du service « Mon E‑Carnet », édité par <Fill k="publisher.name" /> (voir les <Link href="/mentions-legales">mentions légales</Link>).</p>
         <p>Le service permet de tenir un carnet de santé personnel, de préparer une consultation et de gérer des autorisations d’accès dans les limites décrites dans le service.</p>
-        <p>La version actuellement disponible est une <strong>version de test fermée</strong>. Elle n’est pas destinée à recevoir des dossiers de santé réels. Elle n’a pas fait l’objet d’une validation juridique, médicale et technique complète.</p>
+        <p>La version actuellement disponible est une <strong>version actuellement disponible</strong>. Elle n’est pas destinée à recevoir des dossiers de santé réels. Elle n’a pas fait l’objet d’une validation juridique, médicale et technique complète.</p>
       </>
     ),
   },
@@ -101,7 +101,7 @@ const sections: LegalSectionDef[] = [
     body: (
       <>
         <ul>
-          <li>Pendant la version de test, ne saisir que des <strong>données fictives</strong>. Ne pas saisir de dossier de santé réel ni de justificatif réel.</li>
+          <li>Saisissez uniquement des informations qui vous appartiennent et que vous êtes autorisé à conserver.</li>
           <li>Ne pas saisir d’informations concernant une autre personne sans en avoir le droit.</li>
           <li>Pour un professionnel : saisir des informations exactes et de bonne foi, distinguer les déclarations du patient de ses propres constatations, ne pas altérer ni falsifier une consultation ou une attestation.</li>
           <li>Ne pas tenter d’accéder à un compte, à un carnet ou à une fonction sans autorisation, ne pas contourner les mesures de sécurité et ne pas perturber le service.</li>
@@ -152,8 +152,8 @@ const sections: LegalSectionDef[] = [
     title: "Disponibilité, maintenance et sauvegardes",
     body: (
       <>
-        <p>Pendant la version de test, des interruptions, des modifications ou des suppressions d’environnement peuvent survenir sans préavis. Les données de test peuvent être effacées.</p>
-        <p>L’utilisateur ne doit pas dépendre de la version de test pour sa prise en charge. Aucune garantie de disponibilité, de sauvegarde ou d’assistance n’est donnée à ce stade ; elles seront précisées après définition du service et validation des conditions contractuelles.</p>
+        <p>Le service peut évoluer ; les informations et les conditions applicables sont précisées dans les documents du service.</p>
+        <p>Le service ne remplace pas un avis médical, une prise en charge urgente ou les services de secours.</p>
       </>
     ),
   },

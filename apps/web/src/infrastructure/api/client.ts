@@ -109,6 +109,30 @@ export async function apiSend<T>(method: "POST" | "PATCH" | "PUT" | "DELETE", pa
 }
 
 export const apiPost = <T,>(path: string, body: unknown = {}) => apiSend<T>("POST", path, body);
+
+export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
+  const csrf = await primeCsrf();
+  if (!csrf.ok) throw new ApiError("Impossible d’établir la session de sécurité.", csrf.status);
+  const response = await fetch(`${API_URL}${path}`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "X-CSRFToken": readCsrfToken() },
+    body: form,
+  });
+  const result = await parse<T>(response);
+  notifyProductActionCompleted(path, "POST");
+  return result;
+}
+
+export async function apiUploadPatch<T>(path: string, form: FormData): Promise<T> {
+  const csrf = await primeCsrf();
+  if (!csrf.ok) throw new ApiError("Impossible d’établir la session de sécurité.", csrf.status);
+  const response = await fetch(`${API_URL}${path}`, { method: "PATCH", credentials: "include", headers: { "X-CSRFToken": readCsrfToken() }, body: form });
+  const result = await parse<T>(response);
+  notifyProductActionCompleted(path, "PATCH");
+  return result;
+}
+
 export const apiPatch = <T,>(path: string, body: unknown) => apiSend<T>("PATCH", path, body);
 export const apiPut = <T,>(path: string, body: unknown) => apiSend<T>("PUT", path, body);
 export const apiDelete = <T,>(path: string) => apiSend<T>("DELETE", path);

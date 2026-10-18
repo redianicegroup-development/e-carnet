@@ -34,6 +34,7 @@ playwright-report/
 .netlify/
 *.log
 *.modal/
+*.REGARDE LE MODEL/
 npm-debug.log*
 yarn-debug.log*
 pnpm-debug.log*
@@ -62,3 +63,4 @@ globals.css
 Screenshot_20261012_053515_Chrome.jpg
 docs/prod.md
 voirrr.zip
+.REGARDE LE MODEL/CARNET.jpg

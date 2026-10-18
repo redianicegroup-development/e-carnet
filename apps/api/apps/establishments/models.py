@@ -62,6 +62,21 @@ class Establishment(models.Model):
         return cls.objects.exclude(missing)
 
 
+class PrescriptionTemplate(models.Model):
+    """Présentation de l'ordonnance ; le contenu médical reste validé par le médecin."""
+    establishment = models.OneToOneField(Establishment, on_delete=models.CASCADE, related_name="prescription_template")
+    logo_url = models.URLField(max_length=500, blank=True)
+    header_text = models.CharField(max_length=500, blank=True)
+    footer_text = models.CharField(max_length=500, blank=True)
+    phone = models.CharField(max_length=32, blank=True)
+    email = models.EmailField(blank=True)
+    address = models.CharField(max_length=240, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("establishment",)
+
+
 class EstablishmentAdministrator(models.Model):
     STATUS_CHOICES = (("active", "Actif"), ("revoked", "Révoqué"), ("ended", "Terminé"))
 

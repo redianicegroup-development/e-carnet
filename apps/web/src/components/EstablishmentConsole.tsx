@@ -7,6 +7,7 @@ import { AvatarBadge, displayName, useSpaceAccount } from "./shell/SpaceShell";
 import { useConfirm } from "./modal/ConfirmProvider";
 import { Icon } from "./ui/Icon";
 import { PageHeader } from "./ui/PageHeader";
+import { EstablishmentDashboardChart } from "./RoleDashboards";
 
 type Establishment = { id: string; name: string; city: string; status: "pending" | "active" | "rejected" | string };
 type Membership = { id: string; status: "pending" | "active" | "refused" | "suspended" | string; professional_name?: string; professional_email?: string };
@@ -144,6 +145,8 @@ export function EstablishmentConsole({ view }: { view: "home" | "requests" | "do
         <Link className="stat-card card-link" href="/etablissement/demandes"><span className="val">{pending.length}</span><span className="lbl">Demande{pending.length > 1 ? "s" : ""} à traiter</span></Link>
         <Link className="stat-card card-link" href="/etablissement/medecins"><span className="val">{doctors.length}</span><span className="lbl">Médecin{doctors.length > 1 ? "s" : ""} actif{doctors.length > 1 ? "s" : ""}</span></Link>
       </section>
+      {!active && <section className="card progress-card"><div className="section-heading"><div><span className="eyebrow">Mise en route</span><h2>Activer l’espace établissement</h2></div></div><p className="muted">L’équipe Mon E‑Carnet doit valider la structure avant l’ouverture des fonctions de rattachement.</p><div className="progress-card__line" role="progressbar" aria-valuemin={0} aria-valuemax={2} aria-valuenow={establishment.status === "pending" ? 1 : 0}><span style={{ width: `${establishment.status === "pending" ? 50 : 0}%` }} /></div><div className="progress-card__meta"><span>{establishment.status === "pending" ? "Demande reçue" : "Fiche à préparer"}</span><Link className="text-link" href="/etablissement/parametres">Voir les paramètres</Link></div></section>}
+      <div className="role-dashboard-grid"><EstablishmentDashboardChart pending={pending.length} active={doctors.length} /></div>
       {pending.length > 0 && <section className="card alert-card"><h2>{pending.length} médecin{pending.length > 1 ? "s attendent" : " attend"} votre confirmation</h2><div className="actions"><Link className="button" href="/etablissement/demandes">Traiter les demandes</Link></div></section>}
       {codeCard}
       {status}

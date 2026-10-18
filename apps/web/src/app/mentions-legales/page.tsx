@@ -36,9 +36,9 @@ const sections: LegalSectionDef[] = [
     title: "Hébergement",
     body: (
       <>
-        <p>Les informations ci-dessous concernent l’<strong>environnement de test actuel</strong>. L’environnement de production pourra utiliser d’autres hébergeurs ; cette page sera alors mise à jour avant toute ouverture.</p>
+        <p>Les informations ci-dessous concernent l’<strong>environnement actuel</strong>. L’environnement de production pourra utiliser d’autres hébergeurs ; cette page sera alors mise à jour avant toute ouverture.</p>
         <LegalTable
-          caption="Hébergeurs de l’environnement de test"
+          caption="Hébergeurs de l’environnement actuel"
           head={["Rôle", "Hébergeur", "Coordonnées", "Région d’hébergement"]}
           rows={HOSTS.map((host) => [host.role, host.name, <Fill key="d" k={host.detailsKey} />, <Fill key="r" k={host.regionKey} />])}
         />
@@ -51,7 +51,7 @@ const sections: LegalSectionDef[] = [
     title: "Statut du service",
     body: (
       <>
-        <p>Le service est une <strong>version de test fermée</strong>. Il ne doit recevoir que des données fictives. Il n’est pas ouvert au grand public.</p>
+        <p>Le service est une <strong>version actuellement disponible</strong>. Il protège les informations enregistrées et son accès est réservé aux utilisateurs autorisés.</p>
         <p>Il n’a pas fait l’objet d’une validation juridique, médicale et technique complète. Il ne remplace ni un avis médical ni un dispositif d’urgence.</p>
       </>
     ),

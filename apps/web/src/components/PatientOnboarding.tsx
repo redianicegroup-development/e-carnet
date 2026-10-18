@@ -1,67 +1,113 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
-const API = "";
-type Form = { phone: string; birth_date: string; address: string; coverage_provider: string; coverage_number: string; coverage_expiry: string };
-const FIELD_LABELS: Record<string, string> = {
-  phone: "Téléphone",
-  birth_date: "Date de naissance",
-  address: "Adresse",
-  coverage_provider: "Organisme de couverture",
-  coverage_number: "Numéro de couverture",
-  coverage_expiry: "Date d’expiration",
+import { ApiError, apiGet, apiPatch, apiPost } from "../infrastructure/api/client";
+
+/* Couverture du carnet papier : nom, prénoms, ville, adresse (BP), profession, « délivré le ».
+   Obligatoires : nom, prénoms, ville. Le reste est facultatif. Aucune donnée d'origine ethnique : sensible et sans utilité clinique ici. */
+type Form = {
+  first_name: string;
+  last_name: string;
+  city: string;
+  address: string;
+  profession: string;
+  phone: string;
+  birth_date: string;
+  coverage_provider: string;
+  coverage_number: string;
+  coverage_expiry: string;
 };
-function formatError(payload: Record<string, unknown>) {
-  if (typeof payload.message === "string") return payload.message;
-  if (typeof payload.detail === "string") return payload.detail;
-  const errors = Object.entries(payload).flatMap(([field, value]) => {
-    if (!Array.isArray(value)) return [];
-    return [`${FIELD_LABELS[field] ?? field} : ${value.filter(item => typeof item === "string").join(" ")}`];
-  });
-  return errors.length ? errors.join(" · ") : "Vérifiez les informations saisies puis réessayez.";
-}
+type Account = { first_name?: string; last_name?: string };
+type PatientProfile = { created_at?: string; phone?: string; birth_date?: string | null; address?: string; profession?: string; coverage_provider?: string; coverage_number?: string; coverage_expiry?: string | null };
+type Declaration = { kind: string; label: string };
+
+const EMPTY_FORM: Form = { first_name: "", last_name: "", city: "", address: "", profession: "", phone: "", birth_date: "", coverage_provider: "", coverage_number: "", coverage_expiry: "" };
+const DELIVERY_DATE = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+
 export function PatientOnboarding() {
   const router = useRouter();
-  const [form, setForm] = useState<Form>({ phone: "", birth_date: "", address: "", coverage_provider: "", coverage_number: "", coverage_expiry: "" });
+  const [form, setForm] = useState<Form>(EMPTY_FORM);
+  const [issuedAt, setIssuedAt] = useState<Date>(() => new Date());
   const [message, setMessage] = useState("Complétez uniquement les informations utiles à votre carnet.");
   const [submitting, setSubmitting] = useState(false);
-  function update(field: keyof Form, value: string) { setForm(current => ({ ...current, [field]: value })); }
+
+  // Les informations déjà connues (compte, profil, ville) préremplissent l'écran : un retour en arrière ne fait rien perdre.
+  useEffect(() => {
+    let active = true;
+    Promise.allSettled([
+      apiGet<Account>("/api/v1/identity/me/"),
+      apiGet<PatientProfile>("/api/v1/patient/profile/"),
+      apiGet<Declaration[]>("/api/v1/patient/declarations/"),
+    ]).then(([account, profile, declarations]) => {
+      if (!active) return;
+      setForm((current) => ({
+        ...current,
+        first_name: account.status === "fulfilled" ? account.value.first_name ?? "" : current.first_name,
+        last_name: account.status === "fulfilled" ? account.value.last_name ?? "" : current.last_name,
+        city: declarations.status === "fulfilled" ? declarations.value.find((item) => item.kind === "city")?.label ?? "" : current.city,
+        phone: profile.status === "fulfilled" ? profile.value.phone ?? "" : current.phone,
+        birth_date: profile.status === "fulfilled" ? profile.value.birth_date ?? "" : current.birth_date,
+        address: profile.status === "fulfilled" ? profile.value.address ?? "" : current.address,
+        profession: profile.status === "fulfilled" ? profile.value.profession ?? "" : current.profession,
+        coverage_provider: profile.status === "fulfilled" ? profile.value.coverage_provider ?? "" : current.coverage_provider,
+        coverage_number: profile.status === "fulfilled" ? profile.value.coverage_number ?? "" : current.coverage_number,
+        coverage_expiry: profile.status === "fulfilled" ? profile.value.coverage_expiry ?? "" : current.coverage_expiry,
+      }));
+      if (profile.status === "fulfilled" && profile.value.created_at) setIssuedAt(new Date(profile.value.created_at));
+    });
+    return () => { active = false; };
+  }, []);
+
+  function update(field: keyof Form, value: string) { setForm((current) => ({ ...current, [field]: value })); }
+
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const firstName = form.first_name.trim();
+    const lastName = form.last_name.trim();
+    const city = form.city.trim();
+    if (!lastName || !firstName || !city) { setMessage("Le nom, les prénoms et la ville sont obligatoires."); return; }
     setSubmitting(true);
     setMessage("Enregistrement…");
     try {
-      const csrf = await primeCsrf();
-      if (!csrf.ok) { setMessage("Votre session de sécurité a expiré. Reconnectez-vous puis réessayez."); return; }
-      const body = { ...form, birth_date: form.birth_date || null, coverage_expiry: form.coverage_expiry || null };
-      const response = await fetch(`${API}/api/v1/identity/onboarding/patient/`, {
-        method: "PATCH",
-        credentials: "include",
-        headers: { "Content-Type": "application/json", "X-CSRFToken": readCsrfToken() },
-        body: JSON.stringify(body),
+      // Chaque appel est répétable sans risque : en cas d'échec au milieu, un nouvel essai reprend sans doublon.
+      await apiPatch("/api/v1/identity/me/profile/", { first_name: firstName, last_name: lastName });
+      await apiPost("/api/v1/patient/declarations/", { kind: "city", label: city });
+      await apiPatch("/api/v1/identity/onboarding/patient/", {
+        phone: form.phone.trim(),
+        birth_date: form.birth_date || null,
+        address: form.address.trim(),
+        profession: form.profession.trim(),
+        coverage_provider: form.coverage_provider.trim(),
+        coverage_number: form.coverage_number.trim(),
+        coverage_expiry: form.coverage_expiry || null,
       });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        if (response.status === 401 || response.status === 403) setMessage("Connectez-vous à nouveau pour terminer votre onboarding.");
-        else setMessage(formatError(payload));
-        return;
-      }
       router.push("/onboarding/securite");
-    } catch {
-      setMessage("Impossible de joindre le service. Vérifiez votre connexion puis réessayez.");
+    } catch (error) {
+      if (error instanceof ApiError && (error.status === 401 || error.status === 403)) setMessage("Connectez-vous à nouveau pour terminer votre onboarding.");
+      else setMessage(error instanceof Error ? error.message : "Impossible de joindre le service. Vérifiez votre connexion puis réessayez.");
     } finally {
       setSubmitting(false);
     }
   }
+
   return <form className="card auth-form" onSubmit={submit}>
-    <span className="eyebrow">Étape 1 · votre espace patient</span>
-    <h1>Préparer votre carnet.</h1>
-    <p className="muted">Vous pourrez modifier ces informations depuis votre profil. Les données médicales restent sous votre contrôle.</p>
-    <p className="notice" role="note">Utilisez uniquement des données fictives pour le moment.</p>
-    <label className="field"><span>Téléphone</span><input autoComplete="tel" value={form.phone} onChange={event => update("phone", event.target.value)} /></label>
+    <span className="eyebrow">Étape 1 · identité du titulaire</span>
+    <h1>Ouvrir votre carnet.</h1>
+    <p className="muted">Comme sur la couverture du carnet papier. Seuls le nom, les prénoms et la ville sont obligatoires ; vous pourrez tout modifier depuis votre profil.</p>
+    <p className="notice" role="note">Utilisez des informations exactes et gardez votre compte personnel.</p>
+    <div className="titulaire-cover" aria-label="Couverture du carnet">
+      <strong>Carnet individuel de santé</strong>
+      <span>Délivré le <time dateTime={issuedAt.toISOString()}>{DELIVERY_DATE.format(issuedAt)}</time></span>
+    </div>
+    <div className="auth-name-grid">
+      <label className="field"><span>Nom</span><input required autoComplete="family-name" maxLength={80} value={form.last_name} onChange={event => update("last_name", event.target.value)} /></label>
+      <label className="field"><span>Prénoms</span><input required autoComplete="given-name" maxLength={80} value={form.first_name} onChange={event => update("first_name", event.target.value)} /></label>
+    </div>
+    <label className="field"><span>Ville</span><input required autoComplete="address-level2" maxLength={120} value={form.city} onChange={event => update("city", event.target.value)} /></label>
+    <label className="field"><span>Adresse ou BP (facultatif)</span><input autoComplete="street-address" maxLength={240} value={form.address} onChange={event => update("address", event.target.value)} /></label>
+    <label className="field"><span>Profession (facultatif)</span><input maxLength={120} value={form.profession} onChange={event => update("profession", event.target.value)} /></label>
+    <label className="field"><span>Téléphone (facultatif)</span><input autoComplete="tel" value={form.phone} onChange={event => update("phone", event.target.value)} /></label>
     <label className="field"><span>Date de naissance (facultative)</span><input type="date" value={form.birth_date} onChange={event => update("birth_date", event.target.value)} /></label>
-    <label className="field"><span>Adresse (facultative)</span><input value={form.address} onChange={event => update("address", event.target.value)} /></label>
     <h2>Couverture (facultative)</h2>
     <label className="field"><span>Organisme</span><input value={form.coverage_provider} onChange={event => update("coverage_provider", event.target.value)} /></label>
     <label className="field"><span>Numéro</span><input value={form.coverage_number} onChange={event => update("coverage_number", event.target.value)} /></label>

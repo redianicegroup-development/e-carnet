@@ -62,10 +62,10 @@ def anonymize_and_disable_account(user):
         PreConsultationRevision.objects.filter(encounter__patient=patient).delete()
         CareEncounter.objects.filter(patient=patient).update(
             facility_label="", reason="", observations="", recorded_with_help="",
-            status="closed", closed_at=now,
+            status="closed", closed_at=now, vitals={},
         )
         PatientProfile.objects.filter(pk=patient.pk).update(
-            phone="", birth_date=None, address="", coverage_provider="", coverage_number="", coverage_expiry=None,
+            phone="", birth_date=None, address="", profession="", coverage_provider="", coverage_number="", coverage_expiry=None,
             updated_at=now,
         )
         AccessGrant.objects.filter(patient=patient, status__in=("pending", "active")).update(status="revoked", revoked_at=now)

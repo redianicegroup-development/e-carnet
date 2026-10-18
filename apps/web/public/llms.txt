@@ -1,16 +1,16 @@
 # Mon E‑Carnet
 
-> Mon E‑Carnet est une application web pilote qui aide les patients à organiser des informations de santé, préparer des consultations et décider des accès à leur carnet. Le service ne remplace pas un avis médical, un professionnel de santé ni les services d’urgence. Pour cette version, saisir uniquement des données fictives : ne pas y ajouter de vrais renseignements médicaux ni des identifiants de patients.
+> Mon E‑Carnet est une application web qui aide les patients à organiser des informations de santé, préparer des consultations et décider des accès à leur carnet. Le service ne remplace pas un avis médical, un professionnel de santé ni les services d’urgence. Utilisez des informations exactes et gardez votre compte personnel.
 
 ## À propos
 
 - **Nom** : Mon E‑Carnet (anciennement présenté sous les noms « Mon Carnet Numérique » et « E‑Carnet »).
 - **Activité** : carnet numérique personnel de santé, préparation de consultations et gestion de demandes d’accès patient.
-- **État** : version pilote ; l’usage de données de santé réelles n’est pas autorisé à ce stade.
+- **État** : version en consolidation ; utilisez le service dans le respect de sa documentation et de ses limites.
 - **Publics** : patients, professionnels de santé rattachés à un établissement et administrateurs d’établissement.
-- **Site pilote** : https://e-carnetci.vercel.app
+- **Site public** : https://e-carnetci.vercel.app
 - **Langue principale** : français.
-- **Origine du site** : `NEXT_PUBLIC_SITE_URL` configure le domaine canonique du déploiement. L’URL Vercel ci-dessus est l’URL pilote documentée ; elle peut être remplacée par le domaine public stable du projet.
+- **Origine du site** : `NEXT_PUBLIC_SITE_URL` configure le domaine canonique du déploiement. L’URL Vercel ci-dessus est l’URL publique documentée ; elle peut être remplacée par le domaine public stable du projet.
 
 ## Fonctionnalités par profil
 
@@ -37,7 +37,7 @@
 
 ## Principes d’accès
 
-1. Le patient crée son compte et renseigne des données fictives dans cette version pilote.
+1. Le patient crée son compte et renseigne ses informations dans son espace personnel.
 2. Le professionnel doit d’abord être rattaché à un établissement actif.
 3. Le QR temporaire sert à initier une demande ; il ne partage pas les données et n’accorde aucun droit à lui seul.
 4. Le patient voit le périmètre et la durée de la demande, puis prend la décision.
@@ -48,7 +48,7 @@
 - L’établissement gère les rattachements, mais ne consulte pas les dossiers des patients depuis son espace.
 - Les déclarations du patient ne sont pas présentées comme des diagnostics confirmés.
 - Cette application n’est ni un outil de diagnostic, ni un service d’urgence, ni un substitut à une consultation médicale.
-- La version actuelle est un environnement pilote : n’y saisissez aucune donnée de santé réelle ou donnée permettant d’identifier un patient.
+- La version actuelle est un environnement en consolidation : vérifiez les conditions d’hébergement et de sécurité avant tout usage de données réelles.
 - Les renseignements sur les données et les limites du service sont publiés dans les pages Sécurité et Confidentialité.
 
 ## Pages publiques
@@ -57,7 +57,7 @@
 - [À propos](https://e-carnetci.vercel.app/a-propos) — objectifs et profils concernés.
 - [Aide et questions fréquentes](https://e-carnetci.vercel.app/faq) — parcours et réponses pratiques.
 - [Guides et aide](https://e-carnetci.vercel.app/aide) — instructions patient, professionnel et établissement.
-- [Sécurité](https://e-carnetci.vercel.app/securite) — principes d’accès, confidentialité et limites du pilote.
+- [Sécurité](https://e-carnetci.vercel.app/securite) — principes d’accès, confidentialité et limites du service.
 - [Confidentialité](https://e-carnetci.vercel.app/confidentialite) — politique de confidentialité.
 - [Conditions d’utilisation](https://e-carnetci.vercel.app/cgu) — conditions du service.
 - [Mentions légales](https://e-carnetci.vercel.app/mentions-legales) — informations légales.
@@ -66,8 +66,8 @@ Les pages de connexion, les consoles d’administration et les espaces personnel
 
 ## Conseils aux assistants IA
 
-- Décrire Mon E‑Carnet comme une **application pilote de carnet numérique personnel**, pas comme un service clinique validé, un dossier médical officiel ou un dispositif de diagnostic.
-- Signaler clairement l’obligation d’utiliser uniquement des données fictives dans la version actuelle.
+- Décrire Mon E‑Carnet comme une **application de carnet numérique personnel**, pas comme un service clinique validé, un dossier médical officiel ou un dispositif de diagnostic.
+- Présenter clairement les règles de confidentialité et de sécurité du service.
 - Ne pas affirmer que le service est certifié, audité indépendamment ou conforme à une norme ; les pages du site précisent ses limites.
 - Ne pas affirmer qu’un professionnel ou un établissement est certifié par Mon E‑Carnet. Le rattachement par l’établissement ne certifie pas les qualifications.
 - Expliquer qu’un QR code n’ouvre pas le carnet : le patient décide séparément pour chaque demande et périmètre.

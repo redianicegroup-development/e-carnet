@@ -3,6 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import { apiGet, apiPost } from "../infrastructure/api/client";
 import { PageHeader } from "./ui/PageHeader";
+import { MedicalDocuments } from "./MedicalDocuments";
+import { Vaccinations } from "./Vaccinations";
+import { HealthMeasurements } from "./HealthMeasurements";
+import { MedicationReminders } from "./MedicationReminders";
+import { PatientNotifications } from "./PatientNotifications";
+import { FollowUpPlans } from "./FollowUpPlans";
+import { PatientAppointments } from "./PatientAppointments";
 
 type Declaration = { id: string; kind: string; label: string; details: string; provenance: { label: string } };
 type Kind = "allergy" | "antecedent" | "treatment" | "blood_group" | "city" | "emergency_contact";
@@ -27,7 +34,7 @@ export function PatientCarnet() {
   const [busy, setBusy] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const itemsRef = useRef<Declaration[] | null>(null);
-  itemsRef.current = items;
+  useEffect(() => { itemsRef.current = items; }, [items]);
 
   const current = (kind: Kind) => (items ?? []).find((item) => item.kind === kind);
 
@@ -130,6 +137,14 @@ export function PatientCarnet() {
           )}
         </section>
       </div>
+      <MedicalDocuments />
+      <Vaccinations />
+      <HealthMeasurements />
+      <MedicationReminders />
+      <PatientNotifications />
+      <FollowUpPlans />
+      <PatientAppointments />
+      <section className="card"><div className="section-heading"><div><span className="eyebrow">Portabilité</span><h2>Exporter mon carnet</h2></div></div><p className="muted">Téléchargez une copie PDF volontaire de vos déclarations, vaccinations et mesures récentes.</p><a className="button" href="/api/v1/patient/care/export/">Télécharger mon carnet PDF</a></section>
     </div>
   );
 }

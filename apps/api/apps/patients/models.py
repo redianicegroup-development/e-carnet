@@ -13,6 +13,8 @@ class PatientProfile(models.Model):
     phone = models.CharField(max_length=32, blank=True)
     birth_date = models.DateField(null=True, blank=True)
     address = models.CharField(max_length=240, blank=True)
+    # Facultative : reprise de la couverture du carnet papier. Aucune ethnie : donnée sensible sans utilité clinique ici.
+    profession = models.CharField(max_length=120, blank=True)
     coverage_provider = models.CharField(max_length=160, blank=True)
     coverage_number = models.CharField(max_length=80, blank=True)
     coverage_expiry = models.DateField(null=True, blank=True)

@@ -11,6 +11,7 @@ import { LandingFeedbackWidget } from "./LandingFeedbackWidget";
 import { ThemeSettingsClient } from "./ThemeSettingsClient";
 import { AccountActionRequestsSettingsClient } from "./AccountActionRequestsSettingsClient";
 import { Icon } from "./ui/Icon";
+import { PrescriptionTemplateSettings } from "./PrescriptionTemplateSettings";
 import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
 
 type Account = { email: string; first_name: string; last_name: string; avatar_url?: string; is_privileged: boolean; contexts: { role: string; is_active: boolean }[] };
@@ -75,6 +76,7 @@ export function EstablishmentSettingsClient() {
   const navItems: SettingsNavItem[] = [
     { id: "administratif", title: "Informations administratives", description: "Identité et statut de la structure.", icon: "building" },
     { id: "coordonnees", title: "Coordonnées", description: "Adresse, contacts et responsable.", icon: "pin" },
+    { id: "ordonnance", title: "Modèle d’ordonnance", description: "En-tête et pied de page imprimables.", icon: "document" },
     { id: "compte", title: "Paramètres du compte", description: "Personnaliser l’apparence de l’application.", icon: "sparkle" },
     { id: "securite", title: "Sécurité et connexion", description: "Gérer les fournisseurs liés au compte.", icon: "lock" },
     { id: "en-savoir-plus", title: "En savoir plus", description: "Aide, informations et documents Mon E‑Carnet.", icon: "help" },
@@ -100,6 +102,8 @@ export function EstablishmentSettingsClient() {
       {activeSection === "coordonnees" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Contact de la structure</span>
         {selected ? <dl className="settings-details"><div><dt>Responsable déclaré</dt><dd>{selected.responsible_name}</dd></div><div><dt>Ville</dt><dd>{selected.city}</dd></div><div><dt>Adresse</dt><dd>{selected.address}</dd></div><div><dt>Téléphone</dt><dd><a href={`tel:${selected.phone}`}>{selected.phone}</a></dd></div><div><dt>Email établissement</dt><dd><a href={`mailto:${selected.email}`}>{selected.email}</a></dd></div></dl> : <p className="muted">Les coordonnées apparaîtront après la création de la fiche établissement.</p>}
       </div></SettingsModal>}
+
+      {activeSection === "ordonnance" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}>{selected?.status === "active" ? <PrescriptionTemplateSettings establishmentId={selected.id} /> : <p className="muted">Le modèle sera disponible lorsque l’établissement sera actif.</p>}</SettingsModal>}
 
       {activeSection === "compte" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Préférences personnelles</span>
         <dl className="settings-details"><div><dt>Responsable du compte</dt><dd>{accountName}</dd></div><div><dt>Email de connexion</dt><dd>{account?.email ?? (loading ? "Chargement…" : "Non disponible")}</dd></div><div><dt>Contexte établissement</dt><dd>{account?.contexts.find((context) => context.role === "establishment")?.is_active ? "Actif" : "Associé au compte"}</dd></div></dl><ThemeSettingsClient compact space="establishment" />

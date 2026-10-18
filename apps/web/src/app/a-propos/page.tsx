@@ -95,7 +95,7 @@ export default function AboutPage() {
         </section>
 
         <footer className="about__foot">
-          <p className="muted">Version pilote : utilisez uniquement des données fictives pour le moment.</p>
+          <p className="muted"></p>
           <p className="actions">
             <Link className="button primary" href="/credits">Crédits et remerciements</Link>
             <Link className="button" href="/securite">Sécurité</Link>

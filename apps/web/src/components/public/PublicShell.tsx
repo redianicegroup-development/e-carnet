@@ -16,7 +16,7 @@ export function PublicFooter() {
           <Link className="pub-footer__logo" href="/" aria-label="Mon E-Carnet, accueil"><BrandMark /><span>Mon E‑Carnet</span></Link>
           <div className="pub-footer__brand-foot">
             <p className="pub-footer__tagline">Un carnet de santé personnel, <span>organisé selon vos choix.</span></p>
-            <p className="pub-footer__pilot">Version pilote : utilisez uniquement des données fictives pour le moment.</p>
+            <p className="pub-footer__pilot"></p>
             <PwaInstallButton />
             <div className="pub-footer__touch">
               <span className="pub-footer__script">Restons en contact !</span>

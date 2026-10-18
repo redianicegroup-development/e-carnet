@@ -42,7 +42,7 @@ const FIELDS = {
   "publisher.director": ["Éditeur", "nom et qualité du directeur ou de la directrice de publication"],
   "ip.holder": ["Éditeur", "titulaire des droits sur le service, le nom et le logo"],
   "ip.terms": ["Éditeur", "conditions d’utilisation du nom, du logo et des contenus"],
-  // Hébergement (environnement de test actuel)
+  // Hébergement (environnement actuel)
   "hosting.web.details": ["Hébergement", "adresse et contact officiels de l’hébergeur de l’interface web (Vercel)"],
   "hosting.api.details": ["Hébergement", "adresse et contact officiels de l’hébergeur de l’API (Render)"],
   "hosting.db.details": ["Hébergement", "adresse et contact officiels de l’hébergeur de la base de données (Neon)"],

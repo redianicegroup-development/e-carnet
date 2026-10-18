@@ -118,7 +118,7 @@ export default function V1Page() {
       </section>
 
       <footer className="footer">
-        V1 stable et utilisable — socle sécurisé, consentement explicite, traçabilité et données fictives uniquement.
+        V1 stable et utilisable — socle sécurisé, consentement explicite et traçabilité.
       </footer>
     </main>
   );

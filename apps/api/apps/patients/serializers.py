@@ -12,7 +12,7 @@ class PatientProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PatientProfile
-        fields = ("id", "first_name", "last_name", "phone", "birth_date", "address", "coverage_provider", "coverage_number", "coverage_expiry", "created_at", "updated_at")
+        fields = ("id", "first_name", "last_name", "phone", "birth_date", "address", "profession", "coverage_provider", "coverage_number", "coverage_expiry", "created_at", "updated_at")
         read_only_fields = ("id", "first_name", "last_name", "created_at", "updated_at")
 
     def get_first_name(self, obj):

@@ -1,9 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { AvatarBadge, displayName, useSpaceAccount } from "./shell/SpaceShell";
 import { useProfessionalProfile } from "./ClinicalGate";
 import { Icon, type IconName } from "./ui/Icon";
+import { listProfessionalConsultations, listProfessionalGrants } from "../application/professional-access-grants";
+import { ProfessionalDashboardChart } from "./RoleDashboards";
 
 type StepState = "done" | "current" | "todo";
 
@@ -17,6 +20,8 @@ export function ProfessionalHome() {
   const attached = memberships.some((item) => item.status === "active");
   const ready = Boolean(profile?.clinical_access.allowed);
   const active = memberships.find((item) => item.establishment_id === profile?.active_establishment);
+  const [activity, setActivity] = useState<{ grants: number; activeGrants: number; consultations: number } | null>(null);
+  useEffect(() => { let mounted = true; Promise.all([listProfessionalGrants(), listProfessionalConsultations()]).then(([grants, consultations]) => { if (mounted) setActivity({ grants: grants.length, activeGrants: grants.filter((item) => item.status === "active").length, consultations: consultations.length }); }).catch(() => { if (mounted) setActivity({ grants: 0, activeGrants: 0, consultations: 0 }); }); return () => { mounted = false; }; }, []);
 
   const steps: { title: string; text: string; state: StepState }[] = [
     { title: "Profil professionnel", text: hasProfile ? `${profile?.specialty || "Spécialité à renseigner"} · déclarée, non certifiée par Mon E‑Carnet.` : "Déclarez votre profession et votre spécialité, sans numéro ni pièce justificative.", state: hasProfile ? "done" : "current" },
@@ -46,9 +51,11 @@ export function ProfessionalHome() {
           {next && <div className="actions"><Link className="button primary" href={next.href}>{next.label}</Link></div>}
         </section>
       )}
+      {hasProfile && !attached && <section className="card alert-card" aria-live="polite"><h2>Votre prochaine étape</h2><p>Rattachez-vous à un établissement pour activer les consultations et les demandes d’accès.</p><div className="actions"><Link className="button primary" href="/professionnel/acces">Gérer mon établissement</Link></div></section>}
       <section className="stack" aria-label="Raccourcis">
         {shortcuts.map((item) => <Link key={item.href} className={item.locked ? "list-row locked" : "list-row"} href={item.href} aria-disabled={item.locked || undefined}><span className="setting-item__icon"><Icon name={item.locked ? "lock" : item.icon} /></span><span className="list-row__body"><strong>{item.title}</strong><br /><span className="muted">{item.locked ? "Verrouillé tant que votre rattachement n’est pas confirmé." : item.text}</span></span><Icon name="chevron" size={18} /></Link>)}
       </section>
+      {activity && <div className="role-dashboard-grid"><ProfessionalDashboardChart metrics={[{ label: "Demandes", value: activity.grants }, { label: "Accès actifs", value: activity.activeGrants }, { label: "Consultations", value: activity.consultations }]} /></div>}
     </div>
   );
 }

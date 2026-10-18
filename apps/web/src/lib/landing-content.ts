@@ -16,7 +16,7 @@ export const HERO = {
   lead: "Organisez vos informations, préparez vos consultations et choisissez qui peut consulter votre carnet.",
   primary: { href: "/connexion?mode=register", label: "Créer mon espace patient" },
   secondary: { href: "/connexion?mode=register&profil=professionnel", label: "Je suis professionnel" },
-  note: "Version pilote : utilisez uniquement des données fictives.",
+  note: "Organisez vos informations de santé dans votre espace sécurisé.",
   /** Texte qui apparaît par-dessus l'image quand elle occupe tout l'écran. Décoratif : repris par la section « confiance ». */
   reveal: { title: "Aucun accès sans votre choix.", text: "Vous voyez qui demande, depuis quel établissement et pour quel contenu." },
   sceneLabel: "Aperçu illustré de l’espace patient : une demande d’accès à autoriser ou refuser, et un QR code temporaire",
@@ -90,7 +90,7 @@ export const FAQ_GROUPS: FaqGroup[] = [
       { id: "consent", origin: "landing", q: "Un professionnel peut-il consulter mon carnet sans mon accord ?", a: "Non. Le professionnel doit être rattaché à un établissement actif et le patient doit autoriser une demande pour un contenu et une durée précis. Le QR code lance une demande, il n’ouvre pas le carnet." },
       { id: "qr", origin: "help", q: "À quoi sert le QR code ?", a: "Il permet à un professionnel de lancer une demande d’accès à votre carnet. Il ne contient aucune donnée médicale, n’est valable que 5 minutes et ne sert qu’une fois. Le scanner n’ouvre pas votre carnet : c’est vous qui décidez ensuite." },
       { id: "duration", origin: "help", q: "Combien de temps dure une autorisation ?", a: "Deux heures, avec au plus deux prolongations d’une heure. Elle prend fin à son expiration ou si vous la révoquez depuis votre espace." },
-      { id: "scope", origin: "help", q: "Que voit le professionnel ?", a: "Seulement le contenu que vous avez autorisé : votre pré-consultation et vos déclarations, et vos consultations passées si vous les sélectionnez. Les documents ne sont pas disponibles dans cette version." },
+      { id: "scope", origin: "help", q: "Que voit le professionnel ?", a: "Seulement le contenu que vous avez autorisé : votre pré-consultation et vos déclarations, et vos consultations passées si vous les sélectionnez. Les documents restent privés et ne sont pas inclus dans le périmètre QR professionnel." },
       { id: "refuse", origin: "help", q: "Puis-je refuser ou arrêter un accès ?", a: "Oui. Vous pouvez refuser une demande, ou révoquer un accès en cours depuis votre espace. La révocation n’efface pas les consultations déjà validées ni les traces d’audit." },
     ],
   },
@@ -109,8 +109,8 @@ export const FAQ_GROUPS: FaqGroup[] = [
     id: "data",
     title: "Pilote et données",
     items: [
-      { id: "real-data", origin: "landing", q: "Puis-je saisir mes vraies données de santé ?", a: "Non. Cette version est un pilote : utilisez uniquement des données fictives. N’ajoutez pas de vrais renseignements médicaux ni d’identifiants de patients." },
-      { id: "protection", origin: "help", q: "Comment sont protégées mes informations ?", a: "Le service applique des mesures techniques décrites dans la page Sécurité et dans la politique de confidentialité. Elles n’ont pas encore fait l’objet d’un contrôle indépendant : c’est pourquoi la version actuelle n’accepte que des données fictives.", link: { href: "/securite", label: "Page Sécurité" } },
+      { id: "real-data", origin: "landing", q: "Puis-je saisir mes vraies données de santé ?", a: "Non. Utilisez des informations exactes dans votre espace personnel. N’ajoutez pas de vrais renseignements médicaux ni d’identifiants de patients." },
+      { id: "protection", origin: "help", q: "Comment sont protégées mes informations ?", a: "Le service applique les mesures techniques décrites dans les pages Sécurité et Confidentialité.", link: { href: "/securite", label: "Page Sécurité" } },
     ],
   },
 ];
@@ -123,7 +123,7 @@ export const CONTACT_COPY = {
   lead: "Patient, professionnel ou établissement : dites-nous ce dont vous avez besoin. Nous vous répondons par le moyen que vous indiquez.",
   points: [
     { icon: "building" as IconName, text: "Établissement : choisissez l’objet « Ouvrir un espace établissement »." },
-    { icon: "shield" as IconName, text: "Version pilote : n’écrivez aucune information de santé réelle." },
+    { icon: "shield" as IconName, text: "Vos informations restent sous votre contrôle." },
     { icon: "mail" as IconName, text: "Nous utilisons votre e-mail ou votre numéro pour vous répondre." },
   ],
 } as const;

@@ -594,3 +594,47 @@ a.setting-item:hover, button.setting-item:hover { border-color: var(--primary); 
 .consent-decision { flex: 1 1 170px; min-height: 48px; border: 2px solid var(--primary); background: var(--surface); color: var(--primary-text); font-weight: 800; }
 .consent-decision:hover:not(:disabled) { background: var(--primary-tint); }
 .consent-decision:disabled { opacity: .65; }
+
+/* Identité du titulaire, constantes, fiche de visite et ordonnance (calqués sur le carnet papier). */
+.titulaire-cover { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 14px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-tint); color: var(--text); }
+.titulaire-cover span { font-size: .92rem; }
+.vitals-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
+.vitals-grid .field { min-width: 0; }
+.vitals-grid__hint { grid-column: 1 / -1; margin: 0; font-size: .9rem; }
+@media (min-width: 720px) { .vitals-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.preconsult-draft__vitals { overflow-wrap: anywhere; }
+.visit-card h3 { margin-block: 2px; }
+.visit-section { display: grid; gap: 6px; padding-top: 4px; }
+.visit-section h4 { margin: 0; font-size: .95rem; }
+.visit-vitals { display: grid; gap: 4px; }
+.visit-vitals__source { font-size: .85rem; opacity: .8; }
+.visit-vitals dl { display: flex; flex-wrap: wrap; gap: 6px 8px; margin: 0; }
+.visit-vitals dl div { display: grid; gap: 1px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-tint); min-width: 0; }
+.visit-vitals dt { font-size: .78rem; opacity: .8; }
+.visit-vitals dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
+.visit-order { margin: 0; padding-left: 1.25rem; display: grid; gap: 4px; overflow-wrap: anywhere; }
+.visit-block { display: grid; gap: 10px; margin: 0; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; min-width: 0; }
+.visit-block legend { padding: 0 6px; font-weight: 700; }
+.order-line { display: grid; gap: 8px; padding: 10px; border: 1px dashed var(--border); border-radius: 10px; }
+.order-line__fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 10px; }
+.order-line__fields .field { min-width: 0; }
+.order-line__wide { grid-column: 1 / -1; }
+.order-line__remove { justify-self: start; }
+@media (min-width: 720px) { .order-line__fields { grid-template-columns: 2fr 1fr 2fr 1fr; } .order-line--exam .order-line__fields { grid-template-columns: minmax(0, 1fr) minmax(0, 3fr); } .order-line__wide { grid-column: 1 / -1; } .order-line--exam .order-line__wide { grid-column: auto; } }
+
+
+/* Dashboards par espace : graphiques sobres, lisibles sur téléphone et sans données cliniques détaillées. */
+.role-dashboard-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.role-chart-card { min-width: 0; }
+.role-chart-plot { width: 100%; height: 220px; min-height: 180px; }
+.role-chart-plot--donut { height: 190px; }
+.role-chart-empty { min-height: 180px; display: grid; place-items: center; padding: 24px; border: 1px dashed var(--border); border-radius: 14px; color: var(--text-muted); text-align: center; }
+.role-chart-legend { display: grid; gap: 8px; margin: 10px 0 0; padding: 0; list-style: none; }
+.role-chart-legend li { display: flex; align-items: center; gap: 8px; color: var(--text-muted); font-size: .9rem; }
+.role-chart-legend li span { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 auto; }
+.role-chart-legend li strong { margin-left: auto; color: var(--text); }
+.progress-card { display: grid; gap: 12px; }
+.progress-card__line { height: 10px; overflow: hidden; border-radius: 999px; background: var(--surface-tint); }
+.progress-card__line span { display: block; height: 100%; border-radius: inherit; background: var(--primary); transition: width .25s ease; }
+.progress-card__meta { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: .9rem; }
+@media (max-width: 760px) { .role-dashboard-grid { grid-template-columns: 1fr; } .role-chart-plot { height: 200px; } }

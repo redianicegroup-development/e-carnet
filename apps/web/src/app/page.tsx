@@ -17,7 +17,7 @@ import "./landing-immersive.css";
 import "./landing-showcase.css";
 
 const PAGE_TITLE = "Carnet de santé numérique | Mon E-Carnet";
-const PAGE_DESCRIPTION = "Organisez vos informations de santé, préparez vos consultations et maîtrisez les demandes d’accès. Version pilote : utilisez uniquement des données fictives.";
+const PAGE_DESCRIPTION = "Organisez vos informations de santé, préparez vos consultations et maîtrisez les demandes d’accès. Organisez vos informations de santé dans votre espace sécurisé.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -114,7 +114,7 @@ export default function HomePage() {
       <section className="lp-section" aria-labelledby="trust-title">
         <div className="lp-trust">
           <div className="lp-trust__copy"><h2 id="trust-title" data-split>Vous gardez la main sur les accès.</h2><ul className="lp-safeguards">{SAFEGUARDS.map((item) => <li key={item}><Icon name="shield" size={18} />{item}</li>)}</ul><p className="lp-trust__note"><Link href="/aide#confidentialite">En savoir plus sur la confidentialité et les données</Link></p></div>
-          <div className="lp-consent" data-consent data-state="pending" aria-hidden="true"><div className="lp-consent__head"><span className="lp-consent__title">Demande d’accès</span><span className="lp-consent__tag"><b className="t-pending">À examiner</b><b className="t-granted">Accès autorisé</b><b className="t-revoked">Accès révoqué</b></span></div><dl className="lp-consent__rows"><div><dt>Périmètre</dt><dd>Informations de consultation</dd></div><div><dt>Durée</dt><dd>2 heures</dd></div></dl><div className="lp-consent__meter"><span className="lp-consent__bar" /></div><div className="lp-consent__actions"><span className="lp-consent__btn">Refuser</span><span className="lp-consent__btn lp-consent__btn--main"><b className="t-pending">Autoriser</b><b className="t-granted">Révoquer</b><b className="t-revoked">Révoqué</b></span></div><p className="lp-consent__foot">Exemple illustré · données fictives</p></div>
+          <div className="lp-consent" data-consent data-state="pending" aria-hidden="true"><div className="lp-consent__head"><span className="lp-consent__title">Demande d’accès</span><span className="lp-consent__tag"><b className="t-pending">À examiner</b><b className="t-granted">Accès autorisé</b><b className="t-revoked">Accès révoqué</b></span></div><dl className="lp-consent__rows"><div><dt>Périmètre</dt><dd>Informations de consultation</dd></div><div><dt>Durée</dt><dd>2 heures</dd></div></dl><div className="lp-consent__meter"><span className="lp-consent__bar" /></div><div className="lp-consent__actions"><span className="lp-consent__btn">Refuser</span><span className="lp-consent__btn lp-consent__btn--main"><b className="t-pending">Autoriser</b><b className="t-granted">Révoquer</b><b className="t-revoked">Révoqué</b></span></div><p className="lp-consent__foot">Exemple illustré</p></div>
         </div>
       </section>
 
@@ -123,7 +123,7 @@ export default function HomePage() {
       <ContactSection privacyHref={LEGAL_DOCS.privacy.path} />
 
       <section className="lp-section" aria-labelledby="final-title">
-        <div className="lp-final"><PulseLine className="lp-final__pulse" /><h2 id="final-title">Commencez avec votre carnet.</h2><p>Créez votre espace patient ou professionnel depuis une seule page. Pour le moment, utilisez des données fictives.</p><div className="actions"><Link className="button primary" href="/connexion?mode=register">Créer mon espace patient</Link><Link className="button" href="/connexion">Se connecter</Link><Link className="button" href="/aide">Centre d’aide</Link></div></div>
+        <div className="lp-final"><PulseLine className="lp-final__pulse" /><h2 id="final-title">Commencez avec votre carnet.</h2><p>Créez votre espace patient ou professionnel depuis une seule page. Utilisez des informations exactes et gardez votre compte personnel.</p><div className="actions"><Link className="button primary" href="/connexion?mode=register">Créer mon espace patient</Link><Link className="button" href="/connexion">Se connecter</Link><Link className="button" href="/aide">Centre d’aide</Link></div></div>
       </section>
     </LandingMotion>
   </PublicShell>;

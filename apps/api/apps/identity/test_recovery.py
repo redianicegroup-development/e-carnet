@@ -19,6 +19,7 @@ QUESTION = "Quel était le nom de votre première école ?"
 ANSWER = "École Sainte-Marie"
 REAL_CACHE = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache", "LOCATION": "recovery-tests"}}
 QUESTION_URL = "/api/v1/identity/recovery/question/"
+ANSWER_URL = "/api/v1/identity/recovery/answer/"
 RESET_URL = "/api/v1/identity/recovery/reset/"
 
 
@@ -38,6 +39,17 @@ class RecoveryFlowTests(TestCase):
 
     def can_log_in(self, password, email="awa@example.test"):
         return APIClient().post("/api/v1/identity/login/", {"email": email, "password": password}, format="json").status_code == 200
+
+    def test_answer_is_verified_separately_before_password_reset(self):
+        user = make_account()
+        verified = self.client.post(ANSWER_URL, {"email": user.email, "answer": ANSWER}, format="json")
+        self.assertEqual(verified.status_code, 200)
+        self.assertEqual(verified.data["data"], {"verified": True})
+        self.assertTrue(self.can_log_in(OLD_PASSWORD))
+        rejected = self.client.post(ANSWER_URL, {"email": user.email, "answer": "wrong"}, format="json")
+        self.assertEqual(rejected.status_code, 400)
+        self.assertEqual(rejected.data["message"], GENERIC_FAILURE)
+        self.assertEqual(AccountProfile.objects.get(user=user).recovery_failures, 1)
 
     # ---- question : aucune différence visible entre un vrai compte et le reste ----
     def test_a_recoverable_account_gets_its_own_question(self):

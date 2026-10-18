@@ -48,7 +48,7 @@ export function PatientEmergencyCardSettingsClient() {
   }, []);
 
   async function enableQr() {
-    const ok = await confirm({ title: "Activer le QR d’urgence ?", message: "Toute personne qui scanne ce QR pourra consulter les informations de cette carte, sans se connecter.", note: "Le nom, le prénom, la ville, le groupe sanguin, les allergies, les traitements déclarés et le contact d’urgence seront visibles. Le QR ne change jamais et se met à jour tout seul avec votre carnet ; vous pouvez le désactiver à tout moment. Utilisez uniquement des données fictives dans cette version pilote.", confirmLabel: "Activer le QR", cancelLabel: "Pas maintenant", mood: "decision", tone: "neutral" });
+    const ok = await confirm({ title: "Activer le QR d’urgence ?", message: "Toute personne qui scanne ce QR pourra consulter les informations de cette carte, sans se connecter.", note: "Le nom, le prénom, la ville, le groupe sanguin, les allergies, les traitements déclarés et le contact d’urgence seront visibles. Le QR ne change jamais et se met à jour tout seul avec votre carnet ; vous pouvez le désactiver à tout moment. Utilisez uniquement les informations dont vous avez la maîtrise.", confirmLabel: "Activer le QR", cancelLabel: "Pas maintenant", mood: "decision", tone: "neutral" });
     if (!ok) return;
     setSaving(true);
     try { setCard(await apiPatch<EmergencyCard>("/api/v1/patient/emergency-card/", { qr_enabled: true })); setQrOpen(true); setMessage("QR d’urgence activé."); }
@@ -118,7 +118,7 @@ export function PatientEmergencyCardSettingsClient() {
       </div>
 
       <p className="ecard-panel__message" role="status" aria-live="polite">{message}</p>
-      <p className="ecard-panel__hint">Version pilote : données fictives uniquement. Cette carte ne remplace ni un avis médical ni les services de secours.</p>
+      <p className="ecard-panel__hint">Cette carte ne remplace ni un avis médical ni les services de secours.</p>
     </>}
   </section>;
 }

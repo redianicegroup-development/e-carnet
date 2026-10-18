@@ -49,4 +49,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint --workspace=@ecarnet/web
+      - run: npm run typecheck --workspace=@ecarnet/web
+      - run: npm run test:web
       - run: npm run build --workspace=@ecarnet/web
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e --workspace=@ecarnet/web

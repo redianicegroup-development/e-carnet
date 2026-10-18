@@ -14,7 +14,7 @@ const HEALTH = <span className="legal__tag">Donnée de santé</span>;
 
 const summary = (
   <ul>
-    <li>Le service est une <strong>version de test</strong> : n’enregistrez que des données fictives.</li>
+    <li>Le service protège les informations enregistrées dans votre espace.</li>
     <li>Selon votre rôle, le service traite des données de compte, de profil, de santé déclarées par le patient, de consultation et d’autorisation d’accès.</li>
     <li>L’accès d’un professionnel dépend d’une autorisation du patient, d’un périmètre et d’une durée limitée.</li>
     <li>Le service compte ses visites avec un cookie interne pseudonymisé. Aucune publicité ni outil de suivi tiers n’est utilisé.</li>
@@ -98,7 +98,7 @@ const sections: LegalSectionDef[] = [
           head={["Destinataire", "Ce qu’il peut recevoir", "Condition"]}
           rows={[
             ["Vous", "Les informations de votre compte et de votre carnet.", "Connexion à votre compte."],
-            ["Professionnel autorisé", "Le périmètre autorisé : pré-consultation et déclarations ; consultations si le patient les sélectionne. Les documents ne sont pas accessibles dans cette version.", `Rattachement actif à un établissement actif, autorisation du patient, durée limitée (${TECH_VALIDITY.accessInitial}, ${TECH_VALIDITY.accessExtension}).`],
+            ["Professionnel autorisé", "Le périmètre autorisé : pré-consultation et déclarations ; consultations si le patient les sélectionne. Les documents restent privés et ne sont pas inclus dans le périmètre QR professionnel.", `Rattachement actif à un établissement actif, autorisation du patient, durée limitée (${TECH_VALIDITY.accessInitial}, ${TECH_VALIDITY.accessExtension}).`],
             ["Administrateur d’établissement", "Les données de son établissement, les demandes de rattachement et leur statut.", "Il ne consulte pas les dossiers patients depuis son espace, selon les contrôles d’accès actifs."],
             ["Équipe de Mon E-Carnet (console interne)", "Les demandes d’établissements et de rattachements et leurs statuts.", <>Règles d’accès aux autres données : <Fill key="s" k="privacy.staffAccess" /></>],
             ["Superadministrateurs de Mon E-Carnet", "Les statistiques de visites : total, visiteurs actifs sur 24 heures et liste des visiteurs les plus récents sous forme pseudonymisée.", "Console d’administration réservée aux comptes superadministrateurs ; elle n’affiche pas de dossier patient."],
@@ -114,7 +114,7 @@ const sections: LegalSectionDef[] = [
     title: "Prestataires et services tiers",
     body: (
       <>
-        <p>Liste des prestataires de l’<strong>environnement de test actuel</strong>. Elle sera mise à jour avant toute ouverture à des données réelles.</p>
+        <p>Liste des prestataires de l’<strong>environnement actuel</strong>. Elle sera mise à jour avant toute ouverture à des données réelles.</p>
         <LegalTable
           caption="Prestataires et services tiers"
           head={["Service", "Rôle", "Données concernées", "Lieu de traitement"]}
@@ -124,7 +124,7 @@ const sections: LegalSectionDef[] = [
             ["Google, Facebook (Meta), Apple", "Connexion, uniquement si vous choisissez cette méthode.", "Identifiant, adresse e-mail, nom, adresse de l’image de profil.", "Selon les conditions de chaque fournisseur, qui agit pour son propre compte."],
           ]}
         />
-        <p>Aucune donnée de santé réelle ne doit être enregistrée chez ces prestataires pendant la phase de test.</p>
+        <p>Aucune donnée de santé réelle ne doit être enregistrée chez ces prestataires dans le cadre du service.</p>
       </>
     ),
   },
@@ -133,7 +133,7 @@ const sections: LegalSectionDef[] = [
     title: "Transferts hors de Côte d’Ivoire",
     body: (
       <>
-        <p>Les prestataires de l’environnement de test sont des services internationaux. Leurs régions d’hébergement et l’emplacement de leurs copies de sauvegarde ne sont pas confirmés. <strong>Aucune garantie de localisation des données en Côte d’Ivoire n’est donnée pour cet environnement.</strong></p>
+        <p>Les prestataires de l’environnement actuel sont des services internationaux. Leurs régions d’hébergement et l’emplacement de leurs copies de sauvegarde ne sont pas confirmés. <strong>Aucune garantie de localisation des données en Côte d’Ivoire n’est donnée pour cet environnement.</strong></p>
         <p>Régime applicable aux transferts : <Fill k="privacy.transfers" />.</p>
         <p>Un hébergement en Côte d’Ivoire est à l’étude pour la suite. Une localisation du serveur principal ne signifie pas que toutes les copies, journaux et accès d’assistance restent dans le même pays : ces éléments seront décrits séparément avant toute ouverture à des données réelles.</p>
       </>
@@ -182,7 +182,7 @@ const sections: LegalSectionDef[] = [
     title: "Sécurité",
     body: (
       <>
-        <p>Mesures techniques présentes dans le code de la version de test :</p>
+        <p>Mesures techniques présentes dans le code de la version actuelle :</p>
         <ul>
           <li>mots de passe conservés sous forme d’empreinte irréversible (Argon2id) ;</li>
           <li>sessions gérées par le serveur, cookie de session non lisible par les scripts de la page, protection contre les requêtes non voulues (CSRF) ;</li>

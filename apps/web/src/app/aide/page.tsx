@@ -46,7 +46,7 @@ const sections = [
       ["Accès au carnet", "Un professionnel ne consulte le carnet qu’après le rattachement requis et l’autorisation explicite du patient. L’établissement gère les rattachements, pas les dossiers."],
       ["QR temporaire", "Le QR sert à initier une demande d’accès et expire automatiquement. Il ne remplace pas la décision du patient."],
       ["Données de fréquentation", "Un cookie aléatoire aide à compter les catégories de pages, certains clics publics et des événements de connexion. Le suivi ne conserve ni URL complète, ni adresse IP, ni texte de bouton."],
-      ["Environnement d’essai", "Pour le moment, utilisez uniquement des données fictives. N’ajoutez pas de vrais renseignements médicaux ou identifiants de patients."],
+      ["Environnement d’essai", "Utilisez des informations exactes et gardez votre compte personnel."],
     ],
   },
   {
@@ -64,7 +64,7 @@ export default function HelpPage() {
     <h1>Besoin d’un repère ?</h1>
     <p className="lead">Choisissez votre espace ou votre sujet. Les réponses essentielles sont ici.</p>
     <nav className="help-quicklinks" aria-label="Rubriques d’aide">{sections.map((section) => <a className="button small" key={section.id} href={`#${section.id}`}>{section.title}</a>)}</nav>
-    <aside className="notice help-data-note" role="note"><strong>Données de santé :</strong> utilisez uniquement des données fictives pour le moment.</aside>
+    <aside className="notice help-data-note" role="note"><strong>Données de santé :</strong> utilisez des informations exactes et gardez votre compte personnel.</aside>
     {sections.map((section) => <section className="card help-section" id={section.id} key={section.id}>
       <h2>{section.title}</h2>
       <div className="help-accordion">{section.items.map(([question, answer]) => <details key={question}><summary>{question}</summary><p>{answer}</p></details>)}</div>

@@ -84,6 +84,25 @@ def verify_recovery_proof(profile, answer: str) -> bool:
     return bool(profile) and matches
 
 
+@transaction.atomic
+def verify_recovery_answer(*, email: str, answer: str) -> bool:
+    """Vérifie la preuve sans changer le mot de passe ; les échecs sont comptabilisés et verrouillés comme au reset."""
+    user, profile = _account_for(email)
+    if profile:
+        profile = AccountProfile.objects.select_for_update().get(pk=profile.pk)
+    now = timezone.now()
+    locked = bool(profile and profile.recovery_locked_until and profile.recovery_locked_until > now)
+    proven = verify_recovery_proof(None if locked else profile, answer)
+    if not proven and profile and not locked:
+        profile.recovery_failures = min((profile.recovery_failures or 0) + 1, 30000)
+        update = ["recovery_failures", "updated_at"]
+        if profile.recovery_failures % FAILURES_PER_LOCK == 0:
+            profile.recovery_locked_until = now + _lock_duration(profile.recovery_failures)
+            update.append("recovery_locked_until")
+            record_event(event_type="account.recovery_locked", actor=user, actor_role="account", metadata={"action": "locked", "extension_count": profile.recovery_failures})
+        profile.save(update_fields=update)
+    return proven
+
 def _lock_duration(failures: int) -> timedelta:
     # L'exposant est plafonné avant le calcul : 15 min × 2^7 dépasse déjà les 24 h, et un exposant non borné finirait par faire déborder timedelta.
     doublings = min(max(0, failures // FAILURES_PER_LOCK - 1), 7)

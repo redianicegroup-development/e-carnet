@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start --hostname 0.0.0.0",
     "lint": "eslint .",
-    "test": "node --experimental-strip-types --no-warnings --test tests/auth.test.mjs tests/csrf.test.mjs tests/theme.test.mjs tests/greeting.test.mjs tests/legal.test.mjs tests/site.test.mjs tests/ux-flows.test.mjs tests/session.test.mjs tests/emergency-card.test.mjs tests/fusion-correctifs.test.mjs tests/contact.test.mjs tests/landing.test.mjs"
+    "typecheck": "tsc --noEmit",
+    "test:e2e": "playwright test",
+    "test": "node --experimental-strip-types --no-warnings --test tests/auth.test.mjs tests/csrf.test.mjs tests/theme.test.mjs tests/greeting.test.mjs tests/legal.test.mjs tests/site.test.mjs tests/ux-flows.test.mjs tests/session.test.mjs tests/emergency-card.test.mjs tests/fusion-correctifs.test.mjs tests/contact.test.mjs tests/landing.test.mjs tests/consultation-visite.test.mjs"
   },
   "dependencies": {
     "@ecarnet/ui": "0.1.0",
@@ -26,6 +28,7 @@
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@playwright/test": "^1.51.1",
     "eslint": "^9.0.0",
     "eslint-config-next": "^16.3.8",
     "typescript": "^5.7.0"

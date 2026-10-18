@@ -210,7 +210,7 @@ export function ContactSection({ privacyHref }: { privacyHref: string }) {
 
               <div className="lp-hp" aria-hidden="true"><label>Ne pas remplir<input ref={decoy} type="text" name="website" tabIndex={-1} autoComplete="off" defaultValue="" /></label></div>
 
-              <p className="lp-contact__warning"><Icon name="shield" size={16} />Version pilote : n’écrivez aucune information de santé réelle.</p>
+              <p className="lp-contact__warning"><Icon name="shield" size={16} />Vos informations restent sous votre contrôle.</p>
 
               <div className={`lp-contact__consent${shown("consent") ? " is-error" : ""}`}>
                 <label htmlFor={fieldId("consent")}>

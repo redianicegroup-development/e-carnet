@@ -1,3 +1,12 @@
+## 2026-10-18 — Identité du titulaire, constantes, fiche de visite, ordonnance structurée
+
+- **Étape 1 patient = « Identité du titulaire »** (couverture du carnet papier) : nom, prénoms, **ville** obligatoires ; adresse/BP, **profession**, téléphone, naissance et couverture facultatifs ; « Délivré le » affiché automatiquement (date de création du dossier, aucun champ saisi). La ville reste une déclaration du carnet (`city`), pas un doublon. **Pas d'ethnie** : donnée sensible sans utilité clinique. Migration `patients.0009`.
+- **Pré-consultation en 4 étapes** : motif, symptômes, **constantes** (poids, taille, température, tension, fréquence cardiaque, SpO₂, glycémie ; tout facultatif, jamais de valeur supposée), personne qui aide. Bornes anti-faute de frappe côté serveur (`care/vitals.py`) et côté web (`lib/vitals.ts`).
+- **Consultation du médecin en trois blocs** : motif et symptômes / examen et diagnostic / conduite à tenir. Constantes relues et corrigeables, chacune gardant sa **provenance** (relevée en pré-consultation ou mesurée par le médecin). **Ordonnance en lignes structurées** (médicament, dosage, posologie, durée, instructions) et **examens demandés** (« demandé » ≠ « résultat reçu »), signés avec la consultation, 15 lignes au plus. Migration `care.0009`.
+- **Côté patient** : chaque consultation s'affiche comme une page « Visites » du carnet papier (constantes groupées par provenance, diagnostic, ordonnance, examens demandés).
+- **Suppression de compte** : la profession et les constantes des brouillons de pré-consultation sont effacées avec le reste.
+- Tests : `care/test_consultation_content.py`, `identity/test_identity_titulaire.py`, `tests/consultation-visite.test.mjs`. Voir `MODIFICATIONS-2026-10-18-identite-consultation.md`.
+
 ## 2026-10-17 — Pied de page en deux cartes, illustrations de modal animées
 
 - Pied de page public refait sur le modèle fourni : carte de marque en dégradé (logo, accroche, « Restons en contact ! » avec accès contact / aide / sécurité, installation de l’app), carte de liens (titres manuscrits, icône d’app flottante, colonnes Découvrir / Ressources / Informations légales), bloc d’appel à l’action vers la création de carnet, copyright, « Créé par Redianice et AKATech Studio » (logo au survol conservé) et grand filigrane rogné. Adapté de 320 px à grand écran. Police manuscrite Caveat (`--font-script`).

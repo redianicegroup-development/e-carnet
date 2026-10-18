@@ -92,7 +92,7 @@ class PatientOnboardingSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PatientProfile
-        fields = ("phone", "birth_date", "address", "coverage_provider", "coverage_number", "coverage_expiry")
+        fields = ("phone", "birth_date", "address", "profession", "coverage_provider", "coverage_number", "coverage_expiry")
 
 
 class AccountIdentitySerializer(serializers.Serializer):
@@ -152,3 +152,11 @@ class LinkedIdentitySerializer(serializers.ModelSerializer):
         model = AuthIdentity
         fields = ("provider", "display_name", "email", "avatar_url", "created_at", "last_seen_at")
         read_only_fields = fields
+
+
+class RecoveryAnswerSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    answer = serializers.CharField(max_length=200, write_only=True, trim_whitespace=True)
+
+    def validate_email(self, value):
+        return value.strip().casefold()

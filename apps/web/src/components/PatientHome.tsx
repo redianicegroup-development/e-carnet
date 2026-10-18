@@ -5,15 +5,20 @@ import { useEffect, useState } from "react";
 import { apiGet } from "../infrastructure/api/client";
 import { AvatarBadge, displayName, useSpaceAccount } from "./shell/SpaceShell";
 import { Icon, type IconName } from "./ui/Icon";
+import { PatientDashboardChart } from "./RoleDashboards";
 
-type Summary = { declarations: number; drafts: number; closed: number; consultations: number; pending: number; active: number };
+type Summary = { declarations: number; drafts: number; closed: number; consultations: number; pending: number; active: number; documents: number; vaccinations: number; appointments: number; unread: number };
 
 async function loadSummary(): Promise<Summary> {
-  const [declarations, encounters, consultations, grants] = await Promise.all([
+  const [declarations, encounters, consultations, grants, documents, vaccinations, appointments, notifications] = await Promise.all([
     apiGet<unknown[]>("/api/v1/patient/declarations/"),
     apiGet<{ status: string }[]>("/api/v1/patient/care/encounters/"),
     apiGet<unknown[]>("/api/v1/patient/care/consultations/"),
     apiGet<{ status: string }[]>("/api/v1/patient/care/access-grants/"),
+    apiGet<unknown[]>("/api/v1/patient/care/documents/"),
+    apiGet<unknown[]>("/api/v1/patient/care/vaccinations/"),
+    apiGet<unknown[]>("/api/v1/patient/care/appointments/"),
+    apiGet<{ read_at?: string | null }[]>("/api/v1/patient/care/notifications/"),
   ]);
   return {
     declarations: declarations.length,
@@ -22,6 +27,10 @@ async function loadSummary(): Promise<Summary> {
     consultations: consultations.length,
     pending: grants.filter((item) => item.status === "pending").length,
     active: grants.filter((item) => item.status === "active").length,
+    documents: documents.length,
+    vaccinations: vaccinations.length,
+    appointments: appointments.length,
+    unread: notifications.filter((item) => !item.read_at).length,
   };
 }
 
@@ -67,6 +76,10 @@ export function PatientHome() {
         </section>
       )}
 
+      {summary && summary.unread > 0 && <section className="card alert-card" aria-live="polite"><h2>{summary.unread} notification{summary.unread > 1 ? "s" : ""} à lire</h2><p>Une action concernant votre carnet attend votre attention.</p><div className="actions"><Link className="button" href="/patient/carnet#notifications">Voir mes notifications</Link></div></section>}
+
+      {summary && (summary.declarations === 0 || summary.documents === 0 || summary.vaccinations === 0) && <section className="card progress-card"><div className="section-heading"><div><span className="eyebrow">Mise en route</span><h2>Construire mon carnet essentiel</h2></div></div><p className="muted">Commencez par les informations utiles au quotidien. Vous pourrez modifier chaque élément plus tard.</p><div className="progress-card__line" role="progressbar" aria-valuemin={0} aria-valuemax={3} aria-valuenow={[summary.declarations > 0, summary.documents > 0, summary.vaccinations > 0].filter(Boolean).length}><span style={{ width: `${([summary.declarations > 0, summary.documents > 0, summary.vaccinations > 0].filter(Boolean).length / 3) * 100}%` }} /></div><div className="progress-card__meta"><span>{[summary.declarations > 0, summary.documents > 0, summary.vaccinations > 0].filter(Boolean).length}/3 rubriques commencées</span><Link className="text-link" href="/patient/carnet">Continuer</Link></div></section>}
+
       <section className="card cta-card">
         <span className="eyebrow">Avant votre rendez-vous</span>
         <h2>Préparez votre prochaine consultation</h2>
@@ -84,6 +97,8 @@ export function PatientHome() {
           <Link className="stat-card card-link" href="/patient/acces"><span className="val">{summary.active}</span><span className="lbl">Accès actif{summary.active > 1 ? "s" : ""}</span></Link>
         </section>
       )}
+
+      {summary && <div className="role-dashboard-grid"><PatientDashboardChart metrics={[{ label: "Déclarations", value: summary.declarations }, { label: "Documents", value: summary.documents }, { label: "Vaccins", value: summary.vaccinations }, { label: "Visites", value: summary.consultations }]} /></div>}
 
       <section className="stack" aria-label="Raccourcis">
         {SHORTCUTS.map((item) => (

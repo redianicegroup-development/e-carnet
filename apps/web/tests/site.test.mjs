@@ -244,7 +244,7 @@ test("aide : aucune promesse ni terme que la revue juridique déconseille", () =
   const questions = help.HELP_FAQ.flatMap((g) => g.items.map((i) => i.q));
   assert.equal(new Set(questions).size, questions.length, "questions en double");
   assert.ok(questions.length >= 12, "FAQ trop courte pour une aide enrichie");
-  assert.match(source, /données fictives/, "l'aide doit rappeler la version de test");
+  assert.doesNotMatch(source, /données fictives|phase pilote|version de test/i, "l'aide ne doit plus présenter l'interface comme une phase de test");
 });
 
 test("landing : FAQ visible et structurée, métadonnées indexables et liens canoniques publics", () => {
@@ -257,14 +257,14 @@ test("landing : FAQ visible et structurée, métadonnées indexables et liens ca
   assert.match(read("src/components/landing/FaqSection.tsx"), /<section className="lp-section lp-wrap lp-faq-section" id="questions"/);
   assert.match(home, /metadataBase: new URL\(SITE_URL\)/);
   assert.match(home, /alternates: \{ canonical: "\/" \}/);
-  assert.match(home, /données fictives/);
+  assert.doesNotMatch(home, /données fictives|phase pilote|version de test/i);
   assert.doesNotMatch(sitemap, /localhost/);
   for (const route of ["/", "/a-propos", "/securite", "/faq", "/aide"]) assert.ok(sitemap.includes(`https://e-carnetci.vercel.app${route === "/" ? "/" : route}`), `sitemap : route ${route} absente`);
   assert.match(robots, /Disallow: \/admin\n/);
   assert.match(robots, /Disallow: \/patient\n/);
   assert.match(robots, /Sitemap: https:\/\/e-carnetci\.vercel\.app\/sitemap\.xml/);
   assert.match(llms, /^# Mon E[‑-]Carnet/m);
-  assert.match(llms, /uniquement des données fictives/);
+  assert.doesNotMatch(llms, /uniquement des données fictives|version pilote|site pilote/i);
   assert.match(llms, /ne remplace pas un avis médical/);
   assert.doesNotMatch(llms, /localhost/);
 });

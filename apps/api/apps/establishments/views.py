@@ -11,15 +11,17 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import IsAdminUser, IsAuthenticated, AllowAny
 from rest_framework.response import Response
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from apps.identity.throttles import IpScopedThrottle
 
 from apps.audit.services import record_event
+from apps.cloudinary_storage import CLOUDINARY_CONFIGURED, upload as cloudinary_upload
 from apps.identity.models import AccountContext
 from .email_service import send_establishment_invitation
-from .models import PROFILE_FIELDS, Establishment, EstablishmentAdminInvitation, EstablishmentAdministrator, EstablishmentJoinCode, EstablishmentMembership, generate_internal_code
-from .serializers import EstablishmentProfileSerializer, EstablishmentSerializer, MembershipSerializer
+from .models import PROFILE_FIELDS, Establishment, EstablishmentAdminInvitation, EstablishmentAdministrator, EstablishmentJoinCode, EstablishmentMembership, PrescriptionTemplate, generate_internal_code
+from .serializers import EstablishmentProfileSerializer, EstablishmentSerializer, MembershipSerializer, PrescriptionTemplateSerializer
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -422,6 +424,39 @@ class EstablishmentProfileView(APIView):
         action = "completed" if first_completion else "updated"
         record_event(event_type=f"establishment.profile.{action}", actor=request.user, actor_role="establishment_administrator", establishment=establishment, metadata={"action": action, "status": "active"})
         return Response({"success": True, "data": self.body(establishment)})
+
+
+class EstablishmentPrescriptionTemplateView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def get(self, request, establishment_id):
+        admin = active_administrator(request.user, establishment_id)
+        if not admin:
+            return Response({"success": False, "message": "Vous n’êtes pas administrateur de cet établissement actif."}, status=403)
+        template, _ = PrescriptionTemplate.objects.get_or_create(establishment=admin.establishment)
+        return Response({"success": True, "data": PrescriptionTemplateSerializer(template).data})
+
+    @transaction.atomic
+    def patch(self, request, establishment_id):
+        admin = active_administrator(request.user, establishment_id)
+        if not admin:
+            return Response({"success": False, "message": "Vous n’êtes pas administrateur de cet établissement actif."}, status=403)
+        template, _ = PrescriptionTemplate.objects.select_for_update().get_or_create(establishment=admin.establishment)
+        data = request.data.copy()
+        logo = request.FILES.get("logo")
+        if logo:
+            if logo.content_type not in {"image/png", "image/jpeg", "image/webp", "image/svg+xml"} or logo.size > 5 * 1024 * 1024:
+                raise ValidationError({"logo": "Le logo doit être une image PNG, JPG, WebP ou SVG de 5 Mo maximum."})
+            if not CLOUDINARY_CONFIGURED:
+                raise ValidationError({"logo": "Cloudinary n’est pas configuré pour recevoir le logo."})
+            result = cloudinary_upload(logo, folder="establishments", public_id=f"{admin.establishment_id}/prescription-logo", resource_type="image", delivery_type="upload")
+            data["logo_url"] = result["secure_url"]
+        serializer = PrescriptionTemplateSerializer(template, data=data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        template = serializer.save()
+        record_event(event_type="establishment.prescription_template.updated", actor=request.user, actor_role="establishment_administrator", establishment=admin.establishment, metadata={"action": "updated", "resource_type": "prescription_template"})
+        return Response({"success": True, "data": PrescriptionTemplateSerializer(template).data})
 
 
 class EstablishmentJoinCodeCreateView(APIView):

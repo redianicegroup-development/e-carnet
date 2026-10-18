@@ -495,6 +495,8 @@ class EmergencyCardQrView(APIView):
         card = PatientEmergencyCard.objects.select_related("patient").filter(pk=card_id, qr_enabled=True, qr_version=version).first()
         if not card or not hmac.compare_digest(signature, qr_signature(card.id, version)):
             return Response({"success": False, "message": "Cette carte d’urgence n’est pas disponible."}, status=status.HTTP_404_NOT_FOUND)
+        from apps.care.models import PatientNotification
+        PatientNotification.objects.create(patient=card.patient, kind="emergency_card.viewed", title="Carte d’urgence consultée", body="Votre carte d’urgence vient d’être consultée.", metadata={"resource_type": "emergency_card", "card_version": version})
         response = Response({"success": True, "data": emergency_card_data(card, public=True)})
         response["Cache-Control"] = "private, no-store, max-age=0"
         response["X-Robots-Tag"] = "noindex, nofollow, noarchive"

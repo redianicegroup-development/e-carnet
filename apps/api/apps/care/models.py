@@ -17,6 +17,8 @@ class CareEncounter(models.Model):
     reason = models.CharField(max_length=240, blank=True)
     observations = models.TextField(blank=True, max_length=4000)
     recorded_with_help = models.CharField(max_length=160, blank=True)
+    # Constantes relevées avant la consultation (voir vitals.py) : {"weight_kg": 61.0, "systolic": 110, ...}, clés absentes si non mesurées.
+    vitals = models.JSONField(default=dict, blank=True)
     status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="draft")
     closed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -122,6 +124,11 @@ class Consultation(models.Model):
     facility_label = models.CharField(max_length=180)
     reason = models.CharField(max_length=240)
     observations = models.TextField(blank=True, max_length=4000)
+    symptoms = models.TextField(blank=True, max_length=4000)
+    clinical_exam = models.TextField(blank=True, max_length=4000)
+    diagnosis = models.TextField(blank=True, max_length=2000)
+    # {"temperature_c": {"value": 38.5, "source": "preconsultation" | "professional"}, ...} : la provenance de chaque constante est gardée.
+    vitals = models.JSONField(default=dict, blank=True)
     conclusion = models.TextField(blank=True, max_length=4000)
     care_plan = models.TextField(blank=True, max_length=4000)
     attestation_svg = models.TextField(blank=True, max_length=20000)
@@ -141,3 +148,208 @@ class ConsultationRevision(models.Model):
     action = models.CharField(max_length=24, default="validated")
     snapshot = models.JSONField()
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class PrescriptionLine(models.Model):
+    """Une ligne de l'ordonnance, rattachée à la consultation signée (jamais modifiée ensuite : une correction passe par une révision)."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    consultation = models.ForeignKey(Consultation, on_delete=models.CASCADE, related_name="prescription_lines")
+    position = models.PositiveSmallIntegerField(default=0)
+    drug_name = models.CharField(max_length=160)
+    dosage = models.CharField(max_length=80, blank=True)
+    posology = models.CharField(max_length=160)
+    duration = models.CharField(max_length=80, blank=True)
+    instructions = models.CharField(max_length=240, blank=True)
+
+    class Meta:
+        ordering = ("position",)
+
+
+class ExamRequest(models.Model):
+    """Examen demandé par le médecin. « Demandé » et « résultat reçu » sont deux états distincts : un résultat n'est jamais supposé."""
+    KIND_CHOICES = (("analysis", "Analyse biologique"), ("imaging", "Imagerie"), ("other", "Autre examen"))
+    STATUS_CHOICES = (("requested", "Demandé"), ("result_received", "Résultat reçu"))
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    consultation = models.ForeignKey(Consultation, on_delete=models.CASCADE, related_name="exam_requests")
+    position = models.PositiveSmallIntegerField(default=0)
+    kind = models.CharField(max_length=16, choices=KIND_CHOICES)
+    label = models.CharField(max_length=160)
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="requested")
+
+    class Meta:
+        ordering = ("position",)
+
+
+def medical_document_upload_to(instance, filename):
+    """Chemin opaque : les fichiers ne sont jamais exposés directement comme URL publique."""
+    safe_name = filename.rsplit("/", 1)[-1].replace("\\", "_")[:120]
+    return f"medical-documents/{instance.patient_id}/{uuid.uuid4()}-{safe_name}"
+
+
+class MedicalDocument(models.Model):
+    """Document importé par le patient, lisible uniquement via l'API authentifiée."""
+    KIND_CHOICES = (
+        ("prescription", "Ordonnance"),
+        ("analysis", "Analyse"),
+        ("imaging", "Imagerie"),
+        ("certificate", "Certificat"),
+        ("report", "Compte rendu"),
+        ("other", "Autre"),
+    )
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name="medical_documents")
+    file = models.FileField(upload_to=medical_document_upload_to, blank=True, null=True)
+    cloudinary_public_id = models.CharField(max_length=500, blank=True)
+    cloudinary_resource_type = models.CharField(max_length=16, blank=True)
+    cloudinary_version = models.PositiveBigIntegerField(null=True, blank=True)
+    original_name = models.CharField(max_length=180)
+    document_type = models.CharField(max_length=24, choices=KIND_CHOICES, default="other")
+    document_date = models.DateField(null=True, blank=True)
+    issuer = models.CharField(max_length=180, blank=True)
+    content_type = models.CharField(max_length=80)
+    size_bytes = models.PositiveIntegerField()
+    verified = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+
+
+class Vaccination(models.Model):
+    """Vaccination du carnet central ; une donnée ancienne inconnue reste inconnue, jamais « non effectuée »."""
+    STATUS_CHOICES = (("declared", "Déclarée"), ("documented", "Documentée"), ("confirmed", "Confirmée par un professionnel"))
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name="vaccinations")
+    vaccine_name = models.CharField(max_length=180)
+    dose_number = models.PositiveSmallIntegerField(null=True, blank=True)
+    administered_on = models.DateField(null=True, blank=True)
+    batch_number = models.CharField(max_length=100, blank=True)
+    facility = models.CharField(max_length=180, blank=True)
+    professional = models.CharField(max_length=180, blank=True)
+    next_due_on = models.DateField(null=True, blank=True)
+    status = models.CharField(max_length=24, choices=STATUS_CHOICES, default="declared")
+    notes = models.CharField(max_length=500, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("-administered_on", "-created_at")
+
+
+class HealthMeasurement(models.Model):
+    KIND_CHOICES = (("blood_pressure_systolic", "Tension systolique"), ("blood_pressure_diastolic", "Tension diastolique"), ("glycemia", "Glycémie"), ("weight", "Poids"), ("temperature", "Température"), ("heart_rate", "Pouls"))
+    SOURCE_CHOICES = (("measured", "Mesuré"), ("declared", "Déclaré"))
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name="health_measurements")
+    kind = models.CharField(max_length=32, choices=KIND_CHOICES)
+    value = models.DecimalField(max_digits=8, decimal_places=2)
+    unit = models.CharField(max_length=16)
+    source = models.CharField(max_length=12, choices=SOURCE_CHOICES, default="measured")
+    measured_at = models.DateTimeField()
+    note = models.CharField(max_length=300, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("-measured_at", "-created_at")
+        indexes = [models.Index(fields=("patient", "kind", "measured_at"))]
+
+
+class FollowUpPlan(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name="follow_up_plans")
+    professional = models.ForeignKey("professionals.ProfessionalProfile", null=True, blank=True, on_delete=models.PROTECT, related_name="follow_up_plans")
+    establishment = models.ForeignKey("establishments.Establishment", null=True, blank=True, on_delete=models.PROTECT, related_name="follow_up_plans")
+    title = models.CharField(max_length=180)
+    instructions = models.TextField(blank=True, max_length=2000)
+    active = models.BooleanField(default=True)
+    starts_on = models.DateField(null=True, blank=True)
+    ends_on = models.DateField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-active", "-created_at")
+
+
+class FollowUpPlanItem(models.Model):
+    plan = models.ForeignKey(FollowUpPlan, on_delete=models.CASCADE, related_name="items")
+    measurement_kind = models.CharField(max_length=32, choices=HealthMeasurement.KIND_CHOICES)
+    frequency = models.CharField(max_length=120)
+    target = models.CharField(max_length=160, blank=True)
+    notes = models.CharField(max_length=300, blank=True)
+
+
+class MedicationReminder(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name="medication_reminders")
+    name = models.CharField(max_length=180)
+    dosage = models.CharField(max_length=120, blank=True)
+    instructions = models.CharField(max_length=300, blank=True)
+    times = models.JSONField(default=list)
+    starts_on = models.DateField()
+    ends_on = models.DateField(null=True, blank=True)
+    stock_remaining = models.PositiveIntegerField(null=True, blank=True)
+    refill_threshold = models.PositiveIntegerField(null=True, blank=True)
+    active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-active", "starts_on", "name")
+
+
+class MedicationIntake(models.Model):
+    STATUS_CHOICES = (("taken", "Pris"), ("skipped", "Non pris"))
+    reminder = models.ForeignKey(MedicationReminder, on_delete=models.CASCADE, related_name="intakes")
+    scheduled_for = models.DateTimeField()
+    status = models.CharField(max_length=12, choices=STATUS_CHOICES)
+    recorded_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=("reminder", "scheduled_for"), name="unique_medication_intake_slot")]
+
+
+class PatientNotification(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name="notifications")
+    kind = models.CharField(max_length=40)
+    title = models.CharField(max_length=180)
+    body = models.CharField(max_length=500)
+    metadata = models.JSONField(default=dict, blank=True)
+    read_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+
+
+class Appointment(models.Model):
+    STATUS_CHOICES = (("requested", "Demandé"), ("confirmed", "Confirmé"), ("cancelled", "Annulé"), ("completed", "Terminé"))
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name="appointments")
+    professional = models.ForeignKey("professionals.ProfessionalProfile", null=True, blank=True, on_delete=models.PROTECT, related_name="appointments")
+    establishment = models.ForeignKey("establishments.Establishment", null=True, blank=True, on_delete=models.PROTECT, related_name="appointments")
+    reason = models.CharField(max_length=240)
+    starts_at = models.DateTimeField()
+    ends_at = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="requested")
+    notes = models.CharField(max_length=500, blank=True)
+    queue_number = models.PositiveIntegerField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("starts_at",)
+        indexes = [models.Index(fields=("patient", "starts_at")), models.Index(fields=("establishment", "starts_at"))]
+
+
+class PreconsultationTemplate(models.Model):
+    establishment = models.ForeignKey("establishments.Establishment", on_delete=models.CASCADE, related_name="preconsultation_templates")
+    name = models.CharField(max_length=180)
+    active = models.BooleanField(default=True)
+    fields = models.JSONField(default=list)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-active", "name")
+        constraints = [models.UniqueConstraint(fields=("establishment", "name"), name="unique_preconsultation_template_name")]

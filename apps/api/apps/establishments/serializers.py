@@ -2,7 +2,7 @@ import re
 
 from rest_framework import serializers
 
-from .models import Establishment, EstablishmentMembership
+from .models import Establishment, EstablishmentMembership, PrescriptionTemplate
 
 
 class EstablishmentSerializer(serializers.ModelSerializer):
@@ -43,3 +43,15 @@ class MembershipSerializer(serializers.ModelSerializer):
         model = EstablishmentMembership
         fields = ("id", "establishment", "professional", "status", "requested_at", "reviewed_at", "left_at", "agreement_version", "agreement_accepted_at")
         read_only_fields = fields
+
+
+class PrescriptionTemplateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PrescriptionTemplate
+        fields = ("logo_url", "header_text", "footer_text", "phone", "email", "address", "updated_at")
+        read_only_fields = ("updated_at",)
+
+    def validate_logo_url(self, value):
+        if value and not value.lower().startswith(("https://", "http://")):
+            raise serializers.ValidationError("Le logo doit être une URL HTTP ou HTTPS.")
+        return value

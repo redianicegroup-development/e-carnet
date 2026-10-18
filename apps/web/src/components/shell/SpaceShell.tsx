@@ -112,7 +112,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
     const controller = new AbortController();
     async function load() {
       const deadline = Date.now() + WAKE_BUDGET_MS;
-      setState({ status: "loading", label: "Réveil du service et chargement de votre espace…" });
+      setState({ status: "loading", label: "Veuillez patienter, chargement de votre espace…" });
       while (active && Date.now() < deadline) {
         let checkingIdentity = false;
         try {
@@ -217,7 +217,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
             </PatientAccessQrContext.Provider>
           </AccountContext.Provider>
         )}
-        {!bare && <p className="space-footer">Données fictives uniquement pour le moment · <Link href="/aide#confidentialite">Aide</Link></p>}
+        {!bare && <p className="space-footer"><Link href="/aide#confidentialite">Aide</Link></p>}
       </main>
       {state.status === "ready" && !bare && <GreetingModal account={state.account} space={space} />}
     </div>

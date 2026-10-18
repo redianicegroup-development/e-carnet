@@ -1,18 +1,22 @@
 import base64
 import binascii
+from io import BytesIO
+from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 from django.contrib.auth import authenticate, get_user_model, login, logout
 from django.contrib.auth.hashers import make_password
 from django.http import HttpResponse, Http404
 from django.db import transaction
-from .recovery import GENERIC_FAILURE, question_for, reset_password_with_answer, validate_new_password
+from .recovery import GENERIC_FAILURE, question_for, reset_password_with_answer, validate_new_password, verify_recovery_answer
 from .throttles import IpScopedThrottle, LoginEmailThrottle, RecoveryEmailThrottle
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from apps.audit.services import record_event
+from apps.cloudinary_storage import CLOUDINARY_CONFIGURED, upload as cloudinary_upload
 from apps.patients.models import PatientProfile
-from .auth_serializers import AccountIdentitySerializer, AccountSerializer, LinkedIdentitySerializer, LoginSerializer, PatientOnboardingSerializer, RecoveryQuestionSerializer, RecoveryResetSerializer, RecoverySetupSerializer, RegisterSerializer
+from .auth_serializers import AccountIdentitySerializer, AccountSerializer, LinkedIdentitySerializer, LoginSerializer, PatientOnboardingSerializer, RecoveryAnswerSerializer, RecoveryQuestionSerializer, RecoveryResetSerializer, RecoverySetupSerializer, RegisterSerializer
 from .models import AccountContext, AccountProfile, AuthIdentity
 from .visitor_tracking import track_auth_response
 
@@ -94,7 +98,15 @@ class IdentityProfileView(APIView):
         if "avatar_data" in serializer.validated_data:
             profile.avatar_data = serializer.validated_data["avatar_data"]
             if profile.avatar_data:
-                profile.avatar_url = ""
+                if CLOUDINARY_CONFIGURED:
+                    image = base64.b64decode(profile.avatar_data.split(",", 1)[1], validate=True)
+                    result = cloudinary_upload(BytesIO(image), folder="avatars", public_id=str(user.id), resource_type="image", delivery_type="upload")
+                    profile.avatar_url = result["secure_url"]
+                    profile.avatar_data = ""
+                elif not (settings.DEBUG or getattr(settings, "RUNNING_TESTS", False)):
+                    raise ImproperlyConfigured("Cloudinary est requis pour enregistrer une photo de profil.")
+                else:
+                    profile.avatar_url = ""
                 profile_fields.append("avatar_url")
             profile_fields.append("avatar_data")
         if profile_fields:
@@ -166,6 +178,19 @@ class RecoveryQuestionView(APIView):
         serializer.is_valid(raise_exception=True)
         return Response({"success": True, "data": {"question": question_for(serializer.validated_data["email"])}})
 
+
+class RecoveryAnswerView(APIView):
+    """Étape 2 : vérifier la réponse avant de révéler les champs de nouveau mot de passe."""
+    throttle_classes = [IpScopedThrottle, RecoveryEmailThrottle]
+    throttle_scope = "auth_recovery"
+    permission_classes = [AllowAny]
+    def post(self, request):
+        serializer = RecoveryAnswerSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        if not verify_recovery_answer(email=data["email"], answer=data["answer"]):
+            return Response({"success": False, "message": GENERIC_FAILURE}, status=400)
+        return Response({"success": True, "data": {"verified": True}})
 
 class RecoveryResetView(APIView):
     """Étape 2 : la bonne réponse permet de choisir un nouveau mot de passe.
