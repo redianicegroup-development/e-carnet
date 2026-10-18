@@ -79,7 +79,7 @@ export function RecoveryFlow() {
     <div className="ax-form">
       <h2 className="ax-title" tabIndex={-1} ref={heading}>Mot de passe modifié</h2>
       <p className="ax-subtitle">Vous pouvez vous connecter avec votre nouveau mot de passe. Par sécurité, vos autres appareils ont été déconnectés et un e-mail vous a été envoyé.</p>
-      <Link className="ax-submit ax-submit--link" href="/connexion"><span className="ax-submit__label">Me connecter</span></Link>
+      <Link className="button primary ax-submit ax-submit--link" href="/connexion"><span className="ax-submit__label">Me connecter</span></Link>
     </div>
   </div>;
 
@@ -93,7 +93,7 @@ export function RecoveryFlow() {
       <h2 className="ax-title" tabIndex={-1} ref={heading}>Récupérer mon compte</h2>
       <p className="ax-subtitle">Saisissez l’adresse e-mail de votre compte : nous vous poserons la question secrète que vous avez choisie.</p>
       <label className="ax-field" data-ax-item><span>Adresse e-mail</span><input type="email" required autoComplete="email" inputMode="email" value={email} onChange={(event) => { setEmail(event.target.value); setMessage(""); }} placeholder="vous@exemple.com" /></label>
-      <button className={`ax-submit${busy ? " is-loading" : ""}`} type="submit" disabled={busy} data-ax-item><span className="ax-submit__label">{busy ? "Un instant…" : "Continuer"}</span><svg className="ax-submit__arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6" /></svg><span className="ax-submit__spinner" aria-hidden="true" /></button>
+      <button className={`button primary ax-submit${busy ? " is-loading" : ""}`} type="submit" disabled={busy} data-ax-item><span className="ax-submit__label">{busy ? "Un instant…" : "Continuer"}</span><svg className="ax-submit__arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6" /></svg><span className="ax-submit__spinner" aria-hidden="true" /></button>
       <p className="ax-message" role="status" aria-live="polite" hidden={!message}>{message}</p>
       <p className="ax-note" data-ax-item>Inscrit avec Google, Facebook ou Apple ? Essayez d’abord de vous <Link href="/connexion">reconnecter avec ce même fournisseur</Link>.</p>
     </form> : step === "answer" ? <form className="ax-form" onSubmit={verifyAnswer} aria-busy={busy} noValidate>
@@ -101,7 +101,7 @@ export function RecoveryFlow() {
       <h2 className="ax-title" tabIndex={-1} ref={heading}>Vérifier votre réponse</h2>
       <p className="ax-question" data-ax-item><span>Votre question secrète</span><strong>{question}</strong></p>
       <label className="ax-field" data-ax-item><span>Votre réponse</span><input required autoComplete="off" autoCapitalize="off" spellCheck={false} value={answer} onChange={(event) => { setAnswer(event.target.value); setMessage(""); }} /></label>
-      <button className={`ax-submit${busy ? " is-loading" : ""}`} type="submit" disabled={busy} data-ax-item><span className="ax-submit__label">{busy ? "Vérification…" : "Valider ma réponse"}</span><svg className="ax-submit__arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6" /></svg></button>
+      <button className={`button primary ax-submit${busy ? " is-loading" : ""}`} type="submit" disabled={busy} data-ax-item><span className="ax-submit__label">{busy ? "Vérification…" : "Valider ma réponse"}</span><svg className="ax-submit__arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6" /></svg></button>
       <p className="ax-message" role="status" aria-live="polite" hidden={!message}>{message}</p>
       <button type="button" className="ax-linkbutton" onClick={() => { setStep("help"); setMessage(""); }}>Je ne me souviens plus de ma réponse</button>
     </form> : <form className="ax-form" onSubmit={resetPassword} aria-busy={busy} noValidate>
@@ -111,7 +111,7 @@ export function RecoveryFlow() {
       <label className="ax-field" data-ax-item><span>Nouveau mot de passe ({MIN_PASSWORD} caractères minimum)</span><input required type={show ? "text" : "password"} autoComplete="new-password" minLength={MIN_PASSWORD} value={password} onChange={(event) => { setPassword(event.target.value); setMessage(""); }} /></label>
       <label className="ax-field" data-ax-item><span>Confirmer le mot de passe</span><input required type={show ? "text" : "password"} autoComplete="new-password" minLength={MIN_PASSWORD} value={confirm} onChange={(event) => { setConfirm(event.target.value); setMessage(""); }} /></label>
       <label className="ax-check" data-ax-item><input type="checkbox" checked={show} onChange={(event) => setShow(event.target.checked)} /><span>Afficher les mots de passe</span></label>
-      <button className={`ax-submit${busy ? " is-loading" : ""}`} type="submit" disabled={busy} data-ax-item><span className="ax-submit__label">{busy ? "Enregistrement…" : "Changer mon mot de passe"}</span><svg className="ax-submit__arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6" /></svg><span className="ax-submit__spinner" aria-hidden="true" /></button>
+      <button className={`button primary ax-submit${busy ? " is-loading" : ""}`} type="submit" disabled={busy} data-ax-item><span className="ax-submit__label">{busy ? "Enregistrement…" : "Changer mon mot de passe"}</span><svg className="ax-submit__arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6" /></svg><span className="ax-submit__spinner" aria-hidden="true" /></button>
       <p className="ax-message" role="status" aria-live="polite" hidden={!message}>{message}</p>
       <p className="ax-note" data-ax-item>Après plusieurs réponses fausses, la récupération se bloque temporairement.</p>
     </form>}

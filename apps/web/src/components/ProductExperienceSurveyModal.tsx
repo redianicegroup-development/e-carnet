@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { ModalIllustration } from "./modal/ModalIllustration";
+import { GooLayer } from "./ui/GooLayer";
 import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
 
 const appreciatedOptions = [
@@ -103,5 +104,6 @@ export function ProductExperienceSurveyModal({ open, onClose }: Props) {
         <div className="feedback-form__footer"><small>{suggestion.length}/1 200</small><button className="button primary" type="submit" disabled={busy || !easeRating}>{busy ? "Envoi…" : "Envoyer"}</button></div>
       </form>}
     </section>
+    <GooLayer target={dialog} />
   </div>;
 }

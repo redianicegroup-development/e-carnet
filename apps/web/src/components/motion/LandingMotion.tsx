@@ -150,9 +150,6 @@ export function LandingMotion({ children }: { children: ReactNode }) {
         });
       }
 
-      /* --- Final : le pouls se dessine une dernière fois --- */
-      gsap.fromTo(q(".lp-final .pulse__trace"), { strokeDashoffset: 1, strokeDasharray: 1 }, { strokeDashoffset: 0, duration: 2, ease: "power2.inOut", scrollTrigger: { trigger: q(".lp-final")[0], start: "top 82%", once: true } });
-
       void document.fonts?.ready.then(() => ScrollTrigger.refresh());
       return () => {
         header?.classList.remove("is-scrolled");

@@ -55,8 +55,7 @@
 
 - [Accueil](https://e-carnetci.vercel.app/) — présentation, parcours, profils, réponses fréquentes et inscription.
 - [À propos](https://e-carnetci.vercel.app/a-propos) — objectifs et profils concernés.
-- [Aide et questions fréquentes](https://e-carnetci.vercel.app/faq) — parcours et réponses pratiques.
-- [Guides et aide](https://e-carnetci.vercel.app/aide) — instructions patient, professionnel et établissement.
+- [Centre d’aide](https://e-carnetci.vercel.app/aide) — guides pas à pas patient, professionnel et établissement, questions fréquentes et dépannage.
 - [Sécurité](https://e-carnetci.vercel.app/securite) — principes d’accès, confidentialité et limites du service.
 - [Confidentialité](https://e-carnetci.vercel.app/confidentialite) — politique de confidentialité.
 - [Conditions d’utilisation](https://e-carnetci.vercel.app/cgu) — conditions du service.

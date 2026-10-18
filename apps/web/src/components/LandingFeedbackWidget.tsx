@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "./ui/Icon";
 import { ModalIllustration } from "./modal/ModalIllustration";
+import { GooLayer } from "./ui/GooLayer";
 
 type FeedbackCategory = "bug" | "idea" | "question" | "other";
 
@@ -73,7 +74,7 @@ export function LandingFeedbackWidget({ inline = false }: { inline?: boolean }) 
   }
 
   return <>
-    {(inline || (!inWorkspace && !onAuthPage)) && <button ref={opener} type="button" className={inline ? "button primary feedback-inline-trigger" : "feedback-fab"} aria-label="Donner votre avis" aria-haspopup="dialog" aria-expanded={open} data-track="feedback_open" onClick={() => { setOpen(true); setCategory("idea"); setSent(false); setNotice(""); }}>
+    {(inline || (!inWorkspace && !onAuthPage)) && <button ref={opener} type="button" className={inline ? "button primary feedback-inline-trigger" : "button feedback-fab"} aria-label="Donner votre avis" aria-haspopup="dialog" aria-expanded={open} data-track="feedback_open" onClick={() => { setOpen(true); setCategory("idea"); setSent(false); setNotice(""); }}>
       <Icon name="pencil" size={18} /><span>Donner votre avis</span>
     </button>}
     {open && <div className="feedback-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) close(); }}>
@@ -87,6 +88,7 @@ export function LandingFeedbackWidget({ inline = false }: { inline?: boolean }) 
           <div className="feedback-form__footer"><small>{message.length}/2 000 caractères</small><button className="button primary" type="submit" disabled={busy || message.trim().length < 5}>{busy ? "Envoi…" : "Envoyer le retour"}</button></div>
         </form>}
       </section>
+      <GooLayer target={dialog} />
     </div>}
   </>;
 }

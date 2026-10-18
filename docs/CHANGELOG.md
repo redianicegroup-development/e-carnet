@@ -1,3 +1,13 @@
+## 2026-10-18 — Boutons en trois types, gooey, centre d'aide unique, landing en six sections (lot v16 fusionné dans v2)
+
+- **Boutons** : trois types (principal `.button.primary`, secondaire `.button`, discret `.button.ghost`), `danger` = couleur, `small`/`block` = tailles ; connexion, récupération de compte (y compris « Valider ma réponse »), installation, avis flottant, bannière cookies et confirmations passent par `.button`. La confirmation destructive est le bouton principal en rouge.
+- **Gooey** : `app/goo.css` + `ui/GooLayer.tsx` — tout bouton, toute modal et toute confirmation apparaît par la goutte (calques décoratifs `aria-hidden`, mouvement réduit respecté).
+- **Correctif** : carte « Préparez votre prochaine consultation » (texte blanc sur fond crème) lisible, bouton principal.
+- **Aide** : une seule page `/aide` (recherche, filtre par profil, 28 questions) ; `/faq` redirige en 308 ; anciennes ancres `#etablissements` / `#confidentialite` remplacées par `#establishment` / `#donnees`. 11 réponses nouvelles à faire relire.
+- **Landing** : six sections, repères chiffrés dans les cartes, trois moments, FAQ de six questions reprises de l'Aide, contact et appel à l'action fusionnés ; section « Évaluations » retirée de la page.
+- Fusion sur v2 : formulations de v2 conservées (aucune mention « version pilote » ou « données fictives »), parcours de récupération en deux étapes conservé, tableaux de bord et pages d'information intacts. Voir `MODIFICATIONS-2026-10-18-fusion-v16-dans-v2.md`.
+- Tests : `tests/boutons-gooey-aide.test.mjs` (7 tests) ; `landing.test.mjs` et `site.test.mjs` adaptés.
+
 ## 2026-10-18 — Pages d'information : UX/UI, schémas SVG animés, Lenis
 
 - **Pages légales** (mentions, confidentialité, CGU) : sommaire collant sur ordinateur et repliable sur mobile, rubrique active mise en valeur, sections numérotées, durée de lecture, barre de progression, bouton « Haut de page », en-tête illustré, résumé à coches. Les liens d'ancre glissent via Lenis (hook `useSmoothScroll`).

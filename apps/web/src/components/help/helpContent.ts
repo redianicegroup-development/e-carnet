@@ -59,6 +59,15 @@ export type HelpFaqGroup = { id: string; title: string; items: HelpFaqItem[] };
 
 export const HELP_FAQ: HelpFaqGroup[] = [
   {
+    id: "premiers-pas",
+    title: "Premiers pas",
+    items: [
+      { q: "À quoi sert Mon E-Carnet ?", a: "Mon E‑Carnet aide à organiser des informations de santé, préparer les consultations et gérer les demandes d’accès au carnet. Le service ne remplace pas un avis médical ni les services d’urgence.", profiles: ["patient", "professional", "establishment"] },
+      { q: "Comment créer un compte patient ou professionnel ?", a: "Ouvrez Connexion ou inscription, choisissez Nouveau compte, puis le rôle souhaité. Les moyens de connexion disponibles sont présentés dans le formulaire.", profiles: ["patient", "professional"] },
+      { q: "Puis-je l’utiliser sur mon téléphone ?", a: "Oui. Mon E‑Carnet s’ouvre dans le navigateur d’un téléphone ou d’un ordinateur, et peut s’installer comme une application lorsque votre navigateur le permet. Hors connexion, aucune donnée médicale n’est conservée.", profiles: ["patient", "professional", "establishment"] },
+    ],
+  },
+  {
     id: "acces",
     title: "Accès et autorisations",
     items: [
@@ -76,12 +85,22 @@ export const HELP_FAQ: HelpFaqGroup[] = [
     items: [
       { q: "Un professionnel est-il vérifié par Mon E-Carnet ?", a: "Non. Mon E-Carnet ne certifie ni l’identité, ni les diplômes, ni la compétence d’un professionnel. L’établissement confirme le rattachement du professionnel à sa structure.", profiles: ["patient", "professional", "establishment"] },
       { q: "L’administrateur d’un établissement voit-il les dossiers ?", a: "Non. Il gère l’établissement et les rattachements, mais ne consulte pas les dossiers depuis son espace.", profiles: ["patient", "establishment"] },
-      { q: "Qui ouvre un établissement ?", a: "L’équipe de Mon E-Carnet ouvre l’espace après avoir reçu les informations de l’établissement. Les justificatifs sont envoyés par e-mail, en dehors de l’application.", profiles: ["establishment"] },
+      { q: "Comment ouvrir l’espace de mon établissement ?", a: "L’ouverture est gérée par l’équipe Mon E‑Carnet. Écrivez-nous avec les informations de l’établissement, depuis le formulaire de contact de l’accueil (objet « Ouvrir un espace établissement »). Nous créons votre accès administrateur et vous envoyons une invitation personnelle valable 48 h. Les justificatifs sont envoyés par e-mail, en dehors de l’application.", profiles: ["establishment"] },
+      { q: "Comment un médecin rejoint-il un établissement ?", a: "L’administrateur de l’établissement lui remet un code à usage unique, valable 48 h. Le médecin le saisit dans son espace : sa demande est envoyée à l’établissement. Tant que le rattachement n’est pas confirmé, il ne peut demander l’accès à aucun carnet.", profiles: ["professional", "establishment"] },
       { q: "Que se passe-t-il si l’invitation ou le code expire ?", a: "L’invitation d’un administrateur et le code d’un médecin sont valables 48 heures et ne s’utilisent qu’une fois. Demandez-en un nouveau : l’ancien ne fonctionnera plus.", profiles: ["professional", "establishment"] },
       { q: "Un médecin peut-il lire tous les carnets de l’établissement ?", a: "Non. Un rattachement ne donne accès à aucun dossier : chaque patient autorise ou refuse, demande par demande.", profiles: ["establishment", "professional"] },
       { q: "Un infirmier possède-t-il un compte ?", a: "Non. L’aide éventuelle se fait dans le compte du patient, avec son accord. Une aide éventuelle se fait dans le compte du patient.", profiles: ["patient", "establishment"] },
       { q: "Un proche peut-il m’aider à remplir mon carnet ?", a: "La pré-consultation permet d’indiquer la personne qui vous a aidé. Cette personne n’a ni compte, ni droit d’accès propre.", profiles: ["patient"] },
       { q: "Puis-je me connecter de plusieurs façons ?", a: "Oui. Vous pouvez lier Google, Facebook ou Apple à votre compte depuis les paramètres. Deux comptes ne sont jamais fusionnés sur la seule base d’une adresse e-mail.", profiles: ["patient", "professional"] },
+    ],
+  },
+  {
+    id: "preferences",
+    title: "Compte et préférences",
+    items: [
+      { q: "Comment modifier mon nom ou ma photo ?", a: "Dans Paramètres → Informations personnelles, modifiez votre nom ou choisissez un nouvel avatar.", profiles: ["patient", "professional", "establishment"] },
+      { q: "Comment changer l’apparence de l’application ?", a: "Le thème choisi dans les paramètres du compte (couleurs, police, taille du texte) est enregistré avec votre compte et suit votre connexion sur vos appareils.", profiles: ["patient", "professional", "establishment"] },
+      { q: "Où gérer mes méthodes de connexion et me déconnecter ?", a: "Les fournisseurs de connexion se gèrent dans Sécurité et connexion, dans les paramètres. Le bouton Déconnexion est disponible dans chaque espace.", profiles: ["patient", "professional", "establishment"] },
     ],
   },
   {
@@ -91,6 +110,16 @@ export const HELP_FAQ: HelpFaqGroup[] = [
       { q: "Puis-je saisir mes vraies données de santé ?", a: "Oui, utilisez des informations exactes dans votre espace personnel.", profiles: ["patient", "professional", "establishment"] },
       { q: "Les données sont-elles disponibles hors connexion ?", a: "Les pages publiques peuvent offrir un repli limité. Aucune donnée médicale ni réponse de l’API n’est conservée hors connexion.", profiles: ["patient", "professional", "establishment"] },
       { q: "Comment sont protégées mes informations ?", a: "Le service applique les mesures techniques décrites dans les pages Sécurité et Confidentialité.", profiles: ["patient", "professional", "establishment"] },
+      { q: "Quelles données de fréquentation sont collectées ?", a: "Avec votre accord, un cookie aléatoire aide à compter les catégories de pages, certains clics publics et des événements de connexion. Le suivi ne conserve ni URL complète, ni adresse IP, ni texte de bouton.", profiles: ["patient", "professional", "establishment"] },
+    ],
+  },
+  {
+    id: "retours",
+    title: "Questions et retours",
+    items: [
+      { q: "Où poser une question ou faire une suggestion ?", a: "Pour une question qui appelle une réponse, utilisez le formulaire de contact de l’accueil. Pour une suggestion ou un problème, envoyez un retour depuis le bouton « Donner votre avis ».", profiles: ["patient", "professional", "establishment"] },
+      { q: "Quand une enquête peut-elle apparaître ?", a: "Une enquête courte peut apparaître après cinq pages publiques. Une seconde enquête est proposée une fois, après une première action réussie dans un espace connecté.", profiles: ["patient", "professional", "establishment"] },
+      { q: "Que deviennent mes retours ?", a: "Les retours et réponses d’enquête sont pseudonymes ou anonymes côté administration. N’y indiquez aucun nom, identifiant ou renseignement médical.", profiles: ["patient", "professional", "establishment"] },
     ],
   },
 ];

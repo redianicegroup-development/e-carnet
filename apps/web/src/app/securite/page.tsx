@@ -15,6 +15,6 @@ export default function SecurityPage() {
       <section className="card"><h2>Suivi du site</h2><p className="muted">Les statistiques utilisent des catégories de page et des clics publics, sans conserver les URL complètes ni les adresses IP.</p></section>
     </div>
     <aside className="notice help-data-note"><strong>Informations importantes :</strong> utilisez des informations exactes et gardez votre compte personnel. Mon E‑Carnet ne remplace pas un avis médical ni les services d’urgence.</aside>
-    <p className="actions"><Link className="button" href="/aide#confidentialite">Détails sur les données</Link><Link className="button" href="/aide">Centre d’aide</Link></p>
+    <p className="actions"><Link className="button" href="/aide#donnees">Détails sur les données</Link><Link className="button" href="/aide">Centre d’aide</Link></p>
   </article></PublicShell>;
 }

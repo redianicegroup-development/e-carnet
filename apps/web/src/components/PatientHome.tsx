@@ -84,7 +84,7 @@ export function PatientHome() {
         <span className="eyebrow">Avant votre rendez-vous</span>
         <h2>Préparez votre prochaine consultation</h2>
         <p className="muted">Décrivez votre motif et ce que vous ressentez. Le professionnel le lira uniquement si vous l’autorisez.</p>
-        <div className="actions"><Link className="button" href="/patient/consultations#preparer"><Icon name="pencil" size={18} />Préparer ma consultation</Link></div>
+        <div className="actions"><Link className="button primary" href="/patient/consultations#preparer"><Icon name="pencil" size={18} />Préparer ma consultation</Link></div>
       </section>
 
       {error && <p className="notice" role="alert">{error}</p>}

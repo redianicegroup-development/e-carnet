@@ -3,6 +3,10 @@ const apiOrigin = (process.env.ECARNET_API_ORIGIN || process.env.NEXT_PUBLIC_API
 const nextConfig: NextConfig = {
   transpilePackages: ["@ecarnet/ui"],
   skipTrailingSlashRedirect: true,
+  async redirects() {
+    // Une seule page d'aide : /faq (ancienne adresse) renvoie vers /aide ; l'ancre éventuelle (#patient…) est conservée par le navigateur.
+    return [{ source: "/faq", destination: "/aide", permanent: true }];
+  },
   async rewrites() {
     return [{ source: "/api/:path*", destination: `${apiOrigin}/api/:path*/` }];
   },

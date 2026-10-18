@@ -7,6 +7,7 @@ import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
 import { safeOAuthNext } from "../lib/auth";
 import { ModalIllustration } from "./modal/ModalIllustration";
 import { useDialogBehavior } from "./modal/useDialogBehavior";
+import { GooLayer } from "./ui/GooLayer";
 import { useAuthUi, type AuthMode } from "./auth/AuthUiContext";
 const API = "";
 const PROVIDERS = ["google", "facebook", "apple"] as const;
@@ -35,7 +36,7 @@ function EyeIcon({ off }: { off: boolean }) {
 
 function Socials({ labeled, oauthNext }: { labeled: boolean; oauthNext: string }) {
   return <div className={`ax-socials${labeled ? " ax-socials--labeled" : ""}`} role="group" aria-label="Méthodes de connexion">
-    {PROVIDERS.map((provider) => <a className={`ax-social ax-social--${provider}`} key={provider} data-ax-item href={`${API}/api/v1/identity/oauth/${provider}/start/${oauthNext}`} aria-label={`Continuer avec ${PROVIDER_LABEL[provider]}`}><ProviderIcon provider={provider} />{labeled && <span>Continuer avec {PROVIDER_LABEL[provider]}</span>}</a>)}
+    {PROVIDERS.map((provider) => <a className={`button ax-social ax-social--${provider}`} key={provider} data-ax-item href={`${API}/api/v1/identity/oauth/${provider}/start/${oauthNext}`} aria-label={`Continuer avec ${PROVIDER_LABEL[provider]}`}><ProviderIcon provider={provider} />{labeled && <span>Continuer avec {PROVIDER_LABEL[provider]}</span>}</a>)}
   </div>;
 }
 
@@ -130,7 +131,7 @@ export function AuthForms() {
         {!login && <><span className="ax-meter" aria-hidden="true"><i data-full={strength >= 1} style={{ transform: `scaleX(${strength})` }} /></span><small id="auth-password-hint" className="ax-hint">12 caractères minimum ({Math.min(form.password.length, 12)}/12). Choisissez un mot de passe que vous n’utilisez pas ailleurs.</small></>}
       </label>
       {login && <p className="ax-forgot" data-ax-item><Link href="/connexion/recuperation">Récupérer mon compte</Link></p>}
-      <button className={`ax-submit${status === "busy" ? " is-loading" : ""}`} type="submit" disabled={busy} data-ax-item><span className="ax-submit__label">{status === "success" ? "Bienvenue !" : busy ? "Connexion sécurisée…" : login ? "Se connecter" : "Créer mon compte"}</span><svg className="ax-submit__arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6" /></svg><span className="ax-submit__spinner" aria-hidden="true" /></button>
+      <button className={`button primary ax-submit${status === "busy" ? " is-loading" : ""}`} type="submit" disabled={busy} data-ax-item><span className="ax-submit__label">{status === "success" ? "Bienvenue !" : busy ? "Connexion sécurisée…" : login ? "Se connecter" : "Créer mon compte"}</span><svg className="ax-submit__arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6" /></svg><span className="ax-submit__spinner" aria-hidden="true" /></button>
       <div className="ax-divider" data-ax-item><span>ou continuer avec</span></div>
       <Socials labeled={false} oauthNext={oauthNext} />
       <p className="ax-switch" data-ax-item>{login ? "Pas encore de compte ?" : "Vous avez déjà un compte ?"} <button type="button" onClick={() => switchMode(login ? "register" : "login")}>{login ? "Créer mon carnet" : "Se connecter"}</button></p>
@@ -151,5 +152,6 @@ function AuthErrorDialog({ title, message, onClose }: { title: string; message: 
       <div className="modal-copy"><h2 id={titleId}>{title}</h2><p className="modal-message">{message}</p></div>
       <div className="modal-actions modal-actions--single"><button ref={closeButton} type="button" className="button primary" onClick={onClose}>Compris</button></div>
     </section>
+    <GooLayer target={dialog} />
   </div>;
 }

@@ -7,11 +7,8 @@
 .cookie-consent__copy p { color: var(--text-muted); font-size: .82rem; line-height: 1.45; }
 .cookie-consent__copy > a { width: fit-content; color: var(--primary-text); font-size: .8rem; font-weight: 700; text-decoration-thickness: 1px; }
 .cookie-consent__actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 2px; }
-.cookie-consent__actions button { min-height: 42px; padding: 8px 12px; border: 1.5px solid var(--border-strong); border-radius: 12px; background: var(--surface); color: var(--text); font: inherit; font-size: .82rem; font-weight: 750; cursor: pointer; transition: transform .16s ease, background-color .16s ease, border-color .16s ease; }
-.cookie-consent__actions button:hover { transform: translateY(-1px); border-color: var(--primary); background: var(--surface-tint); }
-.cookie-consent__actions .cookie-consent__accept { border-color: var(--primary); background: var(--primary); color: var(--on-primary); }
-.cookie-consent__actions .cookie-consent__accept:hover { filter: brightness(.94); background: var(--primary); }
-.cookie-consent__actions button:focus-visible, .cookie-preferences-link:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.cookie-consent__actions .button { min-height: 42px; padding: 8px 12px; font-size: .82rem; }
+.cookie-preferences-link:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
 .cookie-preferences-link { min-height: 36px; padding: 4px 0; border: 0; background: transparent; color: var(--primary-text); font: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 @media (max-width: 600px) {
   .cookie-consent { left: max(10px, env(safe-area-inset-left)); right: max(10px, env(safe-area-inset-right)); bottom: max(10px, env(safe-area-inset-bottom)); grid-template-columns: 52px minmax(0, 1fr); gap: 11px; width: auto; max-height: min(78dvh, 560px); padding: 14px; border-radius: 20px; }
@@ -22,7 +19,7 @@
   .cookie-consent__copy p { font-size: .76rem; }
   .cookie-consent__copy > a { font-size: .76rem; }
   .cookie-consent__actions { grid-template-columns: 1fr 1fr; }
-  .cookie-consent__actions button { font-size: .76rem; padding-inline: 8px; }
+  .cookie-consent__actions .button { min-height: 42px; padding: 8px 12px; font-size: .82rem; }
 }
 @media (max-width: 370px) { .cookie-consent { grid-template-columns: 42px minmax(0,1fr); gap: 8px; padding: 12px; } .cookie-consent__illustration { width: 42px; height: 42px; } .cookie-consent__illustration .ck { width: 38px; height: 38px; } }
 .cookie-consent { position: fixed; }
@@ -33,7 +30,6 @@
 .cookie-setting { flex-wrap: wrap; }
 .cookie-setting__choices { display: flex; gap: 8px; margin-left: auto; }
 .cookie-setting__choices .button { min-height: 38px; padding: 6px 14px; font-size: .85rem; }
-.cookie-setting__choices .button[aria-pressed="true"] { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
 @media print { .cookie-consent { display: none; } }
 
 /* Cookie animé : chaque calque (corps, pépites, coche, miettes) bouge seul. Origines de transformation en pixels du viewBox. */

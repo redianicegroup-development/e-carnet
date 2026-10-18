@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { ModalIllustration, type ModalMood } from "./ModalIllustration";
 import { useDialogBehavior } from "./useDialogBehavior";
+import { GooLayer } from "../ui/GooLayer";
 
 export type ConfirmOptions = {
   title: string;
@@ -11,7 +12,7 @@ export type ConfirmOptions = {
   note?: string;
   confirmLabel?: string;
   cancelLabel?: string;
-  /** "danger" : bouton plein rouge et focus sur « Annuler » (une touche Entrée distraite ne détruit rien). */
+  /** "danger" : bouton principal rouge et focus sur « Annuler » (une touche Entrée distraite ne détruit rien). */
   tone?: "danger" | "neutral";
   /** Illustration du dossier .modal ; par défaut « question » (danger) ou « decision » (neutre). */
   mood?: ModalMood;
@@ -77,9 +78,10 @@ function ConfirmDialog({ options, onSettle }: { options: ConfirmOptions; onSettl
         </div>
         <div className="modal-actions">
           <button ref={cancelButton} type="button" className="button" onClick={() => onSettle(false)}>{cancelLabel}</button>
-          <button ref={confirmButton} type="button" className={tone === "danger" ? "button danger" : "button primary"} onClick={() => onSettle(true)}>{confirmLabel}</button>
+          <button ref={confirmButton} type="button" className={tone === "danger" ? "button primary danger" : "button primary"} onClick={() => onSettle(true)}>{confirmLabel}</button>
         </div>
       </section>
+      <GooLayer target={dialog} />
     </div>
   );
 }

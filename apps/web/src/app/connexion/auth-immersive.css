@@ -41,13 +41,12 @@
 .ax-card[data-step="form"] .ax-welcome-actions { display: none; }
 .ax-welcome-actions { display: grid; gap: 14px; }
 
-.ax-pill { width: 100%; min-height: 54px; border-radius: 999px; font-size: 1rem; }
+.ax-pill { width: 100%; }
 .ax-divider { display: flex; align-items: center; gap: 12px; color: var(--text-muted); font-size: .8rem; }
 .ax-divider::before, .ax-divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
 .ax-socials { display: grid; gap: 10px; }
-.ax-socials--labeled .ax-social { min-height: 52px; justify-content: center; gap: 12px; border-radius: 999px; font-size: .92rem; font-weight: 600; }
-.ax-social { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; border: 1.5px solid var(--border); border-radius: 14px; background: var(--surface); color: var(--text); text-decoration: none; cursor: pointer; transition: transform .2s ease, border-color .2s ease, box-shadow .25s ease, background-color .2s ease; }
-.ax-social:hover { border-color: color-mix(in srgb, var(--primary) 50%, var(--border)); background: var(--surface-tint); }
+.ax-socials--labeled .ax-social { min-height: 52px; gap: 12px; font-size: .92rem; }
+.ax-social { min-height: 48px; }
 .ax-social:focus-visible, .ax-switch button:focus-visible, .ax-back:focus-visible, .ax-eye:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
 .ax-social .provider-icon { width: 22px; height: 22px; flex: none; transition: transform .3s cubic-bezier(.3, 1.6, .5, 1); }
 .ax-social:hover .provider-icon { transform: scale(1.18) rotate(-6deg); }
@@ -81,10 +80,8 @@
 .ax-meter i[data-full="true"] { background: var(--primary); }
 .ax-hint { color: var(--text-muted); font-size: .76rem; line-height: 1.45; }
 
-.ax-submit { position: relative; display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; min-height: 54px; padding: 0 20px; overflow: hidden; border: 0; border-radius: 16px; background: var(--primary); color: var(--on-primary); font: inherit; font-size: 1rem; font-weight: 750; cursor: pointer; box-shadow: 0 16px 26px -16px color-mix(in srgb, var(--primary) 90%, #000); transition: box-shadow .25s ease, filter .2s ease, opacity .2s ease; }
-.ax-submit:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.ax-submit { width: 100%; gap: 12px; padding: 0 20px; }
 .ax-submit:disabled { cursor: progress; }
-.ax-submit::before { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 25%, rgba(255, 255, 255, .22) 48%, transparent 70%); transform: translateX(-120%); }
 .ax-submit__arrow { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; transition: transform .25s cubic-bezier(.2, .8, .2, 1); }
 .ax-submit__spinner { position: absolute; right: 18px; width: 20px; height: 20px; border: 2.5px solid color-mix(in srgb, var(--on-primary) 35%, transparent); border-top-color: var(--on-primary); border-radius: 50%; opacity: 0; }
 .ax-submit.is-loading .ax-submit__spinner { opacity: 1; }
@@ -161,13 +158,8 @@
 @media (prefers-reduced-motion: no-preference) {
   .ax-welcome__bubble { animation: ax-bubble-in .5s cubic-bezier(.2, 1.4, .4, 1) both; transform-origin: 50% 100%; }
   .ax-title { animation: ax-title-in .4s cubic-bezier(.2, .8, .2, 1) both; }
-  .ax-social:hover { transform: translateY(-2px); box-shadow: 0 12px 24px -18px color-mix(in srgb, var(--text) 65%, transparent); }
-  .ax-field input:focus-visible { transform: translateY(-1px); }
-  .ax-submit:hover:not(:disabled) { box-shadow: 0 20px 30px -16px color-mix(in srgb, var(--primary) 90%, #000); }
+    .ax-field input:focus-visible { transform: translateY(-1px); }
   .ax-submit:hover:not(:disabled) .ax-submit__arrow { transform: translateX(4px); }
-  .ax-submit:hover:not(:disabled)::before { animation: ax-glint .85s ease-out both; }
-  .ax-submit:active:not(:disabled) { filter: brightness(.95); }
-  .ax-submit.is-loading::before { animation: ax-glint 1.2s linear infinite; }
   .ax-submit__spinner { animation: ax-spin .75s linear infinite; }
   .ax-eye__icon { transition: transform .2s cubic-bezier(.3, 1.6, .5, 1); }
   .ax-eye:active .ax-eye__icon { transform: scale(.85); }

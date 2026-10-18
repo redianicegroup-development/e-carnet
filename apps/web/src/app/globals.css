@@ -433,8 +433,7 @@ a.setting-item:hover, button.setting-item:hover { border-color: var(--primary); 
 
 
 /* ---------- Feedback et enquêtes disponibles dans tous les espaces ---------- */
-.feedback-fab { position: fixed; z-index: 850; right: max(18px, env(safe-area-inset-right)); bottom: calc(18px + env(safe-area-inset-bottom)); display: inline-flex; align-items: center; gap: 9px; min-height: 48px; padding: 0 18px; border: 0; border-radius: 999px; background: var(--primary); color: var(--on-primary); box-shadow: 0 10px 30px rgba(19, 43, 50, .25); font: inherit; font-weight: 750; cursor: pointer; }
-.feedback-fab:hover { transform: translateY(-2px); box-shadow: 0 14px 34px rgba(19, 43, 50, .3); }
+.feedback-fab { position: fixed; z-index: 850; right: max(18px, env(safe-area-inset-right)); bottom: calc(18px + env(safe-area-inset-bottom)); display: inline-flex; align-items: center; gap: 9px; min-height: 48px; padding: 0 18px; font: inherit; font-weight: 750; cursor: pointer; }
 .feedback-fab:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; }
 .feedback-fab > span:first-child { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: rgba(255, 255, 255, .2); font-size: 1.1rem; }
 .feedback-backdrop, .product-survey-backdrop { position: fixed; z-index: 1400; inset: 0; display: grid; place-items: center; padding: 16px; background: rgba(8, 19, 29, .6); }

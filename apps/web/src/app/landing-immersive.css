@@ -24,17 +24,17 @@
 .lp-steps__rail i { display: block; width: 100%; height: 100%; background: linear-gradient(var(--primary), var(--brand-3)); transform-origin: top; will-change: transform; }
 .lp-root .lp-steps { position: relative; z-index: 1; grid-template-columns: 1fr; gap: 12px; }
 .lp-root .lp-step { grid-template-columns: 46px 1fr auto; align-items: start; gap: 2px 16px; padding: 16px 18px 16px 14px; border-radius: 22px; transition: opacity .45s ease, background-color .45s ease, border-color .45s ease, transform .45s ease; }
-.lp-step__marker { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; border: 2px solid var(--border); background: var(--surface); color: var(--text-muted); transition: background-color .4s ease, color .4s ease, border-color .4s ease, box-shadow .4s ease; }
+.lp-step__marker { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; border: 0; background: var(--bg); box-shadow: var(--press-sm); color: var(--text-muted); transition: background-color .4s ease, color .4s ease, box-shadow .4s ease; }
 .lp-step__body { display: grid; gap: 4px; padding-top: 2px; }
 .lp-root .lp-step__num { position: static; align-self: start; padding-top: 6px; }
-.lp-root .lp-step.is-active { border-color: color-mix(in srgb, var(--primary) 45%, var(--border)); }
-.lp-step.is-active .lp-step__marker { border-color: var(--primary); background: var(--primary); color: var(--on-primary); box-shadow: 0 0 0 7px color-mix(in srgb, var(--primary) 18%, transparent); }
-.lp-root[data-motion="ready"] .lp-step:not(.is-active) { background: color-mix(in srgb, var(--surface) 45%, transparent); border-color: color-mix(in srgb, var(--border) 70%, transparent); }
+.lp-root .lp-step.is-active { box-shadow: var(--raise-md); }
+.lp-step.is-active .lp-step__marker { background: var(--primary); color: var(--on-primary); box-shadow: 0 0 0 7px color-mix(in srgb, var(--primary) 18%, transparent); }
+.lp-root[data-motion="ready"] .lp-step:not(.is-active) { background: var(--bg); box-shadow: var(--press-sm); }
 .lp-root[data-motion="ready"] .lp-step:not(.is-active) .lp-step__body p { color: var(--text-muted); }
 
 /* ---------- Rôles : le premier (patients) prend l'avantage, la grille n'est pas symétrique ---------- */
 .lp-root .lp-heading h2 { font-size: clamp(1.35rem, 4.4vw, 2.2rem); line-height: 1.12; letter-spacing: -.025em; text-wrap: balance; }
-.lp-profile--lead { border-color: var(--primary); background: linear-gradient(165deg, var(--surface) 30%, var(--surface-tint) 100%); }
+.lp-profile--lead { box-shadow: var(--raise-lg); }
 
 /* ---------- Consentement : démonstration illustrée, pilotée par le défilement ---------- */
 .lp-root .lp-trust { display: grid; gap: 34px; align-items: center; overflow: hidden; }
@@ -65,9 +65,6 @@
 .lp-consent[data-state="revoked"] .lp-consent__btn--main { background: var(--border); border-color: var(--border); color: var(--text-muted); }
 
 /* ---------- Final ---------- */
-.lp-root .lp-final { position: relative; isolation: isolate; overflow: hidden; }
-.lp-final > *:not(.pulse) { position: relative; z-index: 1; }
-.lp-final__pulse { position: absolute; z-index: 0; left: 0; right: 0; bottom: -16px; height: clamp(90px, 14vw, 130px); color: var(--on-primary); opacity: .22; pointer-events: none; }
 
 @media (min-width: 720px) {
   .lp-root .lp-profiles { grid-template-columns: 1.3fr 1fr 1fr; }
@@ -87,12 +84,9 @@
   28% { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--primary) 62%, transparent)); opacity: .7; }
   42%, 70% { filter: drop-shadow(0 0 0 transparent); opacity: .42; }
 }
-.lp-root .lp-final .actions .button, .lp-root .lp-hero .actions .button, .lp-root .lp-profile .button { transition: transform .2s ease, box-shadow .2s ease, background-color .2s ease; }
-.lp-root .lp-final .actions .button:hover, .lp-root .lp-hero .actions .button:hover, .lp-root .lp-profile .button:hover { transform: translateY(-2px); box-shadow: 0 10px 24px -14px color-mix(in srgb, var(--text) 55%, transparent); }
 @media (prefers-reduced-motion: no-preference) {
-  .lp-hero__pulse, .lp-final__pulse { animation: lp-heartbeat-glow 2.8s ease-in-out infinite; }
-  .lp-final__pulse { animation-duration: 3.2s; }
+  .lp-hero__pulse { animation: lp-heartbeat-glow 2.8s ease-in-out infinite; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .lp-root .lp-final .actions .button, .lp-root .lp-hero .actions .button, .lp-root .lp-profile .button { transition: none; }
+  .lp-hero__pulse { animation: none; }
 }

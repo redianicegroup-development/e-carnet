@@ -25,7 +25,7 @@ export default function AccountRecoveryPage() {
     </section>
     <div id="recuperation" className="ax-panel">
       <RecoveryFlow />
-      <nav className="auth-legal-links" aria-label="Informations légales"><Link href="/mentions-legales">Mentions légales</Link><Link href="/confidentialite">Confidentialité</Link><Link href="/cgu">Conditions d’utilisation</Link><Link href="/faq">Aide</Link></nav>
+      <nav className="auth-legal-links" aria-label="Informations légales"><Link href="/mentions-legales">Mentions légales</Link><Link href="/confidentialite">Confidentialité</Link><Link href="/cgu">Conditions d’utilisation</Link><Link href="/aide">Aide</Link></nav>
     </div>
   </div></main></AuthMotion></AuthUiProvider>;
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
+import { GooLayer } from "./ui/GooLayer";
 
 type Props = { title: string; onClose: () => void; children: ReactNode };
 
@@ -59,6 +60,7 @@ export function SettingsModal({ title, onClose, children }: Props) {
         </header>
         <div className="settings-modal__body">{children}</div>
       </section>
+      <GooLayer target={dialogRef} />
     </div>
   );
 }

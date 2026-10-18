@@ -34,8 +34,6 @@
 .modal-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; width: 100%; }
 .modal-actions .button { flex: 1 1 140px; }
 .modal-actions--single .button { flex: 0 1 280px; }
-.modal-confirm .button.danger { border-color: var(--danger); background: var(--danger); color: #fff; }
-.modal-confirm .button.danger:hover { background: var(--danger); filter: brightness(.92); }
 .modal-actions .button:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
 
 /* ---------- Mobile : feuille qui monte du bas (même comportement que les autres modals) ---------- */

@@ -7,9 +7,8 @@ import { HeroScene } from "../components/landing/HeroScene";
 import { LandingMotion } from "../components/motion/LandingMotion";
 import { PulseLine } from "../components/motion/PulseLine";
 import { PublicShell } from "../components/public/PublicShell";
-import { SurveyRatingSummary } from "../components/SurveyRatingSummary";
 import { Icon } from "../components/ui/Icon";
-import { FACTS, FAQ_ITEMS, FEATURES, HERO, HERO_IMAGE, PROFILES, SAFEGUARDS, STEPS } from "../lib/landing-content";
+import { FAQ_ITEMS, FEATURES, HERO, HERO_IMAGE, PROFILES, SAFEGUARDS, STEPS } from "../lib/landing-content";
 import { LEGAL_DOCS } from "../lib/legal/config";
 import { SITE_URL } from "../lib/site";
 import "./landing.css";
@@ -36,8 +35,6 @@ export const metadata: Metadata = {
   twitter: { card: "summary", title: PAGE_TITLE, description: PAGE_DESCRIPTION, images: ["/brand/icon-512.png"] },
   robots: { index: true, follow: true },
 };
-
-const pad = (index: number) => String(index + 1).padStart(2, "0");
 
 export default function HomePage() {
   const structuredData = {
@@ -80,29 +77,33 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="lp-section lp-facts" aria-label="Repères du service">
-        <ul className="lp-facts__grid">{FACTS.map((fact) => <li className="lp-fact" key={fact.label}><strong>{fact.value}{fact.unit && <small>{fact.unit}</small>}</strong><span>{fact.label}</span></li>)}</ul>
-      </section>
-
+      {/* 2 · Le carnet en pratique : quatre outils, les repères chiffrés vivent dans les cartes concernées. */}
       <section className="lp-section lp-features" id="fonctionnalites" aria-labelledby="features-title">
         <div className="lp-split-head">
-          <div className="lp-split-head__title"><span className="eyebrow">Fonctionnalités</span><h2 id="features-title" data-split>Tout pour tenir votre carnet, rien de superflu</h2></div>
-          <p className="lead">Six outils simples, pensés pour que le patient reste celui qui décide.</p>
+          <div className="lp-split-head__title"><h2 id="features-title" data-split>Tout pour tenir votre carnet, rien de superflu</h2></div>
+          <p className="lead">Quatre outils simples, pensés pour que le patient reste celui qui décide.</p>
         </div>
-        <div className="lp-features__grid">{FEATURES.map((feature, index) => <article className="lp-feature" key={feature.title}><span className="lp-feature__num" aria-hidden="true">{pad(index)}</span><span className="lp-feature__icon"><Icon name={feature.icon} size={22} /></span><h3>{feature.title}</h3><p>{feature.text}</p></article>)}</div>
+        <div className="lp-features__grid">{FEATURES.map((feature) => <article className="lp-feature" key={feature.title}>
+          <span className="lp-feature__icon"><Icon name={feature.icon} size={22} /></span>
+          <h3>{feature.title}</h3>
+          {feature.figure && <p className="lp-feature__figure"><strong>{feature.figure.value}{feature.figure.unit && <small>{feature.figure.unit}</small>}</strong><span>{feature.figure.label}</span></p>}
+          <p>{feature.text}</p>
+        </article>)}</div>
       </section>
 
+      {/* 3 · Comment ça marche : trois moments. */}
       <section className="lp-section lp-flow" id="parcours" aria-labelledby="steps-title">
-        <div className="lp-flow__intro"><h2 id="steps-title" data-split>Du carnet au rendez-vous</h2><p className="lead">Cinq étapes simples, et le patient décide à chaque instant.</p></div>
+        <div className="lp-flow__intro"><h2 id="steps-title" data-split>Du carnet au rendez-vous</h2><p className="lead">Trois moments simples, et le patient décide à chaque instant.</p></div>
         <div className="lp-steps-wrap" data-steps><span className="lp-steps__rail" aria-hidden="true"><i data-rail-fill /></span><ol className="lp-steps">{STEPS.map((step, index) => <li key={step.title} className="lp-step" data-step><span className="lp-step__marker"><Icon name={step.icon} size={20} /></span><div className="lp-step__body"><h3>{step.title}</h3><p>{step.text}</p></div><span className="lp-step__num" aria-hidden="true">{index + 1}</span></li>)}</ol></div>
       </section>
 
+      {/* 4 · Un espace adapté à chaque rôle. */}
       <section className="lp-section" id="profils" aria-labelledby="profiles-title">
-        <div className="lp-heading"><span className="eyebrow">Pour qui</span><h2 id="profiles-title" data-split>Un espace pour chaque rôle</h2></div>
+        <div className="lp-heading"><h2 id="profiles-title" data-split>Un espace pour chaque rôle</h2></div>
         <div className="lp-profiles">{PROFILES.map((profile, index) => {
           const className = index === 0 ? "button primary" : "button";
           return <article className={index === 0 ? "lp-profile lp-profile--lead" : "lp-profile"} key={profile.label}>
-            <span className="lp-icon"><Icon name={profile.icon} size={22} /></span><span className="eyebrow">{profile.label}</span><h3>{profile.title}</h3>
+            <span className="lp-icon"><Icon name={profile.icon} size={22} /></span><p className="lp-profile__role">{profile.label}</p><h3>{profile.title}</h3>
             <ul>{profile.points.map((point) => <li key={point}><Icon name="check" size={16} />{point}</li>)}</ul>
             {profile.cta.subject
               ? <a className={className} href={profile.cta.href} data-contact-subject={profile.cta.subject}>{profile.cta.text}</a>
@@ -111,20 +112,19 @@ export default function HomePage() {
         })}</div>
       </section>
 
-      <section className="lp-section" aria-labelledby="trust-title">
-        <div className="lp-trust">
-          <div className="lp-trust__copy"><h2 id="trust-title" data-split>Vous gardez la main sur les accès.</h2><ul className="lp-safeguards">{SAFEGUARDS.map((item) => <li key={item}><Icon name="shield" size={18} />{item}</li>)}</ul><p className="lp-trust__note"><Link href="/aide#confidentialite">En savoir plus sur la confidentialité et les données</Link></p></div>
+      {/* 5 · Confiance : la démonstration d'une demande d'accès, puis les six questions essentielles (le reste est dans le centre d'aide). */}
+      <div className="lp-chapter">
+        <section className="lp-section" aria-labelledby="trust-title">
+          <div className="lp-trust">
+            <div className="lp-trust__copy"><h2 id="trust-title" data-split>Vous gardez la main sur les accès.</h2><ul className="lp-safeguards">{SAFEGUARDS.map((item) => <li key={item}><Icon name="shield" size={18} />{item}</li>)}</ul><p className="lp-trust__note"><Link href="/aide#donnees">En savoir plus sur la confidentialité et les données</Link></p></div>
           <div className="lp-consent" data-consent data-state="pending" aria-hidden="true"><div className="lp-consent__head"><span className="lp-consent__title">Demande d’accès</span><span className="lp-consent__tag"><b className="t-pending">À examiner</b><b className="t-granted">Accès autorisé</b><b className="t-revoked">Accès révoqué</b></span></div><dl className="lp-consent__rows"><div><dt>Périmètre</dt><dd>Informations de consultation</dd></div><div><dt>Durée</dt><dd>2 heures</dd></div></dl><div className="lp-consent__meter"><span className="lp-consent__bar" /></div><div className="lp-consent__actions"><span className="lp-consent__btn">Refuser</span><span className="lp-consent__btn lp-consent__btn--main"><b className="t-pending">Autoriser</b><b className="t-granted">Révoquer</b><b className="t-revoked">Révoqué</b></span></div><p className="lp-consent__foot">Exemple illustré</p></div>
-        </div>
-      </section>
+          </div>
+        </section>
+        <FaqSection />
+      </div>
 
-      <SurveyRatingSummary />
-      <FaqSection />
+      {/* 6 · Contact et appel à l'action final, dans une seule section. */}
       <ContactSection privacyHref={LEGAL_DOCS.privacy.path} />
-
-      <section className="lp-section" aria-labelledby="final-title">
-        <div className="lp-final"><PulseLine className="lp-final__pulse" /><h2 id="final-title">Commencez avec votre carnet.</h2><p>Créez votre espace patient ou professionnel depuis une seule page. Utilisez des informations exactes et gardez votre compte personnel.</p><div className="actions"><Link className="button primary" href="/connexion?mode=register">Créer mon espace patient</Link><Link className="button" href="/connexion">Se connecter</Link><Link className="button" href="/aide">Centre d’aide</Link></div></div>
-      </section>
     </LandingMotion>
   </PublicShell>;
 }

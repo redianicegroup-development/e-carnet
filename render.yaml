@@ -59,17 +59,17 @@ services:
       - key: EMAIL_BACKEND
         value: django.core.mail.backends.smtp.EmailBackend
       - key: EMAIL_HOST
-        sync: false
+        value: smtp.gmail.com
       - key: EMAIL_PORT
-        value: "587"
+        value: "465"
       - key: EMAIL_HOST_USER
         sync: false
       - key: EMAIL_HOST_PASSWORD
         sync: false
       - key: EMAIL_USE_TLS
-        value: "true"
-      - key: EMAIL_USE_SSL
         value: "false"
+      - key: EMAIL_USE_SSL
+        value: "true"
       - key: DEFAULT_FROM_EMAIL
         sync: false
       - key: ECARNET_QR_TTL_SECONDS

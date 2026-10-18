@@ -81,9 +81,26 @@
 .help__q summary { cursor: pointer; min-height: 28px; }
 .help__q[open] summary { margin-bottom: 6px; }
 .help__trouble, .help__glossary { display: grid; gap: 8px; margin: 0; }
-.help__trouble > div, .help__glossary > div { display: grid; gap: 2px; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--surface); }
+.help__trouble > div, .help__glossary > div { display: grid; gap: 2px; padding: 12px 14px; border-radius: var(--r-sm); background: var(--bg); box-shadow: var(--raise-sm); }
 .help__trouble dt, .help__glossary dt { font-weight: 800; }
 .help__trouble dd, .help__glossary dd { margin: 0; color: var(--text-muted); line-height: 1.55; }
+/* Aide : recherche, choix du profil, rubriques */
+.help__tools { gap: 14px; }
+.help__search input { min-height: 48px; }
+.help__filters { display: flex; flex-wrap: wrap; gap: 8px; }
+.help__filters .button { gap: 6px; }
+.help__jump { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: .9rem; font-weight: 650; }
+.help__jump a { color: var(--primary-text); }
+.help__count { min-height: 1.4em; margin: 0; font-size: .85rem; }
+.help__empty { display: grid; gap: 8px; justify-items: center; }
+.help__empty p { margin: 0; }
+.help__q { padding: 14px 18px; }
+.help__q > summary { list-style: none; }
+.help__q > summary::-webkit-details-marker { display: none; }
+.help__q > summary::after { content: "+"; float: right; margin-left: 12px; color: var(--primary-text); font-size: 1.3rem; font-weight: 700; line-height: 1; }
+.help__q[open] > summary::after { content: "−"; }
+.help__guides { scroll-margin-top: 88px; }
+.help__contact .actions { margin-top: 4px; }
 .help h2, .help__guide h2 { scroll-margin-top: 88px; }
 @media (min-width: 720px) { .help__glossary { grid-template-columns: repeat(2, 1fr); } }
 
@@ -140,7 +157,7 @@
 .pub-footer__tagline { margin: 0; max-width: 20ch; font-size: clamp(1.15rem, 2.2vw, 1.4rem); font-weight: 600; line-height: 1.25; }
 .pub-footer__tagline span { opacity: .72; }
 .pub-footer__pilot { margin: 0; max-width: 34ch; font-size: .8rem; line-height: 1.45; opacity: .88; }
-.pub-footer__card--brand .pwa-install-button { margin-top: 0; background: var(--on-primary); color: var(--primary-text); }
+.pub-footer__card--brand .pwa-install-button { width: fit-content; margin-top: 6px; font-size: .88rem; }
 .pub-footer__card--brand .pwa-install-note { color: inherit; opacity: .9; }
 .pub-footer__touch { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; width: 100%; padding-top: 6px; }
 .pub-footer__script { margin: 0; font-family: var(--font-script, "Segoe Script", "Bradley Hand", "Comic Sans MS", cursive); font-size: 1.35rem; font-weight: 600; line-height: 1.1; letter-spacing: 0; }

@@ -10,7 +10,7 @@ const GROUPS: MoreGroup[] = [
   {
     title: "Aide et principes",
     items: [
-      { href: "/faq", icon: "help", title: "Aide et questions fréquentes", description: "Guides pas à pas, réponses et dépannage." },
+      { href: "/aide", icon: "help", title: "Aide et questions fréquentes", description: "Guides pas à pas, réponses et dépannage." },
       { href: "/a-propos", icon: "sparkle", title: "À propos", description: "Comprendre le principe et le fonctionnement de Mon E‑Carnet." },
       { href: "/securite", icon: "shield", title: "Sécurité et données", description: "Consulter les principes de sécurité du service." },
     ],

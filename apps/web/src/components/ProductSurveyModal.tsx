@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { ModalIllustration } from "./modal/ModalIllustration";
+import { GooLayer } from "./ui/GooLayer";
 
 const barrierOptions = [
   ["purpose", "Je ne vois pas encore à quoi ça sert"],
@@ -99,5 +100,6 @@ export function ProductSurveyModal({ open, onClose }: Props) {
         <div className="feedback-form__footer"><small>{missing.length}/1 200</small><button className="button primary" type="submit" disabled={busy || !persona || !foundWhat}>{busy ? "Envoi…" : "Envoyer"}</button></div>
       </form>}
     </section>
+    <GooLayer target={dialog} />
   </div>;
 }

@@ -78,8 +78,8 @@ export function CookieConsentBanner() {
         {reopened && <p className="cookie-consent__current">Choix actuel : {consent === "accepted" ? "accepté" : "refusé"}.</p>}
         <Link href="/confidentialite#cookies">En savoir plus sur les cookies</Link>
         <div className="cookie-consent__actions">
-          <button ref={acceptButton} type="button" className="cookie-consent__accept" onClick={() => choose("accepted")} onMouseEnter={() => setReaction("accept")} onMouseLeave={() => setReaction(null)} onFocus={() => setReaction("accept")} onBlur={() => setReaction(null)}>Accepter</button>
-          <button type="button" className="cookie-consent__reject" onClick={() => choose("denied")} onMouseEnter={() => setReaction("reject")} onMouseLeave={() => setReaction(null)} onFocus={() => setReaction("reject")} onBlur={() => setReaction(null)}>Refuser</button>
+          <button ref={acceptButton} type="button" className="button primary cookie-consent__accept" onClick={() => choose("accepted")} onMouseEnter={() => setReaction("accept")} onMouseLeave={() => setReaction(null)} onFocus={() => setReaction("accept")} onBlur={() => setReaction(null)}>Accepter</button>
+          <button type="button" className="button cookie-consent__reject" onClick={() => choose("denied")} onMouseEnter={() => setReaction("reject")} onMouseLeave={() => setReaction(null)} onFocus={() => setReaction("reject")} onBlur={() => setReaction(null)}>Refuser</button>
         </div>
       </div>
     </aside>

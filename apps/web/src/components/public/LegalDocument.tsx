@@ -115,7 +115,7 @@ export function LegalDocument({ doc, summary, sections }: { doc: LegalDocKey; su
                 {others.map((key) => <Link key={key} href={LEGAL_DOCS[key].path}>{LEGAL_DOCS[key].short}</Link>)}
                 <Link href="/conditions-rattachement">Conditions de rattachement (médecins)</Link>
                 <Link href="/securite">Sécurité</Link>
-                <Link href="/faq">Aide</Link>
+                <Link href="/aide">Aide</Link>
                 <Link href="/credits">Crédits</Link>
               </nav>
             </div>

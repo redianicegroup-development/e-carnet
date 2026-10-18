@@ -13,7 +13,7 @@ export function EstablishmentHelp() {
         <span className="eyebrow">Ce que vous ne faites pas</span>
         <h2>Aucun accès aux dossiers</h2>
         <p className="muted">L’administrateur gère les rattachements. Il ne consulte pas les dossiers médicaux. Le partage de dossier entre établissements n’est pas disponible dans cette version.</p>
-        <div className="actions"><Link className="button" href="/securite">Notre approche de la sécurité</Link><Link className="button" href="/faq#patient">Guides patient et professionnel</Link></div>
+        <div className="actions"><Link className="button" href="/securite">Notre approche de la sécurité</Link><Link className="button" href="/aide#patient">Guides patient et professionnel</Link></div>
       </section>
       <section className="stack" aria-labelledby="aide-questions">
         <h2 id="aide-questions">Questions fréquentes</h2>

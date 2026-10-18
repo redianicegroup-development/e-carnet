@@ -1,0 +1,69 @@
+/* =====================================================================================================
+   Gooey — l'identité visuelle de Mon E‑Carnet.
+   Toute apparition passe par la goutte : bouton, modal, confirmation (la barre de navigation et le menu du compte en goutte
+   sont dans soft-skin.css). Chargée APRÈS soft-skin.css, qui garde les surfaces, les ombres et la couleur des boutons ;
+   ici, seulement le mouvement et les calques décoratifs (aria-hidden) sur lesquels on pose les filtres SVG :
+   le texte n'est jamais filtré.
+   - Bouton : la face se forme en gélatine pendant que trois gouttes affleurent le bord haut puis se fondent dans la matière.
+   - Modal / confirmation : une goutte naît sous le panneau et le déborde un instant (calque posé par ui/GooLayer.tsx,
+     calé sur la taille réelle du panneau).
+   - prefers-reduced-motion : aucun calque, aucune animation, mêmes états finaux.
+   Chaque sélecteur est préfixé par `body`, comme soft-skin.css.
+   ===================================================================================================== */
+
+body .button::after {
+  content: ""; position: absolute; z-index: -1; inset: -10px; pointer-events: none; opacity: 0; visibility: hidden;
+  filter: url(#ecarnet-gooey-soft); background-repeat: no-repeat;
+  background-size: 100% 100%, 100% 100%, 100% 100%, calc(100% - 32px) calc(100% - 32px);
+  background-position: 0 0, 0 0, 0 0, 50% 50%;
+  background-image:
+    radial-gradient(circle at 24% 50%, var(--goo-tone) 0 9px, transparent 10px),
+    radial-gradient(circle at 50% 50%, var(--goo-tone) 0 12px, transparent 13px),
+    radial-gradient(circle at 76% 50%, var(--goo-tone) 0 9px, transparent 10px),
+    linear-gradient(var(--goo-tone), var(--goo-tone));
+}
+@media (prefers-reduced-motion: no-preference) {
+  body .button, body .ax-back, body .ax-eye, body .feedback-dialog__close, body .settings-modal__close, body .cookie-consent__close { animation: goo-in .65s var(--spring-soft) backwards; }
+  body .button::after { animation: goo-drops .95s ease-out both; }
+  /* l'écran de connexion orchestre déjà l'entrée de ses éléments (GSAP) : le bouton y garde ses gouttes, pas la gélatine du corps */
+  body .button[data-ax-item] { animation: none; }
+}
+@keyframes goo-in {
+  0% { opacity: 0; transform: scale(.72, .5); }
+  45% { opacity: 1; transform: scale(1.06, .94); }
+  72% { transform: scale(.985, 1.03); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes goo-drops {
+  0% { opacity: 0; visibility: visible; background-position: 0 0, 0 0, 0 0, 50% 50%; }
+  14% { opacity: 1; }
+  46% { opacity: 1; background-position: -14px -24px, 2px -30px, 16px -23px, 50% 50%; }
+  100% { opacity: 0; visibility: hidden; background-position: 0 0, 0 0, 0 0, 50% 50%; }
+}
+
+body .goo-layer { display: none; }
+@media (prefers-reduced-motion: no-preference) {
+  body .modal-dialog, body .settings-modal, body .feedback-dialog, body .product-survey-dialog { animation: goo-panel-in .8s var(--spring) backwards; }
+  body .greeting-toast, body .cookie-consent:not([data-leaving]) { transform-origin: 50% 100%; animation: goo-panel-in .8s var(--spring) backwards; }
+  body .goo-layer {
+    display: block; position: absolute; z-index: 0; pointer-events: none;
+    left: calc(var(--goo-x, 0px) - 60px); top: calc(var(--goo-y, 0px) - 60px);
+    width: calc(var(--goo-w, 0px) + 120px); height: calc(var(--goo-h, 0px) + 120px);
+    filter: url(#ecarnet-gooey) drop-shadow(0 18px 24px rgb(0 0 0 / .28));
+    animation: goo-layer-life .95s linear both;
+  }
+  body .goo-layer__blob { position: absolute; left: 60px; top: 60px; width: var(--goo-w, 0px); height: var(--goo-h, 0px); border-radius: var(--goo-r, 24px); background: var(--bg); transform-origin: 50% 100%; animation: goo-blob .9s var(--spring) both; }
+  body .goo-layer__anchor { position: absolute; left: calc(60px + var(--goo-w, 0px) / 2 - 28px); top: calc(60px + var(--goo-h, 0px) - 8px); width: 56px; height: 56px; border-radius: 50%; background: var(--bg); transform-origin: 50% 0; animation: goo-anchor .9s ease-in both; }
+}
+@keyframes goo-panel-in {
+  0% { opacity: 0; transform: translateY(26px) scale(.84, .6); }
+  30% { opacity: 1; }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes goo-blob { 0% { transform: translateY(26px) scale(.1, .07); } 100% { transform: none; } }
+@keyframes goo-anchor { 0% { transform: scale(1); } 60% { transform: scale(1); } 100% { transform: scale(.2); } }
+@keyframes goo-layer-life { 0% { opacity: 1; visibility: visible; } 78% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
+
+@media (prefers-reduced-motion: reduce) {
+  body .goo-layer, body .button::after { display: none; }
+}

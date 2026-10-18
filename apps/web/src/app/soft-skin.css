@@ -170,6 +170,60 @@ body .ecard-qr__box { box-shadow: var(--press-sm); }
 body .ecard-qr__off { display: grid; gap: 10px; justify-items: start; padding: 16px; }
 body .ecard-qr__off p { margin: 0; }
 
+/* =====================================================================================================
+   Boutons : trois types, un seul style
+     principal  .button.primary  la seule action mise en avant d'un écran
+     secondaire .button          toutes les autres actions
+     discret    .button.ghost    retour, fermer, filtres, actions de second plan
+   « danger » est une couleur ; « small » et « block » sont des tailles : ce ne sont pas des types.
+   Les boutons de connexion, d'installation, d'avis flottant, de la bannière cookies et des confirmations sont des .button comme les autres.
+   ===================================================================================================== */
+body .button { --goo-tone: var(--bg); position: relative; isolation: isolate; overflow: visible; }
+body .button.primary { --goo-tone: var(--primary); }
+body .button.ghost { --goo-tone: color-mix(in srgb, var(--text) 9%, var(--bg)); }
+body .button.small { border-radius: 14px; }
+body .button[aria-pressed="true"] { box-shadow: var(--press-sm); color: var(--primary-text); }
+body .button.primary[aria-pressed="true"] { color: var(--on-primary); }
+body .button:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+/* danger : une couleur, pas un type (la confirmation destructive est le bouton principal, en rouge) */
+body .button.danger { color: var(--danger); }
+body .button.primary.danger { --goo-tone: var(--danger); border-color: transparent; background: var(--danger); color: #fff; box-shadow: 4px 5px 12px color-mix(in srgb, var(--danger) 42%, transparent), -3px -3px 8px var(--neu-light); }
+body .button.primary.danger:hover { background: color-mix(in srgb, var(--danger) 92%, #fff); }
+/* contrôles flottants et cartes de marque : seule leur position ou leur couleur de fond change, jamais le type de bouton */
+body .feedback-fab { position: fixed; border-radius: 999px; }
+body .pub-footer__card--brand .button.primary, body .pub-footer__card--brand .button.primary:hover:not(:disabled) { --goo-tone: var(--on-primary); background: var(--on-primary); color: var(--primary-text); }
+body .ax-submit { min-height: 54px; font-size: 1rem; }
+/* petits contrôles d'icône : des discrets */
+body .ax-back, body .ax-eye, body .sb__toggle, body .feedback-dialog__close, body .settings-modal__close, body .cookie-consent__close {
+  border: 0; background: transparent; box-shadow: none; color: var(--text-muted); transition: box-shadow .18s ease, color .18s ease;
+}
+body .ax-back:active, body .ax-eye:active, body .sb__toggle:active, body .feedback-dialog__close:active, body .settings-modal__close:active, body .cookie-consent__close:active { box-shadow: var(--press-sm); }
+@media (hover: hover) {
+  body .ax-back:hover, body .ax-eye:hover, body .sb__toggle:hover, body .feedback-dialog__close:hover, body .settings-modal__close:hover, body .cookie-consent__close:hover { background: transparent; box-shadow: var(--press-sm); color: var(--text); }
+}
+
+/* Carte d'appel à l'action : même matière que les autres cartes, texte de la couleur du thème
+   (l'ancien texte blanc n'était lisible que sur le fond d'accent d'avant la peau douce). */
+body .cta-card { background: var(--bg); color: var(--text); border-color: transparent; }
+body .cta-card .muted { color: var(--text-muted); }
+body .cta-card .eyebrow { background: var(--bg); color: var(--text-muted); }
+body .cta-card .button:not(.primary) { background: var(--bg); color: var(--text); border-color: color-mix(in srgb, var(--border-strong) 60%, transparent); }
+
+/* ---------- Modals et confirmations : même matière, apparition par la goutte ---------- */
+body .modal-backdrop, body .settings-modal-backdrop, body .feedback-backdrop, body .product-survey-backdrop { background: color-mix(in srgb, var(--text) 46%, transparent); backdrop-filter: blur(4px); }
+body .modal-backdrop--greeting { background: transparent; backdrop-filter: none; }
+body .modal-dialog, body .settings-modal, body .feedback-dialog, body .product-survey-dialog {
+  position: relative; z-index: 1; border: 0; background: var(--bg); transform-origin: 50% 100%;
+  box-shadow: 0 30px 70px -28px rgb(0 0 0 / .5), inset 2px 2px 0 var(--neu-light);
+}
+body .modal-dialog { border-radius: 26px; }
+body .modal-note { border: 0; background: var(--bg); box-shadow: var(--press-sm); }
+body .modal-illustration { background: var(--bg); box-shadow: var(--press-sm); }
+body .modal-confirm[data-tone="danger"] .modal-illustration { color: var(--danger); }
+body .greeting-toast, body .cookie-consent { border: 0; background: var(--bg); box-shadow: var(--raise-md); }
+body .greeting-toast__character, body .cookie-consent__illustration { background: var(--bg); box-shadow: var(--press-sm); }
+
+
 /* ---------- Mouvement réduit : mêmes états, sans animation ---------- */
 @media (prefers-reduced-motion: reduce) {
   body .sb__blob, body .gm__blob, body .gm__panel, body .gm__item, body .gm__goo, body .gm__trigger, body .sb__item, body .button, body .card-link { transition: none !important; animation: none !important; }

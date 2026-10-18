@@ -21,7 +21,7 @@ import {
   type ContactFields,
   type ContactSubject,
 } from "../../lib/contact";
-import { CONTACT_COPY } from "../../lib/landing-content";
+import { CONTACT_COPY, FINAL } from "../../lib/landing-content";
 import { Icon } from "../ui/Icon";
 
 type Status = "idle" | "sending" | "sent";
@@ -149,14 +149,22 @@ export function ContactSection({ privacyHref }: { privacyHref: string }) {
     <section className="lp-section lp-wrap lp-contact" id="contact" aria-labelledby="contact-title">
       <div className="lp-contact__layout">
         <div className="lp-contact__intro" data-reveal>
-          <span className="eyebrow">{CONTACT_COPY.eyebrow}</span>
-          <h2 id="contact-title">{CONTACT_COPY.title}</h2>
-          <p className="lead">{CONTACT_COPY.lead}</p>
-          <ul className="lp-contact__points">
-            {CONTACT_COPY.points.map((point) => <li key={point.text}><span aria-hidden="true"><Icon name={point.icon} size={18} /></span>{point.text}</li>)}
-          </ul>
+          <div className="lp-cta">
+            <h2 id="contact-title">{FINAL.title}</h2>
+            <p className="lead">{FINAL.lead}</p>
+            <div className="actions">
+              <Link className="button primary" href={FINAL.primary.href}>{FINAL.primary.label}</Link>
+              <Link className="button" href={FINAL.secondary.href}>{FINAL.secondary.label}</Link>
+            </div>
+          </div>
+          <div className="lp-contact__ask">
+            <h3>{CONTACT_COPY.title}</h3>
+            <p>{CONTACT_COPY.lead}</p>
+            <ul className="lp-contact__points">
+              {CONTACT_COPY.points.map((point) => <li key={point.text}><span aria-hidden="true"><Icon name={point.icon} size={18} /></span>{point.text}</li>)}
+            </ul>
+          </div>
         </div>
-
         <div className="lp-contact__panel" data-reveal>
           {status === "sent" ? (
             <div className="lp-contact__done" role="status">

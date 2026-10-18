@@ -11,25 +11,41 @@ const read = (path) => readFileSync(new URL(path, import.meta.url), "utf8");
 const helpFaq = help.HELP_FAQ.flatMap((group) => group.items);
 const words = (text) => text.trim().split(/\s+/).length;
 
-test("chaque question de la FAQ a un identifiant unique, une question et une réponse", () => {
+test("la FAQ de la landing compte exactement six questions, chacune avec un identifiant unique, une question et une réponse", () => {
   const ids = landing.FAQ_ITEMS.map((item) => item.id);
+  assert.equal(landing.FAQ_ITEMS.length, 6);
   assert.equal(new Set(ids).size, ids.length);
-  assert.equal(landing.FAQ_ITEMS.length, landing.FAQ_GROUPS.reduce((total, group) => total + group.items.length, 0));
   for (const item of landing.FAQ_ITEMS) {
     assert.ok(item.q.endsWith("?"), item.id);
     assert.ok(item.a.length > 20, item.id);
-    assert.ok(["help", "landing", "composed"].includes(item.origin), item.id);
   }
 });
 
-test("les réponses reprises du centre d'aide sont identiques mot pour mot (texte relu par les juristes)", () => {
-  const fromHelp = landing.FAQ_ITEMS.filter((item) => item.origin === "help");
-  assert.ok(fromHelp.length >= 8);
-  for (const item of fromHelp) {
+/* Écart connu, à trancher par le produit puis à supprimer d'ici : dans la version v2, l'aide répond « Oui, utilisez des informations
+   exactes… » à « Puis-je saisir mes vraies données de santé ? » alors que la landing répond « Non… ». La fusion de la v16 n'a pas
+   choisi à la place des responsables : chaque page garde son texte. Toute autre réponse doit rester identique mot pour mot. */
+const KNOWN_DIVERGENCES = new Set(["real-data"]);
+
+test("les six réponses sont identiques mot pour mot à celles du centre d'aide (texte relu par les juristes), sauf l'écart connu", () => {
+  for (const item of landing.FAQ_ITEMS) {
     const source = helpFaq.find((entry) => entry.q === item.q);
     assert.ok(source, `question absente du centre d'aide : ${item.q}`);
+    if (KNOWN_DIVERGENCES.has(item.id)) continue;
     assert.equal(item.a, source.a, `réponse différente du centre d'aide : ${item.q}`);
   }
+  assert.equal(landing.FAQ_ITEMS.filter((item) => KNOWN_DIVERGENCES.has(item.id)).length, KNOWN_DIVERGENCES.size, "écart connu obsolète : retirez-le de la liste");
+});
+
+test("les questions retirées de la landing existent toutes dans le centre d'aide", () => {
+  for (const q of [
+    "À quoi sert Mon E-Carnet ?",
+    "Comment créer un compte patient ou professionnel ?",
+    "Puis-je l’utiliser sur mon téléphone ?",
+    "À quoi sert le QR code ?",
+    "Combien de temps dure une autorisation ?",
+    "Comment ouvrir l’espace de mon établissement ?",
+    "Comment un médecin rejoint-il un établissement ?",
+  ]) assert.ok(helpFaq.some((entry) => entry.q === q), `absente du centre d'aide : ${q}`);
 });
 
 test("les réponses restent courtes et lisibles", () => {
@@ -43,34 +59,41 @@ test("aucune promesse écartée par la revue juridique dans les textes de la lan
   const banned = /à tout moment|100 ?%|garanti|sécurité absolue|infaillible|conforme à/i;
   const texts = [
     ...Object.values(landing.HERO).flatMap((value) => (typeof value === "string" ? [value] : Object.values(value))),
-    ...landing.FACTS.map((fact) => fact.label),
+    ...landing.FEATURES.flatMap((feature) => (feature.figure ? [feature.figure.label] : [])),
     ...landing.FEATURES.flatMap((feature) => [feature.title, feature.text]),
     ...landing.STEPS.flatMap((step) => [step.title, step.text]),
     ...landing.PROFILES.flatMap((profile) => [profile.title, ...profile.points]),
     ...landing.SAFEGUARDS,
     ...landing.FAQ_ITEMS.flatMap((item) => [item.q, item.a]),
     landing.CONTACT_COPY.title, landing.CONTACT_COPY.lead, ...landing.CONTACT_COPY.points.map((point) => point.text),
+    landing.FINAL.title, landing.FINAL.lead,
   ];
   for (const text of texts) assert.doesNotMatch(text, banned, text);
 });
 
-test("les repères chiffrés correspondent à ce que dit le centre d'aide", () => {
+test("les repères chiffrés des cartes correspondent à ce que dit le centre d'aide", () => {
   const byQuestion = (q) => helpFaq.find((entry) => entry.q === q).a;
   assert.match(byQuestion("À quoi sert le QR code ?"), /5 minutes/);
   assert.match(byQuestion("Combien de temps dure une autorisation ?"), /Deux heures.*deux prolongations d’une heure/);
-  const facts = Object.fromEntries(landing.FACTS.map((fact) => [fact.label, `${fact.value} ${fact.unit}`]));
-  assert.equal(facts["de validité pour un QR code"], "5 min");
-  assert.equal(facts["pour un accès autorisé"], "2 h");
-  assert.equal(facts["de prolongation au plus"], "2 × 1 h");
-  assert.equal(landing.FACTS.length, 4);
+  const figures = Object.fromEntries(landing.FEATURES.filter((feature) => feature.figure).map((feature) => [feature.figure.label, `${feature.figure.value} ${feature.figure.unit}`]));
+  assert.equal(figures["de validité pour un QR code"], "5 min");
+  assert.equal(figures["pour un accès autorisé"], "2 h");
+  assert.match(landing.FEATURES.find((feature) => feature.title === "Autorisations").text, /deux prolongations d’une heure/);
+});
+
+test("la landing est ramenée à quatre cartes et trois moments", () => {
+  assert.equal(landing.FEATURES.length, 4);
+  assert.equal(landing.STEPS.length, 3);
+  const page = read("../src/app/page.tsx");
+  assert.doesNotMatch(page, /FACTS|lp-facts|SurveyRatingSummary|lp-final/);
+  assert.equal(landing.FEATURES.filter((feature) => feature.figure).length, 2);
 });
 
 test("les liens qui visent le formulaire de contact présélectionnent un objet existant", () => {
   const links = [
     ...landing.PROFILES.map((profile) => profile.cta),
-    ...landing.FAQ_ITEMS.flatMap((item) => (item.link ? [item.link] : [])),
   ].filter((link) => link.href === "#contact");
-  assert.ok(links.length >= 2);
+  assert.ok(links.length >= 1);
   for (const link of links) assert.ok(contact.isContactSubject(link.subject), `objet inconnu : ${link.subject}`);
 });
 
@@ -78,7 +101,7 @@ test("chaque ancre utilisée par la navigation existe dans la page", () => {
   const source = [read("../src/app/page.tsx"), read("../src/components/landing/FaqSection.tsx"), read("../src/components/landing/ContactSection.tsx")].join("\n");
   const header = read("../src/components/public/PublicHeader.tsx");
   const anchors = new Set([...header.matchAll(/href="\/#([a-z-]+)"/g)].map((match) => match[1]));
-  for (const link of [...landing.PROFILES.map((p) => p.cta.href), ...landing.FAQ_ITEMS.flatMap((i) => (i.link ? [i.link.href] : []))]) {
+  for (const link of landing.PROFILES.map((p) => p.cta.href)) {
     if (link.startsWith("#")) anchors.add(link.slice(1));
   }
   for (const anchor of ["parcours", "profils", "questions", "contact", "fonctionnalites"]) anchors.add(anchor);
@@ -89,7 +112,8 @@ test("les données structurées de la FAQ reprennent exactement les questions af
   const page = read("../src/app/page.tsx");
   const faq = read("../src/components/landing/FaqSection.tsx");
   assert.match(page, /FAQ_ITEMS\.map\(\(\{ q, a \}\)/);
-  assert.match(faq, /FAQ_GROUPS/); // la FAQ affiche tous les groupes : rien n'est annoncé aux moteurs sans être visible
+  assert.match(faq, /FAQ_ITEMS\.map/); // la FAQ affiche exactement les questions annoncées aux moteurs : rien n'est annoncé sans être visible
+  assert.doesNotMatch(faq, /FAQ_GROUPS|faq-filter/);
 });
 
 test("la photo du hero est facultative : sans elle, l'illustration de l'application est utilisée", () => {

@@ -88,7 +88,7 @@ export default function CreditsPage() {
         <section className="card" aria-labelledby="contact">
           <span className="eyebrow">Nous écrire</span>
           <h2 id="contact">Une question, une idée ?</h2>
-          <p className="muted">Contact : <ContactLine />. Pour le fonctionnement du service, consultez d’abord l’<Link href="/faq">aide</Link>. L’éditeur légal du service est indiqué dans les <Link href="/mentions-legales">mentions légales</Link>. Pour comprendre d’où vient le projet, lisez la page <Link href="/a-propos">À propos</Link>.</p>
+          <p className="muted">Contact : <ContactLine />. Pour le fonctionnement du service, consultez d’abord l’<Link href="/aide">aide</Link>. L’éditeur légal du service est indiqué dans les <Link href="/mentions-legales">mentions légales</Link>. Pour comprendre d’où vient le projet, lisez la page <Link href="/a-propos">À propos</Link>.</p>
         </section>
 
         <p className="muted credits__updated">Page mise à jour le <time dateTime={CREDITS_UPDATED}>{formatLegalDate(CREDITS_UPDATED)}</time>.</p>
@@ -96,7 +96,7 @@ export default function CreditsPage() {
         <nav className="legal__others" aria-label="Autres informations">
           <span>À lire aussi :</span>
           <Link href="/a-propos">À propos</Link>
-          <Link href="/faq">Aide</Link>
+          <Link href="/aide">Aide</Link>
           <Link href="/mentions-legales">Mentions légales</Link>
           <Link href="/confidentialite">Confidentialité</Link>
           <Link href="/cgu">Conditions d’utilisation</Link>

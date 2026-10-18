@@ -217,7 +217,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
             </PatientAccessQrContext.Provider>
           </AccountContext.Provider>
         )}
-        {!bare && <p className="space-footer"><Link href="/aide#confidentialite">Aide</Link></p>}
+        {!bare && <p className="space-footer"><Link href="/aide#donnees">Aide</Link></p>}
       </main>
       {state.status === "ready" && !bare && <GreetingModal account={state.account} space={space} />}
     </div>

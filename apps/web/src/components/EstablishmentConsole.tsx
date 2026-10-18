@@ -43,7 +43,7 @@ function NoEstablishment() {
       <span className="establishment-welcome__icon"><Icon name="building" size={26} /></span>
       <h2>Aucun établissement n’est rattaché à ce compte</h2>
       <p className="muted">L’ouverture est gérée par l’équipe Mon E‑Carnet. Consultez le guide pour préparer votre demande et connaître les étapes.</p>
-      <div className="actions"><Link className="button" href="/aide#etablissements">Guide établissement</Link><Link className="button" href="/">Retour à l’accueil</Link></div>
+      <div className="actions"><Link className="button" href="/aide#establishment">Guide établissement</Link><Link className="button" href="/">Retour à l’accueil</Link></div>
     </section>
   );
 }

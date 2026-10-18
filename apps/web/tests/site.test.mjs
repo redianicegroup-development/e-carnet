@@ -74,7 +74,7 @@ test("connectés : Paramètres › En savoir plus renvoie vers les pages légale
   const more = read("src/components/SettingsMoreSection.tsx");
   const hrefs = hrefsOf(more);
   for (const doc of Object.values(legal.LEGAL_DOCS)) assert.ok(hrefs.includes(doc.path), `En savoir plus : ${doc.path} manquant`);
-  for (const must of ["/credits", "/faq"]) assert.ok(hrefs.includes(must), `En savoir plus : ${must} manquant`);
+  for (const must of ["/credits", "/aide"]) assert.ok(hrefs.includes(must), `En savoir plus : ${must} manquant`);
   assert.ok(hrefs.every(routeExists), `routes absentes : ${hrefs.filter((h) => !routeExists(h)).join(", ")}`);
   assert.doesNotMatch(more, /À venir|comingSoon/);
   for (const settings of ["AccountSettingsClient", "ProfessionalSettingsClient", "EstablishmentSettingsClient"]) {
@@ -259,7 +259,7 @@ test("landing : FAQ visible et structurée, métadonnées indexables et liens ca
   assert.match(home, /alternates: \{ canonical: "\/" \}/);
   assert.doesNotMatch(home, /données fictives|phase pilote|version de test/i);
   assert.doesNotMatch(sitemap, /localhost/);
-  for (const route of ["/", "/a-propos", "/securite", "/faq", "/aide"]) assert.ok(sitemap.includes(`https://e-carnetci.vercel.app${route === "/" ? "/" : route}`), `sitemap : route ${route} absente`);
+  for (const route of ["/", "/a-propos", "/securite", "/aide"]) assert.ok(sitemap.includes(`https://e-carnetci.vercel.app${route === "/" ? "/" : route}`), `sitemap : route ${route} absente`);
   assert.match(robots, /Disallow: \/admin\n/);
   assert.match(robots, /Disallow: \/patient\n/);
   assert.match(robots, /Sitemap: https:\/\/e-carnetci\.vercel\.app\/sitemap\.xml/);

@@ -50,7 +50,7 @@ export function RecoveryRequestForm({ onBack }: { onBack?: () => void } = {}) {
     <div className="ax-form">
       <h2 className="ax-title" tabIndex={-1} ref={done}>Demande envoyée</h2>
       <p className="ax-subtitle">L’équipe Mon E‑Carnet vous répondra à l’adresse ou au numéro indiqué pour vérifier votre identité. Aucun accès n’est rouvert avant cet échange.</p>
-      <Link className="ax-submit ax-submit--link" href="/connexion"><span className="ax-submit__label">Retour à la connexion</span></Link>
+      <Link className="button primary ax-submit ax-submit--link" href="/connexion"><span className="ax-submit__label">Retour à la connexion</span></Link>
     </div>
   </div>;
 
@@ -72,7 +72,7 @@ export function RecoveryRequestForm({ onBack }: { onBack?: () => void } = {}) {
       {fieldError("consent")}
       <p className="ax-note" data-ax-item>N’écrivez jamais votre mot de passe ni d’information de santé dans ce message.</p>
       <div className="ax-hp" aria-hidden="true"><label>Ne pas remplir<input ref={decoy} type="text" name="website" tabIndex={-1} autoComplete="off" defaultValue="" /></label></div>
-      <button className={`ax-submit${sending ? " is-loading" : ""}`} type="submit" disabled={sending} data-ax-item><span className="ax-submit__label">{sending ? "Envoi en cours…" : "Envoyer ma demande"}</span><svg className="ax-submit__arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6" /></svg><span className="ax-submit__spinner" aria-hidden="true" /></button>
+      <button className={`button primary ax-submit${sending ? " is-loading" : ""}`} type="submit" disabled={sending} data-ax-item><span className="ax-submit__label">{sending ? "Envoi en cours…" : "Envoyer ma demande"}</span><svg className="ax-submit__arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6" /></svg><span className="ax-submit__spinner" aria-hidden="true" /></button>
       <p className="ax-message" role="status" aria-live="polite" hidden={!message}>{message}</p>
     </form>
   </div>;
