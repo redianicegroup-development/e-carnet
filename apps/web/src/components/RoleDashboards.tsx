@@ -1,6 +1,8 @@
 "use client";
 
+import { useId, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Icon } from "./ui/Icon";
 
 const COLORS = ["#16835d", "#5477d4", "#d58b16", "#8a55a2"];
 const chartText = "#68747d";
@@ -14,8 +16,41 @@ function EmptyChart({ text }: { text: string }) {
 }
 
 export function PatientDashboardChart({ metrics }: { metrics: Metric[] }) {
+  const [open, setOpen] = useState(true);
+  const panelId = useId();
   const data = metrics.filter((item) => item.value > 0);
-  return <article className="card role-chart-card"><div className="section-heading"><div><span className="eyebrow">Mon carnet</span><h2>Vue d’ensemble</h2></div></div><p className="muted">Un aperçu des éléments déjà enregistrés, sans afficher de contenu médical dans le graphique.</p>{data.length ? <div className="role-chart-plot" role="img" aria-label="Répartition des éléments du carnet"><ResponsiveContainer width="100%" height="100%"><BarChart data={data} margin={{ top: 8, right: 8, left: -18, bottom: 4 }}><CartesianGrid vertical={false} stroke={chartGrid} strokeDasharray="3 3" /><XAxis dataKey="label" tick={{ fill: chartText, fontSize: 11 }} tickLine={false} axisLine={false} /><YAxis allowDecimals={false} width={28} tick={{ fill: chartText, fontSize: 11 }} tickLine={false} axisLine={false} /><Tooltip contentStyle={tooltipStyle} formatter={(value) => [Number(value ?? 0), "Éléments"]} /><Bar dataKey="value" name="Éléments" radius={[6, 6, 0, 0]} isAnimationActive={false}>{data.map((item, index) => <Cell key={item.label} fill={item.color ?? COLORS[index % COLORS.length]} />)}</Bar></BarChart></ResponsiveContainer></div> : <EmptyChart text="Votre graphique apparaîtra après votre première information." />}</article>;
+  return (
+    <article className="card role-chart-card">
+      <div className="section-heading">
+        <div>
+          <span className="eyebrow">Mon carnet</span>
+          <h2 className="role-chart-card__title">
+            <button className="role-chart-card__toggle" type="button" aria-expanded={open} aria-controls={panelId} onClick={() => setOpen((value) => !value)}>
+              <span>Vue d’ensemble</span><Icon name="chevron" size={18} />
+            </button>
+          </h2>
+        </div>
+      </div>
+      <div id={panelId} className="role-chart-card__content" hidden={!open}>
+        <p className="muted">Un aperçu des éléments déjà enregistrés, sans afficher de contenu médical dans le graphique.</p>
+        {data.length ? (
+          <div className="role-chart-plot" role="img" aria-label="Répartition des éléments du carnet">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={data} margin={{ top: 8, right: 8, left: -18, bottom: 4 }}>
+                <CartesianGrid vertical={false} stroke={chartGrid} strokeDasharray="3 3" />
+                <XAxis dataKey="label" tick={{ fill: chartText, fontSize: 11 }} tickLine={false} axisLine={false} />
+                <YAxis allowDecimals={false} width={28} tick={{ fill: chartText, fontSize: 11 }} tickLine={false} axisLine={false} />
+                <Tooltip contentStyle={tooltipStyle} formatter={(value) => [Number(value ?? 0), "Éléments"]} />
+                <Bar dataKey="value" name="Éléments" radius={[6, 6, 0, 0]} isAnimationActive={false}>
+                  {data.map((item, index) => <Cell key={item.label} fill={item.color ?? COLORS[index % COLORS.length]} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        ) : <EmptyChart text="Votre graphique apparaîtra après votre première information." />}
+      </div>
+    </article>
+  );
 }
 
 export function ProfessionalDashboardChart({ metrics }: { metrics: Metric[] }) {

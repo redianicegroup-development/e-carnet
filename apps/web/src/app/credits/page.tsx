@@ -66,14 +66,14 @@ export default function CreditsPage() {
 
         <section className="stack" aria-labelledby="remerciements">
           <h2 id="remerciements">Remerciements</h2>
-          <p>Merci aux patients, aux professionnels de santé et aux établissements qui testent le pilote et partagent leurs retours. Leurs remarques orientent chaque amélioration, pour que l’expérience reste simple, claire et sous le contrôle du patient.</p>
+          <p>Merci aux patients, aux professionnels de santé et aux établissements qui utilisent la version interne et partagent leurs retours. Leurs remarques orientent chaque amélioration, pour que l’expérience reste simple, claire et sous le contrôle du patient.</p>
         </section>
 
         <section className="stack" aria-labelledby="identite">
           <h2 id="identite">Identité visuelle</h2>
           <div className="credits__identity">
             <BrandSwitchFigure />
-            <p>Le logo, le branding et l’identité visuelle sont l’œuvre de deux graphistes de l’équipe. Le signe réunit un carnet relié et un interrupteur : c’est mon carnet, et c’est moi qui décide. Il accompagne toute l’application, de la page d’accueil aux paramètres.</p>
+            <p>Le logo et l’identité visuelle sont l’œuvre de l’équipe. Le stéthoscope en forme de cadenas relie la santé à la confidentialité et au contrôle des accès ; il accompagne désormais l’application, de la page d’accueil aux paramètres.</p>
           </div>
         </section>
 

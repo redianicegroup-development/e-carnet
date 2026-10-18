@@ -436,6 +436,20 @@ a.setting-item:hover, button.setting-item:hover { border-color: var(--primary); 
 .feedback-fab { position: fixed; z-index: 850; right: max(18px, env(safe-area-inset-right)); bottom: calc(18px + env(safe-area-inset-bottom)); display: inline-flex; align-items: center; gap: 9px; min-height: 48px; padding: 0 18px; font: inherit; font-weight: 750; cursor: pointer; }
 .feedback-fab:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; }
 .feedback-fab > span:first-child { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: rgba(255, 255, 255, .2); font-size: 1.1rem; }
+.space--admin { min-width: 0; max-width: 100%; }
+@media (max-width: 900px) {
+  .space--admin { width: 100%; overflow-x: clip; }
+  .space--admin .space-main, .space--admin .admin-space-main { grid-column: 1; width: 100%; max-width: 100%; min-width: 0; }
+  .space--admin .admin-workspace, .space--admin .admin-workspace__content, .space--admin .admin-workspace__content > [role="tabpanel"] { width: 100%; max-width: 100%; min-width: 0; }
+  .space--admin .admin-space-main [role="tabpanel"] .card { min-width: 0; max-width: 100%; }
+  .space--admin .admin-space-main [role="tabpanel"] :is(a, p, small, code) { overflow-wrap: anywhere; }
+  .space--admin .admin-table-wrap { width: 100%; max-width: 100%; overflow-x: auto; }
+  .space--admin .sb__scroll { max-width: 100%; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scrollbar-width: none; }
+  .space--admin .sb__scroll::-webkit-scrollbar { display: none; }
+  .space--admin .sb__list { display: flex; flex-wrap: nowrap; width: max-content; min-width: 100%; max-width: none; gap: 2px; }
+  .space--admin .sb__row { flex: 0 0 44px; }
+  .space--admin .sb__item { width: 44px; }
+}
 .feedback-backdrop, .product-survey-backdrop { position: fixed; z-index: 1400; inset: 0; display: grid; place-items: center; padding: 16px; background: rgba(8, 19, 29, .6); }
 .product-survey-backdrop { z-index: 1500; }
 .feedback-dialog, .product-survey-dialog { width: min(100%, 680px); max-height: min(92vh, 860px); max-height: min(92dvh, 860px); overflow: auto; overscroll-behavior: contain; border: 1px solid var(--border); border-radius: 20px; background: var(--surface); color: var(--text); box-shadow: 0 24px 80px rgba(0, 0, 0, .28); }
@@ -625,6 +639,13 @@ a.setting-item:hover, button.setting-item:hover { border-color: var(--primary); 
 /* Dashboards par espace : graphiques sobres, lisibles sur téléphone et sans données cliniques détaillées. */
 .role-dashboard-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .role-chart-card { min-width: 0; }
+.role-chart-card__title { margin: 0; }
+.role-chart-card__toggle { display: inline-flex; align-items: center; gap: 8px; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.role-chart-card__toggle:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: 4px; }
+.role-chart-card__toggle .icon { flex: 0 0 auto; color: var(--text-muted); transform: rotate(0); transition: transform .2s ease; }
+.role-chart-card__toggle[aria-expanded="true"] .icon { transform: rotate(90deg); }
+.role-chart-card__content { display: grid; gap: 12px; min-width: 0; }
+.role-chart-card__content[hidden] { display: none; }
 .role-chart-plot { width: 100%; height: 220px; min-height: 180px; }
 .role-chart-plot--donut { height: 190px; }
 .role-chart-empty { min-height: 180px; display: grid; place-items: center; padding: 24px; border: 1px dashed var(--border); border-radius: 14px; color: var(--text-muted); text-align: center; }

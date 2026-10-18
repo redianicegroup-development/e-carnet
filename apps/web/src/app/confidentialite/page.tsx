@@ -117,7 +117,7 @@ const sections: LegalSectionDef[] = [
     title: "Prestataires et services tiers",
     body: (
       <>
-        <p>Liste des prestataires de l’<strong>environnement actuel</strong>. Elle sera mise à jour avant toute ouverture à des données réelles.</p>
+        <p>Liste des prestataires de l’<strong>environnement de production interne</strong>. Cet environnement accepte de vraies informations de santé ; les services susceptibles de les traiter, leurs régions et leurs accès doivent donc rester documentés et vérifiés.</p>
         <LegalTable
           caption="Prestataires et services tiers"
           head={["Service", "Rôle", "Données concernées", "Lieu de traitement"]}
@@ -127,7 +127,7 @@ const sections: LegalSectionDef[] = [
             ["Google, Facebook (Meta), Apple", "Connexion, uniquement si vous choisissez cette méthode.", "Identifiant, adresse e-mail, nom, adresse de l’image de profil.", "Selon les conditions de chaque fournisseur, qui agit pour son propre compte."],
           ]}
         />
-        <p>Aucune donnée de santé réelle ne doit être enregistrée chez ces prestataires dans le cadre du service.</p>
+        <p>La production interne accepte la saisie de vraies informations de santé. Les prestataires listés peuvent traiter les données nécessaires à leur rôle dans le service ; les régions, copies de sauvegarde et modalités d’accès d’assistance ne sont pas toutes confirmées.</p>
       </>
     ),
   },
@@ -138,7 +138,7 @@ const sections: LegalSectionDef[] = [
       <>
         <p>Les prestataires de l’environnement actuel sont des services internationaux. Leurs régions d’hébergement et l’emplacement de leurs copies de sauvegarde ne sont pas confirmés. <strong>Aucune garantie de localisation des données en Côte d’Ivoire n’est donnée pour cet environnement.</strong></p>
         <p>Régime applicable aux transferts : <Fill k="privacy.transfers" />.</p>
-        <p>Un hébergement en Côte d’Ivoire est à l’étude pour la suite. Une localisation du serveur principal ne signifie pas que toutes les copies, journaux et accès d’assistance restent dans le même pays : ces éléments seront décrits séparément avant toute ouverture à des données réelles.</p>
+        <p>Un hébergement en Côte d’Ivoire est à l’étude. Comme la production interne traite déjà de vraies données de santé, les régions d’hébergement, les copies, les journaux et les accès d’assistance doivent être confirmés pour chaque prestataire ; le service n’est pas ouvert au grand public.</p>
       </>
     ),
   },
@@ -147,7 +147,7 @@ const sections: LegalSectionDef[] = [
     title: "Conservation",
     body: (
       <>
-        <p>Les durées de conservation <strong>ne sont pas encore approuvées</strong>. Elles seront publiées, par catégorie, avant toute ouverture à des données réelles.</p>
+        <p>Les durées de conservation <strong>ne sont pas encore approuvées</strong>. Elles doivent être définies par catégorie pour l’usage interne actuel, puis publiées avant toute ouverture au grand public.</p>
         <LegalTable
           caption="Durées de conservation par catégorie"
           head={["Catégorie", "Durée de conservation"]}

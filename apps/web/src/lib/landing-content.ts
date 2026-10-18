@@ -6,9 +6,12 @@ import type { IconName } from "../components/ui/Icon";
    tests/landing.test.mjs échoue si l'une des deux versions change sans l'autre.
    Fichier volontairement sans import d'exécution, pour rester testable avec `node --test`. */
 
-/** Photo du hero. `null` = illustration de l'application (celle du dépôt). Pour une vraie photo : déposer le fichier
-    dans public/landing/ (WebP, 1920×1080 minimum, sujet lisible à droite) puis renseigner { src, alt }. */
-export const HERO_IMAGE: { src: string; alt: string } | null = null;
+/** Sources du hero, cadrées selon le format de l’écran : portrait sur mobile et paysage sur ordinateur. */
+export const HERO_IMAGE = {
+  mobileSrc: "/landing/hero-mobile.webp",
+  desktopSrc: "/landing/hero-desktop.webp",
+  alt: "Patient et infirmière préparent une consultation avec Mon E‑Carnet",
+} as const;
 
 export const HERO = {
   eyebrow: "Carnet de santé numérique",
@@ -68,7 +71,7 @@ export type FaqItem = {
    Chaque réponse est recopiée mot pour mot de components/help/helpContent.ts (texte relu par les juristes) :
    tests/landing.test.mjs échoue si l'une des deux versions change sans l'autre. */
 export const FAQ_ITEMS: FaqItem[] = [
-  { id: "real-data", q: "Puis-je saisir mes vraies données de santé ?", a: "Non. Utilisez des informations exactes dans votre espace personnel. N’ajoutez pas de vrais renseignements médicaux ni d’identifiants de patients." },
+  { id: "real-data", q: "Puis-je saisir mes vraies données de santé ?", a: "Oui. En production interne, de vraies informations de santé peuvent être saisies dans l’espace du patient. L’infirmier n’a pas de compte : la pré-consultation se fait dans cet espace. Le service n’est pas ouvert au grand public." },
   { id: "consent", q: "Un professionnel voit-il mon carnet automatiquement ?", a: "Non. Il doit être rattaché à un établissement actif, puis recevoir votre autorisation pour un contenu précis et une durée limitée." },
   { id: "refuse", q: "Puis-je refuser ou arrêter un accès ?", a: "Oui. Vous pouvez refuser une demande, ou révoquer un accès en cours depuis votre espace. La révocation n’efface pas les consultations déjà validées ni les traces d’audit." },
   { id: "verified", q: "Un professionnel est-il vérifié par Mon E-Carnet ?", a: "Non. Mon E-Carnet ne certifie ni l’identité, ni les diplômes, ni la compétence d’un professionnel. L’établissement confirme le rattachement du professionnel à sa structure." },

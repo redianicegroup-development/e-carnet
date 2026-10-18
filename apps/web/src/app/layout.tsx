@@ -22,6 +22,7 @@ import { LandingFeedbackWidget } from "../components/LandingFeedbackWidget";
 import { GooeyFilters } from "../components/ui/GooeyFilters";
 import { ConfirmProvider } from "../components/modal/ConfirmProvider";
 import { CookieConsentBanner } from "../components/CookieConsentBanner";
+import { PROJECT_LOGO_WEBP } from "../lib/brand";
 import "./cookie-consent.css";
 import "./screen-loader.css";
 import "../components/modal/modal.css";
@@ -49,6 +50,10 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
   applicationName: "Mon E-Carnet",
   manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [{ url: PROJECT_LOGO_WEBP, type: "image/webp" }],
+    apple: [{ url: "/brand/apple-touch-icon.png", type: "image/png", sizes: "180x180" }],
+  },
 };
 
 export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#FFF7E6" };

@@ -1,5 +1,5 @@
-const CACHE_NAME = "ecarnet-public-v1";
-const PUBLIC_ASSETS = ["/", "/a-propos", "/securite", "/faq", "/manifest.webmanifest"];
+const CACHE_NAME = "ecarnet-public-v2";
+const PUBLIC_ASSETS = ["/", "/aide", "/a-propos", "/securite", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(PUBLIC_ASSETS)));

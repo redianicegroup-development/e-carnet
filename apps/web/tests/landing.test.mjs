@@ -21,19 +21,12 @@ test("la FAQ de la landing compte exactement six questions, chacune avec un iden
   }
 });
 
-/* Écart connu, à trancher par le produit puis à supprimer d'ici : dans la version v2, l'aide répond « Oui, utilisez des informations
-   exactes… » à « Puis-je saisir mes vraies données de santé ? » alors que la landing répond « Non… ». La fusion de la v16 n'a pas
-   choisi à la place des responsables : chaque page garde son texte. Toute autre réponse doit rester identique mot pour mot. */
-const KNOWN_DIVERGENCES = new Set(["real-data"]);
-
-test("les six réponses sont identiques mot pour mot à celles du centre d'aide (texte relu par les juristes), sauf l'écart connu", () => {
+test("les réponses sont identiques mot pour mot à celles du centre d'aide", () => {
   for (const item of landing.FAQ_ITEMS) {
     const source = helpFaq.find((entry) => entry.q === item.q);
     assert.ok(source, `question absente du centre d'aide : ${item.q}`);
-    if (KNOWN_DIVERGENCES.has(item.id)) continue;
     assert.equal(item.a, source.a, `réponse différente du centre d'aide : ${item.q}`);
   }
-  assert.equal(landing.FAQ_ITEMS.filter((item) => KNOWN_DIVERGENCES.has(item.id)).length, KNOWN_DIVERGENCES.size, "écart connu obsolète : retirez-le de la liste");
 });
 
 test("les questions retirées de la landing existent toutes dans le centre d'aide", () => {
@@ -116,6 +109,8 @@ test("les données structurées de la FAQ reprennent exactement les questions af
   assert.doesNotMatch(faq, /FAQ_GROUPS|faq-filter/);
 });
 
-test("la photo du hero est facultative : sans elle, l'illustration de l'application est utilisée", () => {
-  assert.ok(landing.HERO_IMAGE === null || (typeof landing.HERO_IMAGE.src === "string" && landing.HERO_IMAGE.alt.length > 5));
+test("le hero utilise les deux images fournies selon le format mobile ou desktop", () => {
+  assert.equal(landing.HERO_IMAGE.mobileSrc, "/landing/hero-mobile.webp");
+  assert.equal(landing.HERO_IMAGE.desktopSrc, "/landing/hero-desktop.webp");
+  assert.ok(landing.HERO_IMAGE.alt.length > 5);
 });

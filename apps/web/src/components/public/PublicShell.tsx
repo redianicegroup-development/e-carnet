@@ -4,7 +4,9 @@ import { BrandMark } from "../ui/BrandMark";
 import { Icon } from "../ui/Icon";
 import { PwaInstallButton } from "../PwaInstallButton";
 import { LEGAL_DOCS } from "../../lib/legal/config";
+import { PROJECT_LOGO_WEBP } from "../../lib/brand";
 import { PublicHeader } from "./PublicHeader";
+import { BackToTopButton } from "./BackToTopButton";
 import { CookiePreferencesLink } from "../CookieConsentBanner";
 import { FooterCredit } from "./FooterCredit";
 
@@ -16,7 +18,6 @@ export function PublicFooter() {
           <Link className="pub-footer__logo" href="/" aria-label="Mon E-Carnet, accueil"><BrandMark /><span>Mon E‑Carnet</span></Link>
           <div className="pub-footer__brand-foot">
             <p className="pub-footer__tagline">Un carnet de santé personnel, <span>organisé selon vos choix.</span></p>
-            <p className="pub-footer__pilot"></p>
             <PwaInstallButton />
             <div className="pub-footer__touch">
               <span className="pub-footer__script">Restons en contact !</span>
@@ -31,7 +32,7 @@ export function PublicFooter() {
         <section className="pub-footer__card pub-footer__card--links" aria-label="Liens du site">
           <div className="pub-footer__app" aria-hidden="true">
             {/* eslint-disable-next-line @next/next/no-img-element -- icône de marque locale, décorative */}
-            <img src="/brand/app-icon.svg" alt="" width={72} height={72} draggable={false} />
+            <img src={PROJECT_LOGO_WEBP} alt="" width={72} height={72} draggable={false} referrerPolicy="no-referrer" />
             <span className="pub-footer__app-note">Votre santé, vos choix</span>
           </div>
           <div className="pub-footer__columns">
@@ -43,7 +44,6 @@ export function PublicFooter() {
             <div className="pub-footer__legal">
               <span>© 2026 Mon E‑Carnet</span>
               <p className="pub-footer__made">Créé par <strong>Redianice</strong> et <FooterCredit /></p>
-              <a href="#contenu">Retour en haut <Icon name="chevron" size={14} /></a>
             </div>
             <div className="pub-footer__cta">
               <p><span>La santé avance vite.</span><strong>Gardez le fil avec Mon E‑Carnet.</strong></p>
@@ -65,6 +65,7 @@ export function PublicShell({ children, bleed = false }: { children: ReactNode; 
       <PublicHeader />
       <main id="contenu" className={bleed ? "pub-main pub-main--bleed" : "pub-main"}>{children}</main>
       <PublicFooter />
+      <BackToTopButton />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { PublicEmergencyCard } from "../../../components/PublicEmergencyCard";
+import { BackToTopButton } from "../../../components/public/BackToTopButton";
 
 export const metadata = {
   title: "Carte d’urgence — Mon E‑Carnet",
@@ -8,5 +9,5 @@ export const metadata = {
 
 export default async function EmergencyCardPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
-  return <PublicEmergencyCard token={token} />;
+  return <><PublicEmergencyCard token={token} /><BackToTopButton /></>;
 }

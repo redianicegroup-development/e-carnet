@@ -89,7 +89,7 @@ export const HELP_FAQ: HelpFaqGroup[] = [
       { q: "Comment un médecin rejoint-il un établissement ?", a: "L’administrateur de l’établissement lui remet un code à usage unique, valable 48 h. Le médecin le saisit dans son espace : sa demande est envoyée à l’établissement. Tant que le rattachement n’est pas confirmé, il ne peut demander l’accès à aucun carnet.", profiles: ["professional", "establishment"] },
       { q: "Que se passe-t-il si l’invitation ou le code expire ?", a: "L’invitation d’un administrateur et le code d’un médecin sont valables 48 heures et ne s’utilisent qu’une fois. Demandez-en un nouveau : l’ancien ne fonctionnera plus.", profiles: ["professional", "establishment"] },
       { q: "Un médecin peut-il lire tous les carnets de l’établissement ?", a: "Non. Un rattachement ne donne accès à aucun dossier : chaque patient autorise ou refuse, demande par demande.", profiles: ["establishment", "professional"] },
-      { q: "Un infirmier possède-t-il un compte ?", a: "Non. L’aide éventuelle se fait dans le compte du patient, avec son accord. Une aide éventuelle se fait dans le compte du patient.", profiles: ["patient", "establishment"] },
+      { q: "Un infirmier possède-t-il un compte ?", a: "Non. L’infirmier n’a pas de compte propre. Avec l’accord du patient, il peut l’aider à saisir la pré-consultation depuis l’espace du patient.", profiles: ["patient", "establishment"] },
       { q: "Un proche peut-il m’aider à remplir mon carnet ?", a: "La pré-consultation permet d’indiquer la personne qui vous a aidé. Cette personne n’a ni compte, ni droit d’accès propre.", profiles: ["patient"] },
       { q: "Puis-je me connecter de plusieurs façons ?", a: "Oui. Vous pouvez lier Google, Facebook ou Apple à votre compte depuis les paramètres. Deux comptes ne sont jamais fusionnés sur la seule base d’une adresse e-mail.", profiles: ["patient", "professional"] },
     ],
@@ -107,7 +107,7 @@ export const HELP_FAQ: HelpFaqGroup[] = [
     id: "donnees",
     title: "Données et sécurité",
     items: [
-      { q: "Puis-je saisir mes vraies données de santé ?", a: "Oui, utilisez des informations exactes dans votre espace personnel.", profiles: ["patient", "professional", "establishment"] },
+      { q: "Puis-je saisir mes vraies données de santé ?", a: "Oui. En production interne, de vraies informations de santé peuvent être saisies dans l’espace du patient. L’infirmier n’a pas de compte : la pré-consultation se fait dans cet espace. Le service n’est pas ouvert au grand public.", profiles: ["patient", "professional", "establishment"] },
       { q: "Les données sont-elles disponibles hors connexion ?", a: "Les pages publiques peuvent offrir un repli limité. Aucune donnée médicale ni réponse de l’API n’est conservée hors connexion.", profiles: ["patient", "professional", "establishment"] },
       { q: "Comment sont protégées mes informations ?", a: "Le service applique les mesures techniques décrites dans les pages Sécurité et Confidentialité.", profiles: ["patient", "professional", "establishment"] },
       { q: "Quelles données de fréquentation sont collectées ?", a: "Avec votre accord, un cookie aléatoire aide à compter les catégories de pages, certains clics publics et des événements de connexion. Le suivi ne conserve ni URL complète, ni adresse IP, ni texte de bouton.", profiles: ["patient", "professional", "establishment"] },

@@ -1,6 +1,6 @@
 
 git add .
-git commit -m "v2.2 gooey et in invitation"
+git commit -m "v2.3 MODIF"
 git branch -M main
 git remote add origin https://github.com/redianicegroup-development/e-carnet.git
 git push -u origin main

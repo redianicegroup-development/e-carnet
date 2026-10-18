@@ -67,7 +67,7 @@ export default function HomePage() {
           </div>
         </div>
         {HERO_IMAGE
-          ? <div className="lp-hero__media lp-hero__media--photo" data-hero-media><Image src={HERO_IMAGE.src} alt={HERO_IMAGE.alt} fill priority sizes="100vw" /></div>
+          ? <div className="lp-hero__media lp-hero__media--photo" data-hero-media><picture><source media="(max-width: 759px)" srcSet={HERO_IMAGE.mobileSrc} /><Image src={HERO_IMAGE.desktopSrc} alt={HERO_IMAGE.alt} fill priority sizes="100vw" /></picture></div>
           : <div className="lp-hero__media" data-hero-media role="img" aria-label={HERO.sceneLabel}><HeroScene /></div>}
         <div className="lp-hero__reveal" data-hero-reveal aria-hidden="true">
           <div className="lp-wrap">

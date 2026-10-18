@@ -13,7 +13,7 @@ const VITALS_STEP = 2;
 /* Quatre questions (motif, symptômes, constantes, personne qui aide). Aucun établissement à choisir : c'est le médecin qui lit ce brouillon grâce au QR du patient,
    puis le clôture en signant sa consultation. La personne qui aide (souvent un infirmier sans compte) remplit sur le téléphone du patient. */
 const QUESTIONS = [
-  { eyebrow: "Étape 1 sur 4", title: "Quel est le motif de la consultation ?", hint: "Quelques mots suffisent : ce qui amène le patient." },
+  { eyebrow: "Étape 1 sur 4", title: "Quel est le motif de la consultation ?", hint: "Quelques mots suffisent. La pré-consultation se remplit dans l’espace patient, avec l’aide éventuelle d’un infirmier ou d’un proche, sans compte propre pour cette personne." },
   { eyebrow: "Étape 2 sur 4", title: "Quels symptômes, depuis quand ?", hint: "Symptômes, début, intensité, ce qui a déjà été tenté. Cette réponse est facultative." },
   { eyebrow: "Étape 3 sur 4", title: "Quelles constantes ont été relevées ?", hint: "Seulement ce qui a été mesuré : laissez vide le reste, rien n'est supposé. Tout est facultatif." },
   { eyebrow: "Étape 4 sur 4", title: "Qui remplit avec le patient ?", hint: "Indiquez le rôle ou le prénom (infirmier, infirmière, proche), ou passez cette étape." },

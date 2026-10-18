@@ -25,7 +25,7 @@ type EmergencyCard = {
 };
 const EMPTY: EmergencyCard = { first_name: "", last_name: "", city: "", blood_group: "", allergies: [], treatments: [], contact_name: "", contact_phone: "", qr_enabled: false, qr_token: "", updated_at: "" };
 
-/* « Ma carte d’urgence » : la carte, son QR (unique, statique, pliable) et le téléchargement.
+/* « Ma carte d’urgence » : section de carte virtuelle repliable, QR séparément pliable et téléchargement.
    Rien ne se modifie ici : ville, contact d’urgence, groupe sanguin et allergies sont des déclarations du carnet. */
 export function PatientEmergencyCardSettingsClient() {
   const account = useSpaceAccount();
@@ -33,8 +33,10 @@ export function PatientEmergencyCardSettingsClient() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [cardOpen, setCardOpen] = useState(true);
   const [qrOpen, setQrOpen] = useState(false);
   const [message, setMessage] = useState("");
+  const cardPanelId = useId();
   const qrPanelId = useId();
   const confirm = useConfirm();
 
@@ -83,11 +85,12 @@ export function PatientEmergencyCardSettingsClient() {
   return <section className="card ecard-panel" aria-labelledby="emergency-card-title">
     <div className="ecard-panel__head">
       <span className="eyebrow">Carte d’urgence</span>
-      <h2 id="emergency-card-title">Ma carte virtuelle</h2>
+      <h2 id="emergency-card-title" className="ecard-panel__title"><button className="ecard-panel__toggle" type="button" aria-expanded={cardOpen} aria-controls={cardPanelId} onClick={() => setCardOpen((open) => !open)}>Ma carte virtuelle<Icon name="chevron" size={20} /></button></h2>
       <p className="muted">Une personne qui scanne votre QR voit cette carte, sans se connecter. Elle se met à jour toute seule quand vous modifiez votre carnet.</p>
     </div>
 
     {loading ? <p className="notice" role="status">Chargement de la carte…</p> : <>
+      <div id={cardPanelId} className="ecard-panel__content" hidden={!cardOpen}>
       <EmergencyCardVisual card={card} showQr={false} photo={photo} />
 
       <div className="ecard-panel__actions">
@@ -117,6 +120,7 @@ export function PatientEmergencyCardSettingsClient() {
           </div>}
       </div>
 
+      </div>
       <p className="ecard-panel__message" role="status" aria-live="polite">{message}</p>
       <p className="ecard-panel__hint">Cette carte ne remplace ni un avis médical ni les services de secours.</p>
     </>}

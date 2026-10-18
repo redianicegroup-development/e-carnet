@@ -1,4 +1,5 @@
 import { EMERGENCY_CARD_FOOTNOTE, emergencyCardFullName, type EmergencyCardPhoto, type EmergencyCardView } from "./EmergencyCardVisual";
+import { PROJECT_LOGO_WEBP } from "../../lib/brand";
 
 /*
  * Export PNG de la carte d’urgence : même contenu et même mise en page que <EmergencyCardVisual />, dessinés en canvas
@@ -7,11 +8,11 @@ import { EMERGENCY_CARD_FOOTNOTE, emergencyCardFullName, type EmergencyCardPhoto
  * ne donne accès à rien d’autre que ce qu’elle montre. Elle affiche pourtant identité, allergies et contact : à partager avec précaution.
  */
 const W = 1600;
-const PAD = 72;
-const BAND = 132;
-const MIN_HEIGHT = 900;
-const PHOTO_W = 400;
-const PHOTO_H = 500;
+const PAD = 64;
+const BAND = 108;
+const CARD_HEIGHT = 900;
+const PHOTO_W = 340;
+const PHOTO_H = 425;
 const INK = "#17231f";
 const MUTED = "#5a6b64";
 const LINE = "#dfe7e3";
@@ -74,20 +75,20 @@ function limitLines(ctx: Ctx, lines: string[], max: number, maxWidth: number): s
 }
 
 function label(ctx: Ctx, text: string, x: number, y: number): number {
-  ctx.font = `800 24px ${currentBody}`;
+  ctx.font = `800 18px ${currentBody}`;
   ctx.fillStyle = MUTED;
-  ctx.letterSpacing = "3px";
-  ctx.fillText(text.toUpperCase(), x, y + 24);
+  ctx.letterSpacing = "2px";
+  ctx.fillText(text.toUpperCase(), x, y + 19);
   ctx.letterSpacing = "0px";
-  return 24 + 18;
+  return 28;
 }
 
 function chips(ctx: Ctx, items: string[], x: number, y: number, maxWidth: number, tone: "allergy" | "treatment"): number {
   const colors = tone === "allergy"
     ? { bg: "#fff1ee", border: "#f1c2b8", text: "#8a1c10" }
     : { bg: "#eef3f0", border: "#d3dfd8", text: "#24352f" };
-  const H = 60, GAP = 14, PADX = 26, MAX_ROWS = 4;
-  ctx.font = `700 32px ${currentBody}`;
+  const H = 42, GAP = 10, PADX = 18, MAX_ROWS = 2;
+  ctx.font = `700 24px ${currentBody}`;
   let cx = x, row = 0, shown = 0;
   for (const item of items) {
     const width = Math.min(ctx.measureText(item).width + PADX * 2, maxWidth);
@@ -99,14 +100,14 @@ function chips(ctx: Ctx, items: string[], x: number, y: number, maxWidth: number
     ctx.lineWidth = 2; ctx.strokeStyle = colors.border; ctx.stroke();
     ctx.fillStyle = colors.text;
     const text = limitLines(ctx, [item], 1, width - PADX * 2)[0];
-    ctx.fillText(text, cx + PADX, top + 40);
+    ctx.fillText(text, cx + PADX, top + 28);
     cx += width + GAP; shown += 1;
   }
   if (shown < items.length) {
     const more = `+${items.length - shown}`;
     const top = y + Math.min(row, MAX_ROWS - 1) * (H + GAP);
     ctx.fillStyle = MUTED;
-    ctx.fillText(more, cx > x ? cx : x, top + 40);
+    ctx.fillText(more, cx > x ? cx : x, top + 28);
   }
   return (Math.min(row, MAX_ROWS - 1) + 1) * (H + GAP) - GAP;
 }
@@ -155,7 +156,28 @@ function drawPhoto(ctx: Ctx, photo: LoadedPhoto, x: number, y: number, style: St
   ctx.lineWidth = 3; ctx.strokeStyle = LINE; ctx.stroke();
 }
 
-function paint(ctx: Ctx, card: EmergencyCardView, photo: LoadedPhoto, style: Style): number {
+function drawBrandMark(ctx: Ctx, image: HTMLImageElement | null, x: number, y: number, size: number, style: Style) {
+  roundRect(ctx, x, y, size, size, 20);
+  ctx.fillStyle = style.onAccent;
+  ctx.fill();
+  if (image) {
+    ctx.save();
+    roundRect(ctx, x, y, size, size, 20);
+    ctx.clip();
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(image, x, y, size, size);
+    ctx.restore();
+  } else {
+    ctx.fillStyle = style.accent;
+    ctx.font = `800 ${Math.round(size * .78)}px ${style.body}`;
+    ctx.textAlign = "center";
+    ctx.fillText("+", x + size / 2, y + size * .73);
+    ctx.textAlign = "left";
+  }
+}
+
+function paint(ctx: Ctx, card: EmergencyCardView, photo: LoadedPhoto, brandLogo: LoadedPhoto, style: Style): number {
   currentBody = style.body;
   const heading = style.heading;
   ctx.textBaseline = "alphabetic";
@@ -167,13 +189,7 @@ function paint(ctx: Ctx, card: EmergencyCardView, photo: LoadedPhoto, style: Sty
   ctx.fillStyle = style.accent;
   ctx.fillRect(0, 0, W, BAND);
   const mark = 64;
-  roundRect(ctx, PAD, (BAND - mark) / 2, mark, mark, 20);
-  ctx.fillStyle = style.onAccent; ctx.fill();
-  ctx.fillStyle = style.accent;
-  ctx.font = `800 54px ${style.body}`;
-  ctx.textAlign = "center";
-  ctx.fillText("+", PAD + mark / 2, BAND / 2 + 19);
-  ctx.textAlign = "left";
+  drawBrandMark(ctx, brandLogo.image, PAD, (BAND - mark) / 2, mark, style);
   ctx.fillStyle = style.onAccent;
   ctx.font = `800 46px ${heading}`;
   ctx.fillText("Mon E‑Carnet", PAD + mark + 22, BAND / 2 + 16);
@@ -190,11 +206,11 @@ function paint(ctx: Ctx, card: EmergencyCardView, photo: LoadedPhoto, style: Sty
   const photoX = W - PAD - PHOTO_W;
   drawPhoto(ctx, photo, photoX, top, style);
   ctx.fillStyle = MUTED;
-  ctx.font = `700 28px ${style.body}`;
+  ctx.font = `700 22px ${style.body}`;
   ctx.textAlign = "center";
-  ctx.fillText("Titulaire de la carte", photoX + PHOTO_W / 2, top + PHOTO_H + 46);
+  ctx.fillText("Titulaire de la carte", photoX + PHOTO_W / 2, top + PHOTO_H + 30);
   ctx.textAlign = "left";
-  const photoBottom = top + PHOTO_H + 66;
+  const photoBottom = top + PHOTO_H + 48;
 
   // informations à gauche
   const x = PAD;
@@ -202,66 +218,66 @@ function paint(ctx: Ctx, card: EmergencyCardView, photo: LoadedPhoto, style: Sty
   let y = top;
 
   const fullName = emergencyCardFullName(card);
-  ctx.font = `800 88px ${heading}`;
+  ctx.font = `800 62px ${heading}`;
   ctx.fillStyle = fullName ? INK : MUTED;
   const nameLines = limitLines(ctx, wrap(ctx, fullName || "Identité non renseignée", width), 2, width);
-  nameLines.forEach((line, index) => ctx.fillText(line, x, y + 78 + index * 96));
-  y += nameLines.length * 96 + 36;
+  nameLines.forEach((line, index) => ctx.fillText(line, x, y + 54 + index * 68));
+  y += nameLines.length * 68 + 10;
 
   // groupe sanguin | ville
-  const bloodW = 380;
+  const bloodW = 330;
   const rowTop = y;
   const labelH = label(ctx, "Groupe sanguin", x, rowTop);
   label(ctx, "Ville", x + bloodW, rowTop);
-  ctx.font = `850 84px ${heading}`;
+  ctx.font = `850 62px ${heading}`;
   ctx.fillStyle = card.blood_group ? DANGER : MUTED;
-  if (!card.blood_group) ctx.font = `500 38px ${style.body}`;
-  ctx.fillText(card.blood_group || "Non renseigné", x, rowTop + labelH + (card.blood_group ? 72 : 40));
-  ctx.font = card.city ? `700 44px ${style.body}` : `500 38px ${style.body}`;
+  if (!card.blood_group) ctx.font = `500 26px ${style.body}`;
+  ctx.fillText(card.blood_group || "Non renseigné", x, rowTop + labelH + (card.blood_group ? 58 : 30));
+  ctx.font = card.city ? `700 32px ${style.body}` : `500 26px ${style.body}`;
   ctx.fillStyle = card.city ? INK : MUTED;
-  const cityLines = limitLines(ctx, wrap(ctx, card.city || "Non renseignée", width - bloodW), 2, width - bloodW);
-  cityLines.forEach((line, index) => ctx.fillText(line, x + bloodW, rowTop + labelH + 40 + index * 52));
-  y = rowTop + labelH + Math.max(card.blood_group ? 84 : 52, cityLines.length * 52) + 44;
+  const cityLines = limitLines(ctx, wrap(ctx, card.city || "Non renseignée", width - bloodW), 1, width - bloodW);
+  cityLines.forEach((line) => ctx.fillText(line, x + bloodW, rowTop + labelH + 36));
+  y = rowTop + labelH + Math.max(card.blood_group ? 68 : 38, 38) + 18;
 
   // allergies
   y += label(ctx, "Allergies", x, y);
-  if (card.allergies.length) y += chips(ctx, card.allergies.map((item) => item.label), x, y, width, "allergy") + 40;
-  else { ctx.font = `500 36px ${style.body}`; ctx.fillStyle = MUTED; ctx.fillText("Aucune allergie déclarée", x, y + 36); y += 36 + 44; }
+  if (card.allergies.length) y += chips(ctx, card.allergies.map((item) => item.label), x, y, width, "allergy") + 18;
+  else { ctx.font = `500 26px ${style.body}`; ctx.fillStyle = MUTED; ctx.fillText("Aucune allergie déclarée", x, y + 28); y += 28 + 18; }
 
   // traitements (seulement s’il y en a, comme à l’écran)
   if (card.treatments.length) {
     y += label(ctx, "Traitements", x, y);
-    y += chips(ctx, card.treatments.map((item) => item.label), x, y, width, "treatment") + 40;
+    y += chips(ctx, card.treatments.map((item) => item.label), x, y, width, "treatment") + 18;
   }
 
   // contact d’urgence
   y += label(ctx, "Contact d’urgence", x, y);
   if (card.contact_name || card.contact_phone) {
     if (card.contact_name) {
-      ctx.font = `800 46px ${style.body}`; ctx.fillStyle = INK;
-      const lines = limitLines(ctx, wrap(ctx, card.contact_name, width), 2, width);
-      lines.forEach((line, index) => ctx.fillText(line, x, y + 40 + index * 54));
-      y += lines.length * 54 + 6;
+      ctx.font = `800 34px ${style.body}`; ctx.fillStyle = INK;
+      const lines = limitLines(ctx, wrap(ctx, card.contact_name, width), 1, width);
+      lines.forEach((line) => ctx.fillText(line, x, y + 32));
+      y += 38;
     }
     if (card.contact_phone) {
-      ctx.font = `600 42px ${style.body}`; ctx.fillStyle = MUTED;
-      ctx.fillText(card.contact_phone, x, y + 38);
-      y += 50;
+      ctx.font = `600 30px ${style.body}`; ctx.fillStyle = MUTED;
+      ctx.fillText(card.contact_phone, x, y + 30);
+      y += 36;
     }
-  } else { ctx.font = `500 36px ${style.body}`; ctx.fillStyle = MUTED; ctx.fillText("Non renseigné", x, y + 36); y += 44; }
+  } else { ctx.font = `500 26px ${style.body}`; ctx.fillStyle = MUTED; ctx.fillText("Non renseigné", x, y + 28); y += 32; }
 
   // pied de carte
-  ctx.font = `500 25px ${style.body}`;
+  ctx.font = `500 20px ${style.body}`;
   const footLines = wrap(ctx, EMERGENCY_CARD_FOOTNOTE, W - PAD * 2);
-  const footH = 34 + footLines.length * 34 + 22;
-  const footTop = Math.max(Math.max(y, photoBottom) + 24, MIN_HEIGHT - footH);
+  const footH = 18 + footLines.length * 26 + 14;
+  const footTop = Math.max(Math.max(y, photoBottom) + 16, CARD_HEIGHT - footH);
   ctx.fillStyle = "#f5f8f6";
   ctx.fillRect(0, footTop, W, footH);
   ctx.fillStyle = LINE;
   ctx.fillRect(0, footTop, W, 2);
   ctx.fillStyle = MUTED;
-  footLines.forEach((line, index) => ctx.fillText(line, PAD, footTop + 34 + 24 + index * 34 - 6));
-  return footTop + footH;
+  footLines.forEach((line, index) => ctx.fillText(line, PAD, footTop + 18 + 20 + index * 26 - 4));
+  return CARD_HEIGHT;
 }
 
 export async function renderEmergencyCardPng(card: EmergencyCardView, photoSource: EmergencyCardPhoto): Promise<Blob> {
@@ -276,18 +292,14 @@ export async function renderEmergencyCardPng(card: EmergencyCardView, photoSourc
     accent: cssColor("var(--primary)", "#d99a1e"),
     onAccent: cssColor("var(--on-primary)", "#1b1500"),
   };
-  const photo: LoadedPhoto = { image: await loadPhoto(photoSource.url), initials: photoSource.initials };
-  // 1er passage : mesurer la hauteur nécessaire ; 2e passage : dessiner sur un canvas à la bonne taille.
-  const measure = document.createElement("canvas");
-  measure.width = W; measure.height = 3600;
-  const measureCtx = measure.getContext("2d") as Ctx | null;
-  if (!measureCtx) throw new Error("Le dessin de la carte n’est pas disponible sur cet appareil.");
-  const height = Math.ceil(paint(measureCtx, card, photo, style));
+  const [photoImage, logoImage] = await Promise.all([loadPhoto(photoSource.url), loadPhoto(PROJECT_LOGO_WEBP)]);
+  const photo: LoadedPhoto = { image: photoImage, initials: photoSource.initials };
+  const brandLogo: LoadedPhoto = { image: logoImage, initials: "" };
   const out = document.createElement("canvas");
-  out.width = W; out.height = height;
+  out.width = W; out.height = CARD_HEIGHT;
   const ctx = out.getContext("2d") as Ctx | null;
   if (!ctx) throw new Error("Le dessin de la carte n’est pas disponible sur cet appareil.");
-  paint(ctx, card, photo, style);
+  paint(ctx, card, photo, brandLogo, style);
   return new Promise((resolve, reject) => out.toBlob((blob) => blob ? resolve(blob) : reject(new Error("L’image n’a pas pu être créée.")), "image/png"));
 }
 
