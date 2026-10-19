@@ -28,6 +28,10 @@ class AccountProfile(models.Model):
     # Protection contre les tentatives de devinette de la réponse (voir identity/recovery.py) : compteur durable, remis à zéro au succès.
     recovery_failures = models.PositiveSmallIntegerField(default=0)
     recovery_locked_until = models.DateTimeField(null=True, blank=True)
+    # Mot de passe temporaire remis par l'équipe (ex. responsable d'établissement) : il ne sert qu'à une première connexion,
+    # après laquelle le changement est imposé côté serveur (identity/middleware.py) tant que ce drapeau n'est pas levé.
+    must_change_password = models.BooleanField(default=False)
+    temporary_password_expires_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
 

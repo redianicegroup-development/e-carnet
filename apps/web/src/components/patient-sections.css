@@ -1,0 +1,52 @@
+/* =====================================================================================================
+   Espace patient : rubriques repliables, âge et genre de l'onboarding, dossier patient de l'accueil.
+   Chargée par les composants concernés. Selecteurs préfixés par `body` : même règle que soft-skin.css (voir son en-tête),
+   dont elle reprend les ombres (--raise-*, --press-*). Les couleurs viennent toutes du thème actif.
+   ===================================================================================================== */
+
+/* ---------- Rubrique repliable : même geste que « Ma carte virtuelle » (titre = bouton, chevron qui pivote) ---------- */
+body .card.carnet-accordion { gap: 0; padding: 0; overflow: hidden; }
+body .carnet-accordion__title { margin: 0; }
+body .carnet-accordion__toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-width: 0; min-height: 60px; padding: 16px 20px; border: 0; background: transparent; color: inherit; font: inherit; font-weight: inherit; text-align: left; cursor: pointer; }
+body .carnet-accordion__toggle:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; border-radius: 26px; }
+body .carnet-accordion__toggle .icon { flex: 0 0 auto; color: var(--text-muted); transform: rotate(0); transition: transform .2s ease; }
+body .carnet-accordion__toggle[aria-expanded="true"] .icon { transform: rotate(90deg); }
+body .carnet-accordion__panel { display: grid; gap: 12px; min-width: 0; padding: 0 14px 16px; }
+body .carnet-accordion__panel > .card { margin: 0; }
+@media (prefers-reduced-motion: reduce) { body .carnet-accordion__toggle .icon { transition: none; } }
+
+/* ---------- Onboarding étape 3 : âge (calculé) et genre ---------- */
+body .onboarding-age-gender__age { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0; padding: 10px 14px; border-radius: 14px; background: var(--bg); box-shadow: var(--press-sm); font-size: .9rem; }
+body .onboarding-age-gender__age span { color: var(--text-muted); font-weight: 650; }
+body .onboarding-age-gender__age strong { text-align: right; }
+
+/* ---------- Accueil : dossier patient et QR de la carte virtuelle, une seule section ---------- */
+body .patient-dossier { gap: 16px; }
+body .patient-dossier__layout { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); grid-template-areas: "facts" "qr" "declared"; }
+body .patient-dossier__facts { grid-area: facts; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0; }
+body .patient-dossier__facts > div { min-width: 0; padding: 11px 14px; border-radius: 16px; background: var(--bg); box-shadow: var(--press-sm); }
+body .patient-dossier__facts dt { color: var(--text-muted); font-family: var(--font-mono); font-size: .66rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; }
+body .patient-dossier__facts dd { margin: 3px 0 0; font-weight: 750; overflow-wrap: anywhere; }
+body .patient-dossier__wide { grid-column: 1 / -1; }
+
+body .patient-dossier__qr { grid-area: qr; display: grid; justify-items: center; align-content: start; gap: 10px; padding: 18px 16px; border-radius: 22px; background: var(--bg); box-shadow: var(--raise-sm); text-align: center; }
+body .patient-dossier__qr h3 { margin: 0; font-size: 1rem; }
+body .patient-dossier__qr p { margin: 0; font-size: .86rem; }
+body .patient-dossier__qr-code { display: inline-grid; padding: 10px; border-radius: 16px; background: #fff; box-shadow: var(--raise-sm); }
+body .patient-dossier__qr-code svg { display: block; max-width: 100%; height: auto; }
+body .patient-dossier__qr-off { color: var(--text-muted); font-weight: 650; }
+
+body .patient-dossier__declared { grid-area: declared; display: grid; gap: 10px; align-content: start; min-width: 0; }
+body .patient-dossier__declared h3 { margin: 0; font-size: 1rem; }
+body .patient-dossier__declared ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+body .patient-dossier__declared li { display: grid; grid-template-columns: minmax(0, 1fr); gap: 3px; min-width: 0; padding: 11px 14px; border-radius: 16px; background: var(--bg); box-shadow: var(--press-sm); }
+body .patient-dossier__kind { color: var(--text-muted); font-family: var(--font-mono); font-size: .66rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; }
+body .patient-dossier__value { overflow-wrap: anywhere; line-height: 1.3; }
+body .patient-dossier__details { color: var(--text-muted); font-size: .82rem; line-height: 1.4; overflow-wrap: anywhere; }
+body .patient-dossier__declared li > .badge { margin-top: 4px; justify-self: start; }
+
+@media (min-width: 820px) {
+  body .patient-dossier__layout { grid-template-columns: minmax(0, 1fr) 236px; grid-template-areas: "facts qr" "declared qr"; align-items: start; }
+  body .patient-dossier__qr { position: sticky; top: 16px; }
+  body .patient-dossier__facts { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+}

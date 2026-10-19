@@ -45,6 +45,7 @@ class AccountSerializer(serializers.Serializer):
     date_joined = serializers.DateTimeField(read_only=True)  # sert au message d'accueil du front (« Bienvenue » pour un compte récent)
     avatar_url = serializers.SerializerMethodField()
     recovery_configured = serializers.SerializerMethodField()
+    must_change_password = serializers.SerializerMethodField()
     auth_identities = serializers.SerializerMethodField()
     contexts = serializers.SerializerMethodField()
     patient_profile = serializers.SerializerMethodField()
@@ -70,6 +71,10 @@ class AccountSerializer(serializers.Serializer):
         profile = getattr(obj, "account_profile", None)
         return bool(profile and profile.recovery_question and profile.recovery_answer_hash)
 
+    def get_must_change_password(self, obj):
+        profile = getattr(obj, "account_profile", None)
+        return bool(profile and profile.must_change_password)
+
     def get_auth_identities(self, obj):
         return [{"provider": identity.provider, "display_name": identity.display_name, "avatar_url": identity.avatar_url} for identity in obj.auth_identities.all()]
 
@@ -92,7 +97,7 @@ class PatientOnboardingSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PatientProfile
-        fields = ("phone", "birth_date", "address", "profession", "coverage_provider", "coverage_number", "coverage_expiry")
+        fields = ("phone", "birth_date", "gender", "address", "profession", "coverage_provider", "coverage_number", "coverage_expiry")
 
 
 class AccountIdentitySerializer(serializers.Serializer):
@@ -114,6 +119,13 @@ class AccountIdentitySerializer(serializers.Serializer):
         if len(image) > 250 * 1024 or len(image) < 12 or image[:4] != b"RIFF" or image[8:12] != b"WEBP":
             raise serializers.ValidationError("La photo doit être un WebP valide de 250 Ko maximum.")
         return value
+
+
+class PasswordChangeSerializer(serializers.Serializer):
+    current_password = serializers.CharField(max_length=128, write_only=True, trim_whitespace=False)
+    new_password = serializers.CharField(min_length=12, max_length=128, write_only=True, trim_whitespace=False)
+    first_name = serializers.CharField(max_length=80, required=False, allow_blank=True)
+    last_name = serializers.CharField(max_length=80, required=False, allow_blank=True)
 
 
 class RecoverySetupSerializer(serializers.Serializer):

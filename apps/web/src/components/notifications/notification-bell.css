@@ -43,6 +43,16 @@
   .sb.is-collapsed .notification-bell[data-placement="sidebar"][data-open="true"] .notification-bell__panel { transform: translateY(0); }
 }
 @media (max-width: 919px) { .notification-bell[data-placement="mobile"] .notification-bell__panel { right: -8px; } }
+/* Ancrage à gauche : le bouton est trop près du bord gauche de l'écran (sidebar PC) pour que le panneau s'ouvre vers la gauche. */
+.notification-bell[data-align="left"] .notification-bell__goo { right: auto; left: -30px; }
+.notification-bell[data-align="left"] .notification-bell__anchor, .notification-bell[data-align="left"] .notification-bell__blob { right: auto; left: 30px; }
+.notification-bell[data-align="left"] .notification-bell__panel { right: auto; left: 0; transform-origin: top left; }
+.notification-bell[data-align="left"] .notification-bell__content { right: auto; left: 0; }
+@media (min-width: 920px) {
+  .notification-bell[data-align="left"][data-placement="sidebar"] .notification-bell__panel { right: auto; left: -8px; transform-origin: bottom left; }
+}
+/* Garde-fou : quel que soit l'écran, le contenu ne dépasse jamais la largeur de la fenêtre. */
+.notification-bell__content { max-width: calc(100vw - 24px); box-sizing: border-box; }
 @media (prefers-reduced-motion: reduce) {
   .notification-bell *, .notification-bell { transition: none !important; animation: none !important; }
   .notification-bell__panel-head, .notification-bell__status, .notification-bell__item, .notification-bell__all { filter: none; }

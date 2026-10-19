@@ -1,0 +1,39 @@
+Mise à jour du 2026-10-19 — mot de passe temporaire établissement + espace patient
+
+Décompresser à la racine du projet.
+
+FICHIERS MODIFIÉS OU NOUVEAUX
+MODIFICATIONS-2026-10-19-mot-de-passe-temporaire-et-accueil-patient.md
+apps/api/apps/establishments/provisioning.py
+apps/api/apps/establishments/test_private_admin.py
+apps/api/apps/establishments/test_staff_onboarding_flow.py
+apps/api/apps/establishments/tests.py
+apps/api/apps/establishments/views.py
+apps/api/apps/identity/auth_serializers.py
+apps/api/apps/identity/auth_views.py
+apps/api/apps/identity/middleware.py
+apps/api/apps/identity/migrations/0018_accountprofile_must_change_password.py
+apps/api/apps/identity/models.py
+apps/api/apps/identity/temporary_password.py
+apps/api/apps/identity/test_password_change.py
+apps/api/apps/identity/urls.py
+apps/api/config/settings.py
+apps/web/src/app/connexion/nouveau-mot-de-passe/page.tsx
+apps/web/src/app/patient/consultations/page.tsx
+apps/web/src/components/AdminEstablishmentsClient.tsx
+apps/web/src/components/AuthForms.tsx
+apps/web/src/components/PatientCarnet.tsx
+apps/web/src/components/PatientHomeIdentity.tsx
+apps/web/src/components/PatientOnboarding.tsx
+apps/web/src/components/auth/PasswordChangeRequired.tsx
+apps/web/src/components/notifications/NotificationBell.tsx
+apps/web/src/components/notifications/notification-bell.css
+apps/web/src/components/patient-sections.css
+apps/web/src/components/shell/SpaceShell.tsx
+apps/web/src/components/ui/CollapsibleSection.tsx
+apps/web/tests/ux-flows.test.mjs
+
+FICHIER À SUPPRIMER DU DÉPÔT
+apps/api/apps/establishments/email_service.py
+
+Puis : python manage.py migrate   (migration identity 0018)

@@ -151,7 +151,7 @@ export function PatientCarnet() {
       <CollapsibleSection title="Rappels de médicaments"><MedicationReminders /></CollapsibleSection>
       <CollapsibleSection title="Mes plans de suivi"><FollowUpPlans /></CollapsibleSection>
       <CollapsibleSection title="Rendez-vous"><PatientAppointments /></CollapsibleSection>
-      <CollapsibleSection title="Mes pré-consultations"><PatientPreconsultations /></CollapsibleSection>
+      <PatientPreconsultations />
       <CollapsibleSection title="Mes consultations"><PatientConsultations /></CollapsibleSection>
       <CollapsibleSection title="Exporter mon carnet"><section className="card"><div className="section-heading"><div><span className="eyebrow">Portabilité</span><h2>Exporter mon carnet</h2></div></div><p className="muted">Téléchargez une copie PDF volontaire de vos déclarations, vaccinations et mesures récentes.</p><a className="button" href="/api/v1/patient/care/export/">Télécharger mon carnet PDF</a></section></CollapsibleSection>
     </div>

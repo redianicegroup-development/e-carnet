@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.core.cache import cache
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 
 LIMIT = 10
 WINDOW_SECONDS = 15 * 60
@@ -37,3 +37,45 @@ class AdminLoginThrottleMiddleware:
             if count > LIMIT:
                 return HttpResponse("Trop de tentatives. Réessayez plus tard.", status=429, content_type="text/plain; charset=utf-8")
         return self.get_response(request)
+
+
+# Chemins qui restent ouverts tant que le mot de passe temporaire n'a pas été changé : lire son compte (le front y lit le
+# drapeau), changer le mot de passe, se déconnecter, et le strict nécessaire au chargement de la page.
+PASSWORD_CHANGE_ALLOWED_PATHS = frozenset({
+    "/api/v1/identity/me/",
+    "/api/v1/identity/me/password/",
+    "/api/v1/identity/me/theme/",
+    "/api/v1/identity/logout/",
+    "/api/v1/identity/analytics/visits/",
+    "/api/v1/identity/analytics/clicks/",
+    "/api/v1/csrf/",
+})
+PASSWORD_CHANGE_ALLOWED_PREFIXES = ("/api/v1/health/",)
+PASSWORD_CHANGE_REQUIRED_MESSAGE = "Vous devez d’abord remplacer votre mot de passe temporaire."
+
+
+class ForcePasswordChangeMiddleware:
+    """Ferme l'API aux comptes dont le mot de passe est temporaire (`AccountProfile.must_change_password`).
+
+    Le contrôle est côté serveur : cacher les écrans côté navigateur ne suffirait pas, un mot de passe temporaire transmis
+    hors application ne doit donner accès à rien d'autre qu'au choix du mot de passe définitif."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        path = request.path
+        if path.startswith("/api/") and path not in PASSWORD_CHANGE_ALLOWED_PATHS and not path.startswith(PASSWORD_CHANGE_ALLOWED_PREFIXES):
+            user = getattr(request, "user", None)
+            if user is not None and user.is_authenticated and self._must_change(user):
+                return JsonResponse(
+                    {"success": False, "code": "password_change_required", "message": PASSWORD_CHANGE_REQUIRED_MESSAGE},
+                    status=403,
+                )
+        return self.get_response(request)
+
+    @staticmethod
+    def _must_change(user) -> bool:
+        from .models import AccountProfile  # import tardif : le middleware est chargé avant que les modèles soient prêts
+
+        return AccountProfile.objects.filter(user=user, must_change_password=True).exists()

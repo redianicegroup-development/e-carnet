@@ -1,5 +1,5 @@
 from django.urls import path
-from .auth_views import AccountAvatarView, ContextSelectView, CurrentAccountView, IdentityProfileView, LoginView, LogoutView, OAuthIdentityListView, OAuthIdentityUnlinkView, PatientOnboardingView, RecoveryAnswerView, RecoveryQuestionView, RecoveryResetView, RecoverySetupView, RegisterView
+from .auth_views import AccountAvatarView, ContextSelectView, CurrentAccountView, IdentityProfileView, LoginView, LogoutView, OAuthIdentityListView, OAuthIdentityUnlinkView, PasswordChangeView, PatientOnboardingView, RecoveryAnswerView, RecoveryQuestionView, RecoveryResetView, RecoverySetupView, RegisterView
 from .oauth_views import OAuthCallbackView, OAuthStartView
 from .contact_views import PublicContactView
 from .views import CurrentAccountThemeView
@@ -21,7 +21,7 @@ urlpatterns = [
     path("admin/account-requests/", AdminAccountActionRequestsView.as_view(), name="admin-account-action-requests"),
     path("admin/account-requests/<uuid:request_id>/", AdminAccountActionRequestStatusView.as_view(), name="admin-account-action-request-status"),
     path("admin/account-requests/<uuid:request_id>/delete/", AdminDeleteRequestedAccountView.as_view(), name="admin-delete-requested-account"),
-    path("me/", CurrentAccountView.as_view()), path("me/profile/", IdentityProfileView.as_view()), path("me/avatar/", AccountAvatarView.as_view()), path("me/theme/", CurrentAccountThemeView.as_view(), name="current-account-theme"),
+    path("me/", CurrentAccountView.as_view()), path("me/profile/", IdentityProfileView.as_view()), path("me/password/", PasswordChangeView.as_view()), path("me/avatar/", AccountAvatarView.as_view()), path("me/theme/", CurrentAccountThemeView.as_view(), name="current-account-theme"),
     path("me/account-requests/", CurrentAccountActionRequestsView.as_view(), name="current-account-action-requests"),
     path("oauth/identities/", OAuthIdentityListView.as_view()), path("oauth/identities/<str:provider>/", OAuthIdentityUnlinkView.as_view()),
     path("contexts/select/", ContextSelectView.as_view()), path("onboarding/patient/", PatientOnboardingView.as_view()), path("me/recovery/", RecoverySetupView.as_view()),

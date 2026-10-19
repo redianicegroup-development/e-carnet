@@ -77,11 +77,56 @@ test("l'onboarding de l'établissement est une fiche à compléter avant d'ouvri
 });
 
 
-test("l’admin peut transmettre un lien d’activation si la messagerie échoue", () => {
+test("l’équipe reçoit une seule fois le mot de passe temporaire du responsable et le transmet hors application", () => {
   const staff = read("src/components/AdminEstablishmentsClient.tsx");
-  assert.match(staff, /manual_invitation_url/);
-  assert.match(staff, /email_delivery === "failed"/);
-  assert.match(staff, /Copier le lien/);
-  assert.match(staff, /valable 48 heures/);
-  assert.doesNotMatch(staff, /le lien n'est jamais affiché/i);
+  assert.match(staff, /temporary_password/);
+  assert.match(staff, /Mot de passe temporaire/);
+  assert.match(staff, /Copier le message à transmettre/);
+  assert.match(staff, /ne sera plus affich/);
+  assert.match(staff, /use_existing_account/, "un compte existant n’est rattaché qu’après confirmation explicite");
+  assert.doesNotMatch(staff, /manual_invitation_url|email_delivery/, "plus de lien d’invitation ni d’envoi e‑mail");
+});
+
+test("le mot de passe temporaire impose son remplacement : écran dédié, redirection depuis la connexion et depuis les espaces", () => {
+  assert.ok(existsSync(new URL("src/app/connexion/nouveau-mot-de-passe/page.tsx", root)));
+  const screen = read("src/components/auth/PasswordChangeRequired.tsx");
+  assert.match(screen, /\/api\/v1\/identity\/me\/password\//);
+  assert.match(screen, /current_password/);
+  assert.match(screen, /new_password/);
+  assert.match(read("src/components/AuthForms.tsx"), /account\.must_change_password\) return "\/connexion\/nouveau-mot-de-passe"/);
+  const shell = read("src/components/shell/SpaceShell.tsx");
+  assert.match(shell, /must_change_password === true/);
+  assert.match(shell, /router\.replace\("\/connexion\/nouveau-mot-de-passe"\)/);
+});
+
+
+test("tous les plier/déplier de l’espace patient suivent le geste de « Ma carte virtuelle » : titre-bouton et chevron qui pivote", () => {
+  const section = read("src/components/ui/CollapsibleSection.tsx");
+  assert.match(section, /<Icon name="chevron"/);
+  assert.match(section, /aria-expanded=\{open\}/);
+  assert.doesNotMatch(section, /Afficher|Masquer/, "plus de « + Afficher / − Masquer »");
+  const css = read("src/components/patient-sections.css");
+  assert.match(css, /carnet-accordion__toggle\[aria-expanded="true"\] \.icon \{ transform: rotate\(90deg\)/);
+});
+
+test("les pré-consultations n’ont plus de pli : affichées directement dans le carnet et dans les consultations", () => {
+  assert.doesNotMatch(read("src/components/PatientCarnet.tsx"), /CollapsibleSection title="Mes pré-consultations"/);
+  assert.doesNotMatch(read("src/app/patient/consultations/page.tsx"), /CollapsibleSection title="Mes pré-consultations"/);
+  assert.match(read("src/app/patient/consultations/page.tsx"), /<PatientPreconsultations \/>/);
+});
+
+test("l’âge et le genre se renseignent à l’étape 3 de l’onboarding patient", () => {
+  const onboarding = read("src/components/PatientOnboarding.tsx");
+  assert.match(onboarding, /Étape 3 · identité du titulaire/);
+  assert.match(onboarding, /gender: form\.gender/);
+  assert.match(onboarding, /function ageLabel/);
+  assert.match(onboarding, /<legend>Âge et genre/);
+});
+
+test("le dossier patient et le QR de la carte virtuelle forment une seule section d’accueil", () => {
+  const home = read("src/components/PatientHomeIdentity.tsx");
+  assert.equal((home.match(/<section /g) ?? []).length, 1, "une seule section");
+  assert.match(home, /className="card patient-dossier"/);
+  assert.match(home, /patient-dossier__qr/);
+  assert.doesNotMatch(home, /patient-home-qr|patient-home-profile/);
 });

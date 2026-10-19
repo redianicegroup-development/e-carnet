@@ -4,7 +4,7 @@ import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { ApiError, apiGet, apiPost } from "../infrastructure/api/client";
 import { useConfirm } from "./modal/ConfirmProvider";
 
-type InvitationState = "pending" | "sent" | "failed" | "expired" | "revoked" | "consumed";
+type AccessState = "temporary_password" | "expired" | "activated" | "revoked";
 type Stage = "awaiting_activation" | "awaiting_profile" | "ready";
 type Item = {
   id: string;
@@ -14,38 +14,43 @@ type Item = {
   profile_completed_at: string | null;
   stage: Stage;
   administrator: { name: string; email: string } | null;
-  invitation: { id: string; email: string; state: InvitationState; expires_at: string; sent_at: string | null } | null;
+  access: { email: string; state: AccessState; expires_at: string | null } | null;
 };
 type Listing = { items: Item[]; total: number; truncated: boolean };
+/* Réponse de création / renouvellement : le mot de passe temporaire n'y figure qu'une fois, il n'est ni stocké ni listé. */
 type Created = {
-  expires_at: string;
-  state?: InvitationState;
-  email_delivery?: "sent" | "failed";
-  manual_invitation_url?: string;
+  email: string;
+  account_created: boolean;
+  must_change_password: boolean;
+  login_url: string;
+  expires_at: string | null;
+  temporary_password?: string;
   establishment?: { internal_code: string | null };
 };
+type Credentials = { structure: string; email: string; password: string; loginUrl: string; expiresAt: string | null };
 
 const BLANK = { name: "", email: "", firstName: "", lastName: "", verified: false };
 
-/* Libellé et couleur de badge du suivi : une seule étiquette par structure, de l'invitation jusqu'à « Prête ». */
+/* Libellé et couleur de badge du suivi : une seule étiquette par structure, de la remise du mot de passe jusqu'à « Prête ». */
 function followUp(item: Item): { label: string; tone: string } {
   if (item.stage === "ready") return { label: "Prête", tone: "active" };
   if (item.stage === "awaiting_profile") return { label: "Fiche à compléter", tone: "pending" };
-  switch (item.invitation?.state) {
-    case "pending": return { label: "Envoi en cours", tone: "pending" };
-    case "sent": return { label: "Invitation envoyée", tone: "pending" };
-    case "failed": return { label: "Échec d’envoi", tone: "rejected" };
-    case "expired": return { label: "Invitation expirée", tone: "expired" };
-    case "revoked": return { label: "Invitation révoquée", tone: "revoked" };
-    default: return { label: "Sans invitation", tone: "expired" };
+  switch (item.access?.state) {
+    case "temporary_password": return { label: "Mot de passe temporaire remis", tone: "pending" };
+    case "expired": return { label: "Mot de passe expiré", tone: "expired" };
+    case "revoked": return { label: "Accès révoqué", tone: "revoked" };
+    default: return { label: "Sans responsable", tone: "expired" };
   }
 }
+
+const errorCode = (reason: unknown) => (reason instanceof ApiError && reason.details && typeof reason.details === "object" ? (reason.details as { code?: string }).code : undefined);
 
 const when = (value: string | null) => (value ? new Date(value).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" }) : "—");
 const errorText = (error: unknown, fallback: string) => (error instanceof Error ? error.message : fallback);
 
-/* L'équipe Mon E‑Carnet saisit le nom vérifié de la structure et l'e‑mail de son responsable ; l'établissement complète ensuite
-   sa fiche. Si la messagerie est inaccessible, un lien de secours est révélé à l'admin une seule fois dans la réponse. */
+/* L'équipe Mon E‑Carnet saisit le nom vérifié de la structure et l'e‑mail de son responsable. Le serveur mémorise l'e‑mail, crée le
+   compte avec un mot de passe temporaire et le révèle ici une seule fois : l'équipe le transmet hors application. Le responsable se
+   connecte avec son e‑mail et ce mot de passe, doit le remplacer, puis complète lui‑même la fiche de son établissement. */
 export function AdminEstablishmentsClient({ aside }: { aside?: ReactNode }) {
   const confirm = useConfirm();
   const [form, setForm] = useState(BLANK);
@@ -54,7 +59,7 @@ export function AdminEstablishmentsClient({ aside }: { aside?: ReactNode }) {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [tick, setTick] = useState(0);
-  const [manualInvitationUrl, setManualInvitationUrl] = useState("");
+  const [credentials, setCredentials] = useState<Credentials | null>(null);
   const [copyStatus, setCopyStatus] = useState("");
 
   useEffect(() => {
@@ -67,12 +72,16 @@ export function AdminEstablishmentsClient({ aside }: { aside?: ReactNode }) {
 
   const refresh = () => setTick((value) => value + 1);
 
-  async function run(action: () => Promise<unknown>, success: string) {
-    setBusy(true);
+  function resetFeedback() {
     setMessage("");
     setError("");
-    setManualInvitationUrl("");
+    setCredentials(null);
     setCopyStatus("");
+  }
+
+  async function run(action: () => Promise<unknown>, success: string) {
+    setBusy(true);
+    resetFeedback();
     try {
       await action();
       setMessage(success);
@@ -84,34 +93,41 @@ export function AdminEstablishmentsClient({ aside }: { aside?: ReactNode }) {
     }
   }
 
-  async function create(allowDuplicate: boolean) {
+  async function create(options: { allowDuplicate?: boolean; useExistingAccount?: boolean } = {}) {
     const body = {
       name: form.name,
       responsible_email: form.email,
       responsible_first_name: form.firstName,
       responsible_last_name: form.lastName,
       verification_confirmed: form.verified,
-      allow_duplicate: allowDuplicate || undefined,
+      allow_duplicate: options.allowDuplicate || undefined,
+      use_existing_account: options.useExistingAccount || undefined,
     };
     setBusy(true);
-    setMessage("");
-    setError("");
-    setManualInvitationUrl("");
-    setCopyStatus("");
+    resetFeedback();
     try {
       const created = await apiPost<Created>("/api/v1/establishments/startup/establishments/", body);
-      setManualInvitationUrl(created.manual_invitation_url ?? "");
       const code = created.establishment?.internal_code ? ` (code ${created.establishment.internal_code})` : "";
-      setMessage(created.email_delivery === "failed"
-        ? `Accès créé${code}. L’envoi automatique à ${form.email.trim().toLowerCase()} a échoué ; copiez le lien de secours ci-dessous. Il expire le ${when(created.expires_at)}.`
-        : `Accès créé${code}. E‑mail envoyé à ${form.email.trim().toLowerCase()} ; invitation valable jusqu’au ${when(created.expires_at)}.`);
+      if (created.temporary_password) {
+        setCredentials({ structure: form.name.trim(), email: created.email, password: created.temporary_password, loginUrl: created.login_url, expiresAt: created.expires_at });
+        setMessage(`Accès créé${code}. Transmettez ses identifiants au responsable : le mot de passe temporaire ne sera plus affiché.`);
+      } else {
+        setMessage(`Accès créé${code}. Le compte de ${created.email} existait déjà : il est rattaché à la structure et garde son mot de passe. Prévenez le responsable de se connecter avec son mot de passe habituel.`);
+      }
       setForm(BLANK);
       refresh();
     } catch (reason) {
-      if (reason instanceof ApiError && reason.status === 409 && !allowDuplicate) {
+      const code = errorCode(reason);
+      if (reason instanceof ApiError && reason.status === 409 && code === "duplicate_name" && !options.allowDuplicate) {
         setBusy(false);
         const again = await confirm({ title: "Une structure porte déjà ce nom", message: reason.message, note: "Ne continuez que s’il s’agit bien d’un autre établissement homonyme.", confirmLabel: "Créer quand même", tone: "danger" });
-        if (again) await create(true);
+        if (again) await create({ ...options, allowDuplicate: true });
+        return;
+      }
+      if (reason instanceof ApiError && reason.status === 409 && code === "account_exists" && !options.useExistingAccount) {
+        setBusy(false);
+        const link = await confirm({ title: "Un compte existe déjà avec cet e‑mail", message: reason.message, note: "Son mot de passe ne sera pas modifié : le responsable se connectera avec celui qu’il utilise déjà.", confirmLabel: "Rattacher ce compte", cancelLabel: "Revoir l’e‑mail", tone: "danger" });
+        if (link) await create({ ...options, useExistingAccount: true });
         return;
       }
       setError(errorText(reason, "Création impossible."));
@@ -126,67 +142,74 @@ export function AdminEstablishmentsClient({ aside }: { aside?: ReactNode }) {
     const email = form.email.trim().toLowerCase();
     const accepted = await confirm({
       title: `Créer l’accès de « ${name} » ?`,
-      message: `L’application tentera d’envoyer un lien d’invitation valable 48 heures à ${email}. Si l’envoi e‑mail échoue, le lien de secours apparaîtra ici pour transmission manuelle. L’établissement complétera ensuite sa fiche.`,
+      message: `Le compte de ${email} sera créé avec un mot de passe temporaire, affiché une seule fois ici pour que vous le transmettiez. À sa première connexion, le responsable devra le remplacer, puis il complétera la fiche de l’établissement.`,
       note: "Le nom saisi ici est celui que vous avez vérifié : l’établissement ne pourra plus le modifier.",
-      confirmLabel: "Créer et envoyer l’invitation",
+      confirmLabel: "Créer l’accès",
       cancelLabel: "Revoir",
     });
-    if (accepted) await create(false);
+    if (accepted) await create();
   }
 
-  async function resend(item: Item) {
-    const email = item.invitation?.email;
+  async function reissue(item: Item) {
+    const email = item.access?.email;
     if (!email) return;
     const accepted = await confirm({
-      title: "Renvoyer l’invitation ?",
-      message: `Un nouvel e‑mail partira à ${email}. Le lien précédent cessera de fonctionner.`,
-      confirmLabel: "Renvoyer l’invitation",
+      title: item.access?.state === "revoked" ? "Rouvrir l’accès ?" : "Nouveau mot de passe temporaire ?",
+      message: `Un nouveau mot de passe temporaire sera créé pour ${email}. Le précédent cessera de fonctionner.`,
+      confirmLabel: "Générer le mot de passe",
     });
     if (!accepted) return;
     setBusy(true);
-    setMessage("");
-    setError("");
-    setManualInvitationUrl("");
-    setCopyStatus("");
+    resetFeedback();
     try {
       const created = await apiPost<Created>(`/api/v1/establishments/startup/${item.id}/administrator-invitation/`, {});
-      setManualInvitationUrl(created.manual_invitation_url ?? "");
-      setMessage(created.email_delivery === "failed"
-        ? `Nouvelle invitation créée, mais l’e‑mail à ${email} n’a pas pu être envoyé. Copiez le nouveau lien ci-dessous ; le précédent est invalidé.`
-        : `Nouvelle invitation envoyée à ${email}. Le lien précédent est invalidé ; expiration : ${when(created.expires_at)}.`);
+      if (created.temporary_password) {
+        setCredentials({ structure: item.name, email: created.email, password: created.temporary_password, loginUrl: created.login_url, expiresAt: created.expires_at });
+        setMessage(`Nouveau mot de passe temporaire créé pour ${email}. Le précédent est invalidé ; transmettez celui-ci, il ne sera plus affiché.`);
+      }
       refresh();
     } catch (reason) {
-      setError(errorText(reason, "Renvoi impossible."));
+      setError(errorText(reason, "Renouvellement impossible."));
     } finally {
       setBusy(false);
     }
   }
 
-  async function copyManualInvitation() {
-    if (!manualInvitationUrl) return;
+  async function copy(text: string, done: string, fieldId: string) {
     try {
       if (!navigator.clipboard?.writeText) throw new Error("Clipboard indisponible");
-      await navigator.clipboard.writeText(manualInvitationUrl);
-      setCopyStatus("Lien copié. Transmettez-le uniquement au responsable concerné.");
+      await navigator.clipboard.writeText(text);
+      setCopyStatus(done);
     } catch {
-      const input = document.getElementById("admin-establishment-invitation-link") as HTMLInputElement | null;
+      const input = document.getElementById(fieldId) as HTMLInputElement | null;
       input?.focus();
       input?.select();
-      setCopyStatus("Copie automatique indisponible : le lien est sélectionné, copiez-le manuellement.");
+      setCopyStatus("Copie automatique indisponible : le champ est sélectionné, copiez-le manuellement.");
     }
   }
 
+  function transmissionMessage(value: Credentials) {
+    return [
+      `Mon E‑Carnet — accès administrateur de « ${value.structure} »`,
+      `Connexion : ${value.loginUrl}`,
+      `Identifiant (e‑mail) : ${value.email}`,
+      `Mot de passe temporaire : ${value.password}`,
+      "",
+      `À votre première connexion, vous devrez choisir un nouveau mot de passe${value.expiresAt ? ` (mot de passe temporaire valable jusqu’au ${when(value.expiresAt)})` : ""}, puis compléter la fiche de votre établissement.`,
+    ].join("\n");
+  }
+
   async function revoke(item: Item) {
-    const email = item.invitation?.email;
+    const email = item.access?.email;
     if (!email) return;
     const accepted = await confirm({
-      title: "Révoquer cette invitation ?",
-      message: `Le lien envoyé à ${email} ne pourra plus être utilisé.`,
-      note: "Vous pourrez toujours renvoyer une nouvelle invitation ensuite.",
-      confirmLabel: "Révoquer le lien",
+      title: "Révoquer cet accès ?",
+      message: `Le mot de passe temporaire de ${email} ne pourra plus être utilisé.`,
+      note: "Vous pourrez toujours générer un nouveau mot de passe temporaire ensuite.",
+      confirmLabel: "Révoquer l’accès",
       tone: "danger",
     });
-    if (accepted) await run(() => apiPost(`/api/v1/establishments/startup/${item.id}/administrator-invitation/revoke/`, {}), "Invitation révoquée.");
+    if (accepted) await run(() => apiPost(`/api/v1/establishments/startup/${item.id}/administrator-invitation/revoke/`, {}), "Accès révoqué.");
   }
 
   const canSubmit = form.name.trim() !== "" && form.email.trim() !== "" && form.verified && !busy;
@@ -195,29 +218,32 @@ export function AdminEstablishmentsClient({ aside }: { aside?: ReactNode }) {
     <>
       <article className="card">
         <span className="eyebrow">Création après validation</span>
-        <h2>Créer un établissement et inviter son responsable</h2>
-        <p className="muted">L’établissement transmet ses justificatifs par le canal officiel. Après vérification hors application, saisissez seulement son nom et l’e‑mail de son responsable : il complète le reste lui‑même.</p>
+        <h2>Créer un établissement et ouvrir l’accès de son responsable</h2>
+        <p className="muted">L’établissement transmet ses justificatifs par le canal officiel. Après vérification hors application, saisissez seulement son nom et l’e‑mail de son responsable : le compte est créé avec un mot de passe temporaire, et l’établissement complète le reste lui‑même.</p>
         <form className="grid" onSubmit={submit}>
           <label className="field"><span>Nom de l’établissement (vérifié)</span><input required maxLength={180} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} autoComplete="off" /></label>
-          <label className="field"><span>E‑mail du responsable</span><input required type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} autoComplete="off" /></label>
+          <label className="field"><span>E‑mail du responsable (son identifiant de connexion)</span><input required type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} autoComplete="off" /></label>
           <div className="field-row">
             <label className="field"><span>Prénom du responsable (facultatif)</span><input maxLength={120} value={form.firstName} onChange={(event) => setForm({ ...form, firstName: event.target.value })} autoComplete="off" /></label>
             <label className="field"><span>Nom du responsable (facultatif)</span><input maxLength={120} value={form.lastName} onChange={(event) => setForm({ ...form, lastName: event.target.value })} autoComplete="off" /></label>
           </div>
           <label className="check-row"><input type="checkbox" checked={form.verified} onChange={(event) => setForm({ ...form, verified: event.target.checked })} /><span>J’ai vérifié les pièces de la structure et l’identité de son responsable, hors application.</span></label>
-          <p className="muted">Sans prénom ni nom, le responsable les renseigne en activant son accès. En cas d’échec d’envoi, le lien valable 48 heures sera affiché ci-dessous pour copie et transmission manuelle.</p>
-          <button className="button primary" type="submit" disabled={!canSubmit}>Créer l’accès et envoyer l’invitation</button>
+          <p className="muted">Sans prénom ni nom, le responsable les renseigne en choisissant son mot de passe. Aucun e‑mail n’est envoyé : le mot de passe temporaire s’affiche ci-dessous, une seule fois, pour que vous le lui transmettiez par un canal sûr.</p>
+          <button className="button primary" type="submit" disabled={!canSubmit}>Créer l’accès</button>
         </form>
         <p className="notice" role="status" aria-live="polite" hidden={!message}>{message}</p>
         <p className="notice error" role="alert" hidden={!error}>{error}</p>
-        {manualInvitationUrl && (
-          <div className="notice" aria-label="Lien d’activation à transmettre">
-            <p><strong>L’envoi automatique a échoué.</strong> Copiez ce lien et transmettez-le au responsable par un canal sûr. Il expire sous 48 heures et ne peut être utilisé qu’une fois.</p>
-            <label className="field">
-              <span>Lien d’activation</span>
-              <input id="admin-establishment-invitation-link" type="url" value={manualInvitationUrl} readOnly autoComplete="off" spellCheck={false} onFocus={(event) => event.currentTarget.select()} />
-            </label>
-            <button type="button" className="button small" onClick={copyManualInvitation}>Copier le lien</button>
+        {credentials && (
+          <div className="notice" role="group" aria-label="Identifiants à transmettre">
+            <p><strong>Identifiants de « {credentials.structure} » — à transmettre au responsable.</strong> Le mot de passe temporaire ne sera plus affichable après fermeture de ce bloc{credentials.expiresAt ? `, et expire le ${when(credentials.expiresAt)}` : ""}. Le responsable devra le remplacer dès sa première connexion.</p>
+            <label className="field"><span>Adresse de connexion</span><input id="admin-establishment-login-url" type="url" value={credentials.loginUrl} readOnly autoComplete="off" spellCheck={false} onFocus={(event) => event.currentTarget.select()} /></label>
+            <label className="field"><span>Identifiant (e‑mail)</span><input id="admin-establishment-login-email" type="text" value={credentials.email} readOnly autoComplete="off" spellCheck={false} onFocus={(event) => event.currentTarget.select()} /></label>
+            <label className="field"><span>Mot de passe temporaire</span><input id="admin-establishment-temporary-password" type="text" value={credentials.password} readOnly autoComplete="off" spellCheck={false} onFocus={(event) => event.currentTarget.select()} style={{ fontFamily: "var(--font-mono, monospace)", letterSpacing: ".04em" }} /></label>
+            <div className="admin-inline-actions">
+              <button type="button" className="button small primary" onClick={() => void copy(transmissionMessage(credentials), "Message copié. Transmettez-le uniquement au responsable concerné.", "admin-establishment-temporary-password")}>Copier le message à transmettre</button>
+              <button type="button" className="button small" onClick={() => void copy(credentials.password, "Mot de passe copié.", "admin-establishment-temporary-password")}>Copier le mot de passe</button>
+              <button type="button" className="button small" onClick={() => { setCredentials(null); setCopyStatus(""); }}>J’ai transmis, masquer</button>
+            </div>
             <p className="muted" role="status" aria-live="polite">{copyStatus}</p>
           </div>
         )}
@@ -235,23 +261,23 @@ export function AdminEstablishmentsClient({ aside }: { aside?: ReactNode }) {
         {listing && listing.items.length > 0 && (
           <div className="admin-table-wrap">
             <table className="admin-table">
-              <thead><tr><th scope="col">Établissement</th><th scope="col">Responsable</th><th scope="col">Suivi</th><th scope="col">Invitation</th><th scope="col"><span className="sr-only">Actions</span></th></tr></thead>
+              <thead><tr><th scope="col">Établissement</th><th scope="col">Responsable</th><th scope="col">Suivi</th><th scope="col">Mot de passe temporaire</th><th scope="col"><span className="sr-only">Actions</span></th></tr></thead>
               <tbody>
                 {listing.items.map((item) => {
                   const status = followUp(item);
-                  const state = item.invitation?.state;
+                  const state = item.access?.state;
                   const pendingActivation = item.stage === "awaiting_activation";
                   return (
                     <tr key={item.id}>
                       <th scope="row"><strong>{item.name}</strong><br /><span className="muted">{item.internal_code ?? "sans code"}</span></th>
-                      <td>{item.administrator ? <>{item.administrator.name || "—"}<br /><span className="muted">{item.administrator.email}</span></> : <span className="muted">{item.invitation?.email ?? "—"}</span>}</td>
+                      <td>{item.administrator ? <>{item.administrator.name || "—"}<br /><span className="muted">{item.administrator.email}</span></> : <span className="muted">{item.access?.email ?? "—"}</span>}</td>
                       <td><span className={`badge ${status.tone}`}>{status.label}</span></td>
-                      <td>{pendingActivation && item.invitation ? <>Expire le {when(item.invitation.expires_at)}</> : <span className="muted">—</span>}</td>
+                      <td>{state === "temporary_password" && item.access?.expires_at ? <>Expire le {when(item.access.expires_at)}</> : state === "expired" ? <>Expiré</> : <span className="muted">—</span>}</td>
                       <td>
-                        {pendingActivation && item.invitation && (
+                        {pendingActivation && item.access && (
                           <span className="admin-inline-actions">
-                            <button type="button" className="button small" disabled={busy} onClick={() => resend(item)}>Renvoyer</button>
-                            {(state === "sent" || state === "pending" || state === "failed") && <button type="button" className="button small danger" disabled={busy} onClick={() => revoke(item)}>Révoquer</button>}
+                            <button type="button" className="button small" disabled={busy} onClick={() => void reissue(item)}>{state === "revoked" ? "Rouvrir l’accès" : "Nouveau mot de passe"}</button>
+                            {(state === "temporary_password" || state === "expired") && <button type="button" className="button small danger" disabled={busy} onClick={() => void revoke(item)}>Révoquer</button>}
                           </span>
                         )}
                       </td>

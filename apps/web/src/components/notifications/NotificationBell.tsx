@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { apiGet, apiPatch } from "../../infrastructure/api/client";
 import { Icon } from "../ui/Icon";
 import "./notification-bell.css";
@@ -19,6 +19,12 @@ type NotificationBellProps = { placement?: "sidebar" | "mobile" };
 
 const INBOX_URL = "/api/v1/patient/care/notifications/inbox/";
 const REFRESH_INTERVAL_MS = 60_000;
+const PANEL_MAX_WIDTH = 360;
+const PANEL_MIN_WIDTH = 200;
+const PANEL_EDGE_MARGIN = 12;
+const PANEL_OVERHANG = 8; // le panneau dépasse de 8 px du bouton (voir notification-bell.css)
+
+type PanelFit = { align: "right" | "left"; width: number };
 
 function contextLink(kind: string) {
   const normalized = kind.toLocaleLowerCase("fr-FR");
@@ -69,6 +75,7 @@ export function NotificationBell({ placement = "sidebar" }: NotificationBellProp
   const [open, setOpen] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [marking, setMarking] = useState<Set<string>>(() => new Set());
+  const [fit, setFit] = useState<PanelFit>({ align: "right", width: PANEL_MAX_WIDTH });
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const panel = useRef<HTMLDivElement>(null);
@@ -118,6 +125,23 @@ export function NotificationBell({ placement = "sidebar" }: NotificationBellProp
       document.removeEventListener("visibilitychange", refreshWhenVisible);
     };
   }, [refresh]);
+
+  // Le panneau reste toujours dans l'écran : il s'ancre côté bouton où il y a le plus de place (cloche du header mobile,
+  // collée à droite sous le menu du compte ; cloche de la sidebar PC, collée à gauche) et se rétrécit si l'écran est étroit.
+  useLayoutEffect(() => {
+    if (!open) return;
+    const measure = () => {
+      const rect = trigger.current?.getBoundingClientRect();
+      if (!rect) return;
+      const room = { right: rect.right + PANEL_OVERHANG - PANEL_EDGE_MARGIN, left: window.innerWidth - rect.left + PANEL_OVERHANG - PANEL_EDGE_MARGIN };
+      const align = room.right >= Math.min(PANEL_MAX_WIDTH, room.left) ? "right" : "left";
+      const width = Math.round(Math.max(PANEL_MIN_WIDTH, Math.min(PANEL_MAX_WIDTH, room[align])));
+      setFit((current) => (current.align === align && current.width === width ? current : { align, width }));
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -182,7 +206,7 @@ export function NotificationBell({ placement = "sidebar" }: NotificationBellProp
   const step = () => ({ "--i": itemIndex++ } as CSSProperties);
 
   return (
-    <div className="notification-bell" data-placement={placement} data-open={open} data-unread={unreadCount > 0} ref={root}>
+    <div className="notification-bell" data-placement={placement} data-open={open} data-align={fit.align} data-unread={unreadCount > 0} style={{ "--nb-w": `${fit.width}px` } as CSSProperties} ref={root}>
       <span className="notification-bell__goo" aria-hidden="true"><i className="notification-bell__anchor" /><i className="notification-bell__blob" /></span>
       <div className="notification-bell__panel" id={panelId} ref={panel} role="dialog" aria-labelledby={`${panelId}-title`} inert={!open}>
         <div className="notification-bell__content">

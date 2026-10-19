@@ -9,7 +9,7 @@ export default function PatientConsultationsPage() {
   return (
     <div className="stack-lg">
       <PageHeader eyebrow="Consultations" title="Préparer et retrouver" lead="Préparez vos rendez-vous, puis retrouvez ce que les professionnels ont validé avec votre accord." />
-      <CollapsibleSection title="Mes pré-consultations"><PatientPreconsultations /></CollapsibleSection>
+      <PatientPreconsultations />
       <CollapsibleSection title="Mes consultations"><PatientConsultations /></CollapsibleSection>
     </div>
   );

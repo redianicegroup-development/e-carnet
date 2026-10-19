@@ -22,6 +22,7 @@ export type SpaceAccount = {
   avatar_url: string;
   date_joined?: string;
   is_admin?: boolean;
+  must_change_password?: boolean;
   contexts: { role: string; is_active: boolean; onboarding_completed: boolean }[];
   patient_profile: { completed: boolean; id: string | null };
 };
@@ -163,8 +164,14 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
     router.replace(`/connexion?next=${encodeURIComponent(requested)}`);
   }, [state.status, bare, router]);
 
+  // Mot de passe temporaire : le serveur ferme l'API tant qu'il n'est pas remplacé, l'écran de changement est la seule issue.
+  const passwordChangePending = state.status === "ready" && state.account.must_change_password === true;
+  useEffect(() => {
+    if (passwordChangePending) router.replace("/connexion/nouveau-mot-de-passe");
+  }, [passwordChangePending, router]);
+
   // Onboarding de l'établissement : tant que la fiche n'est pas complétée, l'espace reste fermé (le serveur bloque aussi les codes).
-  const profilePending = space === "establishment" && state.status === "ready" && state.account.contexts.some((context) => context.role === "establishment" && !context.onboarding_completed);
+  const profilePending = space === "establishment" && state.status === "ready" && !passwordChangePending && state.account.contexts.some((context) => context.role === "establishment" && !context.onboarding_completed);
   useEffect(() => {
     if (profilePending && !bare) router.replace("/etablissement/fiche");
   }, [profilePending, bare, router]);
@@ -216,7 +223,8 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
         {state.status === "error" && !bare && (
           <section className="card gate" role="alert"><h1>Service momentanément indisponible</h1><p className="muted">{state.message}</p><div className="actions"><button type="button" className="button primary" onClick={() => setLoadAttempt((attempt) => attempt + 1)}>Réessayer</button></div></section>
         )}
-        {(state.status === "ready" || bare) && (
+        {passwordChangePending && <ScreenLoader label="Redirection vers le choix de votre mot de passe…" />}
+        {((state.status === "ready" && !passwordChangePending) || bare) && (
           <AccountContext.Provider value={state.status === "ready" ? state.account : null}>
             <PatientAccessQrContext.Provider value={{ qr: patientAccessQr, setQr: setPatientAccessQr }}>
               {children}

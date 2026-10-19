@@ -96,58 +96,45 @@ class EstablishmentProfessionalFlowTests(TestCase):
         self.assertEqual(membership.status, "active")
         self.assertEqual(ProfessionalProfile.objects.get(pk=profile.pk).verification_status, "pending")
 
-    def test_staff_creation_sends_email_without_returning_raw_token(self):
+    def test_staff_creation_opens_the_account_with_a_temporary_password_and_sends_no_email(self):
         staff = User.objects.create_user(username="staff-create", email="staff-create@example.test", password="staff-password", is_staff=True)
-        self.client.force_authenticate(staff)
-        with self.captureOnCommitCallbacks(execute=True):
-            response = self.client.post(
-                "/api/v1/establishments/startup/establishments/",
-                {
-                "name": "Clinique privée",
-                "establishment_type": "Clinique",
-                "city": "Abidjan",
-                "address": "Adresse",
-                "phone": "+22500000000",
-                "email": "contact@clinique.example.test",
-                "responsible_name": "Amina Test",
-                "responsible_email": "admin@clinique.example.test",
-                "responsible_first_name": "Amina",
-                "responsible_last_name": "Test",
-            "verification_confirmed": True,
-                },
-                format="json",
-            )
-        self.assertEqual(response.status_code, 201)
-        self.assertNotIn("invitation_token", response.data["data"])
-        self.assertNotIn("invitation_url", response.data["data"])
-        self.assertEqual(len(mail.outbox), 1)
-        self.assertIn("invitation", mail.outbox[0].subject.lower())
-        self.assertIn("/etablissement/activation?token=", mail.outbox[0].body)
-
-    @override_settings(DEBUG=False)
-    def test_production_response_never_contains_invitation_secret(self):
-        staff = User.objects.create_user(username="staff-production", email="staff-production@example.test", password="staff-password", is_staff=True)
         self.client.force_authenticate(staff)
         response = self.client.post(
             "/api/v1/establishments/startup/establishments/",
             {
-                "name": "Clinique production test",
-                "establishment_type": "Clinique",
-                "city": "Abidjan",
-                "address": "Adresse",
-                "phone": "+22500000000",
-                "email": "contact-production@clinique.example.test",
-                "responsible_name": "Amina Production",
-                "responsible_email": "admin-production@clinique.example.test",
+                "name": "Clinique privée",
+                "responsible_email": "admin@clinique.example.test",
                 "responsible_first_name": "Amina",
-                "responsible_last_name": "Production",
-            "verification_confirmed": True,
+                "responsible_last_name": "Test",
+                "verification_confirmed": True,
             },
             format="json",
         )
         self.assertEqual(response.status_code, 201)
         self.assertNotIn("invitation_token", response.data["data"])
         self.assertNotIn("invitation_url", response.data["data"])
+        self.assertTrue(response.data["data"]["temporary_password"])
+        self.assertEqual(len(mail.outbox), 0)
+
+    @override_settings(DEBUG=False)
+    def test_production_response_is_not_cacheable_and_the_secret_is_never_stored(self):
+        staff = User.objects.create_user(username="staff-production", email="staff-production@example.test", password="staff-password", is_staff=True)
+        self.client.force_authenticate(staff)
+        response = self.client.post(
+            "/api/v1/establishments/startup/establishments/",
+            {
+                "name": "Clinique production test",
+                "responsible_email": "admin-production@clinique.example.test",
+                "responsible_first_name": "Amina",
+                "responsible_last_name": "Production",
+                "verification_confirmed": True,
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response["Cache-Control"], "no-store")
+        secret = response.data["data"]["temporary_password"]
+        self.assertNotIn(secret, User.objects.get(email="admin-production@clinique.example.test").password)
 
     def test_professional_leave_blocks_future_membership_and_keeps_audit(self):
         admin = self.register("root-leave@example.test")

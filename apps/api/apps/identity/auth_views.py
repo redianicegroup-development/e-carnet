@@ -3,12 +3,15 @@ import binascii
 from io import BytesIO
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
-from django.contrib.auth import authenticate, get_user_model, login, logout
+from django.contrib.auth import authenticate, get_user_model, login, logout, update_session_auth_hash
 from django.contrib.auth.hashers import make_password
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.http import HttpResponse, Http404
 from django.db import transaction
 from .recovery import GENERIC_FAILURE, question_for, reset_password_with_answer, validate_new_password, verify_recovery_answer
 from .throttles import IpScopedThrottle, LoginEmailThrottle, RecoveryEmailThrottle
+from .temporary_password import temporary_password_expired
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -16,7 +19,7 @@ from rest_framework.views import APIView
 from apps.audit.services import record_event
 from apps.cloudinary_storage import CLOUDINARY_CONFIGURED, upload as cloudinary_upload
 from apps.patients.models import PatientProfile
-from .auth_serializers import AccountIdentitySerializer, AccountSerializer, LinkedIdentitySerializer, LoginSerializer, PatientOnboardingSerializer, RecoveryAnswerSerializer, RecoveryQuestionSerializer, RecoveryResetSerializer, RecoverySetupSerializer, RegisterSerializer
+from .auth_serializers import AccountIdentitySerializer, AccountSerializer, LinkedIdentitySerializer, LoginSerializer, PasswordChangeSerializer, PatientOnboardingSerializer, RecoveryAnswerSerializer, RecoveryQuestionSerializer, RecoveryResetSerializer, RecoverySetupSerializer, RegisterSerializer
 from .models import AccountContext, AccountProfile, AuthIdentity
 from .visitor_tracking import track_auth_response
 
@@ -46,6 +49,9 @@ class LoginView(APIView):
         matches = get_user_model().objects.filter(email__iexact=serializer.validated_data["email"])
         user = matches.first() if matches.count() == 1 else None
         user = authenticate(request, username=user.get_username(), password=serializer.validated_data["password"]) if user else None
+        # Un mot de passe temporaire périmé est refusé comme un mauvais mot de passe : rien n'indique qu'il a existé.
+        if user and temporary_password_expired(getattr(user, "account_profile", None)):
+            user = None
         if not user:
             response = Response({"success": False, "message": "Email ou mot de passe incorrect."}, status=400)
             return track_auth_response(request, response, "login_failure")
@@ -62,6 +68,54 @@ class LogoutView(APIView):
 class CurrentAccountView(APIView):
     permission_classes = [IsAuthenticated]
     def get(self, request): return Response({"success": True, "data": account_payload(request.user)})
+
+
+class PasswordChangeView(APIView):
+    """Changement de mot de passe du compte connecté. Il est obligatoire à la première connexion avec un mot de passe
+    temporaire (le middleware ferme tout le reste de l'API) : il remplace alors le mot de passe temporaire, qui ne sert donc
+    qu'une fois, et lève l'obligation. Si le compte n'a pas encore de nom, il est demandé ici."""
+    throttle_classes = [IpScopedThrottle]
+    throttle_scope = "auth_login"
+    permission_classes = [IsAuthenticated]
+
+    @transaction.atomic
+    def post(self, request):
+        serializer = PasswordChangeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        user = request.user
+        if not user.has_usable_password():
+            return Response({"success": False, "message": "Ce compte n’a pas de mot de passe à remplacer."}, status=409)
+        if not user.check_password(data["current_password"]):
+            return Response({"success": False, "message": "Le mot de passe actuel est incorrect."}, status=400)
+        if data["new_password"] == data["current_password"]:
+            return Response({"success": False, "message": "Choisissez un mot de passe différent de l’actuel."}, status=400)
+        try:
+            validate_password(data["new_password"], user=user)
+        except DjangoValidationError as exc:
+            return Response({"success": False, "message": " ".join(exc.messages)}, status=400)
+        first_name = data.get("first_name", "").strip() or user.first_name
+        last_name = data.get("last_name", "").strip() or user.last_name
+        if not first_name or not last_name:
+            return Response({"success": False, "code": "names_required", "message": "Renseignez votre prénom et votre nom."}, status=400)
+        user.set_password(data["new_password"])
+        user.first_name, user.last_name = first_name, last_name
+        user.save(update_fields=("password", "first_name", "last_name"))
+        profile, _ = AccountProfile.objects.get_or_create(user=user)
+        was_temporary = profile.must_change_password
+        profile.must_change_password = False
+        profile.temporary_password_expires_at = None
+        profile.save(update_fields=("must_change_password", "temporary_password_expires_at", "updated_at"))
+        if was_temporary:
+            # Le responsable d'un établissement porte le nom qu'il vient de donner (la fiche le verrouille ensuite).
+            from apps.establishments.models import Establishment
+
+            for establishment in Establishment.objects.filter(administrator_history__user=user, administrator_history__status="active", responsible_name=""):
+                establishment.responsible_name = f"{first_name} {last_name}".strip()
+                establishment.save(update_fields=("responsible_name", "updated_at"))
+        update_session_auth_hash(request, user)  # la session courante survit, les autres appareils sont déconnectés
+        record_event(event_type="account.password_changed", actor=user, actor_role="account", metadata={"action": "password_changed", "status": "first_login" if was_temporary else "voluntary"})
+        return Response({"success": True, "data": account_payload(user)})
 
 
 class AccountAvatarView(APIView):

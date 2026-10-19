@@ -6,6 +6,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { apiGet, apiPatch } from "../infrastructure/api/client";
 import type { SpaceAccount } from "./shell/SpaceShell";
 import { useConfirm } from "./modal/ConfirmProvider";
+import "./patient-sections.css";
 
 type Profile = { first_name: string; last_name: string; birth_date: string | null; gender: string; phone: string; address: string; coverage_provider: string; coverage_number: string; coverage_expiry: string | null };
 type Declaration = { id: string; kind: string; label: string; details: string; provenance?: { label: string } };
@@ -17,11 +18,14 @@ const KIND_LABELS: Record<string, string> = { allergy: "Allergie", antecedent: "
 function ageFromBirthDate(value: string | null) {
   if (!value) return "";
   const birth = new Date(`${value.slice(0, 10)}T00:00:00`);
-  if (Number.isNaN(birth.getTime())) return "";
   const today = new Date();
-  let age = today.getFullYear() - birth.getFullYear();
-  if (today.getMonth() < birth.getMonth() || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) age -= 1;
-  return age >= 0 && age < 130 ? String(age) : "";
+  if (Number.isNaN(birth.getTime()) || birth > today) return "";
+  let years = today.getFullYear() - birth.getFullYear();
+  if (today.getMonth() < birth.getMonth() || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) years -= 1;
+  if (years >= 130) return "";
+  if (years >= 1) return `${years} an${years > 1 ? "s" : ""}`;
+  const months = (today.getFullYear() - birth.getFullYear()) * 12 + today.getMonth() - birth.getMonth() - (today.getDate() < birth.getDate() ? 1 : 0);
+  return months >= 1 ? `${months} mois` : "Moins d’un mois";
 }
 
 export function PatientHomeIdentity({ account }: { account: SpaceAccount }) {
@@ -58,6 +62,7 @@ export function PatientHomeIdentity({ account }: { account: SpaceAccount }) {
 
   const city = declarations?.find((item) => item.kind === "city")?.label ?? "";
   const age = ageFromBirthDate(profile?.birth_date ?? null);
+  const declared = (declarations ?? []).filter((item) => item.kind !== "city");
   const publicUrl = qr.qr_enabled && qr.qr_token && typeof window !== "undefined"
     ? `${window.location.origin}/urgence/${encodeURIComponent(qr.qr_token)}` : "";
 
@@ -79,44 +84,48 @@ export function PatientHomeIdentity({ account }: { account: SpaceAccount }) {
     } finally { setQrBusy(false); }
   }
 
-  return <>
-    <section className="card patient-home-profile" aria-labelledby="home-profile-title">
-      <div className="section-heading"><div><span className="eyebrow">Mon dossier patient</span><h2 id="home-profile-title">Mon identité et mes informations déclarées</h2></div></div>
-      {profileMessage && <p className="notice" role="status">{profileMessage}</p>}
-      <dl className="patient-home-profile__grid">
+  return <section className="card patient-dossier" aria-labelledby="home-profile-title">
+    <div className="section-heading"><div><span className="eyebrow">Mon dossier patient</span><h2 id="home-profile-title">Mon identité et mes informations déclarées</h2></div></div>
+    {profileMessage && <p className="notice" role="status">{profileMessage}</p>}
+    <div className="patient-dossier__layout">
+      <dl className="patient-dossier__facts">
         <div><dt>Prénom</dt><dd>{profile?.first_name || account.first_name || "Non renseigné"}</dd></div>
         <div><dt>Nom</dt><dd>{profile?.last_name || account.last_name || "Non renseigné"}</dd></div>
-        <div><dt>Âge</dt><dd>{age ? `${age} ans` : "Non renseigné"}</dd></div>
+        <div><dt>Âge</dt><dd>{age || "Non renseigné"}</dd></div>
         <div><dt>Genre déclaré</dt><dd>{profile?.gender ? GENDERS[profile.gender] ?? profile.gender : "Non renseigné"}</dd></div>
         <div><dt>Ville</dt><dd>{city || "Non renseignée"}</dd></div>
         {profile?.phone && <div><dt>Téléphone</dt><dd>{profile.phone}</dd></div>}
-        {profile?.address && <div className="patient-home-profile__wide"><dt>Adresse</dt><dd>{profile.address}</dd></div>}
+        {profile?.address && <div className="patient-dossier__wide"><dt>Adresse</dt><dd>{profile.address}</dd></div>}
         {profile?.coverage_provider && <div><dt>Couverture santé · organisme</dt><dd>{profile.coverage_provider}</dd></div>}
         {profile?.coverage_number && <div><dt>Couverture santé · numéro</dt><dd>{profile.coverage_number}</dd></div>}
         {profile?.coverage_expiry && <div><dt>Couverture santé · expiration</dt><dd>{new Date(`${profile.coverage_expiry.slice(0, 10)}T00:00:00`).toLocaleDateString("fr-FR")}</dd></div>}
       </dl>
-      <div className="patient-home-profile__declared">
+
+      <aside className="patient-dossier__qr" aria-labelledby="home-qr-title">
+        <h3 id="home-qr-title">Ma carte virtuelle</h3>
+        <p className="muted">Une personne qui scanne ce QR consulte votre carte d’urgence, sans se connecter.</p>
+        {qrLoading ? <p className="notice" role="status">Chargement du QR…</p> : publicUrl ? <>
+          <div className="patient-dossier__qr-code"><QRCodeSVG value={publicUrl} size={168} level="M" marginSize={3} title="QR public de ma carte virtuelle" /></div>
+          <button className="button small" type="button" disabled={qrBusy} onClick={() => void toggleQr(false)}>{qrBusy ? "Mise à jour…" : "Désactiver le QR"}</button>
+        </> : <>
+          <p className="patient-dossier__qr-off">Le QR public est désactivé.</p>
+          <button className="button primary" type="button" disabled={qrBusy} onClick={() => void toggleQr(true)}>{qrBusy ? "Activation…" : "Activer mon QR"}</button>
+        </>}
+        {qrMessage && <p className="notice" role="status" aria-live="polite">{qrMessage}</p>}
+      </aside>
+
+      <div className="patient-dossier__declared">
         <h3>Mes autres déclarations</h3>
-        {declarations === null ? <p className="muted">Chargement des déclarations…</p> : declarations.length === 0 ? <p className="muted">Aucune déclaration enregistrée pour le moment.</p> : (
-          <ul>{declarations.filter((item) => item.kind !== "city").map((item) => <li key={item.id}>
-            <div><strong>{KIND_LABELS[item.kind] ?? item.kind}</strong><span>{item.label}{item.kind === "height" ? " cm" : item.kind === "weight" ? " kg" : ""}</span>{item.details && <small>{item.details}</small>}</div>
+        {declarations === null ? <p className="muted">Chargement des déclarations…</p> : declared.length === 0 ? <p className="muted">Aucune autre déclaration enregistrée pour le moment.</p> : (
+          <ul>{declared.map((item) => <li key={item.id}>
+            <span className="patient-dossier__kind">{KIND_LABELS[item.kind] ?? item.kind}</span>
+            <strong className="patient-dossier__value">{item.label}{item.kind === "height" ? " cm" : item.kind === "weight" ? " kg" : ""}</strong>
+            {item.details && <small className="patient-dossier__details">{item.details}</small>}
             <span className="badge declared">{item.provenance?.label ?? "Déclaré par vous"}</span>
           </li>)}</ul>
         )}
       </div>
-      <div className="actions"><Link className="button" href="/patient/carnet">Gérer mes déclarations</Link><Link className="button" href="/patient/parametres">Modifier mon profil</Link></div>
-    </section>
-
-    <section className="card patient-home-qr" aria-label="QR de ma carte virtuelle">
-      <div><span className="eyebrow">À scanner</span><h2>Ma carte virtuelle</h2><p className="muted">Une personne peut scanner ce QR pour consulter les informations de votre carte d’urgence.</p></div>
-      {qrLoading ? <p className="notice" role="status">Chargement du QR…</p> : publicUrl ? <>
-        <div className="patient-home-qr__code"><QRCodeSVG value={publicUrl} size={168} level="M" marginSize={3} title="QR public de ma carte virtuelle" /></div>
-        <button className="button small" type="button" disabled={qrBusy} onClick={() => void toggleQr(false)}>{qrBusy ? "Mise à jour…" : "Désactiver le QR"}</button>
-      </> : <>
-        <p className="muted">Le QR public est désactivé.</p>
-        <button className="button primary" type="button" disabled={qrBusy} onClick={() => void toggleQr(true)}>{qrBusy ? "Activation…" : "Activer mon QR"}</button>
-      </>}
-      {qrMessage && <p className="notice" role="status" aria-live="polite">{qrMessage}</p>}
-    </section>
-  </>;
+    </div>
+    <div className="actions"><Link className="button" href="/patient/carnet">Gérer mes déclarations</Link><Link className="button" href="/patient/parametres">Modifier mon profil</Link></div>
+  </section>;
 }

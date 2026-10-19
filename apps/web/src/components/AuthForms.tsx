@@ -14,8 +14,10 @@ const PROVIDERS = ["google", "facebook", "apple"] as const;
 const PROVIDER_LABEL = { google: "Google", facebook: "Facebook", apple: "Apple" } as const;
 const SUCCESS_DELAY_MS = 1500;
 const MOBILE_QUERY = "(max-width: 859px)";
-type Account = { recovery_configured?: boolean; contexts?: Array<{ role: string; is_active: boolean; onboarding_completed: boolean }> };
+type Account = { must_change_password?: boolean; recovery_configured?: boolean; contexts?: Array<{ role: string; is_active: boolean; onboarding_completed: boolean }> };
 function destinationFor(account: Account, mode: AuthMode, requested: string | null) {
+  // Mot de passe temporaire remis par l'équipe : rien d'autre n'est accessible avant de l'avoir remplacé.
+  if (account.must_change_password) return "/connexion/nouveau-mot-de-passe";
   if (mode === "register") return requested === "/patient/transfert" ? requested : "/onboarding/identite";
   const context = account.contexts?.find((item) => item.is_active) ?? account.contexts?.[0];
   if (context?.onboarding_completed && !account.recovery_configured) return "/onboarding/securite";

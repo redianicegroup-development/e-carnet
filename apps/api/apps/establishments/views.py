@@ -19,7 +19,8 @@ from apps.identity.throttles import IpScopedThrottle
 from apps.audit.services import record_event
 from apps.cloudinary_storage import CLOUDINARY_CONFIGURED, upload as cloudinary_upload
 from apps.identity.models import AccountContext
-from .email_service import invitation_url, send_establishment_invitation
+from apps.identity.temporary_password import disable_temporary_password, has_pending_temporary_password, issue_temporary_password, temporary_password_expired
+from .provisioning import AccountConflict, ProvisionedAccess, login_url, provision_administrator
 from .models import PROFILE_FIELDS, Establishment, EstablishmentAdminInvitation, EstablishmentAdministrator, EstablishmentJoinCode, EstablishmentMembership, PrescriptionTemplate, generate_internal_code
 from .serializers import EstablishmentProfileSerializer, EstablishmentSerializer, MembershipSerializer, PrescriptionTemplateSerializer
 
@@ -41,91 +42,36 @@ def active_administrator(user, establishment_id=None):
     return query.select_related("establishment").first()
 
 
-def deliver_invitation(invitation_id, raw_token):
-    """Envoie le lien d'invitation et note le résultat. Ne lève jamais : la requête est déjà validée quand on arrive ici,
-    un échec SMTP se voit côté équipe (état « échec d'envoi ») et se corrige par un renvoi, sans créer de doublon."""
-    invitation = EstablishmentAdminInvitation.objects.select_related("establishment").filter(pk=invitation_id).first()
-    if not invitation:
-        return False
-    try:
-        send_establishment_invitation(
-            email=invitation.email,
-            first_name=invitation.first_name,
-            establishment_name=invitation.establishment.name,
-            raw_token=raw_token,
-            expires_at=invitation.expires_at,
-        )
-    except Exception:  # noqa: BLE001 - tout échec d'envoi est journalisé et rendu visible, jamais propagé
-        logger.exception("Échec d'envoi de l'invitation d'établissement %s", invitation_id)
-        EstablishmentAdminInvitation.objects.filter(pk=invitation_id).update(email_error="send_failed")
-        return False
-    EstablishmentAdminInvitation.objects.filter(pk=invitation_id).update(email_sent_at=timezone.now(), email_error="")
-    return True
-
-
-def make_invitation(*, establishment, created_by, email, first_name="", last_name=""):
-    # Un seul lien actif par adresse et structure; l'ancien reste historisé mais inutilisable.
-    EstablishmentAdminInvitation.objects.filter(
-        establishment=establishment, email__iexact=email, consumed_at__isnull=True, revoked_at__isnull=True
-    ).update(revoked_at=timezone.now())
-    raw_token = secrets.token_urlsafe(32)
-    invitation = EstablishmentAdminInvitation.objects.create(
-        establishment=establishment,
-        email=email.lower().strip(),
-        first_name=first_name.strip(),
-        last_name=last_name.strip(),
-        token_hash=EstablishmentAdminInvitation.digest(raw_token),
-        expires_at=timezone.now() + timedelta(hours=48),
-        created_by=created_by,
-    )
-    record_event(
-        event_type="establishment.invitation.created",
-        actor=created_by,
-        actor_role="ecarnet_staff",
-        establishment=establishment,
-        metadata={"action": "created", "status": "pending", "invitation_id": str(invitation.id)},
-    )
-    return invitation, raw_token
-
-
-def schedule_invitation_delivery(response, invitation, raw_token):
-    """Envoie après commit ; ne révèle le jeton brut au staff que si SMTP échoue."""
-    def deliver_and_update_response():
-        sent = deliver_invitation(invitation.id, raw_token)
-        data = response.data.get("data")
-        if not isinstance(data, dict):
-            return
-        state = "sent" if sent else "failed"
-        data["state"] = state
-        data["email_delivery"] = state
-        if not sent:
-            # Le lien n'est jamais stocké ni journalisé. Cette réponse est réservée aux vues IsAdminUser.
-            data["manual_invitation_url"] = invitation_url(raw_token)
-
-    transaction.on_commit(deliver_and_update_response)
-
-
-def invitation_state(invitation):
-    """pending (envoi en cours) | sent | failed | expired | revoked | consumed."""
-    if invitation is None:
-        return None
-    if invitation.consumed_at:
-        return "consumed"
-    if invitation.revoked_at:
-        return "revoked"
-    if invitation.expires_at <= timezone.now():
-        return "expired"
-    if invitation.email_error:
-        return "failed"
-    return "sent" if invitation.email_sent_at else "pending"
-
-
-def invitation_response_data(invitation, establishment=None):
-    # Le jeton reste absent de la base et de cette réponse tant que l'envoi e-mail n'a pas échoué.
-    data = {"invitation_id": str(invitation.id), "expires_at": invitation.expires_at, "state": "pending"}
+def access_response_data(establishment, access):
+    """Réponse réservée au staff : le mot de passe temporaire n'apparaît qu'ici, une seule fois, et n'est stocké nulle part."""
+    data = {
+        "email": access.user.email,
+        "account_created": access.account_created,
+        "must_change_password": access.temporary_password is not None,
+        "login_url": login_url(),
+        "expires_at": access.expires_at,
+    }
+    if access.temporary_password:
+        data["temporary_password"] = access.temporary_password
     if establishment is not None:
         data["establishment"] = payload(establishment)
     return data
+
+
+def secret_response(data, status=200):
+    response = Response({"success": True, "data": data}, status=status)
+    response["Cache-Control"] = "no-store"  # la réponse contient un secret : ni cache navigateur ni cache intermédiaire
+    return response
+
+
+ACCOUNT_CONFLICT_MESSAGES = {
+    "account_exists": "Un compte Mon E‑Carnet existe déjà avec cette adresse. Pour lui donner l’accès à cette structure sans toucher à son mot de passe, confirmez le rattachement ; sinon, saisissez une autre adresse.",
+    "ambiguous_account": "Plusieurs comptes portent cette adresse : impossible de choisir lequel rattacher.",
+}
+
+
+def account_conflict_response(conflict):
+    return Response({"success": False, "code": conflict.code, "message": ACCOUNT_CONFLICT_MESSAGES.get(conflict.code, "Impossible d’ouvrir l’accès avec cette adresse.")}, status=409)
 
 
 def mask_email(email):
@@ -163,31 +109,49 @@ class EstablishmentCreateView(APIView):
         )
 
 
+def active_administrator_record(establishment):
+    """Administrateur actif lu dans l'historique préchargé (évite une requête par structure dans la liste du staff)."""
+    return next((item for item in establishment.administrator_history.all() if item.status == "active"), None)
+
+
 def administrator_summary(establishment):
-    admin = next((item for item in establishment.administrator_history.all() if item.status == "active"), None)
+    admin = active_administrator_record(establishment)
     if not admin:
         return None
     return {"name": f"{admin.user.first_name} {admin.user.last_name}".strip(), "email": admin.user.email}
 
 
+def access_summary(establishment):
+    """Où en est l'accès du responsable : temporary_password (jamais connecté), expired (mot de passe temporaire périmé), activated, revoked."""
+    admin = active_administrator_record(establishment)
+    if not admin:
+        # Accès retiré (révoqué ou remplacé) : l'équipe garde l'adresse sous les yeux pour rouvrir un accès en un geste.
+        last = next(iter(establishment.administrator_history.all()), None)
+        return {"email": last.user.email, "state": "revoked", "expires_at": None} if last else None
+    profile = getattr(admin.user, "account_profile", None)
+    if not (profile and profile.must_change_password):
+        return {"email": admin.user.email, "state": "activated", "expires_at": None}
+    return {"email": admin.user.email, "state": "expired" if temporary_password_expired(profile) else "temporary_password", "expires_at": profile.temporary_password_expires_at}
+
+
 def establishment_stage(establishment, administrator):
-    if not administrator:
+    if not administrator or (access_summary(establishment) or {}).get("state") != "activated":
         return "awaiting_activation"
     return "ready" if establishment.is_profile_complete else "awaiting_profile"
 
 
 class StaffEstablishmentCreateView(APIView):
-    """Création par l'équipe Mon E‑Carnet : le nom vérifié et l'e‑mail du responsable suffisent. C'est l'établissement qui
-    renseigne ensuite sa fiche (type, ville, adresse, téléphone) dans son onboarding."""
+    """Création par l'équipe Mon E‑Carnet : le nom vérifié et l'e‑mail du responsable suffisent. Le serveur crée le compte du
+    responsable avec un mot de passe temporaire (révélé une seule fois ici, à transmettre hors application) ; c'est ensuite
+    l'établissement qui renseigne sa fiche (type, ville, adresse, téléphone) dans son onboarding."""
     permission_classes = [IsAuthenticated, IsAdminUser]
 
     def get(self, request):
-        queryset = Establishment.objects.filter(status="active").prefetch_related("administrator_history__user", "admin_invitations")
+        queryset = Establishment.objects.filter(status="active").prefetch_related("administrator_history__user__account_profile")
         total = queryset.count()
         items = []
         for establishment in queryset[:STAFF_LIST_LIMIT]:
             administrator = administrator_summary(establishment)
-            latest = max(establishment.admin_invitations.all(), key=lambda item: item.created_at, default=None)
             items.append({
                 "id": str(establishment.id),
                 "name": establishment.name,
@@ -196,13 +160,7 @@ class StaffEstablishmentCreateView(APIView):
                 "profile_completed_at": establishment.profile_completed_at,
                 "stage": establishment_stage(establishment, administrator),
                 "administrator": administrator,
-                "invitation": None if latest is None else {
-                    "id": str(latest.id),
-                    "email": latest.email,
-                    "state": invitation_state(latest),
-                    "expires_at": latest.expires_at,
-                    "sent_at": latest.email_sent_at,
-                },
+                "access": access_summary(establishment),
             })
         return Response({"success": True, "data": {"items": items, "total": total, "truncated": total > STAFF_LIST_LIMIT}})
 
@@ -217,7 +175,7 @@ class StaffEstablishmentCreateView(APIView):
         try:
             validate_email(email)
         except DjangoValidationError:
-            return Response({"success": False, "message": "L’e‑mail du responsable est requis et doit être valide : le lien d’activation lui sera envoyé."}, status=400)
+            return Response({"success": False, "message": "L’e‑mail du responsable est requis et doit être valide : c’est son identifiant de connexion."}, status=400)
         if request.data.get("verification_confirmed") is not True:
             return Response({"success": False, "message": "Confirmez que les pièces de la structure ont été vérifiées hors application avant de créer l’accès."}, status=400)
         duplicate = Establishment.objects.filter(name__iexact=name).exclude(status="rejected").first()
@@ -227,14 +185,20 @@ class StaffEstablishmentCreateView(APIView):
                 "code": "duplicate_name",
                 "message": f"Un établissement nommé « {duplicate.name} » existe déjà (code {duplicate.internal_code or 'sans code'}).",
             }, status=409)
-        establishment = Establishment.objects.create(
-            name=name, status="active", activated_at=timezone.now(), created_by=request.user, internal_code=generate_internal_code()
-        )
-        invitation, raw_token = make_invitation(establishment=establishment, created_by=request.user, email=email, first_name=first_name, last_name=last_name)
+        try:
+            # Point de sauvegarde : un conflit de compte ne doit laisser aucune structure orpheline.
+            with transaction.atomic():
+                establishment = Establishment.objects.create(
+                    name=name, status="active", activated_at=timezone.now(), created_by=request.user, internal_code=generate_internal_code()
+                )
+                access = provision_administrator(
+                    establishment=establishment, assigned_by=request.user, email=email, first_name=first_name, last_name=last_name,
+                    use_existing_account=request.data.get("use_existing_account") is True,
+                )
+        except AccountConflict as conflict:
+            return account_conflict_response(conflict)
         record_event(event_type="establishment.verified", actor=request.user, actor_role="ecarnet_staff", establishment=establishment, metadata={"action": "verified", "status": "active"})
-        response = Response({"success": True, "data": invitation_response_data(invitation, establishment)}, status=201)
-        schedule_invitation_delivery(response, invitation, raw_token)
-        return response
+        return secret_response(access_response_data(establishment, access), status=201)
 
 
 class StartupEstablishmentQueueView(APIView):
@@ -255,18 +219,26 @@ class StartupEstablishmentQueueView(APIView):
             establishment.save(update_fields=("status", "updated_at"))
             record_event(event_type="establishment.rejected", actor=request.user, actor_role="ecarnet_staff", establishment=establishment, metadata={"action": "rejected", "status": "rejected"})
             return Response({"success": True, "data": payload(establishment)})
-        establishment.status = "active"
-        establishment.activated_at = timezone.now()
-        establishment.save(update_fields=("status", "activated_at", "updated_at"))
-        invitation, raw_token = make_invitation(establishment=establishment, created_by=request.user, email=establishment.email, first_name=establishment.responsible_name, last_name="")
+        try:
+            with transaction.atomic():
+                establishment.status = "active"
+                establishment.activated_at = timezone.now()
+                establishment.save(update_fields=("status", "activated_at", "updated_at"))
+                access = provision_administrator(
+                    establishment=establishment, assigned_by=request.user, email=establishment.email,
+                    first_name=establishment.responsible_name, use_existing_account=request.data.get("use_existing_account") is True,
+                )
+        except AccountConflict as conflict:
+            establishment.refresh_from_db()  # le point de sauvegarde annulé laisse la structure « en attente »
+            return account_conflict_response(conflict)
         record_event(event_type="establishment.approved", actor=request.user, actor_role="ecarnet_staff", establishment=establishment, metadata={"action": "approved", "status": "active"})
-        response = Response({"success": True, "data": invitation_response_data(invitation, establishment)})
-        schedule_invitation_delivery(response, invitation, raw_token)
-        return response
+        return secret_response(access_response_data(establishment, access))
 
 
 class StaffAdministratorInvitationView(APIView):
-    """Renvoie l'invitation (même e‑mail par défaut) ou invite un autre responsable (remplacement, à confirmer)."""
+    """Nouvel accès pour une structure : régénère le mot de passe temporaire d'un responsable qui ne s'est pas encore connecté
+    (même e‑mail par défaut), ou ouvre l'accès d'un autre responsable (remplacement, à confirmer). Un responsable qui a déjà
+    choisi son mot de passe n'est jamais réinitialisé par l'équipe."""
     permission_classes = [IsAuthenticated, IsAdminUser]
 
     @transaction.atomic
@@ -274,30 +246,42 @@ class StaffAdministratorInvitationView(APIView):
         establishment = Establishment.objects.filter(id=establishment_id, status="active").first()
         if not establishment:
             return Response({"success": False, "message": "Établissement actif introuvable."}, status=404)
-        previous = establishment.admin_invitations.order_by("-created_at").first()
-        email = str(request.data.get("email", "") or (previous.email if previous else "")).strip().lower()
-        first_name = str(request.data.get("first_name", "") if "first_name" in request.data else (previous.first_name if previous else "")).strip()[:120]
-        last_name = str(request.data.get("last_name", "") if "last_name" in request.data else (previous.last_name if previous else "")).strip()[:120]
+        current = EstablishmentAdministrator.objects.filter(establishment=establishment, status="active").select_related("user").first()
+        last = EstablishmentAdministrator.objects.filter(establishment=establishment).select_related("user").order_by("-started_at").first()
+        previous = current or last
+        email = str(request.data.get("email", "") or (previous.user.email if previous else "")).strip().lower()
+        first_name = str(request.data.get("first_name", "")).strip()[:120]
+        last_name = str(request.data.get("last_name", "")).strip()[:120]
         try:
             validate_email(email)
         except DjangoValidationError:
             return Response({"success": False, "message": "Une adresse e‑mail valide est requise."}, status=400)
-        current = EstablishmentAdministrator.objects.filter(establishment=establishment, status="active").select_related("user").first()
         if current and current.user.email.lower() == email:
-            return Response({"success": False, "code": "already_active", "message": "Ce responsable a déjà activé son accès."}, status=409)
+            if not has_pending_temporary_password(current.user):
+                return Response({"success": False, "code": "already_active", "message": "Ce responsable a déjà activé son accès."}, status=409)
+            password, expires_at = issue_temporary_password(current.user)
+            record_event(event_type="establishment.administrator.password_reissued", actor=request.user, actor_role="ecarnet_staff", establishment=establishment, metadata={"action": "reissued", "status": "temporary_password"})
+            access = ProvisionedAccess(user=current.user, temporary_password=password, expires_at=expires_at, account_created=False)
+            return secret_response(access_response_data(None, access))
         if current and request.data.get("confirm_replace") is not True:
             return Response({
                 "success": False,
                 "code": "administrator_exists",
-                "message": "Cette structure a déjà un administrateur actif : il sera remplacé dès que le nouveau responsable activera son accès.",
+                "message": "Cette structure a déjà un administrateur actif : il sera remplacé immédiatement par ce nouveau responsable.",
             }, status=409)
-        invitation, raw_token = make_invitation(establishment=establishment, created_by=request.user, email=email, first_name=first_name, last_name=last_name)
-        response = Response({"success": True, "data": invitation_response_data(invitation)})
-        schedule_invitation_delivery(response, invitation, raw_token)
-        return response
+        try:
+            with transaction.atomic():
+                access = provision_administrator(
+                    establishment=establishment, assigned_by=request.user, email=email, first_name=first_name, last_name=last_name,
+                    use_existing_account=request.data.get("use_existing_account") is True,
+                )
+        except AccountConflict as conflict:
+            return account_conflict_response(conflict)
+        return secret_response(access_response_data(None, access))
 
 
 class StaffAdministratorInvitationRevokeView(APIView):
+    """Retire l'accès d'un responsable qui ne s'est pas encore connecté : son mot de passe temporaire cesse de fonctionner."""
     permission_classes = [IsAuthenticated, IsAdminUser]
 
     @transaction.atomic
@@ -305,16 +289,15 @@ class StaffAdministratorInvitationRevokeView(APIView):
         establishment = Establishment.objects.filter(id=establishment_id, status="active").first()
         if not establishment:
             return Response({"success": False, "message": "Établissement actif introuvable."}, status=404)
-        usable = EstablishmentAdminInvitation.objects.select_for_update().filter(
-            establishment=establishment, consumed_at__isnull=True, revoked_at__isnull=True, expires_at__gt=timezone.now()
-        )
-        ids = list(usable.values_list("id", flat=True))
-        if not ids:
-            return Response({"success": False, "message": "Aucune invitation en attente à révoquer."}, status=409)
-        usable.update(revoked_at=timezone.now())
-        for invitation_id in ids:
-            record_event(event_type="establishment.invitation.revoked", actor=request.user, actor_role="ecarnet_staff", establishment=establishment, metadata={"action": "revoked", "status": "revoked", "invitation_id": str(invitation_id)})
-        return Response({"success": True, "data": {"revoked": len(ids)}})
+        admin = EstablishmentAdministrator.objects.select_for_update().filter(establishment=establishment, status="active").select_related("user").first()
+        if not admin or not has_pending_temporary_password(admin.user):
+            return Response({"success": False, "message": "Aucun accès en attente d’activation à révoquer."}, status=409)
+        admin.status = "revoked"
+        admin.ended_at = timezone.now()
+        admin.save(update_fields=("status", "ended_at"))
+        disable_temporary_password(admin.user)
+        record_event(event_type="establishment.administrator.revoked", actor=request.user, actor_role="ecarnet_staff", establishment=establishment, metadata={"action": "revoked", "status": "revoked"})
+        return Response({"success": True, "data": {"revoked": 1}})
 
 
 class EstablishmentInvitationPreviewView(APIView):
