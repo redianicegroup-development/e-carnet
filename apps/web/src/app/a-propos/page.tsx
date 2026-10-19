@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { InfoPageMotion } from "../../components/motion/InfoPageMotion";
+import { BackLink } from "../../components/public/BackLink";
+import { DocHero } from "../../components/public/figures/DocHero";
 import { PulseLine } from "../../components/motion/PulseLine";
 import { AboutChainFigure } from "../../components/public/figures/AboutChainFigure";
 import { ActorsFigure } from "../../components/public/figures/ActorsFigure";
@@ -32,11 +34,15 @@ export default function AboutPage() {
     <PublicShell>
       <article className="about">
         <InfoPageMotion>
-        <header className="about__head">
-          <span className="eyebrow">À propos</span>
-          <h1>Un carnet qui suit votre santé dans la durée.</h1>
-          <p className="lead">Mon E‑Carnet est un carnet de santé numérique porté par la startup Redianice. Il garde vos informations au même endroit, et c’est vous qui décidez qui peut les consulter.</p>
-          <div className="about__pulse" aria-hidden="true"><PulseLine /></div>
+        <BackLink />
+        <header className="about__head info-page__head">
+          <div className="info-page__head-copy">
+            <span className="eyebrow">À propos</span>
+            <h1>Un carnet qui suit votre santé dans la durée.</h1>
+            <p className="lead">Mon E‑Carnet est un carnet de santé numérique porté par la startup Redianice. Il garde vos informations au même endroit, et c’est vous qui décidez qui peut les consulter.</p>
+            <div className="about__pulse" aria-hidden="true"><PulseLine /></div>
+          </div>
+          <DocHero icon="heart" />
         </header>
 
         <section className="about__block about__problem" aria-labelledby="constat">

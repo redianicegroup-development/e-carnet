@@ -4,6 +4,7 @@ import { BackLink } from "../../components/public/BackLink";
 import { ContactLine } from "../../components/public/ContactLine";
 import { InfoPageMotion } from "../../components/motion/InfoPageMotion";
 import { BrandSwitchFigure, CreditsStackFigure, CreditsTeamFigure } from "../../components/public/figures/CreditsFigures";
+import { DocHero } from "../../components/public/figures/DocHero";
 import { PublicShell } from "../../components/public/PublicShell";
 import { BrandLogo } from "../../components/ui/BrandLogo";
 import { Icon } from "../../components/ui/Icon";
@@ -22,11 +23,14 @@ export default function CreditsPage() {
       <article className="hero-page credits">
         <InfoPageMotion>
         <BackLink />
-        <header className="credits__head">
-          <BrandLogo height={60} />
-          <span className="eyebrow">Crédits et remerciements</span>
-          <h1>Merci à celles et ceux qui ont rendu ce carnet possible.</h1>
-          <p className="lead">Mon E-Carnet est porté par Redianice, une startup qui construit des outils simples au service de la santé. L’application est développée par AKATech Studio, dont le fondateur fait partie de l’équipe.</p>
+        <header className="credits__head info-page__head">
+          <div className="info-page__head-copy">
+            <BrandLogo height={60} />
+            <span className="eyebrow">Crédits et remerciements</span>
+            <h1>Merci à celles et ceux qui ont rendu ce carnet possible.</h1>
+            <p className="lead">Mon E-Carnet est porté par Redianice, une startup qui construit des outils simples au service de la santé. L’application est développée par AKATech Studio, dont le fondateur fait partie de l’équipe.</p>
+          </div>
+          <DocHero icon="sparkle" />
         </header>
 
         <section className="stack" aria-labelledby="equipe">

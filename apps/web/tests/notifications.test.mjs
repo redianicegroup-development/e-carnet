@@ -21,9 +21,11 @@ test("la cloche patient utilise l’inbox et conserve un panneau accessible", ()
   assert.match(bell, /\/patient\/carnet#notifications/);
   assert.match(bell, /visibilitychange/);
   assert.match(bell, /60_000/);
-  assert.match(read("src/components/notifications/notification-bell.css"), /ecarnet-gooey-soft/);
-  assert.match(read("src/components/notifications/notification-bell.css"), /notification-goo-wiggle/);
-  assert.doesNotMatch(bell, /Audio|audio|push/i);
+  assert.match(bell, /AudioContext/);
+  assert.match(bell, /playNotificationChime/);
+  assert.match(bell, /aria-pressed=\{soundEnabled\}/);
+  assert.match(read("src/components/notifications/notification-bell.css"), /ecarnet-gooey/);
+  assert.match(read("src/components/notifications/notification-bell.css"), /notification-bell-pulse/);
 });
 
 test("la cloche est uniquement dans l’espace patient et hors de la liste d’onglets", () => {

@@ -39,8 +39,8 @@
 
 ## Recette technique
 
-- Web : 118 tests passés, TypeScript validé, ESLint réussi avec 5 avertissements non bloquants, build Next.js production réussi.
-- API : 104 tests `care` et `professionals` passés (1 ignoré) ; `manage.py check` et `makemigrations --check --dry-run` sans anomalie. Les 12 tests de notifications et confirmation vaccinale ciblés ont aussi passé.
+- Web : 119 tests passés, TypeScript validé, ESLint réussi avec 5 avertissements non bloquants, build Next.js production réussi.
+- API : 104 tests `care` et `professionals` passés (1 ignoré) et 37 tests `establishments` (1 ignoré) ; `manage.py check` et `makemigrations --check --dry-run` sans anomalie. Les 12 tests de notifications et confirmation vaccinale ciblés ont aussi passé.
 
 
 ## Ajout UI — QR de la carte virtuelle et cloche de notifications — terminé
@@ -51,3 +51,12 @@
 - API inbox limitée au patient courant, compteur non lu, dix notifications récentes, lecture individuelle et réponse `private, no-store`. Le panneau affiche titre, contenu, date et liens contextuels, avec actualisation au focus/visibilité et périodique ; pas de carillon.
 - La confirmation vaccinale professionnelle crée une notification patient. Les notifications de vaccins et médicaments pointent vers leurs rubriques réelles du carnet.
 - Navigation patient vérifiée à quatre entrées (« Accueil », « Mon carnet », « Visites », « Partage ») ; le bouton public Remonter n’est pas dupliqué ; Avis/Remonter restent en icône seule sur mobile et inchangés sur ordinateur.
+
+
+## Invitation admin d’établissement — secours si SMTP est inaccessible — terminé
+
+- L’application tente d’envoyer le lien au courriel du responsable (`responsible_email`) en utilisant l’adresse expéditrice E‑Carnet configurée, pas l’adresse du destinataire comme expéditeur.
+- Si SMTP échoue, la création de l’établissement reste effectuée, l’état « Échec d’envoi » reste visible et l’administrateur reçoit, dans la seule réponse autorisée de création/renvoi, le lien d’activation valable 48 h et à usage unique, prêt à copier et transmettre manuellement.
+- Si l’envoi réussit, le lien brut ne figure pas dans la réponse ; il reste uniquement dans le courriel du responsable.
+- Le lien d’activation brut n’est jamais conservé en base ni écrit dans les journaux, l’historique ou la liste des invitations. Les endpoints restent réservés au staff authentifié.
+- Le délai SMTP est borné pour qu’un hôte réseau inaccessible ne bloque pas l’écran admin pendant plus de 10 secondes par défaut (valeur configurable). Le renvoi crée un nouveau lien et invalide l’ancien.

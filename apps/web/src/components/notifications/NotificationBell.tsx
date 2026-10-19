@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type CSSProperties } from "react";
 import { apiGet, apiPatch } from "../../infrastructure/api/client";
 import { Icon } from "../ui/Icon";
 import "./notification-bell.css";
@@ -36,22 +36,63 @@ function formatDate(value: string) {
   return new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(date);
 }
 
+function createNotificationAudio() {
+  if (typeof window === "undefined") return null;
+  const AudioContextClass = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  return AudioContextClass ? new AudioContextClass() : null;
+}
+
+function playNotificationChime(audioContext: AudioContext | null, count = 1) {
+  if (!audioContext || audioContext.state === "suspended") return;
+  const now = audioContext.currentTime;
+  for (let index = 0; index < count; index += 1) {
+    const start = now + index * 0.16;
+    const oscillator = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(index % 2 === 0 ? 740 : 988, start);
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(0.075, start + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.14);
+    oscillator.connect(gain);
+    gain.connect(audioContext.destination);
+    oscillator.start(start);
+    oscillator.stop(start + 0.15);
+  }
+}
+
 export function NotificationBell({ placement = "sidebar" }: NotificationBellProps) {
   const [notifications, setNotifications] = useState<PatientNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [open, setOpen] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
   const [marking, setMarking] = useState<Set<string>>(() => new Set());
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const panel = useRef<HTMLDivElement>(null);
   const panelId = useId();
+  const audioContext = useRef<AudioContext | null>(null);
+  const knownIds = useRef<Set<string>>(new Set());
+  const hasSeededNotifications = useRef(false);
+
+  const unlockAudio = useCallback(async () => {
+    if (!audioContext.current) audioContext.current = createNotificationAudio();
+    if (audioContext.current?.state === "suspended") await audioContext.current.resume();
+  }, []);
 
   const refresh = useCallback(async () => {
     try {
       const inbox = await apiGet<NotificationInbox>(INBOX_URL);
-      setNotifications(Array.isArray(inbox.items) ? inbox.items : []);
+      const nextNotifications = Array.isArray(inbox.items) ? inbox.items : [];
+      const incomingUnread = nextNotifications.filter((item) => !item.read_at && !knownIds.current.has(item.id));
+      if (hasSeededNotifications.current && soundEnabled && incomingUnread.length > 0) {
+        playNotificationChime(audioContext.current, incomingUnread.length);
+      }
+      nextNotifications.forEach((item) => knownIds.current.add(item.id));
+      hasSeededNotifications.current = true;
+      setNotifications(nextNotifications);
       setUnreadCount(Number.isFinite(inbox.unread_count) ? Math.max(0, inbox.unread_count) : 0);
       setHasError(false);
     } catch {
@@ -60,7 +101,7 @@ export function NotificationBell({ placement = "sidebar" }: NotificationBellProp
     } finally {
       setLoaded(true);
     }
-  }, []);
+  }, [soundEnabled]);
 
   useEffect(() => {
     const initialRefresh = window.setTimeout(() => void refresh(), 0);
@@ -89,16 +130,29 @@ export function NotificationBell({ placement = "sidebar" }: NotificationBellProp
         setOpen(false);
         trigger.current?.focus();
       }
+      if (event.key === "Tab") setOpen(false);
     };
     document.addEventListener("pointerdown", onPointerDown);
     document.addEventListener("keydown", onKeyDown);
     const firstFocusable = panel.current?.querySelector<HTMLElement>("a, button");
-    firstFocusable?.focus();
+    const focusTimer = window.setTimeout(() => firstFocusable?.focus(), 80);
     return () => {
       document.removeEventListener("pointerdown", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
+      window.clearTimeout(focusTimer);
     };
   }, [open]);
+
+  async function toggleOpen() {
+    await unlockAudio();
+    setOpen((current) => !current);
+  }
+
+  function toggleSound() {
+    const next = !soundEnabled;
+    setSoundEnabled(next);
+    if (next) void unlockAudio();
+  }
 
   async function markAsRead(notification: PatientNotification) {
     if (notification.read_at || marking.has(notification.id)) return;
@@ -110,7 +164,6 @@ export function NotificationBell({ placement = "sidebar" }: NotificationBellProp
     try {
       await apiPatch<unknown>(`/api/v1/patient/care/notifications/${encodeURIComponent(notification.id)}/read/`, {});
     } catch {
-      // Conserver le contenu affiché et remettre l'état local en attente si le marquage échoue.
       setNotifications((current) => current.map((item) => item.id === notification.id && item.read_at === readAt ? { ...item, read_at: previousReadAt } : item));
       setUnreadCount((current) => current + 1);
       setHasError(true);
@@ -123,64 +176,38 @@ export function NotificationBell({ placement = "sidebar" }: NotificationBellProp
     }
   }
 
-  const latest = [...notifications]
-    .sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime())
-    .slice(0, 6);
+  const latest = [...notifications].sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime()).slice(0, 6);
   const unreadLabel = unreadCount === 0 ? "aucune notification non lue" : `${unreadCount} notification${unreadCount > 1 ? "s" : ""} non lue${unreadCount > 1 ? "s" : ""}`;
+  let itemIndex = 0;
+  const step = () => ({ "--i": itemIndex++ } as CSSProperties);
 
   return (
     <div className="notification-bell" data-placement={placement} data-open={open} data-unread={unreadCount > 0} ref={root}>
-      <button
-        ref={trigger}
-        type="button"
-        className="notification-bell__trigger"
-        aria-label={`Notifications : ${unreadLabel}`}
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        aria-controls={open ? panelId : undefined}
-        onClick={() => setOpen((current) => !current)}
-      >
-        <span className="notification-bell__goo" aria-hidden="true"><i /><i /></span>
+      <span className="notification-bell__goo" aria-hidden="true"><i className="notification-bell__anchor" /><i className="notification-bell__blob" /></span>
+      <div className="notification-bell__panel" id={panelId} ref={panel} role="dialog" aria-labelledby={`${panelId}-title`} inert={!open}>
+        <div className="notification-bell__content">
+          <div className="notification-bell__panel-head" style={step()}>
+            <div><h2 id={`${panelId}-title`}>Notifications</h2><span className="notification-bell__count" aria-live="polite">{unreadLabel}</span></div>
+            <button type="button" className="notification-bell__sound" onClick={toggleSound} aria-pressed={soundEnabled} aria-label={soundEnabled ? "Désactiver la sonnerie" : "Activer la sonnerie"} title={soundEnabled ? "Sonnerie active" : "Sonnerie désactivée"}><span aria-hidden="true">{soundEnabled ? "♪" : "×"}</span></button>
+          </div>
+          {hasError && <p className="notification-bell__status" style={step()} role="status">Actualisation momentanément indisponible.</p>}
+          {!loaded && <p className="notification-bell__status" style={step()} role="status">Chargement des notifications…</p>}
+          {loaded && latest.length === 0 && <p className="notification-bell__status" style={step()}>Vous n’avez pas encore de notification.</p>}
+          {latest.length > 0 && <ul className="notification-bell__list">{latest.map((notification) => {
+            const context = contextLink(notification.kind);
+            const isMarking = marking.has(notification.id);
+            return <li className={`notification-bell__item${notification.read_at ? " is-read" : " is-unread"}`} style={step()} key={notification.id}>
+              <div className="notification-bell__item-copy"><strong>{notification.title}</strong>{notification.body && <p>{notification.body}</p>}<time dateTime={notification.created_at}>{formatDate(notification.created_at)}</time></div>
+              <div className="notification-bell__item-actions"><a href={context.href}>{context.label}</a>{notification.read_at ? <span className="notification-bell__read-state">Lue</span> : <button type="button" onClick={() => void markAsRead(notification)} disabled={isMarking}>{isMarking ? "Marquage…" : "Marquer comme lue"}</button>}</div>
+            </li>;
+          })}</ul>}
+          <a className="notification-bell__all" style={step()} href="/patient/carnet#notifications">Voir toutes les notifications</a>
+        </div>
+      </div>
+      <button ref={trigger} type="button" className="notification-bell__trigger" aria-label={`Notifications : ${unreadLabel}`} aria-haspopup="dialog" aria-expanded={open} aria-controls={panelId} onClick={() => void toggleOpen()}>
         <Icon name="bell" size={22} />
         {unreadCount > 0 && <span className="notification-bell__badge" aria-hidden="true">{unreadCount > 99 ? "99+" : unreadCount}</span>}
       </button>
-      {open && (
-        <div className="notification-bell__panel" id={panelId} ref={panel} role="dialog" aria-labelledby={`${panelId}-title`}>
-          <div className="notification-bell__panel-head">
-            <h2 id={`${panelId}-title`}>Notifications</h2>
-            <span className="notification-bell__count" aria-live="polite">{unreadLabel}</span>
-          </div>
-          {hasError && <p className="notification-bell__status" role="status">Actualisation momentanément indisponible.</p>}
-          {!loaded && <p className="notification-bell__status" role="status">Chargement des notifications…</p>}
-          {loaded && latest.length === 0 && <p className="notification-bell__status">Vous n’avez pas encore de notification.</p>}
-          {latest.length > 0 && (
-            <ul className="notification-bell__list">
-              {latest.map((notification) => {
-                const context = contextLink(notification.kind);
-                const isMarking = marking.has(notification.id);
-                return (
-                  <li className={`notification-bell__item${notification.read_at ? " is-read" : " is-unread"}`} key={notification.id}>
-                    <div className="notification-bell__item-copy">
-                      <strong>{notification.title}</strong>
-                      {notification.body && <p>{notification.body}</p>}
-                      <time dateTime={notification.created_at}>{formatDate(notification.created_at)}</time>
-                    </div>
-                    <div className="notification-bell__item-actions">
-                      <a href={context.href}>{context.label}</a>
-                      {notification.read_at ? <span className="notification-bell__read-state">Lue</span> : (
-                        <button type="button" onClick={() => void markAsRead(notification)} disabled={isMarking}>
-                          {isMarking ? "Marquage…" : "Marquer comme lue"}
-                        </button>
-                      )}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-          <a className="notification-bell__all" href="/patient/carnet#notifications">Voir toutes les notifications</a>
-        </div>
-      )}
     </div>
   );
 }

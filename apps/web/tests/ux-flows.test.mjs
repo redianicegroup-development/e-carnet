@@ -75,3 +75,13 @@ test("l'onboarding de l'établissement est une fiche à compléter avant d'ouvri
   assert.match(staff, /verification_confirmed/);
   assert.doesNotMatch(staff, /responsible_name|address|establishment_type/, "l'équipe ne saisit plus la fiche de l'établissement");
 });
+
+
+test("l’admin peut transmettre un lien d’activation si la messagerie échoue", () => {
+  const staff = read("src/components/AdminEstablishmentsClient.tsx");
+  assert.match(staff, /manual_invitation_url/);
+  assert.match(staff, /email_delivery === "failed"/);
+  assert.match(staff, /Copier le lien/);
+  assert.match(staff, /valable 48 heures/);
+  assert.doesNotMatch(staff, /le lien n'est jamais affiché/i);
+});

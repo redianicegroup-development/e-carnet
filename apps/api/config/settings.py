@@ -104,6 +104,7 @@ EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
 EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "false").lower() == "true"
 EMAIL_USE_SSL = os.environ.get("EMAIL_USE_SSL", "false").lower() == "true"
+EMAIL_TIMEOUT = float(os.environ.get("EMAIL_TIMEOUT", "10"))
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "no-reply@e-carnet.local")
 # Destinataires (séparés par des virgules) prévenus d'un nouveau message de contact. Vide = aucune notification ; l'e-mail ne contient aucune donnée personnelle.
 ECARNET_CONTACT_NOTIFY_TO = os.environ.get("ECARNET_CONTACT_NOTIFY_TO", "")

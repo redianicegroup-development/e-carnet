@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
-import { Icon } from "../ui/Icon";
 import { gsap, ScrollTrigger, useGSAP } from "./gsap";
 import { stickyHeaderHeight, useSmoothScroll } from "./useSmoothScroll";
 
@@ -28,7 +27,6 @@ function hideStroke(shape: SVGGeometryElement) {
 export function InfoPageMotion({ kind = "page", children }: { kind?: Kind; children: ReactNode }) {
   const root = useRef<HTMLDivElement>(null);
   const bar = useRef<HTMLSpanElement>(null);
-  const topButton = useRef<HTMLButtonElement>(null);
   const lenis = useSmoothScroll();
 
   /* La hauteur de l'en-tête collant : mesurée (elle change selon la connexion et la largeur), jamais devinée. */
@@ -102,7 +100,6 @@ export function InfoPageMotion({ kind = "page", children }: { kind?: Kind; child
 
       const setBar = bar.current ? gsap.quickSetter(bar.current, "scaleX") : null;
       ScrollTrigger.create({ start: 0, end: "max", onUpdate: (self) => setBar?.(self.progress) });
-      ScrollTrigger.create({ start: 560, end: "max", onToggle: (self) => topButton.current?.classList.toggle("is-visible", self.isActive) });
     }
 
     /* Les ancres et les hauteurs de page changent quand les polices arrivent : on recalcule une fois. */
@@ -214,15 +211,6 @@ export function InfoPageMotion({ kind = "page", children }: { kind?: Kind; child
       {kind === "legal" && (
         <>
           <span className="pm-progress" aria-hidden="true"><span ref={bar} className="pm-progress__bar" /></span>
-          <button
-            ref={topButton}
-            type="button"
-            className="pm-top"
-            aria-label="Remonter en haut de la page"
-            onClick={() => (lenis.current ? lenis.current.scrollTo(0, { duration: 1.1 }) : window.scrollTo({ top: 0 }))}
-          >
-            <Icon name="chevron" size={16} /> Haut de page
-          </button>
         </>
       )}
       {children}

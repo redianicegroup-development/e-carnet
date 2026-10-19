@@ -17,7 +17,13 @@ type Item = {
   invitation: { id: string; email: string; state: InvitationState; expires_at: string; sent_at: string | null } | null;
 };
 type Listing = { items: Item[]; total: number; truncated: boolean };
-type Created = { expires_at: string; establishment: { internal_code: string | null } };
+type Created = {
+  expires_at: string;
+  state?: InvitationState;
+  email_delivery?: "sent" | "failed";
+  manual_invitation_url?: string;
+  establishment?: { internal_code: string | null };
+};
 
 const BLANK = { name: "", email: "", firstName: "", lastName: "", verified: false };
 
@@ -38,8 +44,8 @@ function followUp(item: Item): { label: string; tone: string } {
 const when = (value: string | null) => (value ? new Date(value).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" }) : "—");
 const errorText = (error: unknown, fallback: string) => (error instanceof Error ? error.message : fallback);
 
-/* L'équipe Mon E‑Carnet saisit le nom vérifié de la structure et l'e‑mail de son responsable : l'invitation part par e‑mail
-   (le lien n'est jamais affiché) et c'est l'établissement qui complète ensuite sa fiche dans son onboarding. */
+/* L'équipe Mon E‑Carnet saisit le nom vérifié de la structure et l'e‑mail de son responsable ; l'établissement complète ensuite
+   sa fiche. Si la messagerie est inaccessible, un lien de secours est révélé à l'admin une seule fois dans la réponse. */
 export function AdminEstablishmentsClient({ aside }: { aside?: ReactNode }) {
   const confirm = useConfirm();
   const [form, setForm] = useState(BLANK);
@@ -48,6 +54,8 @@ export function AdminEstablishmentsClient({ aside }: { aside?: ReactNode }) {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [tick, setTick] = useState(0);
+  const [manualInvitationUrl, setManualInvitationUrl] = useState("");
+  const [copyStatus, setCopyStatus] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -63,6 +71,8 @@ export function AdminEstablishmentsClient({ aside }: { aside?: ReactNode }) {
     setBusy(true);
     setMessage("");
     setError("");
+    setManualInvitationUrl("");
+    setCopyStatus("");
     try {
       await action();
       setMessage(success);
@@ -86,9 +96,15 @@ export function AdminEstablishmentsClient({ aside }: { aside?: ReactNode }) {
     setBusy(true);
     setMessage("");
     setError("");
+    setManualInvitationUrl("");
+    setCopyStatus("");
     try {
       const created = await apiPost<Created>("/api/v1/establishments/startup/establishments/", body);
-      setMessage(`Accès créé${created.establishment.internal_code ? ` (code ${created.establishment.internal_code})` : ""}. L’invitation part à ${form.email.trim().toLowerCase()} ; elle expire le ${when(created.expires_at)}.`);
+      setManualInvitationUrl(created.manual_invitation_url ?? "");
+      const code = created.establishment?.internal_code ? ` (code ${created.establishment.internal_code})` : "";
+      setMessage(created.email_delivery === "failed"
+        ? `Accès créé${code}. L’envoi automatique à ${form.email.trim().toLowerCase()} a échoué ; copiez le lien de secours ci-dessous. Il expire le ${when(created.expires_at)}.`
+        : `Accès créé${code}. E‑mail envoyé à ${form.email.trim().toLowerCase()} ; invitation valable jusqu’au ${when(created.expires_at)}.`);
       setForm(BLANK);
       refresh();
     } catch (reason) {
@@ -110,7 +126,7 @@ export function AdminEstablishmentsClient({ aside }: { aside?: ReactNode }) {
     const email = form.email.trim().toLowerCase();
     const accepted = await confirm({
       title: `Créer l’accès de « ${name} » ?`,
-      message: `Un e‑mail d’invitation, valable 48 heures, partira tout de suite à ${email}. L’établissement complétera ensuite lui‑même sa fiche (type, ville, adresse, téléphone).`,
+      message: `L’application tentera d’envoyer un lien d’invitation valable 48 heures à ${email}. Si l’envoi e‑mail échoue, le lien de secours apparaîtra ici pour transmission manuelle. L’établissement complétera ensuite sa fiche.`,
       note: "Le nom saisi ici est celui que vous avez vérifié : l’établissement ne pourra plus le modifier.",
       confirmLabel: "Créer et envoyer l’invitation",
       cancelLabel: "Revoir",
@@ -126,7 +142,38 @@ export function AdminEstablishmentsClient({ aside }: { aside?: ReactNode }) {
       message: `Un nouvel e‑mail partira à ${email}. Le lien précédent cessera de fonctionner.`,
       confirmLabel: "Renvoyer l’invitation",
     });
-    if (accepted) await run(() => apiPost(`/api/v1/establishments/startup/${item.id}/administrator-invitation/`, {}), `Invitation renvoyée à ${email}.`);
+    if (!accepted) return;
+    setBusy(true);
+    setMessage("");
+    setError("");
+    setManualInvitationUrl("");
+    setCopyStatus("");
+    try {
+      const created = await apiPost<Created>(`/api/v1/establishments/startup/${item.id}/administrator-invitation/`, {});
+      setManualInvitationUrl(created.manual_invitation_url ?? "");
+      setMessage(created.email_delivery === "failed"
+        ? `Nouvelle invitation créée, mais l’e‑mail à ${email} n’a pas pu être envoyé. Copiez le nouveau lien ci-dessous ; le précédent est invalidé.`
+        : `Nouvelle invitation envoyée à ${email}. Le lien précédent est invalidé ; expiration : ${when(created.expires_at)}.`);
+      refresh();
+    } catch (reason) {
+      setError(errorText(reason, "Renvoi impossible."));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function copyManualInvitation() {
+    if (!manualInvitationUrl) return;
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error("Clipboard indisponible");
+      await navigator.clipboard.writeText(manualInvitationUrl);
+      setCopyStatus("Lien copié. Transmettez-le uniquement au responsable concerné.");
+    } catch {
+      const input = document.getElementById("admin-establishment-invitation-link") as HTMLInputElement | null;
+      input?.focus();
+      input?.select();
+      setCopyStatus("Copie automatique indisponible : le lien est sélectionné, copiez-le manuellement.");
+    }
   }
 
   async function revoke(item: Item) {
@@ -158,11 +205,22 @@ export function AdminEstablishmentsClient({ aside }: { aside?: ReactNode }) {
             <label className="field"><span>Nom du responsable (facultatif)</span><input maxLength={120} value={form.lastName} onChange={(event) => setForm({ ...form, lastName: event.target.value })} autoComplete="off" /></label>
           </div>
           <label className="check-row"><input type="checkbox" checked={form.verified} onChange={(event) => setForm({ ...form, verified: event.target.checked })} /><span>J’ai vérifié les pièces de la structure et l’identité de son responsable, hors application.</span></label>
-          <p className="muted">Sans prénom ni nom, le responsable les renseigne en activant son accès. Le lien d’invitation n’est jamais affiché ici : il part uniquement par e‑mail.</p>
+          <p className="muted">Sans prénom ni nom, le responsable les renseigne en activant son accès. En cas d’échec d’envoi, le lien valable 48 heures sera affiché ci-dessous pour copie et transmission manuelle.</p>
           <button className="button primary" type="submit" disabled={!canSubmit}>Créer l’accès et envoyer l’invitation</button>
         </form>
         <p className="notice" role="status" aria-live="polite" hidden={!message}>{message}</p>
         <p className="notice error" role="alert" hidden={!error}>{error}</p>
+        {manualInvitationUrl && (
+          <div className="notice" aria-label="Lien d’activation à transmettre">
+            <p><strong>L’envoi automatique a échoué.</strong> Copiez ce lien et transmettez-le au responsable par un canal sûr. Il expire sous 48 heures et ne peut être utilisé qu’une fois.</p>
+            <label className="field">
+              <span>Lien d’activation</span>
+              <input id="admin-establishment-invitation-link" type="url" value={manualInvitationUrl} readOnly autoComplete="off" spellCheck={false} onFocus={(event) => event.currentTarget.select()} />
+            </label>
+            <button type="button" className="button small" onClick={copyManualInvitation}>Copier le lien</button>
+            <p className="muted" role="status" aria-live="polite">{copyStatus}</p>
+          </div>
+        )}
       </article>
 
       {aside}

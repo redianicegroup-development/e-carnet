@@ -54,6 +54,8 @@ class StaffOnboardingFlowTests(TestCase):
         self.assertRegex(establishment.internal_code, r"^ETB-[A-HJ-NP-Z2-9]{6}$")
         self.assertIsNone(establishment.profile_completed_at)
         self.assertEqual(response.data["data"]["establishment"]["internal_code"], establishment.internal_code)
+        self.assertEqual(response.data["data"]["email_delivery"], "sent")
+        self.assertNotIn("manual_invitation_url", response.data["data"])
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to, ["responsable@clinique.test"])
         self.assertNotIn("token", str(response.data))
@@ -79,11 +81,19 @@ class StaffOnboardingFlowTests(TestCase):
             with self.captureOnCommitCallbacks(execute=True):
                 response = self.client.post(STAFF_URL, self.minimal, format="json")
         self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["data"]["email_delivery"], "failed")
+        manual_url = response.data["data"]["manual_invitation_url"]
+        raw_token = parse_qs(urlparse(manual_url).query)["token"][0]
+        invitation = EstablishmentAdminInvitation.objects.get()
+        self.assertEqual(EstablishmentAdminInvitation.digest(raw_token), invitation.token_hash)
         listing = self.client.get(STAFF_URL).data["data"]["items"]
         self.assertEqual(listing[0]["invitation"]["state"], "failed")
+        self.assertNotIn("manual_invitation_url", str(listing), "le lien brut ne doit pas apparaître dans la liste admin")
         with self.captureOnCommitCallbacks(execute=True):
             resent = self.client.post(f"/api/v1/establishments/startup/{listing[0]['id']}/administrator-invitation/", {}, format="json")
         self.assertEqual(resent.status_code, 200, resent.data)
+        self.assertEqual(resent.data["data"]["email_delivery"], "sent")
+        self.assertNotIn("manual_invitation_url", resent.data["data"])
         self.assertEqual(self.client.get(STAFF_URL).data["data"]["items"][0]["invitation"]["state"], "sent")
         self.assertEqual(Establishment.objects.count(), 1, "le renvoi ne doit pas créer de doublon")
 

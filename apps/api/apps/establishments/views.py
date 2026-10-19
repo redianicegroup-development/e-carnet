@@ -19,7 +19,7 @@ from apps.identity.throttles import IpScopedThrottle
 from apps.audit.services import record_event
 from apps.cloudinary_storage import CLOUDINARY_CONFIGURED, upload as cloudinary_upload
 from apps.identity.models import AccountContext
-from .email_service import send_establishment_invitation
+from .email_service import invitation_url, send_establishment_invitation
 from .models import PROFILE_FIELDS, Establishment, EstablishmentAdminInvitation, EstablishmentAdministrator, EstablishmentJoinCode, EstablishmentMembership, PrescriptionTemplate, generate_internal_code
 from .serializers import EstablishmentProfileSerializer, EstablishmentSerializer, MembershipSerializer, PrescriptionTemplateSerializer
 
@@ -46,7 +46,7 @@ def deliver_invitation(invitation_id, raw_token):
     un échec SMTP se voit côté équipe (état « échec d'envoi ») et se corrige par un renvoi, sans créer de doublon."""
     invitation = EstablishmentAdminInvitation.objects.select_related("establishment").filter(pk=invitation_id).first()
     if not invitation:
-        return
+        return False
     try:
         send_establishment_invitation(
             email=invitation.email,
@@ -58,8 +58,9 @@ def deliver_invitation(invitation_id, raw_token):
     except Exception:  # noqa: BLE001 - tout échec d'envoi est journalisé et rendu visible, jamais propagé
         logger.exception("Échec d'envoi de l'invitation d'établissement %s", invitation_id)
         EstablishmentAdminInvitation.objects.filter(pk=invitation_id).update(email_error="send_failed")
-        return
+        return False
     EstablishmentAdminInvitation.objects.filter(pk=invitation_id).update(email_sent_at=timezone.now(), email_error="")
+    return True
 
 
 def make_invitation(*, establishment, created_by, email, first_name="", last_name=""):
@@ -77,7 +78,6 @@ def make_invitation(*, establishment, created_by, email, first_name="", last_nam
         expires_at=timezone.now() + timedelta(hours=48),
         created_by=created_by,
     )
-    transaction.on_commit(lambda: deliver_invitation(invitation.id, raw_token))
     record_event(
         event_type="establishment.invitation.created",
         actor=created_by,
@@ -85,7 +85,24 @@ def make_invitation(*, establishment, created_by, email, first_name="", last_nam
         establishment=establishment,
         metadata={"action": "created", "status": "pending", "invitation_id": str(invitation.id)},
     )
-    return invitation
+    return invitation, raw_token
+
+
+def schedule_invitation_delivery(response, invitation, raw_token):
+    """Envoie après commit ; ne révèle le jeton brut au staff que si SMTP échoue."""
+    def deliver_and_update_response():
+        sent = deliver_invitation(invitation.id, raw_token)
+        data = response.data.get("data")
+        if not isinstance(data, dict):
+            return
+        state = "sent" if sent else "failed"
+        data["state"] = state
+        data["email_delivery"] = state
+        if not sent:
+            # Le lien n'est jamais stocké ni journalisé. Cette réponse est réservée aux vues IsAdminUser.
+            data["manual_invitation_url"] = invitation_url(raw_token)
+
+    transaction.on_commit(deliver_and_update_response)
 
 
 def invitation_state(invitation):
@@ -104,7 +121,7 @@ def invitation_state(invitation):
 
 
 def invitation_response_data(invitation, establishment=None):
-    # Le jeton n'est jamais renvoyé : il n'existe en clair que dans le courriel envoyé au responsable.
+    # Le jeton reste absent de la base et de cette réponse tant que l'envoi e-mail n'a pas échoué.
     data = {"invitation_id": str(invitation.id), "expires_at": invitation.expires_at, "state": "pending"}
     if establishment is not None:
         data["establishment"] = payload(establishment)
@@ -213,9 +230,11 @@ class StaffEstablishmentCreateView(APIView):
         establishment = Establishment.objects.create(
             name=name, status="active", activated_at=timezone.now(), created_by=request.user, internal_code=generate_internal_code()
         )
-        invitation = make_invitation(establishment=establishment, created_by=request.user, email=email, first_name=first_name, last_name=last_name)
+        invitation, raw_token = make_invitation(establishment=establishment, created_by=request.user, email=email, first_name=first_name, last_name=last_name)
         record_event(event_type="establishment.verified", actor=request.user, actor_role="ecarnet_staff", establishment=establishment, metadata={"action": "verified", "status": "active"})
-        return Response({"success": True, "data": invitation_response_data(invitation, establishment)}, status=201)
+        response = Response({"success": True, "data": invitation_response_data(invitation, establishment)}, status=201)
+        schedule_invitation_delivery(response, invitation, raw_token)
+        return response
 
 
 class StartupEstablishmentQueueView(APIView):
@@ -239,9 +258,11 @@ class StartupEstablishmentQueueView(APIView):
         establishment.status = "active"
         establishment.activated_at = timezone.now()
         establishment.save(update_fields=("status", "activated_at", "updated_at"))
-        invitation = make_invitation(establishment=establishment, created_by=request.user, email=establishment.email, first_name=establishment.responsible_name, last_name="")
+        invitation, raw_token = make_invitation(establishment=establishment, created_by=request.user, email=establishment.email, first_name=establishment.responsible_name, last_name="")
         record_event(event_type="establishment.approved", actor=request.user, actor_role="ecarnet_staff", establishment=establishment, metadata={"action": "approved", "status": "active"})
-        return Response({"success": True, "data": invitation_response_data(invitation, establishment)})
+        response = Response({"success": True, "data": invitation_response_data(invitation, establishment)})
+        schedule_invitation_delivery(response, invitation, raw_token)
+        return response
 
 
 class StaffAdministratorInvitationView(APIView):
@@ -270,8 +291,10 @@ class StaffAdministratorInvitationView(APIView):
                 "code": "administrator_exists",
                 "message": "Cette structure a déjà un administrateur actif : il sera remplacé dès que le nouveau responsable activera son accès.",
             }, status=409)
-        invitation = make_invitation(establishment=establishment, created_by=request.user, email=email, first_name=first_name, last_name=last_name)
-        return Response({"success": True, "data": invitation_response_data(invitation)})
+        invitation, raw_token = make_invitation(establishment=establishment, created_by=request.user, email=email, first_name=first_name, last_name=last_name)
+        response = Response({"success": True, "data": invitation_response_data(invitation)})
+        schedule_invitation_delivery(response, invitation, raw_token)
+        return response
 
 
 class StaffAdministratorInvitationRevokeView(APIView):

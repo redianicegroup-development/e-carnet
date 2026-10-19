@@ -532,13 +532,24 @@ a.setting-item:hover, button.setting-item:hover { border-color: var(--primary); 
 .admin-space-header .admin-heading p { margin: 3px 0 0; font-size: .82rem; }
 .admin-space-main { width: min(100%, 1280px); margin-inline: auto; }
 .admin-workspace__content { min-width: 0; width: 100%; }
-.admin-workspace__content > [role="tabpanel"] { min-width: 0; }
+.admin-workspace__content > [role="tabpanel"] { width: min(100%, 1120px); max-width: 100%; min-width: 0; margin-inline: auto; }
+.admin-workspace__content > [role="tabpanel"] > * { min-width: 0; max-width: 100%; }
+.admin-workspace__content > [role="tabpanel"] :is(.card, .admin-table-card, .admin-survey-summary) { min-width: 0; max-width: 100%; }
+.admin-workspace__content :is(h1, h2, h3, p, small, strong, a, code, td, th) { overflow-wrap: anywhere; }
+.admin-workspace__content .admin-table-wrap { min-width: 0; max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; }
+.admin-workspace__content .admin-management-grid { width: 100%; min-width: 0; max-width: 1120px; margin-inline: auto; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.admin-workspace__content .admin-management-grid > * { width: 100%; min-width: 0; max-width: 100%; }
+.admin-workspace__content .admin-management-grid .admin-table-title > * { min-width: 0; }
+.admin-workspace__content .admin-management-grid .admin-inline-actions { min-width: 0; flex-wrap: wrap; }
 .admin-settings-page { display: grid; gap: 16px; }
 @media (max-width: 900px) {
   .admin-space-header { display: grid; grid-template-columns: 1fr; }
   .admin-space-header .admin-heading { display: grid; }
   .admin-space-header .admin-actions { justify-content: flex-start; }
   .admin-space-main { padding-bottom: calc(var(--nav-h) + 34px + env(safe-area-inset-bottom)); }
+  .admin-workspace__content > [role="tabpanel"] { width: 100%; }
+  .admin-workspace__content .admin-management-grid { grid-template-columns: minmax(0, 1fr); }
+  .admin-workspace__content .admin-management-grid .admin-table-wrap { width: 100%; }
 }
 
 /* Consoles admin : hiérarchie des indicateurs et repérage immédiat des éléments à traiter. */
