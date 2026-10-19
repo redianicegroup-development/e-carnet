@@ -7,18 +7,20 @@ import { MedicalDocuments } from "./MedicalDocuments";
 import { Vaccinations } from "./Vaccinations";
 import { HealthMeasurements } from "./HealthMeasurements";
 import { MedicationReminders } from "./MedicationReminders";
-import { PatientNotifications } from "./PatientNotifications";
 import { FollowUpPlans } from "./FollowUpPlans";
 import { PatientAppointments } from "./PatientAppointments";
+import { CollapsibleSection } from "./ui/CollapsibleSection";
+import { PatientPreconsultations } from "./PatientPreconsultations";
+import { PatientConsultations } from "./PatientConsultations";
 
 type Declaration = { id: string; kind: string; label: string; details: string; provenance: { label: string } };
-type Kind = "allergy" | "antecedent" | "treatment" | "blood_group" | "city" | "emergency_contact";
+type Kind = "allergy" | "antecedent" | "treatment" | "blood_group" | "city" | "emergency_contact" | "height" | "weight";
 type FormState = { kind: Kind; label: string; details: string };
 
-const KINDS: Record<Kind, string> = { allergy: "Allergie", antecedent: "Antécédent", treatment: "Traitement", blood_group: "Groupe sanguin", city: "Ville", emergency_contact: "Contact d’urgence" };
+const KINDS: Record<Kind, string> = { allergy: "Allergie", antecedent: "Antécédent", treatment: "Traitement", blood_group: "Groupe sanguin", city: "Ville", emergency_contact: "Contact d’urgence", height: "Taille", weight: "Poids" };
 const BLOOD_GROUPS = ["A+", "A−", "B+", "B−", "AB+", "AB−", "O+", "O−", "Inconnu"];
 /* Une seule valeur active à la fois : la nouvelle remplace l’ancienne (comme côté serveur, ClinicalDeclaration.SINGLETON_KINDS). */
-const SINGLETON: Kind[] = ["blood_group", "city", "emergency_contact"];
+const SINGLETON: Kind[] = ["blood_group", "city", "emergency_contact", "height", "weight"];
 /* Ce que la carte d’urgence affiche : c’est ici, dans le carnet, qu’on le modifie. */
 const CARD_FIELDS: { kind: Kind; label: string }[] = [
   { kind: "blood_group", label: "Groupe sanguin" },
@@ -82,11 +84,13 @@ export function PatientCarnet() {
 
   const unique = SINGLETON.includes(form.kind);
   const freeText = form.kind === "allergy" || form.kind === "antecedent" || form.kind === "treatment";
+  const physicalKind = form.kind === "height" || form.kind === "weight";
   return (
     <div className="stack-lg">
       <PageHeader eyebrow="Mon carnet" title="Ce que je déclare" lead="Chaque information garde sa provenance : déclarée par vous, jamais présentée comme confirmée tant qu’un médecin ne l’a pas validée." />
 
-      <section className="card carnet-card-fields" aria-labelledby="card-fields-title">
+      <CollapsibleSection title="Ma carte d’urgence">
+      <section id="carte-urgence" className="card carnet-card-fields" aria-labelledby="card-fields-title">
         <div className="section-heading"><div><span className="eyebrow">Ma carte d’urgence</span><h2 id="card-fields-title">Ce que la carte affiche</h2></div></div>
         <p className="muted">Ces informations alimentent votre carte d’urgence. Modifiez-les ici : la carte et son QR se mettent à jour tout seuls.</p>
         <ul className="carnet-card-fields__list">
@@ -100,7 +104,9 @@ export function PatientCarnet() {
           })}
         </ul>
       </section>
+      </CollapsibleSection>
 
+      <CollapsibleSection title="Déclarations et mesures de santé">
       <div className="patient-grid">
         <form className="card" onSubmit={submit} ref={formRef} id="ajouter">
           <span className="eyebrow">{unique && current(form.kind) ? "Modifier" : "Ajouter"}</span>
@@ -113,6 +119,7 @@ export function PatientCarnet() {
             <label className="field"><span>Téléphone du contact</span><input required type="tel" inputMode="tel" maxLength={32} autoComplete="off" value={form.details} onChange={(event) => setForm({ ...form, details: event.target.value })} placeholder="+225 07 00 00 00 00" /></label>
           </>}
           {freeText && <label className="field"><span>Nom ou libellé</span><input required maxLength={160} value={form.label} onChange={(event) => setForm({ ...form, label: event.target.value })} placeholder="Ex. allergie connue" /></label>}
+          {physicalKind && <label className="field"><span>{form.kind === "height" ? "Taille (cm)" : "Poids (kg)"}</span><input required type="number" inputMode="decimal" min={form.kind === "height" ? "30" : "1"} max={form.kind === "height" ? "250" : "500"} step="0.1" value={form.label} onChange={(event) => setForm({ ...form, label: event.target.value })} placeholder={form.kind === "height" ? "Ex. 170" : "Ex. 65"} /></label>}
           {(freeText || form.kind === "blood_group") && <label className="field"><span>Détails (facultatif)</span><textarea maxLength={500} value={form.details} onChange={(event) => setForm({ ...form, details: event.target.value })} /></label>}
           <button className="button primary" type="submit" disabled={busy}>{busy ? "Enregistrement…" : unique ? "Enregistrer" : "Ajouter à mon carnet"}</button>
           <p className="status" role="status" aria-live="polite">{message}</p>
@@ -137,14 +144,16 @@ export function PatientCarnet() {
           )}
         </section>
       </div>
-      <MedicalDocuments />
-      <Vaccinations />
       <HealthMeasurements />
-      <MedicationReminders />
-      <PatientNotifications />
-      <FollowUpPlans />
-      <PatientAppointments />
-      <section className="card"><div className="section-heading"><div><span className="eyebrow">Portabilité</span><h2>Exporter mon carnet</h2></div></div><p className="muted">Téléchargez une copie PDF volontaire de vos déclarations, vaccinations et mesures récentes.</p><a className="button" href="/api/v1/patient/care/export/">Télécharger mon carnet PDF</a></section>
+      </CollapsibleSection>
+      <CollapsibleSection title="Mes documents"><MedicalDocuments /></CollapsibleSection>
+      <CollapsibleSection title="Mes vaccins"><Vaccinations /></CollapsibleSection>
+      <CollapsibleSection title="Rappels de médicaments"><MedicationReminders /></CollapsibleSection>
+      <CollapsibleSection title="Mes plans de suivi"><FollowUpPlans /></CollapsibleSection>
+      <CollapsibleSection title="Rendez-vous"><PatientAppointments /></CollapsibleSection>
+      <CollapsibleSection title="Mes pré-consultations"><PatientPreconsultations /></CollapsibleSection>
+      <CollapsibleSection title="Mes consultations"><PatientConsultations /></CollapsibleSection>
+      <CollapsibleSection title="Exporter mon carnet"><section className="card"><div className="section-heading"><div><span className="eyebrow">Portabilité</span><h2>Exporter mon carnet</h2></div></div><p className="muted">Téléchargez une copie PDF volontaire de vos déclarations, vaccinations et mesures récentes.</p><a className="button" href="/api/v1/patient/care/export/">Télécharger mon carnet PDF</a></section></CollapsibleSection>
     </div>
   );
 }

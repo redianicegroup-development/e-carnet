@@ -17,6 +17,16 @@ class PatientOwnedDataTests(TestCase):
         self.b = User.objects.create_user(username="patient-b", password="local-test-password")
         self.client = APIClient()
 
+
+    def test_profile_gender_is_optional_and_saved_as_patient_declared_information(self):
+        self.client.force_authenticate(self.a)
+        self.assertEqual(self.client.get("/api/v1/patient/profile/").data["data"]["gender"], "")
+        updated = self.client.patch("/api/v1/patient/profile/", {"gender": "female"}, format="json")
+        self.assertEqual(updated.status_code, 200)
+        self.assertEqual(updated.data["data"]["gender"], "female")
+        invalid = self.client.patch("/api/v1/patient/profile/", {"gender": "unknown"}, format="json")
+        self.assertEqual(invalid.status_code, 400)
+
     def test_profile_and_declarations_are_isolated(self):
         self.client.force_authenticate(self.a)
         created = self.client.post("/api/v1/patient/declarations/", {"kind": "allergy", "label": "Pénicilline", "details": "Déclaration fictive de test"}, format="json")
@@ -24,6 +34,23 @@ class PatientOwnedDataTests(TestCase):
         self.client.force_authenticate(self.b)
         self.assertEqual(self.client.get("/api/v1/patient/declarations/").data["data"], [])
         self.assertEqual(self.client.get("/api/v1/patient/profile/").status_code, 200)
+
+
+    def test_height_and_weight_are_singleton_declarations_in_private_and_public_card(self):
+        self.client.force_authenticate(self.a)
+        self.assertEqual(self.declare("height", "172.5").status_code, 201)
+        self.assertEqual(self.declare("weight", "68.2").status_code, 201)
+        self.assertEqual(self.declare("height", "173").status_code, 201)
+        self.assertEqual(self.declare("height", "999").status_code, 400)
+        active = ClinicalDeclaration.objects.filter(patient__user=self.a, status="declared")
+        self.assertEqual(list(active.filter(kind="height").values_list("label", flat=True)), ["173"])
+        card = self.client.get("/api/v1/patient/emergency-card/").data["data"]
+        self.assertEqual((card["height_cm"], card["weight_kg"]), ("173 cm", "68.2 kg"))
+        self.client.patch("/api/v1/patient/emergency-card/", {"qr_enabled": True}, format="json")
+        token = self.client.get("/api/v1/patient/emergency-card/").data["data"]["qr_token"]
+        self.client.force_authenticate(None)
+        public = self.client.get(f"/api/v1/patient/emergency-card/qr/{token}/").data["data"]
+        self.assertEqual((public["height_cm"], public["weight_kg"]), ("173 cm", "68.2 kg"))
 
     def test_blood_group_is_a_patient_declaration_and_only_one_is_active(self):
         self.client.force_authenticate(self.a)
@@ -61,7 +88,7 @@ class PatientOwnedDataTests(TestCase):
         self.assertEqual(public.data["data"]["contact_name"], "Contact fictif")
         self.assertEqual(public.data["data"]["contact_phone"], "+225 00 00 00 00")
         self.assertEqual(public.data["data"]["city"], "Abidjan")
-        self.assertEqual(set(public.data["data"]), {"first_name", "last_name", "city", "blood_group", "allergies", "treatments", "contact_name", "contact_phone", "updated_at"})
+        self.assertEqual(set(public.data["data"]), {"first_name", "last_name", "city", "blood_group", "height_cm", "weight_kg", "allergies", "treatments", "contact_name", "contact_phone", "updated_at"})
         # Jamais de date de naissance, d’adresse, de téléphone du patient ni d’identifiant interne sur la carte publique.
         for forbidden in ("birth_date", "address", "phone", "email", "id", "patient_id", "qr_token"):
             self.assertNotIn(forbidden, public.data["data"])

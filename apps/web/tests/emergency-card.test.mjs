@@ -19,11 +19,12 @@ test("la carte d’urgence affiche identité, groupe sanguin, ville, allergies, 
   assert.match(styles, /@container ecard \(max-width: 430px\) \{[^}]*\.ecard__body \{ grid-template-columns: minmax\(0, 1fr\)/);
 });
 
-test("les réglages montrent la carte avec la photo du titulaire et laissent le QR public dans la carte compte", () => {
+test("les réglages gardent l’aperçu privé tandis que l’accueil affiche le QR public", () => {
   const settings = read("src/components/PatientEmergencyCardSettingsClient.tsx");
   const image = read("src/components/emergency-card/emergency-card-image.ts");
   const visual = read("src/components/emergency-card/EmergencyCardVisual.tsx");
   const account = read("src/components/AccountSettingsClient.tsx");
+  const home = read("src/components/PatientHomeIdentity.tsx");
   assert.match(settings, /<EmergencyCardVisual card=\{card\} showQr=\{false\} photo=\{photo\} \/>/);
   assert.match(settings, /downloadEmergencyCardPng\(card, photo\)/);
   assert.match(settings, /Télécharger en PNG/);
@@ -34,13 +35,20 @@ test("les réglages montrent la carte avec la photo du titulaire et laissent le 
   assert.doesNotMatch(settings, /Renouveler|rotate|offline|Carte imprimable|<details|ecard-details/i);
   assert.doesNotMatch(read("src/components/emergency-card/emergency-card.css"), /ecard-details|ecard-offline/);
   assert.doesNotMatch(settings, /QRCodeSVG|ecard-qr|qrOpen|qrPanelId|publicUrl/);
-  assert.match(settings, /Le QR public de cette carte se trouve désormais dans votre carte compte\/identité/);
-  // L’activation et la désactivation du QR stable restent dans la carte compte, avec l’API e-carte.
-  assert.match(account, /<QRCodeSVG value=\{emergencyPublicUrl\}/);
-  assert.match(account, /settings-account-summary__emergency-qr/);
-  assert.match(account, /apiGet<EmergencyCardQr>\("\/api\/v1\/patient\/emergency-card\//);
-  assert.match(account, /apiPatch<EmergencyCardQr>\("\/api\/v1\/patient\/emergency-card\//);
-  assert.match(account, /qr_enabled/);
+  assert.match(settings, /Le QR public de cette carte se trouve sur l’accueil patient/);
+  // L’activation et la désactivation du QR stable sont maintenant sur l’accueil patient.
+  assert.doesNotMatch(account, /QRCodeSVG|settings-account-summary__emergency-qr|emergency-card\//);
+  assert.match(home, /<QRCodeSVG value=\{publicUrl\}/);
+  assert.match(home, /apiGet<EmergencyQr>\("\/api\/v1\/patient\/emergency-card\//);
+  assert.match(home, /apiPatch<EmergencyQr>\("\/api\/v1\/patient\/emergency-card\//);
+  assert.match(home, /qr_enabled/);
+  assert.match(visual, /Taille déclarée/);
+  assert.match(visual, /Poids déclaré/);
+  assert.match(home, /home-profile-title/);
+  assert.match(home, /<dt>Prénom<\/dt>/);
+  assert.match(home, /<dt>Âge<\/dt>/);
+  assert.match(home, /<dt>Genre déclaré<\/dt>/);
+  assert.match(home, /<dt>Ville<\/dt>/);
   // le PNG remplace le QR par la photo de profil ou l'avatar (monogramme si l'image est illisible), sans dépendance ni réseau applicatif
   assert.doesNotMatch(image, /qrCanvas|QRCode/);
   assert.match(image, /function loadPhoto/);

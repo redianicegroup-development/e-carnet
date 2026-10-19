@@ -6,6 +6,7 @@ import { apiGet, apiPatch } from "../infrastructure/api/client";
 type PatientProfile = {
   phone: string;
   birth_date: string | null;
+  gender: string;
   address: string;
   coverage_provider: string;
   coverage_number: string;
@@ -13,7 +14,7 @@ type PatientProfile = {
 };
 type Form = Omit<PatientProfile, "birth_date" | "coverage_expiry"> & { birth_date: string; coverage_expiry: string };
 
-const emptyForm: Form = { phone: "", birth_date: "", address: "", coverage_provider: "", coverage_number: "", coverage_expiry: "" };
+const emptyForm: Form = { phone: "", birth_date: "", gender: "", address: "", coverage_provider: "", coverage_number: "", coverage_expiry: "" };
 function dateInput(value: string | null | undefined) { return value ? value.slice(0, 10) : ""; }
 function fromProfile(profile: PatientProfile): Form {
   return { ...profile, birth_date: dateInput(profile.birth_date), coverage_expiry: dateInput(profile.coverage_expiry) };
@@ -61,6 +62,7 @@ export function PatientHealthSettingsClient() {
       <div className="settings-form-grid">
         <label className="field"><span>Téléphone</span><input autoComplete="tel" value={form.phone} onChange={(event) => update("phone", event.target.value)} disabled={loading || saving} /></label>
         <label className="field"><span>Date de naissance</span><input type="date" value={form.birth_date} onChange={(event) => update("birth_date", event.target.value)} disabled={loading || saving} /></label>
+        <label className="field"><span>Genre (facultatif)</span><select value={form.gender} onChange={(event) => update("gender", event.target.value)} disabled={loading || saving}><option value="">Non renseigné</option><option value="female">Femme</option><option value="male">Homme</option><option value="other">Autre</option><option value="prefer_not_to_say">Préfère ne pas préciser</option></select></label>
         <label className="field settings-form-grid__wide"><span>Adresse</span><input autoComplete="street-address" value={form.address} onChange={(event) => update("address", event.target.value)} disabled={loading || saving} /></label>
       </div>
       <h3>Couverture santé <span className="muted">(facultatif)</span></h3>

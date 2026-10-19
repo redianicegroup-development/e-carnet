@@ -10,7 +10,7 @@ import { PROJECT_LOGO_WEBP } from "../../lib/brand";
 const W = 1600;
 const PAD = 64;
 const BAND = 108;
-const CARD_HEIGHT = 900;
+const CARD_HEIGHT = 1020;
 const PHOTO_W = 340;
 const PHOTO_H = 425;
 const INK = "#17231f";
@@ -237,7 +237,19 @@ function paint(ctx: Ctx, card: EmergencyCardView, photo: LoadedPhoto, brandLogo:
   ctx.fillStyle = card.city ? INK : MUTED;
   const cityLines = limitLines(ctx, wrap(ctx, card.city || "Non renseignée", width - bloodW), 1, width - bloodW);
   cityLines.forEach((line) => ctx.fillText(line, x + bloodW, rowTop + labelH + 36));
-  y = rowTop + labelH + Math.max(card.blood_group ? 68 : 38, 38) + 18;
+  y = rowTop + labelH + Math.max(card.blood_group ? 68 : 38, 38) + 12;
+
+  // taille et poids déclarés ou dernières valeurs connues
+  const physicalTop = y;
+  const half = Math.floor(width / 2);
+  label(ctx, "Taille déclarée", x, physicalTop);
+  label(ctx, "Poids déclaré", x + half, physicalTop);
+  ctx.font = `700 30px ${style.body}`;
+  ctx.fillStyle = card.height_cm ? INK : MUTED;
+  ctx.fillText(card.height_cm || "Non renseignée", x, physicalTop + 62);
+  ctx.fillStyle = card.weight_kg ? INK : MUTED;
+  ctx.fillText(card.weight_kg || "Non renseigné", x + half, physicalTop + 62);
+  y = physicalTop + 82;
 
   // allergies
   y += label(ctx, "Allergies", x, y);

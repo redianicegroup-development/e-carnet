@@ -429,12 +429,17 @@ def emergency_card_data(card, *, public=False):
     declarations = ClinicalDeclaration.objects.filter(patient=card.patient, status="declared")
     latest = lambda kind: declarations.filter(kind=kind).order_by("-updated_at").first()
     blood, city, contact = latest("blood_group"), latest("city"), latest("emergency_contact")
+    height, weight = latest("height"), latest("weight")
+    display_height = f"{height.label} cm" if height else ""
+    display_weight = f"{weight.label} kg" if weight else ""
     data = {
         # Carte d’urgence virtuelle : identité minimale (nom, prénom, ville) choisie par le titulaire, affichée telle quelle au scan.
         "first_name": card.patient.display_first_name(),
         "last_name": card.patient.display_last_name(),
         "city": city.label if city else "",
         "blood_group": blood.label if blood else "",
+        "height_cm": display_height,
+        "weight_kg": display_weight,
         "allergies": list(declarations.filter(kind="allergy").values("label", "details")),
         "treatments": list(declarations.filter(kind="treatment").values("label", "details")),
         "contact_name": contact.label if contact else "",

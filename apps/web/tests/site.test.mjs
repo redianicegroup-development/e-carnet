@@ -95,6 +95,16 @@ test("visiteurs : le pied de page public renvoie vers les trois pages légales",
   assert.match(read("src/app/connexion/page.tsx"), /href="\/cgu"[\s\S]*href="\/confidentialite"|href="\/mentions-legales"/, "page de connexion : liens légaux manquants");
 });
 
+test("les liens internes du pied de page ramènent en haut, sans détourner les ancres", () => {
+  const footer = read("src/components/public/PublicShell.tsx");
+  const scroll = read("src/components/public/PublicFooterScrollToTop.tsx");
+  assert.match(footer, /<PublicFooterScrollToTop\s*\/>/);
+  assert.match(scroll, /data-footer-zone="true"/);
+  assert.match(scroll, /destination\.origin !== window\.location\.origin \|\| destination\.hash/);
+  assert.match(scroll, /window\.scrollTo\(0, 0\)/);
+  assert.match(scroll, /event\.metaKey \|\| event\.ctrlKey \|\| event\.shiftKey \|\| event\.altKey/);
+});
+
 test("connectés : Paramètres › En savoir plus renvoie vers les pages légales et les crédits, sans « À venir »", () => {
   const more = read("src/components/SettingsMoreSection.tsx");
   const hrefs = hrefsOf(more);

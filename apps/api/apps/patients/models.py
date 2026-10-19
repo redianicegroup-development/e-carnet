@@ -12,6 +12,7 @@ class PatientProfile(models.Model):
     last_name = models.CharField(max_length=80, blank=True)
     phone = models.CharField(max_length=32, blank=True)
     birth_date = models.DateField(null=True, blank=True)
+    gender = models.CharField(max_length=24, blank=True, default="", choices=(("female", "Femme"), ("male", "Homme"), ("other", "Autre"), ("prefer_not_to_say", "Préfère ne pas préciser")))
     address = models.CharField(max_length=240, blank=True)
     # Facultative : reprise de la couverture du carnet papier. Aucune ethnie : donnée sensible sans utilité clinique ici.
     profession = models.CharField(max_length=120, blank=True)
@@ -90,9 +91,9 @@ class RepresentationTransferRequest(models.Model):
 
 class ClinicalDeclaration(models.Model):
     """Déclaration patient dont la provenance initiale reste visible."""
-    KIND_CHOICES = (("antecedent", "Antécédent"), ("allergy", "Allergie"), ("treatment", "Traitement"), ("blood_group", "Groupe sanguin"), ("city", "Ville"), ("emergency_contact", "Contact d’urgence"))
+    KIND_CHOICES = (("antecedent", "Antécédent"), ("allergy", "Allergie"), ("treatment", "Traitement"), ("blood_group", "Groupe sanguin"), ("city", "Ville"), ("emergency_contact", "Contact d’urgence"), ("height", "Taille"), ("weight", "Poids"))
     # Une seule valeur active à la fois : la nouvelle remplace l’ancienne (qui reste dans l’historique, annulée).
-    SINGLETON_KINDS = ("blood_group", "city", "emergency_contact")
+    SINGLETON_KINDS = ("blood_group", "city", "emergency_contact", "height", "weight")
     STATUS_CHOICES = (("declared", "Déclaré par le patient"), ("cancelled", "Annulé avec historique"))
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name="declarations")

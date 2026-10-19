@@ -12,7 +12,7 @@ class PatientProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PatientProfile
-        fields = ("id", "first_name", "last_name", "phone", "birth_date", "address", "profession", "coverage_provider", "coverage_number", "coverage_expiry", "created_at", "updated_at")
+        fields = ("id", "first_name", "last_name", "phone", "birth_date", "gender", "address", "profession", "coverage_provider", "coverage_number", "coverage_expiry", "created_at", "updated_at")
         read_only_fields = ("id", "first_name", "last_name", "created_at", "updated_at")
 
     def get_first_name(self, obj):
@@ -38,6 +38,17 @@ class ClinicalDeclarationSerializer(serializers.ModelSerializer):
         label = attrs.get("label", getattr(self.instance, "label", ""))
         if kind == "blood_group" and label not in {"A+", "A−", "B+", "B−", "AB+", "AB−", "O+", "O−", "Inconnu"}:
             raise serializers.ValidationError({"label": "Choisissez un groupe sanguin valide."})
+        if kind in {"height", "weight"}:
+            from decimal import Decimal, InvalidOperation
+            try:
+                value = Decimal(str(label).replace(",", "."))
+            except (InvalidOperation, TypeError):
+                raise serializers.ValidationError({"label": "Saisissez une valeur numérique valide."})
+            lower, upper = (Decimal("30"), Decimal("250")) if kind == "height" else (Decimal("1"), Decimal("500"))
+            if not value.is_finite() or not lower <= value <= upper:
+                raise serializers.ValidationError({"label": "La valeur doit être dans une plage réaliste."})
+            attrs["label"] = format(value.normalize(), "f")
+            attrs["details"] = ""
         if kind == "city":
             if len(label.strip()) > 120:
                 raise serializers.ValidationError({"label": "La ville ne peut pas dépasser 120 caractères."})

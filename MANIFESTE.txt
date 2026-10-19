@@ -1,0 +1,34 @@
+Fichiers mis à jour pendant les sessions
+Fichiers modifiés : 21
+Nouveaux fichiers : 4
+
+Décompresser à la racine du projet pour appliquer les changements.
+
+FICHIERS MODIFIÉS
+apps/api/apps/patients/models.py
+apps/api/apps/patients/serializers.py
+apps/api/apps/patients/tests.py
+apps/api/apps/patients/views.py
+apps/web/src/app/carnet-skin.css
+apps/web/src/app/globals.css
+apps/web/src/app/patient/consultations/page.tsx
+apps/web/src/components/AccountSettingsClient.tsx
+apps/web/src/components/HealthMeasurements.tsx
+apps/web/src/components/LandingFeedbackWidget.tsx
+apps/web/src/components/PatientCarnet.tsx
+apps/web/src/components/PatientEmergencyCardSettingsClient.tsx
+apps/web/src/components/PatientHealthSettingsClient.tsx
+apps/web/src/components/PatientHome.tsx
+apps/web/src/components/RecoverySetup.tsx
+apps/web/src/components/auth/RecoveryFlow.tsx
+apps/web/src/components/emergency-card/EmergencyCardVisual.tsx
+apps/web/src/components/emergency-card/emergency-card-image.ts
+apps/web/src/components/ui/Icon.tsx
+apps/web/tests/emergency-card.test.mjs
+apps/web/tests/mon-e-carnet-v13.test.mjs
+
+NOUVEAUX FICHIERS
+apps/api/apps/patients/migrations/0010_declaration_height_weight.py
+apps/api/apps/patients/migrations/0011_patientprofile_gender.py
+apps/web/src/components/PatientHomeIdentity.tsx
+apps/web/src/components/ui/CollapsibleSection.tsx

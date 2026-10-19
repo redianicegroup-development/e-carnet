@@ -13,6 +13,8 @@ type EmergencyCard = {
   last_name: string;
   city: string;
   blood_group: string;
+  height_cm: string;
+  weight_kg: string;
   allergies: { label: string; details: string }[];
   treatments: { label: string; details: string }[];
   contact_name: string;
@@ -21,7 +23,7 @@ type EmergencyCard = {
   qr_token: string;
   updated_at: string;
 };
-const EMPTY: EmergencyCard = { first_name: "", last_name: "", city: "", blood_group: "", allergies: [], treatments: [], contact_name: "", contact_phone: "", qr_enabled: false, qr_token: "", updated_at: "" };
+const EMPTY: EmergencyCard = { first_name: "", last_name: "", city: "", blood_group: "", height_cm: "", weight_kg: "", allergies: [], treatments: [], contact_name: "", contact_phone: "", qr_enabled: false, qr_token: "", updated_at: "" };
 
 /* « Ma carte d’urgence » : section de carte virtuelle repliable et téléchargement.
    Rien ne se modifie ici : ville, contact d’urgence, groupe sanguin et allergies sont des déclarations du carnet. */
@@ -60,7 +62,7 @@ export function PatientEmergencyCardSettingsClient() {
     <div className="ecard-panel__head">
       <span className="eyebrow">Carte d’urgence</span>
       <h2 id="emergency-card-title" className="ecard-panel__title"><button className="ecard-panel__toggle" type="button" aria-expanded={cardOpen} aria-controls={cardPanelId} onClick={() => setCardOpen((open) => !open)}>Ma carte virtuelle<Icon name="chevron" size={20} /></button></h2>
-      <p className="muted">Le QR public de cette carte se trouve désormais dans votre carte compte/identité. Une personne qui le scanne voit cette carte sans se connecter ; elle se met à jour quand vous modifiez votre carnet.</p>
+      <p className="muted">Le QR public de cette carte se trouve sur l’accueil patient, sous vos informations déclarées. Une personne qui le scanne voit cette carte sans se connecter, y compris la taille et le poids que vous avez déclarés ; elle se met à jour quand vous modifiez votre carnet.</p>
     </div>
 
     {loading ? <p className="notice" role="status">Chargement de la carte…</p> : <>

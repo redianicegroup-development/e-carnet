@@ -9,8 +9,6 @@ type Consultation = { id: string; validated_at: string; professional_name: strin
 type HistoryItem = { id: string; kind: string; kind_label: string; value: string; unit: string; measured_at: string; source_label: string; note?: string };
 
 const TYPES = [
-  { value: "weight", label: "Poids", unit: "kg", step: "0.01" },
-  { value: "height", label: "Taille", unit: "cm", step: "0.1" },
   { value: "temperature", label: "Température", unit: "°C", step: "0.01" },
   { value: "heart_rate", label: "Pouls", unit: "bpm", step: "1" },
   { value: "spo2", label: "Saturation SpO₂", unit: "%", step: "1" },
@@ -37,7 +35,7 @@ function fromConsultation(item: Consultation): HistoryItem[] {
 
 export function HealthMeasurements() {
   const [items, setItems] = useState<HistoryItem[] | null>(null);
-  const [kind, setKind] = useState<(typeof TYPES)[number]["value"]>("weight");
+  const [kind, setKind] = useState<(typeof TYPES)[number]["value"]>("temperature");
   const [value, setValue] = useState("");
   const [source, setSource] = useState<"measured" | "declared">("measured");
   const [measuredAt, setMeasuredAt] = useState(() => new Date().toISOString().slice(0, 16));
@@ -74,8 +72,8 @@ export function HealthMeasurements() {
   }
 
   return <section className="card" aria-labelledby="measurements-title">
-    <div className="section-heading"><div><span className="eyebrow">Prévention et suivi</span><h2 id="measurements-title">Mes mesures</h2></div><span className="count-badge">{items?.length ?? "…"}</span></div>
-    <p className="muted">Les relevés du carnet et les constantes des consultations signées apparaissent dans un même historique. La tension et la glycémie sont conservées telles qu’écrites, sans conversion ni courbe déduite.</p>
+    <div className="section-heading"><div><span className="eyebrow">Constantes secondaires · variables</span><h2 id="measurements-title">Mes constantes de suivi</h2></div><span className="count-badge">{items?.length ?? "…"}</span></div>
+    <p className="muted">Température, saturation, pouls, tension et glycémie peuvent varier : saisissez-les ici comme relevés ponctuels. Ils restent dans le même historique que les constantes des consultations signées. La tension et la glycémie sont conservées telles qu’écrites, sans conversion. Taille et poids de référence se déclarent au-dessus.</p>
     <form className="patient-grid" onSubmit={submit}>
       <label className="field"><span>Mesure</span><select value={kind} onChange={(event) => setKind(event.target.value as typeof kind)}>{TYPES.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}</select></label>
       <label className="field"><span>Valeur{selected.unit ? ` (${selected.unit})` : ""}</span><input required type={"freeText" in selected ? "text" : "number"} inputMode={"freeText" in selected ? "text" : "decimal"} maxLength={"freeText" in selected ? 24 : undefined} step={"step" in selected ? selected.step : undefined} value={value} onChange={(event) => setValue(event.target.value)} placeholder={"placeholder" in selected ? selected.placeholder : undefined} /></label>

@@ -12,8 +12,8 @@ type FeedbackCategory = "bug" | "idea" | "question" | "other";
 export function LandingFeedbackWidget({ inline = false }: { inline?: boolean }) {
   const pathname = usePathname();
   const inWorkspace = /^\/(patient|professionnel|etablissement|admin|staff)(\/|$)/.test(pathname);
-  // Pas de bouton flottant sur les pages d'entrée (connexion, inscription, récupération du compte) : rien ne doit distraire de la saisie.
-  const onAuthPage = /^\/(connexion|inscription)(\/|$)/.test(pathname);
+  // Pas de bouton flottant pendant l’authentification, la récupération ou l’onboarding : priorité à la saisie du parcours.
+  const onAuthPage = /^\/(connexion|inscription|onboarding)(\/|$)/.test(pathname);
   const [open, setOpen] = useState(false);
   const [category, setCategory] = useState<FeedbackCategory>("idea");
   const [message, setMessage] = useState("");

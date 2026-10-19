@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { QRCodeSVG } from "qrcode.react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AvatarPicker } from "./AvatarPicker";
@@ -15,15 +14,15 @@ import { ThemeSettingsClient } from "./ThemeSettingsClient";
 import { AccountActionRequestsSettingsClient } from "./AccountActionRequestsSettingsClient";
 import { PatientEmergencyCardSettingsClient } from "./PatientEmergencyCardSettingsClient";
 import { PatientRepresentationsSettingsClient } from "./PatientRepresentationsSettingsClient";
-import { apiGet, apiPatch, primeCsrf, readCsrfToken } from "../infrastructure/api/client";
-import { useConfirm } from "./modal/ConfirmProvider";
+import { PatientNotifications } from "./PatientNotifications";
+import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
 
 const API = "";
 type Account = { first_name: string; last_name: string; email: string; avatar_url: string; is_privileged: boolean };
-type EmergencyCardQr = { qr_enabled: boolean; qr_token: string };
 const sections: SettingsNavItem[] = [
   { id: "personnel", title: "Mes informations personnelles", description: "Modifier mon nom et ma photo de profil.", icon: "idcard" },
   { id: "sante", title: "Informations de santé déclaratives", description: "Téléphone, adresse et couverture santé.", icon: "heart" },
+  { id: "notifications", title: "Notifications", description: "Consulter les notifications de votre carnet et les marquer comme lues.", icon: "bell" },
   { id: "proches", title: "Proches et personnes représentées", description: "Gérer les dossiers distincts des enfants représentés.", icon: "users" },
   { id: "compte", title: "Paramètres du compte", description: "Personnaliser l’apparence de l’application.", icon: "sparkle" },
   { id: "securite", title: "Sécurité et connexion", description: "Gérer les fournisseurs liés au compte.", icon: "lock" },
@@ -35,18 +34,20 @@ function initials(account: Account) { return `${account.first_name?.[0] ?? ""}${
 
 export function AccountSettingsClient() {
   const router = useRouter();
-  const confirm = useConfirm();
   const [account, setAccount] = useState<Account | null>(null);
-  const [emergencyCard, setEmergencyCard] = useState<EmergencyCardQr | null>(null);
-  const [emergencyQrLoading, setEmergencyQrLoading] = useState(true);
-  const [emergencyQrBusy, setEmergencyQrBusy] = useState(false);
-  const [emergencyQrMessage, setEmergencyQrMessage] = useState("");
   const [avatarValue, setAvatarValue] = useState("");
   const [avatarChanged, setAvatarChanged] = useState(false);
   const [message, setMessage] = useState("Chargement de votre profil…");
   const [busy, setBusy] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
+
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get("section");
+    // Le lien d’accueil ouvre directement la rubrique demandée dans les paramètres.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronise la navigation initiale avec le paramètre URL.
+    if (sections.some((section) => section.id === requested)) setActiveSection(requested);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -64,14 +65,6 @@ export function AccountSettingsClient() {
     return () => { active = false; };
   }, []);
 
-  useEffect(() => {
-    let active = true;
-    apiGet<EmergencyCardQr>("/api/v1/patient/emergency-card/")
-      .then((data) => { if (active) setEmergencyCard(data); })
-      .catch((error: unknown) => { if (active) setEmergencyQrMessage(error instanceof Error ? error.message : "QR d’urgence indisponible."); })
-      .finally(() => { if (active) setEmergencyQrLoading(false); });
-    return () => { active = false; };
-  }, []);
 
   async function saveIdentity(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -101,31 +94,6 @@ export function AccountSettingsClient() {
     } finally { setBusy(false); }
   }
 
-  async function enableEmergencyQr() {
-    const ok = await confirm({ title: "Activer le QR d’urgence ?", message: "Toute personne qui scanne ce QR pourra consulter les informations de cette carte, sans se connecter.", note: "Le nom, le prénom, la ville, le groupe sanguin, les allergies, les traitements déclarés et le contact d’urgence seront visibles. Le QR ne change jamais et se met à jour tout seul avec votre carnet ; vous pouvez le désactiver à tout moment. Utilisez uniquement les informations dont vous avez la maîtrise.", confirmLabel: "Activer le QR", cancelLabel: "Pas maintenant", mood: "decision", tone: "neutral" });
-    if (!ok) return;
-    setEmergencyQrBusy(true);
-    setEmergencyQrMessage("");
-    try {
-      setEmergencyCard(await apiPatch<EmergencyCardQr>("/api/v1/patient/emergency-card/", { qr_enabled: true }));
-      setEmergencyQrMessage("QR d’urgence activé.");
-    } catch (error) {
-      setEmergencyQrMessage(error instanceof Error ? error.message : "Activation impossible.");
-    } finally { setEmergencyQrBusy(false); }
-  }
-
-  async function disableEmergencyQr() {
-    const ok = await confirm({ title: "Désactiver le QR d’urgence ?", message: "Le QR cessera immédiatement de donner accès à la carte.", note: "Vous pourrez le réactiver plus tard : ce sera exactement le même QR, inutile de le repartager.", confirmLabel: "Désactiver le QR", cancelLabel: "Garder le QR", mood: "question", tone: "danger" });
-    if (!ok) return;
-    setEmergencyQrBusy(true);
-    setEmergencyQrMessage("");
-    try {
-      setEmergencyCard(await apiPatch<EmergencyCardQr>("/api/v1/patient/emergency-card/", { qr_enabled: false }));
-      setEmergencyQrMessage("QR désactivé : il ne donne plus accès à la carte.");
-    } catch (error) {
-      setEmergencyQrMessage(error instanceof Error ? error.message : "Désactivation impossible.");
-    } finally { setEmergencyQrBusy(false); }
-  }
 
   async function logout() {
     setSigningOut(true);
@@ -143,8 +111,6 @@ export function AccountSettingsClient() {
   }
 
   if (!account) return <section className="card"><p className="notice" role="status">{message}</p></section>;
-  const emergencyPublicUrl = emergencyCard?.qr_enabled && emergencyCard.qr_token && typeof window !== "undefined"
-    ? `${window.location.origin}/urgence/${encodeURIComponent(emergencyCard.qr_token)}` : "";
   return (
     <div className="settings-page">
       <section className="card account-summary settings-account-summary">
@@ -152,17 +118,6 @@ export function AccountSettingsClient() {
           <div className="profile-summary">
             <div className="avatar avatar--large" aria-hidden="true">{account.avatar_url ? <img src={account.avatar_url} alt="" /> : initials(account)}</div>
             <div className="settings-account-summary__copy"><span className="eyebrow">Compte patient</span><h2>{[account.first_name, account.last_name].filter(Boolean).join(" ") || "Mon compte"}</h2><p className="muted">{account.email}</p></div>
-          </div>
-          <div className="settings-account-summary__emergency-qr" aria-label="QR public de ma carte d’urgence">
-            <span className="eyebrow">Carte d’urgence</span>
-            {emergencyQrLoading ? <p className="muted" role="status">Chargement du QR…</p> : emergencyPublicUrl ? <>
-              <div className="settings-account-summary__emergency-qr-box"><QRCodeSVG value={emergencyPublicUrl} size={128} level="M" marginSize={2} title="QR public de la carte d’urgence" /></div>
-              <button type="button" className="button small" disabled={emergencyQrBusy} onClick={() => void disableEmergencyQr()}>Désactiver le QR</button>
-            </> : <>
-              <p className="muted">Le QR public est désactivé.</p>
-              <button type="button" className="button small" disabled={emergencyQrBusy} onClick={() => void enableEmergencyQr()}>{emergencyQrBusy ? "Activation…" : "Activer mon QR"}</button>
-            </>}
-            {emergencyQrMessage && <p className="notice" role="status" aria-live="polite">{emergencyQrMessage}</p>}
           </div>
         </div>
         <p className="notice" role="status" aria-live="polite">{message}</p>
@@ -187,6 +142,8 @@ export function AccountSettingsClient() {
         <div className="actions"><Link className="button" href="/patient/carnet">Gérer mes déclarations du carnet</Link></div>
         <PatientHealthSettingsClient />
       </div></SettingsModal>}
+
+      {activeSection === "notifications" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><PatientNotifications /></div></SettingsModal>}
 
       {activeSection === "proches" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section">
         <span className="eyebrow">Représentation explicite</span>

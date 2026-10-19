@@ -10,6 +10,8 @@ export type EmergencyCardView = {
   last_name: string;
   city: string;
   blood_group: string;
+  height_cm: string;
+  weight_kg: string;
   allergies: EmergencyCardItem[];
   treatments: EmergencyCardItem[];
   contact_name: string;
@@ -53,6 +55,8 @@ export function EmergencyCardVisual({ card, qrUrl = "", showQr = true, photo }: 
             <dl className="ecard__fields">
               <div className={`ecard__field ecard__field--blood${card.blood_group ? "" : " is-empty"}`}><dt>Groupe sanguin</dt><dd>{card.blood_group || "Non renseigné"}</dd></div>
               <div className={`ecard__field${card.city ? "" : " is-empty"}`}><dt>Ville</dt><dd>{card.city || "Non renseignée"}</dd></div>
+              <div className={`ecard__field${card.height_cm ? "" : " is-empty"}`}><dt>Taille déclarée</dt><dd>{card.height_cm || "Non renseignée"}</dd></div>
+              <div className={`ecard__field${card.weight_kg ? "" : " is-empty"}`}><dt>Poids déclaré</dt><dd>{card.weight_kg || "Non renseigné"}</dd></div>
               <div className={`ecard__field ecard__field--wide${card.allergies.length ? "" : " is-empty"}`}><dt>Allergies</dt><dd>{card.allergies.length ? <Chips items={card.allergies} tone="allergy" /> : "Aucune allergie déclarée"}</dd></div>
               {card.treatments.length > 0 && <div className="ecard__field ecard__field--wide"><dt>Traitements</dt><dd><Chips items={card.treatments} tone="treatment" /></dd></div>}
               <div className={`ecard__field ecard__field--wide ecard__field--contact${hasContact ? "" : " is-empty"}`}>

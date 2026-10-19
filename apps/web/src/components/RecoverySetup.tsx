@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiGet, apiPatch } from "../infrastructure/api/client";
+import { Icon } from "./ui/Icon";
 
 const QUESTIONS = [
   "Quel était le nom de votre première école ?",
@@ -23,6 +24,7 @@ export function RecoverySetup() {
   const [account, setAccount] = useState<Account | null>(null);
   const [message, setMessage] = useState("Vérification de votre compte…");
   const [busy, setBusy] = useState(false);
+  const [showAnswer, setShowAnswer] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -87,15 +89,20 @@ export function RecoverySetup() {
       )}
       <label className="field">
         <span>Votre réponse secrète</span>
-        <input
-          required
-          type="password"
-          autoComplete="off"
-          maxLength={200}
-          value={answer}
-          onChange={(event) => setAnswer(event.target.value)}
-          disabled={busy}
-        />
+        <span className="auth-secret-field__control">
+          <input
+            required
+            type={showAnswer ? "text" : "password"}
+            autoComplete="off"
+            maxLength={200}
+            value={answer}
+            onChange={(event) => setAnswer(event.target.value)}
+            disabled={busy}
+          />
+          <button className="auth-secret-field__toggle" type="button" aria-label={showAnswer ? "Masquer la réponse secrète" : "Afficher la réponse secrète"} aria-pressed={showAnswer} onClick={() => setShowAnswer((visible) => !visible)}>
+            <Icon name={showAnswer ? "eyeOff" : "eye"} size={20} />
+          </button>
+        </span>
       </label>
       <p className="notice" role="note">Évitez les informations visibles publiquement. La réponse est enregistrée sous forme hachée et ne sera jamais affichée. La récupération par question seule n’est pas activée ; une vérification supplémentaire, comme un SMS, sera nécessaire.</p>
       <button className="button primary" type="submit" disabled={busy || !account}>{busy ? "Enregistrement…" : "Enregistrer et terminer"}</button>

@@ -175,6 +175,10 @@ export default function AdminPage() {
   if (loading && !dashboard) return <main className="admin-loader"><ScreenLoader label="Vérification de la session administrateur…" /></main>;
 
   if (!dashboard) return <main className="shell admin-shell"><section className="admin-login card">
+    <Link href="/" className="brand admin-login__brand" aria-label="Mon E-Carnet — retourner à la page d’accueil">
+      <BrandMark />
+      <span className="brand-text"><strong>Mon E‑Carnet</strong><small>Retour à l’accueil</small></span>
+    </Link>
     <span className="eyebrow">Mon E‑Carnet · Administration</span><h1>Console d’administration</h1>
     <p className="muted">Accès réservé aux superadministrateurs autorisés.</p>
     <form className="stack" onSubmit={signIn}>

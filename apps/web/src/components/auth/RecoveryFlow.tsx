@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ApiError, apiPost } from "../../infrastructure/api/client";
+import { Icon } from "../ui/Icon";
 import { RecoveryRequestForm } from "./RecoveryRequestForm";
 
 /* « Récupérer mon compte » : deux étapes, même cadre que la connexion (classes ax-*).
@@ -26,6 +27,7 @@ export function RecoveryFlow() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [show, setShow] = useState(false);
+  const [showAnswer, setShowAnswer] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const heading = useRef<HTMLHeadingElement>(null);
@@ -100,7 +102,7 @@ export function RecoveryFlow() {
       <div className="ax-form__top">{back}</div>
       <h2 className="ax-title" tabIndex={-1} ref={heading}>Vérifier votre réponse</h2>
       <p className="ax-question" data-ax-item><span>Votre question secrète</span><strong>{question}</strong></p>
-      <label className="ax-field" data-ax-item><span>Votre réponse</span><input required autoComplete="off" autoCapitalize="off" spellCheck={false} value={answer} onChange={(event) => { setAnswer(event.target.value); setMessage(""); }} /></label>
+      <label className="ax-field" data-ax-item><span>Votre réponse</span><span className="ax-password"><input required type={showAnswer ? "text" : "password"} autoComplete="off" autoCapitalize="off" spellCheck={false} value={answer} onChange={(event) => { setAnswer(event.target.value); setMessage(""); }} /><button type="button" className="ax-eye" aria-label={showAnswer ? "Masquer la réponse secrète" : "Afficher la réponse secrète"} aria-pressed={showAnswer} onClick={() => setShowAnswer((visible) => !visible)}><Icon name={showAnswer ? "eyeOff" : "eye"} className="ax-eye__icon" /></button></span></label>
       <button className={`button primary ax-submit${busy ? " is-loading" : ""}`} type="submit" disabled={busy} data-ax-item><span className="ax-submit__label">{busy ? "Vérification…" : "Valider ma réponse"}</span><svg className="ax-submit__arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6" /></svg></button>
       <p className="ax-message" role="status" aria-live="polite" hidden={!message}>{message}</p>
       <button type="button" className="ax-linkbutton" onClick={() => { setStep("help"); setMessage(""); }}>Je ne me souviens plus de ma réponse</button>

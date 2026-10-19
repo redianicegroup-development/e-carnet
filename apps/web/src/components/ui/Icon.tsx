@@ -33,6 +33,7 @@ const PATHS = {
   mail: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 7l9 6 9-6" /></>,
   alert: <><path d="M12 4l9 16H3z" /><path d="M12 10v4M12 17v.01" /></>,
   eye: <><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></>,
+  eyeOff: <><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /><path d="M3 3l18 18" /></>,
   close: <path d="M6 6l12 12M18 6L6 18" />,
   refresh: <><path d="M20 7v5h-5" /><path d="M4.8 9a7.5 7.5 0 0 1 13-2L20 12M4 17v-5h5" /><path d="M19.2 15a7.5 7.5 0 0 1-13 2L4 12" /></>,
   sparkle: <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5-1.8zM19 17l.7 1.8L21.5 19.5l-1.8.7L19 22l-.7-1.8-1.8-.7 1.8-.7z" />,

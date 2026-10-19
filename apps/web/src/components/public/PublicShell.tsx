@@ -7,12 +7,14 @@ import { LEGAL_DOCS } from "../../lib/legal/config";
 import { PROJECT_LOGO_WEBP } from "../../lib/brand";
 import { PublicHeader } from "./PublicHeader";
 import { BackToTopButton } from "./BackToTopButton";
+import { PublicFooterScrollToTop } from "./PublicFooterScrollToTop";
 import { CookiePreferencesLink } from "../CookieConsentBanner";
 import { FooterCredit } from "./FooterCredit";
 
 export function PublicFooter() {
   return (
     <footer className="pub-footer" data-footer-zone="true">
+      <PublicFooterScrollToTop />
       <div className="pub-footer__cards">
         <section className="pub-footer__card pub-footer__card--brand" aria-label="Mon E‑Carnet">
           <Link className="pub-footer__logo" href="/" aria-label="Mon E-Carnet, accueil"><BrandMark /><span>Mon E‑Carnet</span></Link>

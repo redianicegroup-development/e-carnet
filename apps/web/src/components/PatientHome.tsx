@@ -6,6 +6,7 @@ import { apiGet } from "../infrastructure/api/client";
 import { AvatarBadge, displayName, useSpaceAccount } from "./shell/SpaceShell";
 import { Icon, type IconName } from "./ui/Icon";
 import { PatientDashboardChart } from "./RoleDashboards";
+import { PatientHomeIdentity } from "./PatientHomeIdentity";
 
 type Summary = { declarations: number; drafts: number; closed: number; consultations: number; pending: number; active: number; documents: number; vaccinations: number; appointments: number; unread: number };
 
@@ -60,6 +61,8 @@ export function PatientHome() {
         </div>
       )}
 
+      {account && <PatientHomeIdentity account={account} />}
+
       {account && !account.patient_profile.completed && (
         <section className="card alert-card">
           <h2>Terminez votre profil</h2>
@@ -76,7 +79,7 @@ export function PatientHome() {
         </section>
       )}
 
-      {summary && summary.unread > 0 && <section className="card alert-card" aria-live="polite"><h2>{summary.unread} notification{summary.unread > 1 ? "s" : ""} à lire</h2><p>Une action concernant votre carnet attend votre attention.</p><div className="actions"><Link className="button" href="/patient/carnet#notifications">Voir mes notifications</Link></div></section>}
+      {summary && summary.unread > 0 && <section className="card alert-card" aria-live="polite"><h2>{summary.unread} notification{summary.unread > 1 ? "s" : ""} à lire</h2><p>Une action concernant votre carnet attend votre attention.</p><div className="actions"><Link className="button" href="/patient/parametres?section=notifications">Voir mes notifications</Link></div></section>}
 
       {summary && (summary.declarations === 0 || summary.documents === 0 || summary.vaccinations === 0) && <section className="card progress-card"><div className="section-heading"><div><span className="eyebrow">Mise en route</span><h2>Construire mon carnet essentiel</h2></div></div><p className="muted">Commencez par les informations utiles au quotidien. Vous pourrez modifier chaque élément plus tard.</p><div className="progress-card__line" role="progressbar" aria-valuemin={0} aria-valuemax={3} aria-valuenow={[summary.declarations > 0, summary.documents > 0, summary.vaccinations > 0].filter(Boolean).length}><span style={{ width: `${([summary.declarations > 0, summary.documents > 0, summary.vaccinations > 0].filter(Boolean).length / 3) * 100}%` }} /></div><div className="progress-card__meta"><span>{[summary.declarations > 0, summary.documents > 0, summary.vaccinations > 0].filter(Boolean).length}/3 rubriques commencées</span><Link className="text-link" href="/patient/carnet">Continuer</Link></div></section>}
 

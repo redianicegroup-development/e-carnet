@@ -340,6 +340,8 @@ a.setting-item:hover, button.setting-item:hover { border-color: var(--primary); 
 /* ---------- Console d'administration Mon E-Carnet ---------- */
 .admin-shell { width: min(100% - 32px, 1280px); margin-inline: auto; padding-block: clamp(24px, 5vw, 56px); }
 .admin-login { width: min(100%, 480px); margin: clamp(28px, 9vh, 100px) auto; padding: clamp(22px, 5vw, 36px); }
+.admin-login__brand { width: fit-content; margin-bottom: 12px; border-radius: 12px; }
+.admin-login__brand:focus-visible { outline: 3px solid var(--primary); outline-offset: 4px; }
 .admin-login h1 { margin-top: 4px; }
 .admin-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
 .admin-heading > div:first-child { display: grid; gap: 8px; }
@@ -679,3 +681,10 @@ a.setting-item:hover, button.setting-item:hover { border-color: var(--primary); 
 .progress-card__line span { display: block; height: 100%; border-radius: inherit; background: var(--primary); transition: width .25s ease; }
 .progress-card__meta { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: .9rem; }
 @media (max-width: 760px) { .role-dashboard-grid { grid-template-columns: 1fr; } .role-chart-plot { height: 200px; } }
+
+/* Affichage contrôlé de la réponse secrète pendant l’onboarding */
+.auth-secret-field__control { position: relative; display: block; }
+.auth-secret-field__control > input { width: 100%; padding-right: 52px; }
+.auth-secret-field__toggle { position: absolute; top: 50%; right: 6px; display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 10px; background: transparent; color: var(--text-muted); cursor: pointer; transform: translateY(-50%); }
+.auth-secret-field__toggle:hover { background: var(--surface-tint); color: var(--text); }
+.auth-secret-field__toggle:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }

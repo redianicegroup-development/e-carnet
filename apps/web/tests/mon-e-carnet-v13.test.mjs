@@ -30,7 +30,7 @@ test("le logo de la connexion ramène à l'accueil, sans bouton « Retour », ni
   assert.doesNotMatch(login, /Retour à l’accueil|ax-stage__home/);
   assert.doesNotMatch(login, /\/credits/);
   const widget = read("src/components/LandingFeedbackWidget.tsx");
-  assert.match(widget, /onAuthPage = \/\^\\\/\(connexion\|inscription\)/);
+  assert.match(widget, /onAuthPage = \/\^\\\/\(connexion\|inscription\|onboarding\)/);
   assert.match(widget, /!inWorkspace && !onAuthPage/);
   // le logo reste visible et cliquable sur mobile
   assert.doesNotMatch(read("src/app/connexion/auth-immersive.css"), /\.ax-stage__eyebrow, \.ax-stage__home|\.ax-brand, \.ax-stage__eyebrow/);
@@ -95,7 +95,7 @@ test("la pré-consultation n'a plus d'établissement à choisir ni de clôture c
 test("les déclarations gardent une pastille de provenance indéformable et couvrent la ville et le contact d'urgence", () => {
   const carnet = read("src/components/PatientCarnet.tsx");
   assert.match(carnet, /city: "Ville", emergency_contact: "Contact d’urgence"/);
-  assert.match(carnet, /SINGLETON: Kind\[\] = \["blood_group", "city", "emergency_contact"\]/);
+  assert.match(carnet, /SINGLETON: Kind\[\] = \["blood_group", "city", "emergency_contact", "height", "weight"\]/);
   assert.match(carnet, /id="carte-urgence"|aria-labelledby="card-fields-title"/);
   assert.match(carnet, /className="badge declared"/);
   assert.doesNotMatch(carnet, /stamp|tampon/i);
@@ -139,4 +139,18 @@ test("le menu du compte en goutte est accessible au clavier et au toucher", () =
   assert.match(read("src/components/shell/SpaceShell.tsx"), /<GooeyAccountMenu account=/);
   // la goutte de la barre basse n'existe que sur mobile ; sur grand écran l'onglet actif garde son fond
   assert.match(read("src/app/soft-skin.css"), /@media \(max-width: 919px\) \{[^@]*body \.sb__goo \{ display: block;/);
+});
+
+
+test("la réponse secrète peut être affichée puis masquée en onboarding et en récupération", () => {
+  const setup = read("src/components/RecoverySetup.tsx");
+  const recovery = read("src/components/auth/RecoveryFlow.tsx");
+  for (const source of [setup, recovery]) {
+    assert.match(source, /type=\{showAnswer \? "text" : "password"\}/);
+    assert.match(source, /aria-pressed=\{showAnswer\}/);
+    assert.match(source, /showAnswer \? "eyeOff" : "eye"/);
+    assert.match(source, /Afficher la réponse secrète/);
+    assert.match(source, /Masquer la réponse secrète/);
+  }
+  assert.match(read("src/components/LandingFeedbackWidget.tsx"), /onboarding/);
 });
