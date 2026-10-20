@@ -1,6 +1,7 @@
 """Parcours « équipe E‑Carnet → établissement » : le staff saisit le nom et l'e‑mail du responsable, le serveur crée son compte
 avec un mot de passe temporaire à usage unique (révélé une seule fois au staff), le responsable se connecte, doit le remplacer,
 puis complète lui‑même la fiche de son établissement."""
+import base64
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
@@ -22,7 +23,10 @@ PASSWORD_URL = "/api/v1/identity/me/password/"
 ACCEPT_URL = "/api/v1/establishments/invitations/accept/"
 EMAIL = "responsable@clinique.test"
 NEW_PASSWORD = "a-very-long-password-2026"
+# `email` est envoyé par d'anciens clients : le serveur l'ignore, l'e‑mail de contact est toujours celui du compte.
 FICHE = {"establishment_type": "Clinique", "city": "Abidjan", "address": "Rue des Jardins", "phone": "+225 07 00 00 00 00", "email": "contact@clinique.test"}
+# Plus petit WebP accepté par le contrôle de signature (RIFF…WEBP) : le serveur ne décode pas l'image.
+LOGO = "data:image/webp;base64," + base64.b64encode(b"RIFF\x1a\x00\x00\x00WEBPVP8 " + b"\x00" * 10).decode()
 
 
 @override_settings(DEBUG=True, EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
@@ -259,7 +263,7 @@ class StaffOnboardingFlowTests(TestCase):
         self.assertEqual(client.get("/api/v1/establishments/catalog/").data["data"], [])
         partial = client.patch(url, {"city": "Abidjan"}, format="json")
         self.assertEqual((partial.status_code, partial.data["data"]["profile_complete"]), (200, False))
-        self.assertEqual(sorted(partial.data["data"]["missing_fields"]), ["address", "email", "establishment_type", "phone"])
+        self.assertEqual(sorted(partial.data["data"]["missing_fields"]), ["establishment_type", "phone"])
         done = client.patch(url, FICHE, format="json")
         self.assertEqual((done.status_code, done.data["data"]["profile_complete"]), (200, True), done.data)
         establishment.refresh_from_db()
@@ -268,16 +272,98 @@ class StaffOnboardingFlowTests(TestCase):
         self.assertEqual(client.post(codes).status_code, 201)
         self.assertEqual([item["name"] for item in client.get("/api/v1/establishments/catalog/").data["data"]], ["Clinique des Jardins"])
 
-    def test_verified_fields_are_locked_and_bad_values_are_rejected(self):
+    def test_responsible_is_locked_and_bad_values_are_rejected(self):
         client, establishment = self.create_and_activate()
         url = f"/api/v1/establishments/{establishment.id}/profile/"
-        self.assertEqual(client.patch(url, {"name": "Autre nom"}, format="json").status_code, 400)
         self.assertEqual(client.patch(url, {"responsible_name": "Quelqu'un d'autre"}, format="json").status_code, 400)
         self.assertEqual(client.patch(url, {"name": establishment.name, **FICHE}, format="json").status_code, 200)
         self.assertEqual(client.patch(url, {"phone": "abc"}, format="json").status_code, 400)
         self.assertEqual(client.patch(url, {"city": "   "}, format="json").status_code, 400)
+        self.assertEqual(client.patch(url, {"name": " "}, format="json").status_code, 400)
+
+    def test_contact_email_is_the_account_email_and_cannot_be_chosen(self):
+        client, establishment = self.create_and_activate()
+        url = f"/api/v1/establishments/{establishment.id}/profile/"
+        establishment.refresh_from_db()
+        self.assertEqual(establishment.email, EMAIL, "mémorisé dès l'ouverture de l'accès par le staff")
+        body = client.get(url).data["data"]
+        self.assertEqual(body["email"], EMAIL)
+        self.assertIn("email", body["locked_fields"])
+        self.assertNotIn("email", body["required_fields"])
+        saved = client.patch(url, {**FICHE, "email": "autre@pirate.test"}, format="json")
+        self.assertEqual((saved.status_code, saved.data["data"]["email"]), (200, EMAIL), "l'e‑mail envoyé est ignoré")
+        establishment.refresh_from_db()
+        self.assertEqual(establishment.email, EMAIL)
+
+    def test_address_is_optional_for_a_complete_profile(self):
+        client, establishment = self.create_and_activate()
+        url = f"/api/v1/establishments/{establishment.id}/profile/"
+        done = client.patch(url, {"establishment_type": "Clinique", "city": "Abidjan", "phone": "+225 07 00 00 00 00"}, format="json")
+        self.assertEqual((done.status_code, done.data["data"]["profile_complete"], done.data["data"]["address"]), (200, True, ""), done.data)
+        self.assertEqual(client.patch(url, {"address": "BP 12 Abidjan"}, format="json").data["data"]["address"], "BP 12 Abidjan")
+        self.assertEqual(client.patch(url, {"address": ""}, format="json").status_code, 200)
+
+    def test_the_establishment_can_rename_itself_and_the_team_sees_it_dated(self):
+        client, establishment = self.create_and_activate()
+        url = f"/api/v1/establishments/{establishment.id}/profile/"
+        self.assertIsNone(client.get(url).data["data"]["name_updated_at"])
+        unchanged = client.patch(url, {"name": establishment.name, **FICHE}, format="json")
+        self.assertEqual(unchanged.status_code, 200)
+        establishment.refresh_from_db()
+        self.assertIsNone(establishment.name_updated_at, "enregistrer sans changer le nom ne compte pas comme un renommage")
+        renamed = client.patch(url, {"name": "  Clinique   des Palmiers "}, format="json")
+        self.assertEqual((renamed.status_code, renamed.data["data"]["name"]), (200, "Clinique des Palmiers"), renamed.data)
+        establishment.refresh_from_db()
+        self.assertEqual((establishment.name, establishment.original_name), ("Clinique des Palmiers", "Clinique des Jardins"))
+        self.assertIsNotNone(establishment.name_updated_at)
+        # un second renommage garde le nom vérifié à l'origine
+        client.patch(url, {"name": "Clinique des Cocotiers"}, format="json")
+        establishment.refresh_from_db()
+        self.assertEqual(establishment.original_name, "Clinique des Jardins")
+        self.assertTrue(AuditEvent.objects.filter(event_type="establishment.name.changed", establishment=establishment).exists())
+        # l'équipe voit le nouveau nom, l'ancien et la date, sans rien faire
+        self.client.force_authenticate(self.staff)
+        item = self.client.get(STAFF_URL).data["data"]["items"][0]
+        self.assertEqual((item["name"], item["original_name"]), ("Clinique des Cocotiers", "Clinique des Jardins"))
+        self.assertIsNotNone(item["name_updated_at"])
+        self.assertIsNotNone(item["updated_at"])
+
+    def test_renaming_to_another_establishments_name_is_refused(self):
+        client, establishment = self.create_and_activate()  # avant la création de l'autre structure : le helper lit l'unique établissement
+        Establishment.objects.create(name="Hôpital Général", status="active")
+        url = f"/api/v1/establishments/{establishment.id}/profile/"
+        refused = client.patch(url, {"name": "hôpital général"}, format="json")
+        self.assertEqual(refused.status_code, 400)
         establishment.refresh_from_db()
         self.assertEqual(establishment.name, "Clinique des Jardins")
+
+    def test_logo_can_be_set_served_and_removed(self):
+        client, establishment = self.create_and_activate()
+        url = f"/api/v1/establishments/{establishment.id}/profile/"
+        self.assertEqual(client.get(url).data["data"]["logo"], "")
+        saved = client.patch(url, {"logo": LOGO}, format="json")
+        self.assertEqual(saved.status_code, 200, saved.data)
+        logo_url = saved.data["data"]["logo"]
+        self.assertTrue(logo_url.startswith(f"/api/v1/establishments/{establishment.id}/logo/"))
+        served = client.get(logo_url)
+        self.assertEqual((served.status_code, served["Content-Type"], served["X-Content-Type-Options"]), (200, "image/webp", "nosniff"))
+        self.assertEqual(APIClient().get(logo_url).status_code, 403, "il faut être connecté")
+        # enregistrer la fiche sans toucher au logo le conserve
+        kept = client.patch(url, {"city": "Bouaké"}, format="json")
+        self.assertTrue(kept.data["data"]["logo"].startswith(f"/api/v1/establishments/{establishment.id}/logo/"))
+        establishment.refresh_from_db()
+        self.assertTrue(establishment.logo_data)
+        removed = client.patch(url, {"logo": ""}, format="json")
+        self.assertEqual((removed.status_code, removed.data["data"]["logo"]), (200, ""))
+        self.assertEqual(client.get(f"/api/v1/establishments/{establishment.id}/logo/").status_code, 404)
+
+    def test_bad_logos_are_rejected(self):
+        client, establishment = self.create_and_activate()
+        url = f"/api/v1/establishments/{establishment.id}/profile/"
+        for bad in ("data:image/png;base64,AAAA", "data:image/webp;base64,@@@", "data:image/webp;base64," + base64.b64encode(b"pas une image").decode(), "data:image/webp;base64," + base64.b64encode(b"RIFF\x00\x00\x00\x00WEBP" + b"\x00" * (251 * 1024)).decode()):
+            self.assertEqual(client.patch(url, {"logo": bad}, format="json").status_code, 400, bad[:40])
+        establishment.refresh_from_db()
+        self.assertEqual(establishment.logo_data, "")
 
     def test_only_the_active_administrator_can_read_or_edit_the_profile(self):
         _, establishment = self.create_and_activate()

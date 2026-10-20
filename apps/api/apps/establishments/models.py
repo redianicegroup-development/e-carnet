@@ -9,8 +9,10 @@ from django.utils import timezone
 
 # Alphabet sans caractères ambigus (0/O, 1/I) : le code se dicte au téléphone et se recopie à la main.
 INTERNAL_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-# Informations que l'établissement renseigne lui‑même après activation (le nom et le responsable restent vérifiés par l'équipe).
-PROFILE_FIELDS = ("establishment_type", "city", "address", "phone", "email")
+# Informations obligatoires que l'établissement renseigne lui‑même après activation. L'adresse / BP est facultative ; l'e‑mail de
+# contact n'est plus saisi : c'est celui du compte du responsable (verrouillé, voir EstablishmentProfileView). Le nom est
+# pré‑rempli depuis la vérification de l'équipe et l'établissement peut ensuite le modifier (la modification est tracée).
+PROFILE_FIELDS = ("establishment_type", "city", "phone")
 
 
 def generate_internal_code():
@@ -34,6 +36,12 @@ class Establishment(models.Model):
     phone = models.CharField(max_length=32, blank=True, default="")
     email = models.EmailField(blank=True, default="")
     responsible_name = models.CharField(max_length=160, blank=True, default="")
+    # Logo de la structure : URL Cloudinary en production ; `logo_data` (WebP en data URL) n'existe qu'en développement / tests.
+    logo_url = models.URLField(max_length=500, blank=True, default="")
+    logo_data = models.TextField(blank=True, default="")
+    # Trace du renommage par l'établissement : le nom vérifié à la création est conservé dans `original_name`.
+    original_name = models.CharField(max_length=180, blank=True, default="")
+    name_updated_at = models.DateTimeField(null=True, blank=True)
     # Conservé nullable pour migrer les anciennes données; l'autorité est désormais
     # EstablishmentAdministrator, jamais ce champ historique.
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="created_establishments", null=True, blank=True)

@@ -1,9 +1,9 @@
 "use client";
 import { useRef, useState } from "react";
-type Props = { value: string; onChange: (value: string) => void; fallback: string; disabled?: boolean };
+type Props = { value: string; onChange: (value: string) => void; fallback: string; disabled?: boolean; /** Ce que l'on choisit : « photo de profil » (défaut) ou « logo ». */ subject?: string };
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const MAX_WEBP_BYTES = 250 * 1024;
-export function AvatarPicker({ value, onChange, fallback, disabled = false }: Props) {
+export function AvatarPicker({ value, onChange, fallback, disabled = false, subject = "photo de profil" }: Props) {
   const input = useRef<HTMLInputElement>(null);
   const [error, setError] = useState("");
   async function selectFile(file?: File) {
@@ -37,12 +37,12 @@ export function AvatarPicker({ value, onChange, fallback, disabled = false }: Pr
     }
   }
   return <div className="avatar-picker">
-    <button type="button" className="avatar avatar--large avatar-picker__preview" aria-label="Choisir ou modifier la photo du profil" title="Choisir ou modifier la photo" disabled={disabled} onClick={() => input.current?.click()}>
-      {value ? <img src={value} alt="Aperçu de votre photo de profil" /> : fallback}
+    <button type="button" className="avatar avatar--large avatar-picker__preview" aria-label={`Choisir ou modifier ${subject === "logo" ? "le logo" : "la photo du profil"}`} title={subject === "logo" ? "Choisir ou modifier le logo" : "Choisir ou modifier la photo"} disabled={disabled} onClick={() => input.current?.click()}>
+      {value ? <img src={value} alt={subject === "logo" ? "Aperçu du logo" : "Aperçu de votre photo de profil"} /> : fallback}
       <span className="avatar-picker__camera" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span>
     </button>
-    <input ref={input} className="avatar-picker__input" type="file" accept="image/jpeg,image/png,image/webp" aria-label="Choisir une photo de profil" disabled={disabled} onChange={event => { void selectFile(event.currentTarget.files?.[0]); event.currentTarget.value = ""; }} />
-    {value && <button type="button" className="avatar-picker__remove" disabled={disabled} onClick={() => { onChange(""); setError(""); }}>Retirer la photo</button>}
+    <input ref={input} className="avatar-picker__input" type="file" accept="image/jpeg,image/png,image/webp" aria-label={subject === "logo" ? "Choisir un logo" : "Choisir une photo de profil"} disabled={disabled} onChange={event => { void selectFile(event.currentTarget.files?.[0]); event.currentTarget.value = ""; }} />
+    {value && <button type="button" className="avatar-picker__remove" disabled={disabled} onClick={() => { onChange(""); setError(""); }}>{subject === "logo" ? "Retirer le logo" : "Retirer la photo"}</button>}
     {error && <p className="status avatar-picker__error" role="alert">{error}</p>}
   </div>;
 }

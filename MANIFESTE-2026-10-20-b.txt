@@ -1,0 +1,8 @@
+Mise à jour 2026-10-20 (2) — à copier par-dessus le projet, APRÈS celles du 19/10 et du 20/10 (qa-parcours-patient).
+
+BACKEND : lancer `python manage.py migrate` (establishments/0009 : 4 colonnes ajoutées, rien de supprimé).
+  models, serializers, views, urls, provisioning, migrations/0009, test_staff_onboarding_flow
+FRONTEND : EstablishmentProfileEditor (nouveau), EstablishmentProfileForm, EstablishmentSettingsClient, ProfessionalSettingsClient,
+  AdminEstablishmentsClient, AvatarPicker, PublicShell, globals.css, site-pages.css, landing-showcase.css,
+  admin-establishments.css et establishment-settings.css (nouveaux), tests
+Détails : MODIFICATIONS-2026-10-20-etablissement-logo-landing.md

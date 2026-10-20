@@ -442,7 +442,8 @@ a.setting-item:hover, button.setting-item:hover { border-color: var(--primary); 
 
 
 /* ---------- Feedback et enquêtes disponibles dans tous les espaces ---------- */
-.feedback-fab { position: fixed; z-index: 850; right: max(18px, env(safe-area-inset-right)); bottom: calc(18px + env(safe-area-inset-bottom)); display: inline-flex; align-items: center; gap: 9px; min-height: 48px; padding: 0 18px; font: inherit; font-weight: 750; cursor: pointer; }
+.feedback-fab { position: fixed; z-index: 850; right: max(18px, env(safe-area-inset-right)); bottom: calc(18px + env(safe-area-inset-bottom)); display: inline-flex; align-items: center; justify-content: center; gap: 9px; width: 48px; height: 48px; min-height: 48px; padding: 0; font: inherit; font-weight: 750; cursor: pointer; }
+.feedback-fab > span:nth-child(2) { display: none; }
 .feedback-fab:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; }
 .feedback-fab > span:first-child { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: rgba(255, 255, 255, .2); font-size: 1.1rem; }
 .space--admin { min-width: 0; max-width: 100%; }

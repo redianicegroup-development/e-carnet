@@ -19,6 +19,7 @@ export function PublicFooter() {
         <section className="pub-footer__card pub-footer__card--brand" aria-label="Mon E‑Carnet">
           <Link className="pub-footer__logo" href="/" aria-label="Mon E-Carnet, accueil"><BrandMark /><span>Mon E‑Carnet</span></Link>
           <div className="pub-footer__brand-foot">
+            <p className="pub-footer__slogan">Gardez le fil avec Mon E‑Carnet.</p>
             <p className="pub-footer__tagline">Un carnet de santé personnel, <span>organisé selon vos choix.</span></p>
             <PwaInstallButton />
             <div className="pub-footer__touch">
@@ -46,10 +47,6 @@ export function PublicFooter() {
             <div className="pub-footer__legal">
               <span>© 2026 Mon E‑Carnet</span>
               <p className="pub-footer__made">Créé par <strong>Redianice</strong> et <FooterCredit /></p>
-            </div>
-            <div className="pub-footer__cta">
-              <p><span>La santé avance vite.</span><strong>Gardez le fil avec Mon E‑Carnet.</strong></p>
-              <div className="pub-footer__pill"><span>Prêt à commencer ?</span><Link className="pub-footer__go" href="/connexion?mode=register">Créer mon carnet</Link></div>
             </div>
           </div>
         </section>

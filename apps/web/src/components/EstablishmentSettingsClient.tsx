@@ -12,10 +12,12 @@ import { ThemeSettingsClient } from "./ThemeSettingsClient";
 import { AccountActionRequestsSettingsClient } from "./AccountActionRequestsSettingsClient";
 import { Icon } from "./ui/Icon";
 import { PrescriptionTemplateSettings } from "./PrescriptionTemplateSettings";
+import { EstablishmentProfileEditor, establishmentInitials, type EstablishmentProfile } from "./EstablishmentProfileEditor";
+import "./establishment-settings.css";
 import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
 
 type Account = { email: string; first_name: string; last_name: string; avatar_url?: string; is_privileged: boolean; contexts: { role: string; is_active: boolean }[] };
-type Establishment = { id: string; name: string; establishment_type: string; city: string; address: string; phone: string; email: string; responsible_name: string; status: "pending" | "active" | "rejected" | string; internal_code: string | null };
+type Establishment = { id: string; name: string; establishment_type: string; city: string; address: string; phone: string; email: string; responsible_name: string; logo: string; updated_at: string | null; status: "pending" | "active" | "rejected" | string; internal_code: string | null };
 type Envelope<T> = { data?: T; message?: string; detail?: string };
 const API = "";
 
@@ -58,6 +60,13 @@ export function EstablishmentSettingsClient() {
     return () => { active = false; };
   }, []);
 
+  /** Une modification enregistrée dans « Informations administratives » ou « Coordonnées » se voit tout de suite dans l'en‑tête. */
+  function applySaved(profile: EstablishmentProfile) {
+    setEstablishments((list) => list.map((item) => (item.id === profile.id
+      ? { ...item, name: profile.name, establishment_type: profile.establishment_type, city: profile.city, address: profile.address, phone: profile.phone, email: profile.email, logo: profile.logo, updated_at: profile.updated_at }
+      : item)));
+  }
+
   async function logout() {
     setSigningOut(true); setMessage("Déconnexion…");
     try {
@@ -86,21 +95,35 @@ export function EstablishmentSettingsClient() {
 
   return (
     <div className="establishment-settings settings-page">
-      <section className="card establishment-settings__profile account-summary">
-        <div className="profile-summary"><div className="avatar avatar--large" aria-hidden="true">{account?.avatar_url ? <img src={account.avatar_url} alt="" /> : selected?.name.slice(0, 2).toUpperCase() ?? "ET"}</div><div><span className="eyebrow">Espace établissement</span><h2>{selected?.name ?? "Compte établissement"}</h2><p className="muted">{selected ? `${selected.city} · ${statusLabel(selected.status)}` : account?.email ?? "Aucun établissement associé"}</p></div></div>
+      <section className="card establishment-settings__profile account-summary settings-account-summary">
+        <div className="settings-account-summary__row">
+          <div className="profile-summary">
+            <div className="avatar avatar--large avatar--logo" aria-hidden="true">{selected?.logo ? <img src={selected.logo} alt="" /> : selected ? establishmentInitials(selected.name) : "ET"}</div>
+            <div className="settings-account-summary__copy"><span className="eyebrow">Espace établissement</span><h2>{selected?.name ?? "Compte établissement"}</h2><p className="muted">{selected ? `${[selected.city, statusLabel(selected.status)].filter(Boolean).join(" · ")}` : account?.email ?? "Aucun établissement associé"}</p></div>
+          </div>
+        </div>
         {establishments.length > 1 && <label className="field"><span>Établissement concerné</span><select value={selected?.id ?? ""} onChange={(event) => setSelectedId(event.target.value)}>{establishments.map((item) => <option key={item.id} value={item.id}>{item.name} · {statusLabel(item.status)}</option>)}</select></label>}
         <p className="notice" role="status" aria-live="polite">{loading ? "Chargement…" : message}</p>
       </section>
       <SettingsDirectory items={navItems} activeId={activeSection} onSelect={setActiveSection} onLogout={() => void logout()} logoutDisabled={signingOut || loading} />
 
-      {activeSection === "administratif" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Fiche établissement</span>
-        {selected ? <dl className="settings-details"><div><dt>Nom</dt><dd>{selected.name}</dd></div><div><dt>Type de structure</dt><dd>{selected.establishment_type}</dd></div><div><dt>Statut</dt><dd><span className={`badge ${selected.status === "active" ? "active" : "pending"}`}>{statusLabel(selected.status)}</span></dd></div><div><dt>Code interne</dt><dd>{selected.internal_code ?? "Attribué après activation"}</dd></div></dl> : <p className="empty">{loading ? "Chargement…" : "Aucune fiche établissement n’est liée à cette session."}</p>}
+      {activeSection === "administratif" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Identité de la structure</span>
+        {selected && selected.status === "active" && <>
+          <p className="muted">Logo et nom de votre établissement. Toute modification est enregistrée avec sa date et visible de l’équipe Mon E‑Carnet.</p>
+          <EstablishmentProfileEditor key={selected.id} scope="identity" establishmentId={selected.id} submitLabel="Enregistrer l’identité" onSaved={applySaved} />
+        </>}
+        {selected && selected.status !== "active" && <dl className="settings-details"><div><dt>Nom</dt><dd>{selected.name}</dd></div><div><dt>Statut</dt><dd><span className="badge pending">{statusLabel(selected.status)}</span></dd></div></dl>}
+        {!selected && <p className="empty">{loading ? "Chargement…" : "Aucune fiche établissement n’est liée à cette session."}</p>}
         {!selected && !loading && <Link className="button primary" href="/professionnel/etablissements">Déclarer un établissement</Link>}
-        {selected && selected.status === "active" && <p className="settings-note"><Link className="button" href="/etablissement/fiche">Modifier la fiche</Link></p>}
       </div></SettingsModal>}
 
       {activeSection === "coordonnees" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Contact de la structure</span>
-        {selected ? <dl className="settings-details"><div><dt>Responsable déclaré</dt><dd>{selected.responsible_name}</dd></div><div><dt>Ville</dt><dd>{selected.city}</dd></div><div><dt>Adresse</dt><dd>{selected.address}</dd></div><div><dt>Téléphone</dt><dd><a href={`tel:${selected.phone}`}>{selected.phone}</a></dd></div><div><dt>Email établissement</dt><dd><a href={`mailto:${selected.email}`}>{selected.email}</a></dd></div></dl> : <p className="muted">Les coordonnées apparaîtront après la création de la fiche établissement.</p>}
+        {selected && selected.status === "active"
+          ? <>
+            <p className="muted">Ville, adresse ou BP (facultatif) et téléphone. L’e‑mail est celui de votre compte et reste verrouillé.</p>
+            <EstablishmentProfileEditor key={selected.id} scope="contact" establishmentId={selected.id} submitLabel="Enregistrer les coordonnées" onSaved={applySaved} />
+          </>
+          : <p className="muted">Les coordonnées apparaîtront lorsque l’établissement sera actif.</p>}
       </div></SettingsModal>}
 
       {activeSection === "ordonnance" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}>{selected?.status === "active" ? <PrescriptionTemplateSettings establishmentId={selected.id} /> : <p className="muted">Le modèle sera disponible lorsque l’établissement sera actif.</p>}</SettingsModal>}

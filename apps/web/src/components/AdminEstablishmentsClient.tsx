@@ -3,6 +3,7 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { ApiError, apiGet, apiPost } from "../infrastructure/api/client";
 import { useConfirm } from "./modal/ConfirmProvider";
+import "./admin-establishments.css";
 
 type AccessState = "temporary_password" | "expired" | "activated" | "revoked";
 type Stage = "awaiting_activation" | "awaiting_profile" | "ready";
@@ -12,6 +13,11 @@ type Item = {
   internal_code: string | null;
   created_at: string;
   profile_completed_at: string | null;
+  /* Mises à jour faites par l'établissement lui‑même (fiche, nom, logo) : l'équipe les voit sans rien demander. */
+  updated_at: string | null;
+  name_updated_at: string | null;
+  original_name: string;
+  logo: string;
   stage: Stage;
   administrator: { name: string; email: string } | null;
   access: { email: string; state: AccessState; expires_at: string | null } | null;
@@ -260,20 +266,28 @@ export function AdminEstablishmentsClient({ aside }: { aside?: ReactNode }) {
         {listing && listing.items.length === 0 && <p className="muted">Aucun établissement créé pour l’instant.</p>}
         {listing && listing.items.length > 0 && (
           <div className="admin-table-wrap">
-            <table className="admin-table">
-              <thead><tr><th scope="col">Établissement</th><th scope="col">Responsable</th><th scope="col">Suivi</th><th scope="col">Mot de passe temporaire</th><th scope="col"><span className="sr-only">Actions</span></th></tr></thead>
+            <table className="admin-table admin-table--stack">
+              <thead><tr><th scope="col">Établissement</th><th scope="col">Responsable</th><th scope="col">Suivi</th><th scope="col">Mot de passe temporaire</th><th scope="col">Dernière mise à jour</th><th scope="col"><span className="sr-only">Actions</span></th></tr></thead>
               <tbody>
                 {listing.items.map((item) => {
                   const status = followUp(item);
                   const state = item.access?.state;
                   const pendingActivation = item.stage === "awaiting_activation";
+                  const renamed = Boolean(item.name_updated_at && item.original_name);
                   return (
                     <tr key={item.id}>
-                      <th scope="row"><strong>{item.name}</strong><br /><span className="muted">{item.internal_code ?? "sans code"}</span></th>
-                      <td>{item.administrator ? <>{item.administrator.name || "—"}<br /><span className="muted">{item.administrator.email}</span></> : <span className="muted">{item.access?.email ?? "—"}</span>}</td>
-                      <td><span className={`badge ${status.tone}`}>{status.label}</span></td>
-                      <td>{state === "temporary_password" && item.access?.expires_at ? <>Expire le {when(item.access.expires_at)}</> : state === "expired" ? <>Expiré</> : <span className="muted">—</span>}</td>
-                      <td>
+                      <th scope="row">
+                        <span className="admin-structure">
+                          <span className="admin-structure__logo" aria-hidden="true">{item.logo ? <img src={item.logo} alt="" loading="lazy" /> : item.name.slice(0, 2).toUpperCase()}</span>
+                          <span className="admin-structure__text"><strong>{item.name}</strong><span className="muted">{item.internal_code ?? "sans code"}</span></span>
+                        </span>
+                        {renamed && <small className="admin-renamed">Renommé par l’établissement le {when(item.name_updated_at)} · nom vérifié : {item.original_name}</small>}
+                      </th>
+                      <td data-label="Responsable">{item.administrator ? <>{item.administrator.name || "—"}<br /><span className="muted admin-break">{item.administrator.email}</span></> : <span className="muted admin-break">{item.access?.email ?? "—"}</span>}</td>
+                      <td data-label="Suivi"><span className={`badge ${status.tone}`}>{status.label}</span></td>
+                      <td data-label="Mot de passe temporaire">{state === "temporary_password" && item.access?.expires_at ? <>Expire le {when(item.access.expires_at)}</> : state === "expired" ? <>Expiré</> : <span className="muted">—</span>}</td>
+                      <td data-label="Dernière mise à jour">{item.profile_completed_at ? when(item.updated_at) : <span className="muted">Fiche non remplie</span>}</td>
+                      <td className="admin-table__actions">
                         {pendingActivation && item.access && (
                           <span className="admin-inline-actions">
                             <button type="button" className="button small" disabled={busy} onClick={() => void reissue(item)}>{state === "revoked" ? "Rouvrir l’accès" : "Nouveau mot de passe"}</button>

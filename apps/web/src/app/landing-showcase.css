@@ -24,10 +24,12 @@
 .lp-hero__media { --s0: .26; --mx: 40px; --my: 112px; --r: 28px; position: absolute; inset: 0; z-index: 1; overflow: hidden; container-type: size; background: var(--text); transform-origin: 100% 100%; transform: translate(calc(var(--mx) * -1), calc(var(--my) * -1)) scale(var(--s0)); border-radius: calc(var(--r) / var(--s0)); }
 .lp-hero__media--photo picture { position: absolute; inset: 0; display: block; }
 .lp-hero__media--photo img { object-fit: cover; }
-.lp-hero__reveal { position: absolute; inset: 0; z-index: 3; display: flex; align-items: center; color: var(--bg); pointer-events: none; }
+.lp-hero__reveal { position: absolute; inset: 0; z-index: 3; display: flex; align-items: center; color: var(--primary-text); pointer-events: none; }
 .lp-hero__reveal > .lp-wrap { display: grid; gap: 14px; align-content: center; }
 .lp-hero__reveal-title { margin: 0; max-width: 11ch; font-size: clamp(2.2rem, 5.6vw, 4.6rem); font-weight: 800; line-height: 1.02; letter-spacing: -.04em; }
-.lp-hero__reveal-text { margin: 0; max-width: 32ch; font-size: clamp(1rem, 1.7vw, 1.25rem); line-height: 1.45; opacity: .88; }
+.lp-hero__reveal-text { margin: 0; max-width: 32ch; font-size: clamp(1rem, 1.7vw, 1.25rem); font-weight: 600; line-height: 1.45; }
+/* vert de la marque, avec un léger halo clair : lisible sur toute la photo, pas seulement sur le mur */
+.lp-hero__reveal-title, .lp-hero__reveal-text { text-shadow: 0 1px 16px color-mix(in srgb, var(--bg) 75%, transparent); }
 [data-reveal-line] { opacity: 0; }
 @media (max-width: 759px) {
   .lp-hero__media { --s0: .37; --mx: 14px; --my: 84px; --r: 20px; }

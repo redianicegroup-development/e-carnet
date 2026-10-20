@@ -1,0 +1,30 @@
+/* Console équipe — établissements : jamais de débordement horizontal de la page.
+   Cause d'origine : la carte du tableau est un élément de grille (min-width: auto) et le tableau fait 850 px de large ; la carte
+   s'élargissait donc au lieu de laisser le tableau défiler. On libère la grille, puis, sur mobile, chaque ligne devient une carte. */
+.admin-management-grid > * { min-width: 0; }
+.admin-table-card { min-width: 0; max-width: 100%; }
+.admin-table-wrap { max-width: 100%; }
+
+.admin-structure { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.admin-structure__logo { display: grid; place-items: center; flex: 0 0 38px; width: 38px; height: 38px; overflow: hidden; border-radius: 12px; background: var(--primary-tint); color: var(--primary-text); font-size: .8rem; font-weight: 800; }
+.admin-structure__logo img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.admin-structure__text { display: grid; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+.admin-renamed { display: block; margin-top: 6px; white-space: normal; color: var(--text-muted); }
+.admin-break { overflow-wrap: anywhere; }
+.admin-inline-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.admin-table { min-width: 960px; }
+.admin-table .admin-inline-actions .button { white-space: nowrap; }
+
+@media (max-width: 860px) {
+  .admin-table-wrap { overflow: visible; border: 0; background: transparent; }
+  .admin-table--stack { min-width: 0; width: 100%; }
+  .admin-table--stack thead { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .admin-table--stack, .admin-table--stack tbody, .admin-table--stack tr, .admin-table--stack th, .admin-table--stack td { display: block; width: 100%; min-width: 0; }
+  .admin-table--stack tbody { display: grid; gap: 12px; }
+  .admin-table--stack tr { display: grid; gap: 10px; padding: 14px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
+  .admin-table--stack tbody tr:hover { background: var(--surface); }
+  .admin-table--stack th, .admin-table--stack td { padding: 0; border: 0; background: transparent; text-transform: none; letter-spacing: 0; white-space: normal; font-size: .9rem; }
+  .admin-table--stack td[data-label]::before { content: attr(data-label); display: block; margin-bottom: 2px; color: var(--text-muted); font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+  .admin-table--stack td.admin-table__actions:empty { display: none; }
+  .admin-table--stack .admin-inline-actions .button { flex: 1 1 100%; min-height: 44px; }
+}

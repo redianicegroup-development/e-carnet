@@ -12,6 +12,7 @@ import { ThemeSettingsClient } from "./ThemeSettingsClient";
 import { AccountActionRequestsSettingsClient } from "./AccountActionRequestsSettingsClient";
 import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
 import { ProfessionalCredentialsSettings } from "./ProfessionalCredentialsSettings";
+import "./establishment-settings.css";
 
 type Profile = { professional_title: string; specialty: string; professional_identifier: string; active_establishment: string | null; stamp_uploaded: boolean; signature_uploaded: boolean };
 type Establishment = { id: string; name: string; status: string };
@@ -81,7 +82,15 @@ export function ProfessionalSettingsClient() {
 
   return (
     <div className="settings-page professional-settings">
-      <section className="card account-summary"><div className="profile-summary"><div className="avatar avatar--large" aria-hidden="true">{account?.avatar_url ? <img src={account.avatar_url} alt="" /> : initials(fullName)}</div><div><span className="eyebrow">Espace professionnel</span><h2>{fullName}</h2><p className="muted">{profile?.professional_title || "Profession à renseigner"} · {profile?.specialty || "Spécialité à renseigner"}</p></div></div><p className="notice" role="status" aria-live="polite">{loading ? "Chargement…" : message}</p></section>
+      <section className="card account-summary settings-account-summary">
+        <div className="settings-account-summary__row">
+          <div className="profile-summary">
+            <div className="avatar avatar--large" aria-hidden="true">{account?.avatar_url ? <img src={account.avatar_url} alt="" /> : initials(fullName)}</div>
+            <div className="settings-account-summary__copy"><span className="eyebrow">Espace professionnel</span><h2>{fullName}</h2><p className="muted">{[profile?.professional_title || "Profession à renseigner", profile?.specialty || "Spécialité à renseigner"].join(" · ")}</p></div>
+          </div>
+        </div>
+        <p className="notice" role="status" aria-live="polite">{loading ? "Chargement…" : message}</p>
+      </section>
       <SettingsDirectory items={navItems} activeId={activeSection} onSelect={setActiveSection} onLogout={() => void logout()} logoutDisabled={loading || signingOut} />
 
       {activeSection === "professionnel" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Profil professionnel</span><dl className="settings-details"><div><dt>Profession</dt><dd>{profile?.professional_title || "À renseigner"}</dd></div><div><dt>Spécialité</dt><dd>{profile?.specialty || "À renseigner"}</dd></div></dl><p className="settings-note muted">La spécialité est déclarée par vous. Les justificatifs médicaux ne sont pas collectés par Mon E‑Carnet : leur vérification relève de l’établissement.</p></div>{profile && <ProfessionalCredentialsSettings profile={profile} onSaved={(saved) => setProfile((current) => current ? { ...current, ...saved } : current)} />}</SettingsModal>}

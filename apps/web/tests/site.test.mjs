@@ -162,7 +162,9 @@ test("pied de page : deux cartes (marque, liens), filigrane, mise en page adapt�
   assert.match(footer, /pub-footer__card pub-footer__card--brand/);
   assert.match(footer, /pub-footer__card pub-footer__card--links/);
   assert.match(footer, /className="pub-footer__watermark"/);
-  assert.match(footer, /href="\/connexion\?mode=register"/, "l'appel à l'action mène à la création de carnet");
+  // 20/10 : le bandeau « Prêt à commencer ? » est retiré du pied de page à la demande du produit ; le slogan du projet le remplace.
+  assert.doesNotMatch(footer, /href="\/connexion\?mode=register"/, "plus de bandeau d'appel à l'action dans le pied de page");
+  assert.match(footer, /Gardez le fil avec Mon E‑Carnet\./, "le slogan du projet");
   assert.doesNotMatch(footer, /<form|type="email"/i, "aucun faux formulaire d'abonnement : il n'y a pas de lettre d'information");
   const styles = read("src/app/site-pages.css");
   assert.match(styles, /@media \(min-width: 1000px\) \{\s*\.pub-footer__cards \{ grid-template-columns/);

@@ -1,14 +1,20 @@
+import base64
+import binascii
 import logging
 import secrets
 from datetime import timedelta
+from io import BytesIO
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.validators import validate_email
 from django.db import transaction
+from django.http import Http404, HttpResponse
 from django.utils import timezone
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAdminUser, IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -22,7 +28,7 @@ from apps.identity.models import AccountContext
 from apps.identity.temporary_password import disable_temporary_password, has_pending_temporary_password, issue_temporary_password, temporary_password_expired
 from .provisioning import AccountConflict, ProvisionedAccess, login_url, provision_administrator
 from .models import PROFILE_FIELDS, Establishment, EstablishmentAdminInvitation, EstablishmentAdministrator, EstablishmentJoinCode, EstablishmentMembership, PrescriptionTemplate, generate_internal_code
-from .serializers import EstablishmentProfileSerializer, EstablishmentSerializer, MembershipSerializer, PrescriptionTemplateSerializer
+from .serializers import EstablishmentProfileSerializer, EstablishmentSerializer, MembershipSerializer, PrescriptionTemplateSerializer, logo_for
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -158,6 +164,11 @@ class StaffEstablishmentCreateView(APIView):
                 "internal_code": establishment.internal_code,
                 "created_at": establishment.created_at,
                 "profile_completed_at": establishment.profile_completed_at,
+                # Mises à jour faites par l'établissement lui‑même : visibles de l'équipe, datées.
+                "updated_at": establishment.updated_at,
+                "name_updated_at": establishment.name_updated_at,
+                "original_name": establishment.original_name,
+                "logo": logo_for(establishment),
                 "stage": establishment_stage(establishment, administrator),
                 "administrator": administrator,
                 "access": access_summary(establishment),
@@ -392,22 +403,46 @@ class EstablishmentDetailView(APIView):
         return Response({"success": False, "message": "Établissement indisponible dans votre contexte."}, status=404)
 
 
+def store_logo(establishment, data_url):
+    """Enregistre (ou retire, si vide) le logo. Production : Cloudinary. Développement et tests : image conservée en base."""
+    if not data_url:
+        establishment.logo_url = ""
+        establishment.logo_data = ""
+        return
+    if CLOUDINARY_CONFIGURED:
+        image = base64.b64decode(data_url.split(",", 1)[1], validate=True)
+        result = cloudinary_upload(BytesIO(image), folder="establishments", public_id=f"{establishment.id}/logo", resource_type="image", delivery_type="upload")
+        establishment.logo_url = result["secure_url"]
+        establishment.logo_data = ""
+    elif settings.DEBUG or getattr(settings, "RUNNING_TESTS", False):
+        establishment.logo_url = ""
+        establishment.logo_data = data_url
+    else:
+        raise ValidationError({"logo": "Le stockage des images n’est pas configuré sur ce serveur."})
+
+
 class EstablishmentProfileView(APIView):
     """Fiche de l'établissement, complétée par son administrateur (onboarding) et modifiable ensuite.
-    Le nom et le responsable, vérifiés par l'équipe Mon E‑Carnet, sont verrouillés."""
+
+    Modifiables : nom (pré‑rempli ; tout renommage est tracé — ancien nom, date, audit — et visible de l'équipe), type, ville,
+    adresse / BP (facultative), téléphone, logo. Verrouillés : le responsable (déduit du compte) et l'e‑mail de contact, qui est
+    toujours l'e‑mail du compte avec lequel l'équipe a ouvert l'accès."""
     permission_classes = [IsAuthenticated]
-    LOCKED_FIELDS = ("name", "responsible_name")
+    LOCKED_FIELDS = ("responsible_name",)
 
     @staticmethod
-    def body(establishment):
+    def body(establishment, user=None):
         missing = [field for field in PROFILE_FIELDS if not getattr(establishment, field)]
-        return {**payload(establishment), "required_fields": list(PROFILE_FIELDS), "locked_fields": list(EstablishmentProfileView.LOCKED_FIELDS), "missing_fields": missing, "profile_complete": not missing}
+        data = {**payload(establishment), "required_fields": list(PROFILE_FIELDS), "locked_fields": [*EstablishmentProfileView.LOCKED_FIELDS, "email"], "missing_fields": missing, "profile_complete": not missing}
+        if not data["email"] and user is not None:
+            data["email"] = user.email  # affiché verrouillé : c'est l'e‑mail du compte, enregistré à la première sauvegarde
+        return data
 
     def get(self, request, establishment_id):
         admin = active_administrator(request.user, establishment_id)
         if not admin:
             return Response({"success": False, "message": "Vous n’êtes pas administrateur de cet établissement actif."}, status=403)
-        return Response({"success": True, "data": self.body(admin.establishment)})
+        return Response({"success": True, "data": self.body(admin.establishment, request.user)})
 
     @transaction.atomic
     def patch(self, request, establishment_id):
@@ -417,10 +452,21 @@ class EstablishmentProfileView(APIView):
         establishment = Establishment.objects.select_for_update().get(pk=admin.establishment_id)
         for field in self.LOCKED_FIELDS:
             if field in request.data and str(request.data[field]).strip() != getattr(establishment, field):
-                return Response({"success": False, "message": "Le nom de l’établissement et le responsable sont vérifiés par l’équipe Mon E‑Carnet : écrivez‑lui pour les modifier."}, status=400)
+                return Response({"success": False, "message": "Le responsable est déduit du compte qui a ouvert l’accès : écrivez à l’équipe Mon E‑Carnet pour le modifier."}, status=400)
+        previous_name = establishment.name
         serializer = EstablishmentProfileSerializer(establishment, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
+        logo = serializer.validated_data.get("logo")  # None = non envoyé ; "" = retirer
         establishment = serializer.save()
+        renamed = establishment.name != previous_name
+        if renamed:
+            establishment.original_name = establishment.original_name or previous_name
+            establishment.name_updated_at = timezone.now()
+        # E‑mail de contact = e‑mail du compte du responsable (verrouillé) : jamais saisi, jamais pris dans la requête.
+        establishment.email = request.user.email
+        if logo is not None:
+            store_logo(establishment, logo)
+        establishment.save()
         first_completion = establishment.is_profile_complete and establishment.profile_completed_at is None
         if first_completion:
             establishment.profile_completed_at = timezone.now()
@@ -428,8 +474,30 @@ class EstablishmentProfileView(APIView):
         if establishment.is_profile_complete:
             AccountContext.objects.filter(user=request.user, role="establishment").update(onboarding_completed=True)
         action = "completed" if first_completion else "updated"
-        record_event(event_type=f"establishment.profile.{action}", actor=request.user, actor_role="establishment_administrator", establishment=establishment, metadata={"action": action, "status": "active"})
-        return Response({"success": True, "data": self.body(establishment)})
+        record_event(event_type=f"establishment.profile.{action}", actor=request.user, actor_role="establishment_administrator", establishment=establishment, metadata={"action": action, "status": establishment.status})
+        if renamed:
+            record_event(event_type="establishment.name.changed", actor=request.user, actor_role="establishment_administrator", establishment=establishment, metadata={"action": "renamed", "status": establishment.status})
+        if logo is not None:
+            record_event(event_type="establishment.logo.updated", actor=request.user, actor_role="establishment_administrator", establishment=establishment, metadata={"action": "removed" if not logo else "updated", "status": establishment.status})
+        return Response({"success": True, "data": self.body(establishment, request.user)})
+
+
+class EstablishmentLogoView(APIView):
+    """Logo conservé en base (développement et tests uniquement). En production, `logo` est l'URL Cloudinary et cette route n'est pas utilisée."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, establishment_id):
+        establishment = Establishment.objects.filter(pk=establishment_id).only("logo_data").first()
+        if not establishment or not establishment.logo_data:
+            raise Http404
+        try:
+            image = base64.b64decode(establishment.logo_data.split(",", 1)[1], validate=True)
+        except (IndexError, ValueError, binascii.Error):
+            raise Http404
+        response = HttpResponse(image, content_type="image/webp")
+        response["Cache-Control"] = "private, max-age=3600"
+        response["X-Content-Type-Options"] = "nosniff"
+        return response
 
 
 class EstablishmentPrescriptionTemplateView(APIView):

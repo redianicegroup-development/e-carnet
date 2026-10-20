@@ -1,6 +1,6 @@
 
 git add .
-git commit -m "v2.8 nouvelle mise a jour"
+git commit -m "v2.9 nouvelle mise a jour"
 git branch -M main
 git remote add origin https://github.com/redianicegroup-development/e-carnet.git
 git push -u origin main

@@ -1,0 +1,22 @@
+/* Paramètres professionnel et établissement : même en‑tête que les paramètres patient, et formulaire de la structure.
+
+   Cause du chevauchement observé sur mobile : `.account-summary` est une ligne flex (profil + notice côte à côte). Le patient
+   la passait en colonne seulement sous 640 px, avec les classes `settings-account-summary`. Les deux autres espaces n'avaient pas ces
+   classes : le nom était écrasé par la notice. Les trois espaces partagent maintenant la même mise en page, à toutes les largeurs. */
+.account-summary.settings-account-summary { display: grid; align-items: start; gap: 12px; }
+.settings-account-summary > .notice { display: block; width: 100%; max-width: 100%; margin: 0; overflow-wrap: anywhere; }
+.settings-account-summary__copy h2, .settings-account-summary__copy p { overflow-wrap: anywhere; }
+
+/* Logo de structure : carré arrondi, image entière (un logo ne se recadre pas en rond). */
+.avatar--logo, .establishment-editor__logo .avatar { border-radius: 20px; border: 1px solid var(--border); background: var(--surface); color: var(--primary-text); }
+.avatar--logo img, .establishment-editor__logo .avatar img { border-radius: 0; object-fit: contain; padding: 4px; }
+.establishment-editor__logo { display: flex; align-items: center; gap: 14px; }
+.establishment-editor__logo p { margin: 0; font-size: .85rem; }
+.establishment-editor input[readonly] { cursor: not-allowed; opacity: .85; background: var(--surface-tint); }
+.establishment-editor small.muted { font-weight: 400; }
+.establishment-editor__meta { margin: 0; }
+.establishment-editor .button { justify-self: start; }
+
+@media (max-width: 520px) {
+  .establishment-editor__logo { align-items: flex-start; flex-direction: column; }
+}

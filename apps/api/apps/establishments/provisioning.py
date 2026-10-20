@@ -76,7 +76,9 @@ def provision_administrator(
         EstablishmentAdministrator.objects.create(establishment=establishment, user=user, assigned_by=assigned_by, status="active")
 
     establishment.responsible_name = f"{user.first_name} {user.last_name}".strip()
-    establishment.save(update_fields=("responsible_name", "updated_at"))
+    # L'e‑mail de contact de la structure est celui du compte ouvert : verrouillé, jamais ressaisi dans la fiche.
+    establishment.email = user.email
+    establishment.save(update_fields=("responsible_name", "email", "updated_at"))
 
     context, _ = AccountContext.objects.get_or_create(user=user, role="establishment")
     context.is_active = True
