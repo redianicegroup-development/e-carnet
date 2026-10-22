@@ -43,7 +43,7 @@ def external_profile(provider, token_payload):
         if not id_token: raise ValueError("Apple n'a pas fourni d'identité vérifiable.")
         with urllib.request.urlopen("https://appleid.apple.com/auth/keys", timeout=10) as response: keys = json.loads(response.read().decode("utf-8"))
         claims = jwt.decode(id_token, JsonWebKey.import_key_set(keys)); claims.validate()
-        return {"id": claims["sub"], "email": claims.get("email", ""), "name": "", "first_name": claims.get("given_name", ""), "last_name": claims.get("family_name", ""), "avatar": ""}
+        return {"id": claims["sub"], "email": (claims.get("email", "") or "").lower(), "email_verified": str(claims.get("email_verified", "")).lower() == "true", "name": "", "first_name": claims.get("given_name", ""), "last_name": claims.get("family_name", ""), "avatar": ""}
     data = http_json(PROVIDERS[provider]["userinfo"], headers={"Authorization": f"Bearer {token_payload['access_token']}"})
     if provider == "facebook":
         first_name, last_name = data.get("first_name", ""), data.get("last_name", "")
@@ -51,7 +51,9 @@ def external_profile(provider, token_payload):
     else:
         first_name, last_name = data.get("given_name", ""), data.get("family_name", "")
         name, avatar = data.get("name", ""), data.get("picture", "")
-    return {"id": str(data.get("sub") or data.get("id")), "email": (data.get("email") or "").lower(), "name": name, "first_name": first_name, "last_name": last_name, "avatar": avatar}
+    # Seul Google garantit que l'adresse a été confirmée ; pour Facebook elle n'est pas fiable.
+    verified = provider == "google" and str(data.get("email_verified", "")).lower() == "true"
+    return {"id": str(data.get("sub") or data.get("id")), "email": (data.get("email") or "").lower(), "email_verified": verified, "name": name, "first_name": first_name, "last_name": last_name, "avatar": avatar}
 
 def split_name(name):
     parts = (name or "Utilisateur").strip().split(); return (parts[0], " ".join(parts[1:]) or "")
@@ -78,6 +80,33 @@ def account_destination(user):
     if context.role == "professional":
         return "/professionnel" if context.onboarding_completed else "/professionnel/onboarding"
     return "/etablissement"
+
+def is_establishment_only(user):
+    """Compte dont le seul contexte est « établissement » : son e-mail est l'identité de la structure."""
+    roles = set(user.account_contexts.values_list("role", flat=True))
+    return roles == {"establishment"}
+
+def settings_path(user):
+    """Page de paramètres du rôle courant, où l'on atterrit après une liaison."""
+    context = user.account_contexts.filter(is_active=True).first() or user.account_contexts.first()
+    role = context.role if context else "patient"
+    return {"establishment": "/etablissement/parametres", "professional": "/professionnel/parametres"}.get(role, "/patient/parametres")
+
+def link_refusal(user, provider, status, message):
+    """Liaison refusée : trace dans le journal, retour sur les paramètres (pas sur la page de connexion, l'utilisateur est connecté)."""
+    record_event(event_type="oauth.link_refused", actor=user, actor_role="account", metadata={"action": "link_refused", "provider": provider, "status": status})
+    query = urllib.parse.urlencode({"oauth": provider, "status": status, "message": message})
+    return HttpResponseRedirect(f"{settings.WEB_ORIGIN}{settings_path(user)}?{query}")
+
+def establishment_email_problem(user, provider, profile):
+    """Pour un compte établissement, le compte externe doit porter la même adresse que le compte (et Google doit l'avoir confirmée).
+    Renvoie (statut, message) si la liaison doit être refusée, sinon None."""
+    if not is_establishment_only(user): return None
+    if (profile.get("email") or "").lower() != (user.email or "").lower():
+        return "email_mismatch", f"Ce compte {provider.capitalize()} n'utilise pas l'adresse de votre établissement ({user.email}). Choisissez le compte {provider.capitalize()} qui porte cette adresse."
+    if not profile.get("email_verified"):
+        return "email_unverified", f"{provider.capitalize()} n'a pas confirmé cette adresse e-mail. Confirmez-la chez {provider.capitalize()}, puis réessayez."
+    return None
 
 def oauth_success_redirect(destination):
     return HttpResponseRedirect(f"{settings.WEB_ORIGIN}{safe_next_path(destination, '/patient')}")
@@ -151,7 +180,7 @@ class OAuthCallbackView(APIView):
                     account_profile.avatar_url = profile["avatar"]
                     account_profile.save(update_fields=("avatar_url", "updated_at"))
                 login(request, user); existing.last_seen_at = timezone.now(); existing.save(update_fields=("last_seen_at",))
-                fallback = "/patient/parametres" if link_user_id else account_destination(existing.user)
+                fallback = settings_path(existing.user) if link_user_id else account_destination(existing.user)
                 destination = fallback if fallback == "/onboarding/securite" else safe_next_path(next_path, fallback)
                 response = oauth_success_redirect(destination)
                 return track_auth_response(request, response, "oauth_link" if link_user_id else "oauth_success")
@@ -165,6 +194,8 @@ class OAuthCallbackView(APIView):
                         status="conflict",
                         message=f"Une identité {provider.capitalize()} est déjà liée à votre compte. Déliez-la avant d'en associer une autre.",
                     )
+                problem = establishment_email_problem(user, provider, profile)
+                if problem: return link_refusal(user, provider, *problem)
                 linked = True
             else:
                 email = profile.get("email", "")
@@ -188,10 +219,21 @@ class OAuthCallbackView(APIView):
             login(request, user)
             stage = "audit_event"
             record_event(event_type="oauth.identity_linked" if linked else "oauth.account_created", actor=user, actor_role="account", metadata={"action": "linked" if linked else "created", "provider": provider})
-            fallback = "/patient/parametres" if linked else account_destination(user)
+            fallback = settings_path(user) if linked else account_destination(user)
             destination = fallback if fallback == "/onboarding/securite" else safe_next_path(next_path, fallback)
             response = oauth_success_redirect(destination)
             return track_auth_response(request, response, "oauth_link" if linked else "oauth_success")
         except Exception:
             logger.exception("OAuth callback failed during %s (provider=%s)", stage, provider)
             raise
+
+
+class OAuthProviderAvailabilityView(APIView):
+    """Quels fournisseurs sont réellement configurés dans cet environnement (aucun secret n'est exposé)."""
+    permission_classes = [AllowAny]
+    def get(self, request):
+        available = {}
+        for name in PROVIDERS:
+            try: provider_config(name); available[name] = True
+            except ValueError: available[name] = False
+        return Response({"success": True, "data": available})

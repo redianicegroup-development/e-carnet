@@ -9,7 +9,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.http import HttpResponse, Http404
 from django.db import transaction
-from .recovery import GENERIC_FAILURE, question_for, reset_password_with_answer, validate_new_password, verify_recovery_answer
+from .recovery import GENERIC_FAILURE, attempt_status, question_for, reset_password_with_answer, validate_new_password, verify_recovery_answer
 from .throttles import IpScopedThrottle, LoginEmailThrottle, RecoveryEmailThrottle
 from .temporary_password import temporary_password_expired
 from rest_framework import status
@@ -243,7 +243,9 @@ class RecoveryAnswerView(APIView):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
         if not verify_recovery_answer(email=data["email"], answer=data["answer"]):
-            return Response({"success": False, "message": GENERIC_FAILURE}, status=400)
+            # Le message reste générique ; `code`, `attempts_remaining` et `locked_until` ont la même forme pour tout le monde
+            # (voir recovery.attempt_status) : l'écran peut être clair sans révéler si l'adresse a un compte.
+            return Response({"success": False, "message": GENERIC_FAILURE, **attempt_status(data["email"])}, status=400)
         return Response({"success": True, "data": {"verified": True}})
 
 class RecoveryResetView(APIView):
@@ -261,7 +263,7 @@ class RecoveryResetView(APIView):
         data = serializer.validated_data
         validate_new_password(data["new_password"])
         if not reset_password_with_answer(email=data["email"], answer=data["answer"], new_password=data["new_password"]):
-            return Response({"success": False, "message": GENERIC_FAILURE}, status=400)
+            return Response({"success": False, "message": GENERIC_FAILURE, **attempt_status(data["email"])}, status=400)
         return Response({"success": True, "data": {"reset": True}})
 
 

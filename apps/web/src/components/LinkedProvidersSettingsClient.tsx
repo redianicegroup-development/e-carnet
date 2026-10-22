@@ -33,13 +33,16 @@ export function LinkedProvidersSettingsClient({ nextPath }: Props) {
 
   useEffect(() => {
     let active = true;
+    // Retour de Google : le serveur indique si la liaison a été refusée (autre adresse, adresse non confirmée…).
+    const returned = new URLSearchParams(window.location.search);
+    const returnedMessage = returned.get("oauth") ? returned.get("message") : null;
     fetch(`${API}/api/v1/identity/me/`, { credentials: "include", cache: "no-store" })
       .then(async (response) => {
         const payload = await response.json();
         if (!response.ok) throw new Error(payload.message ?? "Impossible de charger les méthodes de connexion.");
         if (active) setIdentities((payload.data as Account).auth_identities ?? []);
       })
-      .then(() => { if (active) setMessage("Gérez les comptes externes associés à votre compte Mon E‑Carnet."); })
+      .then(() => { if (active) setMessage(returnedMessage || "Gérez les comptes externes associés à votre compte Mon E‑Carnet."); })
       .catch((error: unknown) => { if (active) setMessage(error instanceof Error ? error.message : "Méthodes de connexion indisponibles."); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };

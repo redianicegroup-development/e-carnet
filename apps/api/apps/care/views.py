@@ -640,7 +640,7 @@ class PatientPrescriptionDownloadView(APIView):
         asset_images = []
         for label, public_id, resource_type in (
             ("Cachet", getattr(professional, "stamp_cloudinary_public_id", "") if professional else "", getattr(professional, "stamp_cloudinary_resource_type", "image") if professional else "image"),
-            ("Signature déposée", getattr(professional, "signature_cloudinary_public_id", "") if professional else "", getattr(professional, "signature_cloudinary_resource_type", "image") if professional else "image"),
+            ("Signature", getattr(professional, "signature_cloudinary_public_id", "") if professional else "", getattr(professional, "signature_cloudinary_resource_type", "image") if professional else "image"),
         ):
             if not public_id:
                 continue
@@ -719,8 +719,12 @@ class PatientPrescriptionDownloadView(APIView):
             if line.instructions:
                 row.append(Paragraph(f"Conseil : {escape(line.instructions)}", styles["PrescriptionInstruction"]))
             story.append(KeepTogether(row))
+        # Signature électronique Mon E-Carnet : toujours présente (une consultation signée l'est forcément), avec ou sans cachet déposé.
+        signed_at = consultation.attestation_signed_at
+        signed_line = f"Signé électroniquement dans Mon E-Carnet par {escape(prescriber)} le {signed_at.strftime('%d/%m/%Y à %H:%M')} UTC · réf. {str(consultation.id)[:8].upper()}"
+        story.extend([Spacer(1, 12), Paragraph(signed_line, styles["PrescriptionBody"])])
         if asset_images:
-            story.extend([Spacer(1, 12), Paragraph("Éléments déposés par le prescripteur", styles["PrescriptionLabel"])])
+            story.extend([Spacer(1, 6), Paragraph("Cachet et signature du prescripteur", styles["PrescriptionLabel"])])
             cells = []
             for label, asset_bytes in asset_images:
                 image = Image(BytesIO(asset_bytes))

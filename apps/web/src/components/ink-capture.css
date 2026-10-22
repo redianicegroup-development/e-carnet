@@ -1,0 +1,56 @@
+/* Cachet et signature : photo, dessin, aperçu détouré. Mobile d'abord (le médecin photographie son cachet au téléphone). */
+.seal-field { display: grid; gap: 10px; }
+.seal-field__label { font-size: .8125rem; font-weight: 700; color: var(--text-muted); }
+.seal-field__row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.seal-field__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.seal-field__actions .button { min-height: 44px; }
+
+/* Damier : montre la transparence réelle du résultat. */
+.seal-preview { display: grid; place-items: center; width: 132px; height: 96px; padding: 6px; border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+  background-color: #fff; background-image: linear-gradient(45deg, #e9ecef 25%, transparent 25%, transparent 75%, #e9ecef 75%), linear-gradient(45deg, #e9ecef 25%, transparent 25%, transparent 75%, #e9ecef 75%); background-size: 16px 16px; background-position: 0 0, 8px 8px; }
+.seal-preview img, .seal-preview canvas { display: block; max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; }
+.seal-preview--empty { color: var(--text-muted); font-size: .8rem; text-align: center; background-image: none; background-color: var(--surface-tint); }
+.seal-preview--large { width: 100%; height: clamp(170px, 42vw, 260px); }
+.seal-preview--paper { background-image: none; background-color: #fff; }
+
+.ink-capture { display: grid; gap: 14px; padding: 16px; border: 1px solid var(--border); border-radius: 18px; background: var(--surface); }
+.ink-capture h4 { margin: 0; font-size: 1rem; }
+.ink-capture p { margin: 0; }
+.ink-capture__tips { margin: 0; padding-left: 1.1rem; font-size: .85rem; color: var(--text-muted); display: grid; gap: 2px; }
+.ink-capture__choices { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr)); }
+.ink-capture__choices .button { min-height: 52px; }
+
+/* Caméra : le cadre de visée est exactement la zone recadrée à la prise de vue. */
+.ink-camera { position: relative; width: 100%; overflow: hidden; border-radius: 14px; background: #101418; }
+.ink-camera video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.ink-camera__guide { position: absolute; border: 2px dashed #fff; border-radius: 10px; box-shadow: 0 0 0 999px rgba(0, 0, 0, .5); pointer-events: none; }
+.ink-camera__hint { position: absolute; left: 8px; right: 8px; bottom: 8px; padding: 6px 10px; border-radius: 10px; background: rgba(0, 0, 0, .6); color: #fff; font-size: .8rem; text-align: center; }
+
+.ink-controls { display: grid; gap: 12px; }
+.ink-controls fieldset { margin: 0; padding: 0; border: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.ink-controls legend { padding: 0; margin-bottom: 6px; font-size: .8125rem; font-weight: 700; color: var(--text-muted); }
+.ink-chip { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 14px; border: 1.5px solid var(--border-strong); border-radius: 999px; background: var(--surface); font-weight: 700; font-size: .9rem; cursor: pointer; }
+.ink-chip input { margin: 0; accent-color: var(--primary); }
+.ink-chip:has(input:checked) { border-color: var(--primary); background: var(--surface-tint); }
+.ink-chip:has(input:focus-visible) { outline: 3px solid var(--primary); outline-offset: 2px; }
+.ink-chip__dot { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, .25); }
+.ink-controls input[type="range"] { width: 100%; min-height: 44px; accent-color: var(--primary); }
+.ink-controls__scale { display: flex; justify-content: space-between; font-size: .75rem; color: var(--text-muted); }
+
+/* Signature dessinée : le doigt ou la souris ne doivent pas faire défiler la page. */
+.ink-pad { display: block; width: 100%; height: clamp(170px, 46vw, 240px); touch-action: none; border: 1.5px dashed var(--border-strong); border-radius: 14px; background: #fff; cursor: crosshair; }
+.ink-pad--empty { background-image: linear-gradient(transparent calc(100% - 46px), #cdd5da calc(100% - 46px), #cdd5da calc(100% - 45px), transparent calc(100% - 45px)); }
+.ink-capture__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.ink-capture__actions .button { min-height: 44px; }
+.ink-capture .status { margin: 0; }
+
+.seal-recap { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface-tint); }
+.seal-recap__items { display: flex; flex-wrap: wrap; gap: 10px; }
+.seal-recap .seal-preview { width: 96px; height: 64px; }
+.seal-recap p { margin: 0; flex: 1 1 220px; font-size: .88rem; }
+
+.onboarding-skip { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+@media (max-width: 520px) {
+  .seal-field__actions .button { flex: 1 1 100%; }
+  .ink-capture { padding: 12px; }
+}

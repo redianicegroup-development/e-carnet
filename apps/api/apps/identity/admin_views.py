@@ -8,8 +8,11 @@ from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.audit.models import AuditEvent
 from .models import (
+    AccountProfile,
     AnonymousVisitor,
+    ContactMessage,
     ProductExperienceSurveyResponse,
     ProductSurveyResponse,
     SiteFeedback,
@@ -177,3 +180,82 @@ class AdminFeedbackStatusView(APIView):
         feedback.status = new_status
         feedback.save(update_fields=("status", "updated_at"))
         return Response({"success": True, "data": {"id": str(feedback.id), "status": feedback.status}})
+
+
+RECOVERY_EVENT_LABELS = {
+    "account.recovery_answer_failed": "Réponse secrète incorrecte",
+    "account.recovery_attempt_blocked": "Tentative pendant un blocage",
+    "account.recovery_locked": "Récupération bloquée (trop d’échecs)",
+    "account.recovery_answer_verified": "Réponse secrète acceptée",
+    "account.password_reset_by_recovery": "Mot de passe réinitialisé",
+    "account.recovery_method_configured": "Question secrète enregistrée",
+}
+RECOVERY_HELP_MARK = "[Récupération de compte]"
+
+
+class AdminRecoveryView(APIView):
+    """Récupérations de compte vues par l'équipe : ce qui s'est passé, quels comptes sont bloqués, qui a demandé de l'aide.
+
+    Jamais la réponse secrète ni le mot de passe (ils ne sont d'ailleurs conservés nulle part en clair). Réservé aux superadministrateurs."""
+    permission_classes = [IsSuperuserOnly]
+
+    def get(self, request):
+        now = timezone.now()
+        day_ago = now - timedelta(hours=24)
+        events_queryset = AuditEvent.objects.filter(event_type__in=RECOVERY_EVENT_LABELS)
+        recent = events_queryset.filter(created_at__gte=day_ago)
+
+        def count(event_type):
+            return recent.filter(event_type=event_type).count()
+
+        events = [{
+            "id": str(event.id),
+            "event_type": event.event_type,
+            "label": RECOVERY_EVENT_LABELS[event.event_type],
+            "email": event.actor.email if event.actor else "",
+            "name": f"{event.actor.first_name} {event.actor.last_name}".strip() if event.actor else "",
+            "failures": event.metadata.get("extension_count"),
+            "created_at": event.created_at.isoformat(),
+        } for event in events_queryset.select_related("actor").order_by("-created_at")[:200]]
+        locked = [{
+            "email": profile.user.email,
+            "name": f"{profile.user.first_name} {profile.user.last_name}".strip(),
+            "failures": profile.recovery_failures,
+            "locked_until": profile.recovery_locked_until.isoformat(),
+        } for profile in AccountProfile.objects.filter(recovery_locked_until__gt=now).select_related("user").order_by("-recovery_locked_until")[:100]]
+        help_requests = [{
+            "id": str(item.id),
+            "name": f"{item.first_name} {item.last_name}".strip(),
+            "contact_kind": item.contact_kind,
+            "contact_value": item.contact_value,
+            "message": item.message[len(RECOVERY_HELP_MARK):].strip() if item.message.startswith(RECOVERY_HELP_MARK) else item.message,
+            "status": item.status,
+            "submitted_at": item.submitted_at.isoformat(),
+        } for item in ContactMessage.objects.filter(message__startswith=RECOVERY_HELP_MARK).order_by("-submitted_at")[:100]]
+        return Response({"success": True, "data": {
+            "generated_at": now.isoformat(),
+            "summary": {
+                "failed_24h": count("account.recovery_answer_failed"),
+                "blocked_24h": count("account.recovery_attempt_blocked"),
+                "locked_now": len(locked),
+                "verified_24h": count("account.recovery_answer_verified"),
+                "resets_24h": count("account.password_reset_by_recovery"),
+                "help_open": ContactMessage.objects.filter(message__startswith=RECOVERY_HELP_MARK).exclude(status="resolved").count(),
+            },
+            "events": events,
+            "locked_accounts": locked,
+            "help_requests": help_requests,
+        }})
+
+
+class AdminContactMessageStatusView(APIView):
+    permission_classes = [IsSuperuserOnly]
+
+    def patch(self, request, message_id):
+        new_status = request.data.get("status")
+        if not isinstance(new_status, str) or new_status not in {"new", "in_progress", "resolved"}:
+            return Response({"success": False, "message": "Statut invalide."}, status=400)
+        message = get_object_or_404(ContactMessage, pk=message_id)
+        message.status = new_status
+        message.save(update_fields=("status", "updated_at"))
+        return Response({"success": True, "data": {"id": str(message.id), "status": message.status}})

@@ -30,8 +30,11 @@ def make_account(email="awa@example.test", *, question=QUESTION, answer=ANSWER, 
     return user
 
 
+@override_settings(CACHES=REAL_CACHE)
 class RecoveryFlowTests(TestCase):
     def setUp(self):
+        # Vrai cache : le compteur d'essais d'une adresse sans compte vit en cache (voir recovery.attempt_status).
+        cache.clear()
         self.client = APIClient()
 
     def reset(self, email="awa@example.test", answer=ANSWER, password=NEW_PASSWORD):
@@ -202,3 +205,65 @@ class RecoveryThrottleTests(TestCase):
         statuses = [self.client.post(QUESTION_URL, {"email": f"u{i}@example.test"}, format="json").status_code for i in range(14)]
         self.assertEqual(statuses[0], 200)
         self.assertEqual(statuses[-1], 429)
+
+
+@override_settings(CACHES=REAL_CACHE)
+class RecoveryClarityAndAuditTests(TestCase):
+    """Messages clairs (essais restants, blocage) identiques pour tous, et traces d'audit lisibles par l'administration."""
+
+    def setUp(self):
+        cache.clear()
+        self.client = APIClient()
+
+    def answer(self, email, answer="Mauvaise réponse"):
+        return self.client.post(ANSWER_URL, {"email": email, "answer": answer}, format="json")
+
+    def test_wrong_answers_count_down_then_lock_with_the_same_shape_for_a_real_and_an_unknown_address(self):
+        make_account()
+        for position, remaining in enumerate((4, 3, 2, 1), start=1):
+            real = self.answer("awa@example.test")
+            fake = self.answer("personne@example.test")
+            self.assertEqual((real.status_code, fake.status_code), (400, 400), position)
+            self.assertEqual(real.data["message"], GENERIC_FAILURE)
+            self.assertEqual(real.data["code"], "wrong_answer")
+            self.assertEqual(real.data["attempts_remaining"], remaining)
+            self.assertEqual(dict(real.data), dict(fake.data), "un compte réel et une adresse inconnue répondent pareil")
+        real, fake = self.answer("awa@example.test"), self.answer("personne@example.test")
+        for response in (real, fake):
+            self.assertEqual(response.data["code"], "recovery_locked")
+            self.assertEqual(response.data["attempts_remaining"], 0)
+            self.assertIsNotNone(response.data["locked_until"])
+            self.assertTrue(14 * 60 <= response.data["retry_after"] <= 15 * 60)
+        self.assertEqual(set(real.data), set(fake.data))
+
+    def test_a_blocked_attempt_is_reported_as_blocked_even_with_the_right_answer(self):
+        user = make_account()
+        for _ in range(5):
+            self.answer(user.email)
+        blocked = self.answer(user.email, ANSWER)
+        self.assertEqual(blocked.status_code, 400)
+        self.assertEqual(blocked.data["code"], "recovery_locked")
+        self.assertEqual(blocked.data["message"], GENERIC_FAILURE)
+
+    def test_every_attempt_on_a_real_account_leaves_an_audit_event_without_the_answer(self):
+        user = make_account()
+        self.answer(user.email, "Collège Saint-Joseph")
+        self.answer(user.email, ANSWER)
+        types = list(AuditEvent.objects.filter(actor=user).order_by("created_at").values_list("event_type", flat=True))
+        self.assertEqual(types, ["account.recovery_answer_failed", "account.recovery_answer_verified"])
+        failed = AuditEvent.objects.get(event_type="account.recovery_answer_failed")
+        self.assertEqual(failed.metadata, {"action": "failed", "status": "wrong", "extension_count": 1})
+        self.assertNotIn("Saint-Joseph", str(AuditEvent.objects.filter(actor=user).values_list("metadata", flat=True)))
+
+    def test_attempts_during_a_lock_are_traced_as_blocked(self):
+        user = make_account()
+        for _ in range(5):
+            self.answer(user.email)
+        self.answer(user.email)
+        self.assertTrue(AuditEvent.objects.filter(event_type="account.recovery_locked", actor=user).exists())
+        self.assertEqual(AuditEvent.objects.filter(event_type="account.recovery_answer_failed", actor=user).count(), 5)
+        self.assertEqual(AuditEvent.objects.filter(event_type="account.recovery_attempt_blocked", actor=user).count(), 1)
+
+    def test_an_unknown_address_leaves_no_audit_event(self):
+        self.answer("personne@example.test")
+        self.assertFalse(AuditEvent.objects.filter(event_type__startswith="account.recovery").exists())

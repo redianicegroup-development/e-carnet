@@ -2,9 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { createPortal } from "react-dom";
 import { ApiError, apiPost } from "../../infrastructure/api/client";
 import { Icon } from "../ui/Icon";
 import { RecoveryRequestForm } from "./RecoveryRequestForm";
+import { RecoveryNoticeDialog } from "./RecoveryNoticeDialog";
+import { acceptedNotice, lockedInline, noticeForFailure, type RecoveryFailure, type RecoveryNotice } from "./recoveryNotice";
 
 /* « Récupérer mon compte » : deux étapes, même cadre que la connexion (classes ax-*).
    1. l'adresse du compte → sa question secrète ; 2. la réponse + un nouveau mot de passe.
@@ -30,10 +33,38 @@ export function RecoveryFlow() {
   const [showAnswer, setShowAnswer] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [notice, setNotice] = useState<RecoveryNotice | null>(null);
+  const [locked, setLocked] = useState(false);
+  const lockTimer = useRef<number | undefined>(undefined);
   const heading = useRef<HTMLHeadingElement>(null);
   const firstRender = useRef(true);
   // Le focus passe au titre à chaque changement d'étape (lecteurs d'écran), mais pas au premier affichage de la page.
   useEffect(() => { if (firstRender.current) { firstRender.current = false; return; } heading.current?.focus(); }, [step]);
+  useEffect(() => () => window.clearTimeout(lockTimer.current), []);
+
+  /** Échec de réponse : modal claire (essais restants, blocage, trop de tentatives). Faux si l'erreur est autre (réseau, validation…). */
+  function explain(error: unknown): boolean {
+    const found = error instanceof ApiError ? noticeForFailure(error.status, error.details) : null;
+    if (!found) return false;
+    setNotice(found);
+    const failure = error instanceof ApiError ? (error.details as RecoveryFailure) : {};
+    if (failure.code === "recovery_locked") {
+      setLocked(true);
+      setMessage(lockedInline(failure));
+      window.clearTimeout(lockTimer.current);
+      lockTimer.current = window.setTimeout(() => { setLocked(false); setMessage(""); }, Math.min((failure.retry_after ?? 900) * 1000 + 500, 2_000_000_000));
+    } else setMessage("");
+    return true;
+  }
+
+  function act(action: "retry" | "help" | "password" | "close") {
+    setNotice(null);
+    if (action === "password") { setStep("password"); setMessage(""); }
+    else if (action === "help") { setStep("help"); setMessage(""); }
+    else if (action === "retry") { setAnswer(""); setMessage(""); if (step === "password") setStep("answer"); }
+  }
+  // Fermer la modal de « réponse acceptée » (Échap, clic à côté) mène quand même au nouveau mot de passe : la réponse est déjà validée.
+  function dismissNotice() { act(notice?.primary === "password" ? "password" : "close"); }
 
   async function askQuestion(event: FormEvent) {
     event.preventDefault();
@@ -56,8 +87,8 @@ export function RecoveryFlow() {
     setBusy(true); setMessage("");
     try {
       await apiPost("/api/v1/identity/recovery/answer/", { email: email.trim(), answer });
-      setStep("password");
-    } catch (error) { setMessage(messageFrom(error, "La réponse n’a pas pu être vérifiée. Réessayez.")); }
+      setNotice(acceptedNotice());
+    } catch (error) { if (!explain(error)) setMessage(messageFrom(error, "La réponse n’a pas pu être vérifiée. Réessayez.")); }
     finally { setBusy(false); }
   }
   async function resetPassword(event: FormEvent) {
@@ -71,7 +102,7 @@ export function RecoveryFlow() {
       await apiPost("/api/v1/identity/recovery/reset/", { email: email.trim(), answer, new_password: password });
       setAnswer(""); setPassword(""); setConfirm("");
       setStep("done");
-    } catch (error) { setMessage(messageFrom(error, "Le mot de passe n’a pas pu être changé. Réessayez dans un instant.")); }
+    } catch (error) { if (!explain(error)) setMessage(messageFrom(error, "Le mot de passe n’a pas pu être changé. Réessayez dans un instant.")); }
     finally { setBusy(false); }
   }
 
@@ -103,8 +134,9 @@ export function RecoveryFlow() {
       <h2 className="ax-title" tabIndex={-1} ref={heading}>Vérifier votre réponse</h2>
       <p className="ax-question" data-ax-item><span>Votre question secrète</span><strong>{question}</strong></p>
       <label className="ax-field" data-ax-item><span>Votre réponse</span><span className="ax-password"><input required type={showAnswer ? "text" : "password"} autoComplete="off" autoCapitalize="off" spellCheck={false} value={answer} onChange={(event) => { setAnswer(event.target.value); setMessage(""); }} /><button type="button" className="ax-eye" aria-label={showAnswer ? "Masquer la réponse secrète" : "Afficher la réponse secrète"} aria-pressed={showAnswer} onClick={() => setShowAnswer((visible) => !visible)}><Icon name={showAnswer ? "eyeOff" : "eye"} className="ax-eye__icon" /></button></span></label>
-      <button className={`button primary ax-submit${busy ? " is-loading" : ""}`} type="submit" disabled={busy} data-ax-item><span className="ax-submit__label">{busy ? "Vérification…" : "Valider ma réponse"}</span><svg className="ax-submit__arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6" /></svg></button>
+      <button className={`button primary ax-submit${busy ? " is-loading" : ""}`} type="submit" disabled={busy || locked} data-ax-item><span className="ax-submit__label">{busy ? "Vérification…" : "Valider ma réponse"}</span><svg className="ax-submit__arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6" /></svg></button>
       <p className="ax-message" role="status" aria-live="polite" hidden={!message}>{message}</p>
+      <p className="ax-note" data-ax-item>5 essais maximum : après cinq réponses incorrectes, la récupération se bloque 15 minutes.</p>
       <button type="button" className="ax-linkbutton" onClick={() => { setStep("help"); setMessage(""); }}>Je ne me souviens plus de ma réponse</button>
     </form> : <form className="ax-form" onSubmit={resetPassword} aria-busy={busy} noValidate>
       <div className="ax-form__top">{back}</div>
@@ -117,5 +149,6 @@ export function RecoveryFlow() {
       <p className="ax-message" role="status" aria-live="polite" hidden={!message}>{message}</p>
       <p className="ax-note" data-ax-item>Après plusieurs réponses fausses, la récupération se bloque temporairement.</p>
     </form>}
+    {notice && createPortal(<RecoveryNoticeDialog notice={notice} onAction={act} onDismiss={dismissNotice} />, document.body)}
   </div>;
 }

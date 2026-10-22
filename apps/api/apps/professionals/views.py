@@ -1,11 +1,12 @@
 from django.db import transaction
+from django.http import HttpResponse
 from rest_framework import status
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.cloudinary_storage import CLOUDINARY_CONFIGURED, destroy as cloudinary_destroy, upload as cloudinary_upload
+from apps.cloudinary_storage import CLOUDINARY_CONFIGURED, destroy as cloudinary_destroy, signed_download as cloudinary_download, upload as cloudinary_upload
 from apps.identity.models import AccountContext
 from .models import ProfessionalProfile, ProfessionalSpecialty
 from .serializers import ProfessionalCredentialsSerializer, ProfessionalOnboardingSerializer, ProfessionalProfileSerializer
@@ -73,6 +74,67 @@ class ProfessionalCredentialsView(APIView):
             except Exception:
                 # Ne jamais exposer un identifiant Cloudinary ni faire échouer la mise à jour déjà enregistrée.
                 pass
+        return Response({"success": True, "data": {
+            "professional_identifier": profile.professional_identifier,
+            "stamp_uploaded": bool(profile.stamp_cloudinary_public_id),
+            "signature_uploaded": bool(profile.signature_cloudinary_public_id),
+        }})
+
+
+CREDENTIAL_ASSET_FIELDS = {
+    "stamp": ("stamp_cloudinary_public_id", "stamp_cloudinary_resource_type", "stamp_cloudinary_version"),
+    "signature": ("signature_cloudinary_public_id", "signature_cloudinary_resource_type", "signature_cloudinary_version"),
+}
+
+
+class ProfessionalCredentialAssetView(APIView):
+    """Aperçu et retrait du cachet ou de la signature DU professionnel connecté (jamais ceux d'un autre).
+
+    Les fichiers sont privés chez Cloudinary : l'aperçu passe par le serveur, qui ne sert l'image qu'à son propriétaire."""
+    permission_classes = [IsAuthenticated]
+
+    def _context(self, request, kind):
+        profile = getattr(request.user, "professional_profile", None)
+        if kind not in CREDENTIAL_ASSET_FIELDS:
+            return None, None, Response({"success": False, "message": "Élément inconnu."}, status=404)
+        if not profile:
+            return None, None, Response({"success": False, "message": "Le profil professionnel n’est pas encore créé."}, status=404)
+        return profile, CREDENTIAL_ASSET_FIELDS[kind], None
+
+    def get(self, request, kind):
+        profile, fields, error = self._context(request, kind)
+        if error:
+            return error
+        public_id = getattr(profile, fields[0])
+        if not public_id:
+            return Response({"success": False, "message": "Aucun fichier déposé."}, status=404)
+        if not CLOUDINARY_CONFIGURED:
+            return Response({"success": False, "message": "Le stockage sécurisé des cachets et signatures n’est pas configuré."}, status=503)
+        try:
+            content = cloudinary_download(public_id, resource_type=getattr(profile, fields[1]) or "image", extension="png")
+        except Exception:
+            return Response({"success": False, "message": "L’aperçu est momentanément indisponible."}, status=502)
+        response = HttpResponse(content, content_type="image/png")
+        response["Cache-Control"] = "private, no-store"
+        response["X-Content-Type-Options"] = "nosniff"
+        return response
+
+    def delete(self, request, kind):
+        profile, fields, error = self._context(request, kind)
+        if error:
+            return error
+        public_id, resource_type, _version = (getattr(profile, name) for name in fields)
+        if public_id:
+            setattr(profile, fields[0], "")
+            setattr(profile, fields[1], "image")
+            setattr(profile, fields[2], None)
+            profile.save(update_fields=(*fields, "updated_at"))
+            if CLOUDINARY_CONFIGURED:
+                try:
+                    cloudinary_destroy(public_id, resource_type=resource_type or "image")
+                except Exception:
+                    # Le retrait est déjà enregistré : un échec de nettoyage ne doit ni se voir ni être exposé.
+                    pass
         return Response({"success": True, "data": {
             "professional_identifier": profile.professional_identifier,
             "stamp_uploaded": bool(profile.stamp_cloudinary_public_id),

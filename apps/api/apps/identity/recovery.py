@@ -12,17 +12,22 @@ Une question secrète est un secret faible (réponses devinables, parfois publiq
 - la limitation de débit par IP et par adresse (voir RecoveryEmailThrottle) ;
 - l'exclusion des comptes d'administration (staff, superuser) : on ne prend pas la main sur un compte d'équipe avec une question ;
 - l'invalidation des autres sessions (changer le mot de passe change le hachage d'authentification de session de Django) ;
-- l'alerte : un événement d'audit et un e-mail au titulaire à chaque réinitialisation réussie (jamais le mot de passe).
+- l'alerte : un événement d'audit et un e-mail au titulaire à chaque réinitialisation réussie (jamais le mot de passe) ;
+- la traçabilité : chaque tentative sur un VRAI compte laisse un événement d'audit (réponse fausse, tentative bloquée, réponse acceptée,
+  verrouillage, réinitialisation), lisible dans la console d'administration. Jamais la réponse, jamais le mot de passe ;
+- l'information du titulaire SANS fuite : `attempt_status` renvoie « essais restants » et « bloqué jusqu'à » avec la même forme et les
+  mêmes valeurs qu'il y ait un compte ou non (pour une adresse sans compte, un compteur en cache joue le rôle du compteur du compte).
 """
 import hashlib
 import hmac
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone as dt_timezone
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import check_password, make_password
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.core.cache import cache
 from django.core.mail import send_mail
 from django.db import transaction
 from django.utils import timezone
@@ -77,6 +82,62 @@ def question_for(email: str) -> str:
     return profile.recovery_question if profile else decoy_question(email)
 
 
+TRACK_TTL = 25 * 3600  # un peu plus que le verrou maximal (24 h)
+
+
+def _tracker_key(email: str) -> str:
+    digest = hmac.new(settings.SECRET_KEY.encode(), f"recovery-track:{email.strip().lower()}".encode(), hashlib.sha256).hexdigest()
+    return f"recovery-track:{digest[:40]}"
+
+
+def _tracker(email: str) -> dict:
+    return cache.get(_tracker_key(email)) or {"f": 0, "u": 0}
+
+
+def register_decoy_failure(email: str) -> None:
+    """Adresse sans compte récupérable : même compteur, mêmes paliers de blocage qu'un vrai compte, gardés en cache.
+
+    Ainsi `attempt_status` répond pareil dans les deux cas et l'écran peut dire « il vous reste 3 essais » sans rien révéler."""
+    state = _tracker(email)
+    now = timezone.now().timestamp()
+    if state["u"] > now:
+        return  # bloqué : les essais ne comptent plus, comme sur un vrai compte
+    state["f"] = min(int(state["f"]) + 1, 30000)
+    if state["f"] % FAILURES_PER_LOCK == 0:
+        state["u"] = now + _lock_duration(state["f"]).total_seconds()
+    cache.set(_tracker_key(email), state, TRACK_TTL)
+
+
+def attempt_status(email: str) -> dict:
+    """Ce que l'écran peut afficher après un essai : essais restants avant blocage, fin du blocage. Même forme pour tous."""
+    now = timezone.now()
+    _, profile = _account_for(email)
+    if profile:
+        failures = profile.recovery_failures or 0
+        until = profile.recovery_locked_until if profile.recovery_locked_until and profile.recovery_locked_until > now else None
+    else:
+        state = _tracker(email)
+        failures = int(state["f"])
+        until = datetime.fromtimestamp(state["u"], tz=dt_timezone.utc) if state["u"] > now.timestamp() else None
+    if until:
+        return {"code": "recovery_locked", "attempts_remaining": 0, "locked_until": until.isoformat(), "retry_after": max(1, int((until - now).total_seconds()))}
+    return {"code": "wrong_answer", "attempts_remaining": FAILURES_PER_LOCK - (failures % FAILURES_PER_LOCK), "locked_until": None, "retry_after": 0}
+
+
+def clear_decoy_failures(email: str) -> None:
+    cache.delete(_tracker_key(email))
+
+
+def _audit(user, event_type: str, **metadata) -> None:
+    """Trace un événement de récupération sur un vrai compte. Au mieux : l'audit ne doit jamais faire échouer la récupération."""
+    if not user:
+        return
+    try:
+        record_event(event_type=event_type, actor=user, actor_role="account", metadata=metadata)
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def verify_recovery_proof(profile, answer: str) -> bool:
     """Point d'extension : la preuve de possession accepte aujourd'hui la seule réponse secrète ; l'OTP s'y ajoutera (et sera exigé)."""
     hashed = profile.recovery_answer_hash if profile else _DUMMY_HASH
@@ -93,15 +154,23 @@ def verify_recovery_answer(*, email: str, answer: str) -> bool:
     now = timezone.now()
     locked = bool(profile and profile.recovery_locked_until and profile.recovery_locked_until > now)
     proven = verify_recovery_proof(None if locked else profile, answer)
-    if not proven and profile and not locked:
+    if proven:
+        _audit(user, "account.recovery_answer_verified", action="verified", status="accepted")
+    elif not profile:
+        register_decoy_failure(email)
+    elif locked:
+        _audit(user, "account.recovery_attempt_blocked", action="blocked", status="locked")
+    else:
         profile.recovery_failures = min((profile.recovery_failures or 0) + 1, 30000)
         update = ["recovery_failures", "updated_at"]
+        _audit(user, "account.recovery_answer_failed", action="failed", status="wrong", extension_count=profile.recovery_failures)
         if profile.recovery_failures % FAILURES_PER_LOCK == 0:
             profile.recovery_locked_until = now + _lock_duration(profile.recovery_failures)
             update.append("recovery_locked_until")
             record_event(event_type="account.recovery_locked", actor=user, actor_role="account", metadata={"action": "locked", "extension_count": profile.recovery_failures})
         profile.save(update_fields=update)
     return proven
+
 
 def _lock_duration(failures: int) -> timedelta:
     # L'exposant est plafonné avant le calcul : 15 min × 2^7 dépasse déjà les 24 h, et un exposant non borné finirait par faire déborder timedelta.
@@ -128,10 +197,15 @@ def reset_password_with_answer(*, email: str, answer: str, new_password: str) ->
     # Un compte verrouillé dépense quand même le calcul de hachage, avec une réponse qui ne peut pas réussir.
     proven = verify_recovery_proof(None if locked else profile, answer)
     if not proven:
-        if profile and not locked:
+        if not profile:
+            register_decoy_failure(email)
+        elif locked:
+            _audit(user, "account.recovery_attempt_blocked", action="blocked", status="locked")
+        else:
             # Plafonné (multiple de 5) : le champ est un entier court, et au-delà le verrou est de toute façon à son maximum de 24 h.
             profile.recovery_failures = min((profile.recovery_failures or 0) + 1, 30000)
             update = ["recovery_failures", "updated_at"]
+            _audit(user, "account.recovery_answer_failed", action="failed", status="wrong", extension_count=profile.recovery_failures)
             if profile.recovery_failures % FAILURES_PER_LOCK == 0:
                 profile.recovery_locked_until = now + _lock_duration(profile.recovery_failures)
                 update.append("recovery_locked_until")

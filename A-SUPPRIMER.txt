@@ -1,3 +1,0 @@
-Fichiers à supprimer du dépôt (un ZIP ne peut pas supprimer) :
-apps/web/src/app/faq/page.tsx   (et le dossier apps/web/src/app/faq/)
-apps/web/src/app/carnet-skin.css

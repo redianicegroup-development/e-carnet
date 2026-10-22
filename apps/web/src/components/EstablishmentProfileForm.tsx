@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { apiGet } from "../infrastructure/api/client";
+import { googleLinkUrl, shouldAutoLinkGoogle, type LinkableAccount } from "../lib/google-link";
 import { BrandMark } from "./ui/BrandMark";
 import { EstablishmentProfileEditor } from "./EstablishmentProfileEditor";
 
@@ -33,8 +34,16 @@ export function EstablishmentProfileForm() {
             if (completeBefore || !saved.profile_complete) return;
             setMessage("Fiche enregistrée. Dernière étape : sécuriser votre compte…");
             // Même enchaînement que les autres rôles : la récupération du compte vient après l'onboarding, sauf si elle existe déjà.
-            const account = await apiGet<{ recovery_configured?: boolean }>("/api/v1/identity/me/").catch(() => null);
-            router.push(account && !account.recovery_configured ? "/onboarding/securite" : "/etablissement");
+            const account = await apiGet<LinkableAccount & { recovery_configured?: boolean }>("/api/v1/identity/me/").catch(() => null);
+            const after = account && !account.recovery_configured ? "/onboarding/securite" : "/etablissement";
+            // Fiche remplie et compte connecté : on lie le compte Google qui porte la même adresse (le serveur vérifie qu'elle est identique).
+            const providers = await apiGet<{ google?: boolean }>("/api/v1/identity/oauth/providers/").catch(() => null);
+            if (shouldAutoLinkGoogle(account, Boolean(providers?.google))) {
+              setMessage("Fiche enregistrée. Liaison de votre adresse Gmail avec Google…");
+              window.location.assign(googleLinkUrl(after));
+              return;
+            }
+            router.push(after);
           }}
           footer={wasComplete ? <Link className="button" href="/etablissement/parametres">Retour aux paramètres</Link> : null}
         />
