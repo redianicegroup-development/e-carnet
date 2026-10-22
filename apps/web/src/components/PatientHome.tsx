@@ -1,56 +1,77 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { apiGet } from "../infrastructure/api/client";
 import { AvatarBadge, displayName, useSpaceAccount } from "./shell/SpaceShell";
 import { Icon, type IconName } from "./ui/Icon";
-import { PatientDashboardChart } from "./RoleDashboards";
 import { PatientHomeIdentity } from "./PatientHomeIdentity";
+import { SetupCard, type SetupStep } from "./SetupCard";
 
-type Summary = { declarations: number; drafts: number; closed: number; consultations: number; pending: number; active: number; documents: number; vaccinations: number; appointments: number; unread: number };
+/* Accueil patient : peu de blocs, dans l'ordre où on en a besoin.
+   1. dire bonjour · 2. « Mise en route » (tant que le carnet essentiel n'est pas commencé, puis elle disparaît) ·
+   3. ce qui attend une réponse (un seul bloc « À faire ») · 4. préparer la prochaine consultation ·
+   5. mon dossier patient et ma carte virtuelle · 6. trois raccourcis.
+   Les compteurs et le graphique d'avant doublonnaient les onglets : ils n'aident pas à agir. */
+
+/** Chaque information est indépendante : `null` = n'a pas pu être chargée (on n'invente pas un zéro). */
+type Summary = { declarations: number | null; documents: number | null; vaccinations: number | null; pending: number; unread: number; partial: boolean };
 
 async function loadSummary(): Promise<Summary> {
-  const [declarations, encounters, consultations, grants, documents, vaccinations, appointments, notifications] = await Promise.all([
+  const results = await Promise.allSettled([
     apiGet<unknown[]>("/api/v1/patient/declarations/"),
-    apiGet<{ status: string }[]>("/api/v1/patient/care/encounters/"),
-    apiGet<unknown[]>("/api/v1/patient/care/consultations/"),
     apiGet<{ status: string }[]>("/api/v1/patient/care/access-grants/"),
     apiGet<unknown[]>("/api/v1/patient/care/documents/"),
     apiGet<unknown[]>("/api/v1/patient/care/vaccinations/"),
-    apiGet<unknown[]>("/api/v1/patient/care/appointments/"),
     apiGet<{ read_at?: string | null }[]>("/api/v1/patient/care/notifications/"),
   ]);
+  const [declarations, grants, documents, vaccinations, notifications] = results;
+  const failed = results.filter((item) => item.status === "rejected");
+  // Rien n'a répondu : on le dit franchement plutôt que d'afficher un accueil vide qui ressemble à un carnet vide.
+  if (failed.length === results.length) throw (failed[0] as PromiseRejectedResult).reason;
+  const count = (result: PromiseSettledResult<unknown[]>) => (result.status === "fulfilled" ? result.value.length : null);
   return {
-    declarations: declarations.length,
-    drafts: encounters.filter((item) => item.status === "draft").length,
-    closed: encounters.filter((item) => item.status === "closed").length,
-    consultations: consultations.length,
-    pending: grants.filter((item) => item.status === "pending").length,
-    active: grants.filter((item) => item.status === "active").length,
-    documents: documents.length,
-    vaccinations: vaccinations.length,
-    appointments: appointments.length,
-    unread: notifications.filter((item) => !item.read_at).length,
+    declarations: count(declarations),
+    documents: count(documents),
+    vaccinations: count(vaccinations),
+    pending: grants.status === "fulfilled" ? grants.value.filter((item) => item.status === "pending").length : 0,
+    unread: notifications.status === "fulfilled" ? notifications.value.filter((item) => !item.read_at).length : 0,
+    partial: failed.length > 0,
   };
 }
 
 const SHORTCUTS: { href: string; icon: IconName; title: string; text: string }[] = [
-  { href: "/patient/carnet", icon: "folder", title: "Mon carnet", text: "Allergies, antécédents, traitements déclarés" },
-  { href: "/patient/acces#qr", icon: "qr", title: "Mon QR d’accès", text: "Autoriser un professionnel en consultation" },
-  { href: "/patient/consultations", icon: "stethoscope", title: "Mon historique", text: "Pré-consultations et consultations validées" },
+  { href: "/patient/carnet", icon: "folder", title: "Mon carnet", text: "Allergies, documents, vaccins, traitements" },
+  { href: "/patient/acces#qr", icon: "qr", title: "Accès temporaire pour un professionnel", text: "Un QR valable 5 minutes, à lui présenter en consultation" },
+  { href: "/patient/consultations", icon: "stethoscope", title: "Mes visites", text: "Pré-consultations et consultations validées" },
 ];
+
+type Todo = { key: string; href: string; icon: IconName; title: string; text: string; urgent?: boolean };
 
 export function PatientHome() {
   const account = useSpaceAccount();
   const [summary, setSummary] = useState<Summary | null>(null);
   const [error, setError] = useState("");
+  const [attempt, setAttempt] = useState(0);
+
+  const retry = useCallback(() => { setError(""); setSummary(null); setAttempt((value) => value + 1); }, []);
 
   useEffect(() => {
     let active = true;
     loadSummary().then((value) => { if (active) setSummary(value); }).catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Impossible de charger votre carnet."); });
     return () => { active = false; };
-  }, []);
+  }, [attempt]);
+
+  const todos: Todo[] = [];
+  if (summary && summary.pending > 0) todos.push({ key: "grants", href: "/patient/acces", icon: "share", urgent: true, title: `${summary.pending} demande${summary.pending > 1 ? "s" : ""} d’accès en attente`, text: "Un professionnel attend votre décision. Rien n’est partagé tant que vous n’avez pas accepté." });
+  if (account && !account.patient_profile.completed) todos.push({ key: "profile", href: "/onboarding/patient", icon: "user", title: "Terminer mon profil", text: "Téléphone, naissance, couverture : utile pour préparer vos consultations." });
+  if (summary && summary.unread > 0) todos.push({ key: "notifications", href: "/patient/parametres?section=notifications", icon: "bell", title: `${summary.unread} notification${summary.unread > 1 ? "s" : ""} à lire`, text: "Une action concernant votre carnet attend votre attention." });
+  // « Mise en route » : une rubrique inconnue (non chargée) n'est jamais comptée comme vide ; la carte n'apparaît que si une rubrique est vraiment vide.
+  const setupSteps: SetupStep[] = summary ? [
+    { key: "declarations", title: "Mes déclarations", text: "Allergies, antécédents, traitements.", done: summary.declarations !== 0, href: "/patient/carnet" },
+    { key: "documents", title: "Mes documents", text: "Ordonnances, résultats, comptes rendus.", done: summary.documents !== 0, href: "/patient/carnet" },
+    { key: "vaccinations", title: "Mes vaccins", text: "Vaccinations déjà reçues.", done: summary.vaccinations !== 0, href: "/patient/carnet" },
+  ] : [];
 
   return (
     <div className="stack-lg">
@@ -61,27 +82,22 @@ export function PatientHome() {
         </div>
       )}
 
-      {account && <PatientHomeIdentity account={account} />}
+      {error && <div className="card alert-card" role="alert"><p>{error}</p><div className="actions"><button className="button" type="button" onClick={retry}>Réessayer</button></div></div>}
 
-      {account && !account.patient_profile.completed && (
-        <section className="card alert-card">
-          <h2>Terminez votre profil</h2>
-          <p>Quelques informations (téléphone, naissance, couverture) rendent vos consultations plus simples à préparer.</p>
-          <div className="actions"><Link className="button" href="/onboarding/patient">Compléter mon profil</Link></div>
+      <SetupCard title="Construire mon carnet essentiel" text="Commencez par les informations utiles au quotidien. Vous pourrez modifier chaque élément plus tard." steps={setupSteps} />
+
+      {todos.length > 0 && (
+        <section className="stack" aria-labelledby="home-todo-title" aria-live="polite">
+          <h2 id="home-todo-title" className="home-todo-title">À faire</h2>
+          {todos.map((item) => (
+            <Link key={item.key} className={`list-row${item.urgent ? " list-row--urgent" : ""}`} href={item.href}>
+              <span className="setting-item__icon"><Icon name={item.icon} /></span>
+              <span className="list-row__body"><strong>{item.title}</strong><br /><span className="muted">{item.text}</span></span>
+              <Icon name="chevron" size={18} />
+            </Link>
+          ))}
         </section>
       )}
-
-      {summary && summary.pending > 0 && (
-        <section className="card alert-card" aria-live="polite">
-          <h2>{summary.pending} demande{summary.pending > 1 ? "s" : ""} d’accès en attente</h2>
-          <p>Un professionnel attend votre décision. Rien n’est partagé tant que vous n’avez pas accepté.</p>
-          <div className="actions"><Link className="button" href="/patient/acces">Examiner la demande</Link></div>
-        </section>
-      )}
-
-      {summary && summary.unread > 0 && <section className="card alert-card" aria-live="polite"><h2>{summary.unread} notification{summary.unread > 1 ? "s" : ""} à lire</h2><p>Une action concernant votre carnet attend votre attention.</p><div className="actions"><Link className="button" href="/patient/parametres?section=notifications">Voir mes notifications</Link></div></section>}
-
-      {summary && (summary.declarations === 0 || summary.documents === 0 || summary.vaccinations === 0) && <section className="card progress-card"><div className="section-heading"><div><span className="eyebrow">Mise en route</span><h2>Construire mon carnet essentiel</h2></div></div><p className="muted">Commencez par les informations utiles au quotidien. Vous pourrez modifier chaque élément plus tard.</p><div className="progress-card__line" role="progressbar" aria-valuemin={0} aria-valuemax={3} aria-valuenow={[summary.declarations > 0, summary.documents > 0, summary.vaccinations > 0].filter(Boolean).length}><span style={{ width: `${([summary.declarations > 0, summary.documents > 0, summary.vaccinations > 0].filter(Boolean).length / 3) * 100}%` }} /></div><div className="progress-card__meta"><span>{[summary.declarations > 0, summary.documents > 0, summary.vaccinations > 0].filter(Boolean).length}/3 rubriques commencées</span><Link className="text-link" href="/patient/carnet">Continuer</Link></div></section>}
 
       <section className="card cta-card">
         <span className="eyebrow">Avant votre rendez-vous</span>
@@ -90,18 +106,10 @@ export function PatientHome() {
         <div className="actions"><Link className="button primary" href="/patient/consultations#preparer"><Icon name="pencil" size={18} />Préparer ma consultation</Link></div>
       </section>
 
-      {error && <p className="notice" role="alert">{error}</p>}
-      {!summary && !error && <div className="skeleton" role="status"><span className="sr-only">Chargement de votre carnet…</span><i /></div>}
-      {summary && (
-        <section className="stat-grid" aria-label="Résumé de mon carnet">
-          <Link className="stat-card card-link" href="/patient/carnet"><span className="val">{summary.declarations}</span><span className="lbl">Déclaration{summary.declarations > 1 ? "s" : ""}</span></Link>
-          <Link className="stat-card card-link" href="/patient/consultations"><span className="val">{summary.drafts + summary.closed}</span><span className="lbl">Pré-consultation{summary.drafts + summary.closed > 1 ? "s" : ""}</span></Link>
-          <Link className="stat-card card-link" href="/patient/consultations"><span className="val">{summary.consultations}</span><span className="lbl">Consultation{summary.consultations > 1 ? "s" : ""}</span></Link>
-          <Link className="stat-card card-link" href="/patient/acces"><span className="val">{summary.active}</span><span className="lbl">Accès actif{summary.active > 1 ? "s" : ""}</span></Link>
-        </section>
-      )}
+      {account && <PatientHomeIdentity account={account} />}
 
-      {summary && <div className="role-dashboard-grid"><PatientDashboardChart metrics={[{ label: "Déclarations", value: summary.declarations }, { label: "Documents", value: summary.documents }, { label: "Vaccins", value: summary.vaccinations }, { label: "Visites", value: summary.consultations }]} /></div>}
+      {summary?.partial && <p className="notice" role="status">Certaines informations de cette page n’ont pas pu être chargées. <button className="text-link" type="button" onClick={retry}>Réessayer</button></p>}
+      {!summary && !error && <div className="skeleton" role="status"><span className="sr-only">Chargement de votre carnet…</span><i /></div>}
 
       <section className="stack" aria-label="Raccourcis">
         {SHORTCUTS.map((item) => (

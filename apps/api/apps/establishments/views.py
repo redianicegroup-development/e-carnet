@@ -27,6 +27,7 @@ from apps.cloudinary_storage import CLOUDINARY_CONFIGURED, upload as cloudinary_
 from apps.identity.models import AccountContext
 from apps.identity.temporary_password import disable_temporary_password, has_pending_temporary_password, issue_temporary_password, temporary_password_expired
 from .provisioning import AccountConflict, ProvisionedAccess, login_url, provision_administrator
+from .join_code_crypto import purge_dead_codes, seal_code, unseal_code
 from .models import PROFILE_FIELDS, Establishment, EstablishmentAdminInvitation, EstablishmentAdministrator, EstablishmentJoinCode, EstablishmentMembership, PrescriptionTemplate, generate_internal_code
 from .serializers import EstablishmentProfileSerializer, EstablishmentSerializer, MembershipSerializer, PrescriptionTemplateSerializer, logo_for
 
@@ -547,11 +548,61 @@ class EstablishmentJoinCodeCreateView(APIView):
         join_code = EstablishmentJoinCode.objects.create(
             establishment=admin.establishment,
             code_hash=EstablishmentJoinCode.digest(raw_code),
+            code_encrypted=seal_code(raw_code),
             expires_at=timezone.now() + timedelta(hours=48),
             created_by=request.user,
         )
         record_event(event_type="establishment.join_code.created", actor=request.user, actor_role="establishment_administrator", establishment=admin.establishment, metadata={"action": "created", "status": "active", "join_code_id": str(join_code.id)})
         return Response({"success": True, "data": {"code": raw_code, "expires_at": join_code.expires_at, "join_code_id": str(join_code.id)}}, status=201)
+
+
+def member_avatar_url(membership):
+    """Photo du médecin pour l'administrateur de sa structure : URL externe telle quelle, ou route dédiée si l'image est stockée en base."""
+    profile = getattr(membership.professional.user, "account_profile", None)
+    if not profile:
+        return ""
+    if profile.avatar_data:
+        return f"/api/v1/establishments/{membership.establishment_id}/memberships/{membership.id}/avatar/?v={int(profile.updated_at.timestamp())}"
+    return profile.avatar_url or ""
+
+
+class EstablishmentMemberAvatarView(APIView):
+    """Photo d'un médecin rattaché (ou ayant demandé son rattachement), servie à l'administrateur de la structure uniquement."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, establishment_id, membership_id):
+        admin = active_administrator(request.user, establishment_id)
+        if not admin:
+            raise Http404
+        membership = EstablishmentMembership.objects.filter(id=membership_id, establishment=admin.establishment, status__in=("pending", "active")).select_related("professional__user").first()
+        profile = getattr(membership.professional.user, "account_profile", None) if membership else None
+        if not profile or not profile.avatar_data:
+            raise Http404
+        try:
+            image = base64.b64decode(profile.avatar_data.split(",", 1)[1], validate=True)
+        except (IndexError, ValueError, binascii.Error):
+            raise Http404
+        response = HttpResponse(image, content_type="image/webp")
+        response["Cache-Control"] = "private, max-age=3600"
+        response["X-Content-Type-Options"] = "nosniff"
+        return response
+
+
+class EstablishmentActiveJoinCodesView(APIView):
+    """Codes médecin encore valables (non utilisés, non révoqués, non expirés), réaffichés à l'administrateur pendant leurs 48 h."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, establishment_id):
+        admin = active_administrator(request.user, establishment_id)
+        if not admin:
+            return Response({"success": False, "message": "Vous n’êtes pas administrateur de cet établissement actif."}, status=403)
+        codes = EstablishmentJoinCode.objects.filter(establishment=admin.establishment)
+        purge_dead_codes(codes)
+        usable = codes.filter(consumed_at__isnull=True, revoked_at__isnull=True, expires_at__gt=timezone.now()).exclude(code_encrypted="").order_by("-created_at")
+        data = [{"id": str(item.id), "code": unseal_code(item.code_encrypted), "expires_at": item.expires_at, "created_at": item.created_at} for item in usable]
+        response = Response({"success": True, "data": [item for item in data if item["code"]]})
+        response["Cache-Control"] = "no-store"
+        return response
 
 
 class EstablishmentMembershipListView(APIView):
@@ -566,6 +617,7 @@ class EstablishmentMembershipListView(APIView):
         for item, membership in zip(data, items):
             item["professional_name"] = f"{membership.professional.user.first_name} {membership.professional.user.last_name}".strip() or membership.professional.professional_title
             item["professional_email"] = membership.professional.user.email
+            item["professional_avatar_url"] = member_avatar_url(membership)
         return Response({"success": True, "data": data})
 
 
@@ -597,7 +649,8 @@ class EstablishmentJoinCodeRedeemView(APIView):
         membership.agreement_accepted_by = request.user
         membership.save(update_fields=("status", "requested_at", "reviewed_at", "left_at", "agreement_version", "agreement_accepted_at", "agreement_accepted_by"))
         join_code.consumed_at = timezone.now()
-        join_code.save(update_fields=("consumed_at",))
+        join_code.code_encrypted = ""
+        join_code.save(update_fields=("consumed_at", "code_encrypted"))
         record_event(event_type="establishment.join_code.consumed", actor=request.user, actor_role="professional", establishment=join_code.establishment, metadata={"action": "consumed", "status": "pending", "join_code_id": str(join_code.id), "membership_id": str(membership.id)})
         record_event(event_type="membership.requested", actor=request.user, actor_role="professional", establishment=join_code.establishment, metadata={"action": "requested", "status": "pending", "membership_id": str(membership.id), "agreement_version": membership.agreement_version, "agreement_accepted_at": membership.agreement_accepted_at.isoformat()})
         return Response({"success": True, "data": MembershipSerializer(membership).data}, status=201 if created else 200)

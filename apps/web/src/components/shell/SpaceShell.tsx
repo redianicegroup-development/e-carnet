@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { ApiError, apiGet, apiPost } from "../../infrastructure/api/client";
 import { isSessionMissing } from "../../lib/session";
-import { SPACES, type SpaceId } from "../../lib/spaces";
+import { SPACES, visibleTabsFor, type SpaceId } from "../../lib/spaces";
 import { useConfirm } from "../modal/ConfirmProvider";
 import { GreetingModal } from "../modal/GreetingModal";
 import { BrandMark } from "../ui/BrandMark";
@@ -76,6 +76,9 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [patientAccessQr, setPatientAccessQr] = useState<PatientAccessQr | null>(null);
   const [navCollapsed, setNavCollapsed] = useState(true);
+  // Médecin : les onglets cliniques n'apparaissent qu'avec un rattachement actif. `null` = pas encore su (même présentation que « pas rattaché »).
+  const [clinicalReady, setClinicalReady] = useState<boolean | null>(null);
+  const [clinicalTick, setClinicalTick] = useState(0);
   const [signingOut, setSigningOut] = useState(false);
   const [logoutMessage, setLogoutMessage] = useState("");
   function toggleNav() { setNavCollapsed((current) => !current); }
@@ -102,6 +105,21 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
     const timer = window.setTimeout(() => setPatientAccessQr(null), Math.max(0, patientAccessQr.expiresAt - Date.now()));
     return () => window.clearTimeout(timer);
   }, [space, patientAccessQr]);
+
+  useEffect(() => {
+    if (space !== "professional" || state.status !== "ready") return;
+    let active = true;
+    apiGet<{ clinical_access?: { allowed?: boolean } }>("/api/v1/professionals/me/")
+      .then((profile) => { if (active) setClinicalReady(profile.clinical_access?.allowed === true); })
+      .catch((error: unknown) => { if (active && error instanceof ApiError && error.status === 404) setClinicalReady(false); });
+    return () => { active = false; };
+  }, [space, state.status, pathname, clinicalTick]);
+
+  useEffect(() => {
+    const refresh = () => setClinicalTick((value) => value + 1);
+    window.addEventListener("ecarnet:professional-updated", refresh);
+    return () => window.removeEventListener("ecarnet:professional-updated", refresh);
+  }, []);
 
   useEffect(() => {
     const clearQrForProfileChange = () => setPatientAccessQr(null);
@@ -179,7 +197,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
   const moi = config.tabs[config.tabs.length - 1];
   const showAdminLink = space === "patient" && state.status === "ready" && state.account.is_admin === true;
 
-  const visibleTabs = config.tabs.filter((tab) => !(space === "patient" && tab.id === "moi"));
+  const visibleTabs = visibleTabsFor(space, clinicalReady === true);
   const items: SidebarItem[] = visibleTabs.map((tab) => ({ id: tab.id, label: tab.label, long: tab.long, icon: tab.icon, href: tab.href, active: tab.match(pathname), account: tab === moi }));
   const menu: SidebarMenuItem[] = [
     { id: "settings", label: "Profil et paramètres", icon: "sliders", href: moi.href },

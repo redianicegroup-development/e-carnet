@@ -73,7 +73,7 @@ test("la pré-consultation propose des constantes facultatives et des valeurs li
   const wizard = read("src/components/PatientPreconsultations.tsx");
   assert.match(wizard, /parseVitalsForm/);
   assert.match(wizard, /VITAL_FIELDS/);
-  assert.match(wizard, /Étape 3 sur 4/);
+  assert.match(wizard, /Quelles constantes ont été relevées/);
   assert.match(wizard, /Tension et glycémie/);
 });
 

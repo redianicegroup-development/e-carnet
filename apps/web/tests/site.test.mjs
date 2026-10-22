@@ -69,7 +69,8 @@ test("la sidebar patient expose uniquement Accueil, Mon carnet, Visites et Parta
   const patient = spaces.slice(spaces.indexOf("  patient:"), spaces.indexOf("  professional:"));
   const labels = [...patient.matchAll(/\{ id: "(?:home|carnet|consultations|acces|moi)", label: "([^"]+)"/g)].map((match) => match[1]);
   assert.deepEqual(labels, ["Accueil", "Mon carnet", "Visites", "Partage", "Moi"]);
-  assert.match(shell, /config\.tabs\.filter\(\(tab\) => !\(space === "patient" && tab\.id === "moi"\)\)/);
+  assert.match(shell, /visibleTabsFor\(space, clinicalReady === true\)/);
+  assert.match(spaces, /if \(space === "patient"\) return tabs\.filter\(\(tab\) => tab\.id !== "moi"\)/);
   assert.doesNotMatch(shell, /items\.splice\(items\.length - 1, 0, \{ id: "admin"/);
   assert.match(shell, /href: "https:\/\/e-carnetci\.vercel\.app\/admin\//, "l’accès admin autorisé reste disponible dans le menu du compte");
 });

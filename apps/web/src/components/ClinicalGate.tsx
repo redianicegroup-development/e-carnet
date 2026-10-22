@@ -5,7 +5,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { apiGet } from "../infrastructure/api/client";
 import { Icon } from "./ui/Icon";
 
-export type Membership = { id: string; establishment_id: string; establishment_name: string; city: string; status: "pending" | "active" | "refused" | "suspended" | "terminated"; requested_at: string; reviewed_at: string | null };
+export type Membership = { id: string; establishment_id: string; establishment_name: string; establishment_logo?: string; city: string; status: "pending" | "active" | "refused" | "suspended" | "terminated"; requested_at: string; reviewed_at: string | null };
 export type ProfessionalProfile = {
   id: string; professional_title: string; specialty: string;
   active_establishment: string | null; mfa_active: boolean;

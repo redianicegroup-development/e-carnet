@@ -25,7 +25,7 @@ export const SPACES: Record<SpaceId, { label: string; role: string; home: string
       { id: "home", label: "Accueil", long: "Accueil", href: "/professionnel", icon: "home", match: exact("/professionnel") },
       { id: "patients", label: "Patients", long: "Patients autorisés et demandes d’accès", href: "/professionnel/patients", icon: "search", match: section("/professionnel/patients") },
       { id: "consultations", label: "Suivi", long: "Consultations · ordonnances · plans de suivi", href: "/professionnel/consultations", icon: "stethoscope", match: section("/professionnel/consultations") },
-      { id: "acces", label: "Établissement", long: "Mon établissement et rattachement", href: "/professionnel/acces", icon: "building", match: section("/professionnel/acces", "/professionnel/etablissements") },
+      { id: "acces", label: "Rattachement", long: "Mon rattachement et mes établissements", href: "/professionnel/acces", icon: "building", match: section("/professionnel/acces", "/professionnel/etablissements") },
       { id: "moi", label: "Moi", long: "Mon profil et paramètres", href: "/professionnel/parametres", icon: "user", match: section("/professionnel/parametres") },
     ],
   },
@@ -39,3 +39,16 @@ export const SPACES: Record<SpaceId, { label: string; role: string; home: string
     ],
   },
 };
+
+/** Onglets d'un médecin dont le rattachement n'est pas encore validé : l'accueil et le rattachement, rien d'autre.
+    Le compte (profil, paramètres, déconnexion) reste dans le menu du compte. */
+export const PROFESSIONAL_SETUP_TABS = ["home", "acces"] as const;
+
+/** Onglets affichés. `clinicalReady` : le médecin a un rattachement actif (`clinical_access.allowed`) ; tant qu'il ne l'est pas — ou
+    qu'on ne le sait pas encore — il ne voit que l'accueil et le rattachement. Une fois le code validé par l'établissement, tous les onglets apparaissent. */
+export function visibleTabsFor(space: SpaceId, clinicalReady: boolean): Tab[] {
+  const tabs = SPACES[space].tabs;
+  if (space === "patient") return tabs.filter((tab) => tab.id !== "moi");
+  if (space === "professional" && !clinicalReady) return tabs.filter((tab) => (PROFESSIONAL_SETUP_TABS as readonly string[]).includes(tab.id));
+  return tabs;
+}

@@ -1,0 +1,9 @@
+.qr-scanner { display: grid; gap: 12px; }
+.qr-scanner__frame { position: relative; width: min(100%, 420px); aspect-ratio: 1; margin-inline: auto; overflow: hidden; border-radius: 20px; background: #111; }
+.qr-scanner__video { display: block; width: 100%; height: 100%; object-fit: cover; }
+.qr-scanner__target { position: absolute; inset: 14%; border: 3px solid rgba(255, 255, 255, .92); border-radius: 18px; box-shadow: 0 0 0 999px rgba(0, 0, 0, .28); pointer-events: none; }
+.qr-scanner__status { margin: 0; text-align: center; color: var(--text-muted); font-size: .92rem; }
+.qr-scanner__photo { position: relative; justify-self: center; overflow: hidden; cursor: pointer; }
+.qr-scanner__photo input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.qr-read { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; border: 1px solid var(--status-verified-fg, var(--primary)); border-radius: 14px; background: var(--status-verified-bg, var(--surface-tint)); }
+.qr-read strong { color: var(--status-verified-fg, var(--text)); }

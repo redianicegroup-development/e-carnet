@@ -6,7 +6,7 @@ import { apiGet, apiPatch } from "../infrastructure/api/client";
 
 type Profile = { specialty: string };
 
-export function ProfessionalOnboarding() {
+export function ProfessionalOnboarding({ returnTo }: { returnTo?: string }) {
   const router = useRouter();
   const [specialties, setSpecialties] = useState<string[] | null>(null);
   const [selectedSpecialty, setSelectedSpecialty] = useState("");
@@ -43,7 +43,7 @@ export function ProfessionalOnboarding() {
     try {
       await apiPatch("/api/v1/professionals/onboarding/", { specialty });
       setMessage("Spécialité déclarée. L’établissement vérifiera le professionnel en interne.");
-      router.push("/professionnel/onboarding/ordonnance");
+      router.push(returnTo ?? "/professionnel/onboarding/ordonnance");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Le profil n’a pas pu être enregistré.");
     } finally {

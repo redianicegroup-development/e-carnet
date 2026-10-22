@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test:e2e": "playwright test",
-    "test": "node --experimental-strip-types --no-warnings --test tests/auth.test.mjs tests/csrf.test.mjs tests/theme.test.mjs tests/greeting.test.mjs tests/legal.test.mjs tests/site.test.mjs tests/ux-flows.test.mjs tests/session.test.mjs tests/emergency-card.test.mjs tests/fusion-correctifs.test.mjs tests/contact.test.mjs tests/landing.test.mjs tests/consultation-visite.test.mjs tests/info-pages.test.mjs tests/boutons-gooey-aide.test.mjs tests/ink-capture-2026-10-21.test.mjs"
+    "test": "node --experimental-strip-types --no-warnings --test tests/auth.test.mjs tests/csrf.test.mjs tests/theme.test.mjs tests/greeting.test.mjs tests/legal.test.mjs tests/site.test.mjs tests/ux-flows.test.mjs tests/session.test.mjs tests/emergency-card.test.mjs tests/fusion-correctifs.test.mjs tests/contact.test.mjs tests/landing.test.mjs tests/consultation-visite.test.mjs tests/info-pages.test.mjs tests/boutons-gooey-aide.test.mjs tests/ink-capture-2026-10-21.test.mjs tests/espaces-2026-10-22.test.mjs"
   },
   "dependencies": {
     "@ecarnet/ui": "0.1.0",

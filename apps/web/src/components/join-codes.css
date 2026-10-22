@@ -1,0 +1,7 @@
+/* Codes médecin affichés 48 h et photos de l'équipe. */
+.join-codes__list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.join-codes__item { display: grid; gap: 6px; padding: 12px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
+.join-codes__item .code-box { margin: 0; overflow-wrap: anywhere; }
+.join-codes__meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; font-size: .85rem; }
+.team-member { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.team-member > div { min-width: 0; overflow-wrap: anywhere; }

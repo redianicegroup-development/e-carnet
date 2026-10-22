@@ -56,9 +56,8 @@ export function ProfessionalVaccinations() {
   const canReadDocuments = Boolean(selected?.scope.includes("documents"));
   const items = result?.grantId === grantId ? result.items : null;
 
-  return <section className="card" id="vaccinations" aria-labelledby="professional-vaccinations-title">
-    <span className="eyebrow">Vérification professionnelle</span>
-    <h2 id="professional-vaccinations-title">Vaccinations à confirmer</h2>
+  /* Rendu dans une rubrique pliable « Vaccinations à confirmer » (page Suivi) : le titre est celui du bouton de la rubrique. */
+  return <div className="stack" id="vaccinations">
     <p className="muted">Le patient peut déclarer une vaccination et joindre un justificatif. Confirmez uniquement après vérification du carnet ou de la pièce, dans le périmètre de son autorisation active.</p>
     {grants === null ? <p className="empty">Chargement des autorisations…</p> : grants.length === 0 ? <p className="empty">Aucun accès actif avec le périmètre déclarations.</p> : <label className="field"><span>Autorisation patient active</span><select value={grantId} onChange={(event) => { setError(""); setMessage(""); setGrantId(event.target.value); }}>{grants.map((grant) => <option key={grant.id} value={grant.id}>{grant.facility_label} · accès {grant.reference}</option>)}</select></label>}
     {error && <p className="status error" role="alert">{error}</p>}
@@ -75,5 +74,5 @@ export function ProfessionalVaccinations() {
         {item.status !== "confirmed" && <div className="actions"><button className="button small" type="button" disabled={busyId === item.id || Boolean(item.document_id && !canReadDocuments)} title={item.document_id && !canReadDocuments ? "Le patient doit aussi autoriser le périmètre documents pour que vous puissiez consulter la pièce." : undefined} onClick={() => confirm(item)}>{busyId === item.id ? "Confirmation…" : "Confirmer après vérification"}</button></div>}
       </div><span className={`badge ${item.status === "confirmed" ? "verified" : item.status === "documented" ? "pending" : "declared"}`}>{item.status_label}</span>
     </article>)}</div>}
-  </section>;
+  </div>;
 }

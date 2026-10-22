@@ -6,6 +6,9 @@ import { apiPost } from "../infrastructure/api/client";
 import { useProfessionalProfile, type Membership } from "./ClinicalGate";
 import { useConfirm } from "./modal/ConfirmProvider";
 import { PageHeader } from "./ui/PageHeader";
+import { CollapsibleSection } from "./ui/CollapsibleSection";
+import { EstablishmentLogo } from "./EstablishmentLogo";
+import "./establishment-logo.css";
 
 const STATUS: Record<Membership["status"], { label: string; css: string }> = {
   pending: { label: "En attente de l’établissement", css: "pending" },
@@ -31,19 +34,12 @@ export function ProfessionalAccess() {
   async function run(action: () => Promise<unknown>, done: string) {
     setBusy(true);
     setMessage("");
-    try { await action(); setMessage(done); reload(); } catch (error) { setMessage(error instanceof Error ? error.message : "Action impossible."); } finally { setBusy(false); }
+    try { await action(); setMessage(done); reload(); window.dispatchEvent(new Event("ecarnet:professional-updated")); } catch (error) { setMessage(error instanceof Error ? error.message : "Action impossible."); } finally { setBusy(false); }
   }
 
   return (
     <div className="stack-lg">
       <PageHeader eyebrow="Établissement" title="Mon rattachement" lead="L’établissement vérifie le médecin et ses justificatifs en interne. Mon E‑Carnet ne collecte pas ces pièces : l’application enregistre la décision de rattachement prise par l’établissement." />
-
-      <section className="card" aria-labelledby="profile-title">
-        <span className="eyebrow">Profil déclaratif</span>
-        <h2 id="profile-title">{profile.professional_title} · {profile.specialty || "Spécialité à renseigner"}</h2>
-        <p className="muted">Cette spécialité est déclarée par vous et n’est pas certifiée par Mon E‑Carnet. La vérification professionnelle relève de l’établissement.</p>
-        <Link className="text-link" href="/professionnel/onboarding">Modifier mon profil →</Link>
-      </section>
 
       <section className="card" aria-labelledby="code-title">
         <span className="eyebrow">Rattachement</span>
@@ -57,24 +53,25 @@ export function ProfessionalAccess() {
         <p className="status" role="status" aria-live="polite">{message}</p>
       </section>
 
-      <section className="card" aria-labelledby="memberships-title">
-        <span className="eyebrow">Mes établissements</span>
-        <h2 id="memberships-title">Rattachements</h2>
-        {profile.memberships.length === 0 ? <p className="empty">Aucun rattachement pour le moment.</p> : (
+      <CollapsibleSection title="Mes rattachements" initiallyOpen>
+        {profile.memberships.length === 0 ? <p className="empty">Aucun rattachement pour le moment. Saisissez le code remis par votre établissement.</p> : (
           <div className="stack">
             {profile.memberships.map((membership) => {
               const isActive = membership.establishment_id === profile.active_establishment;
               return (
-                <article className="record" key={membership.id}>
-                  <div>
-                    <strong>{membership.establishment_name}</strong>
-                    <p className="muted">{membership.city}</p>
-                    <div className="actions">
-                      {membership.status === "active" && !isActive && <button type="button" className="button small" disabled={busy} onClick={() => void run(() => apiPost("/api/v1/establishments/active/", { establishment_id: membership.establishment_id }), "Établissement actif mis à jour.")}>Choisir comme actif</button>}
-                      {membership.status === "active" && <button type="button" className="button small danger" disabled={busy} onClick={() => { void confirm({ title: "Mettre fin à ce rattachement ?", message: "Vos accès cliniques futurs à cet établissement seront bloqués.", note: "Les consultations et l’historique existants ne sont pas supprimés.", confirmLabel: "Mettre fin au rattachement", cancelLabel: "Garder le rattachement", tone: "danger", mood: "farewell" }).then((ok) => { if (ok) void run(() => apiPost(`/api/v1/establishments/${membership.establishment_id}/memberships/leave/`, {}), "Rattachement terminé. L’historique et les dossiers existants restent conservés."); }); }}>Mettre fin à mon rattachement</button>}
+                <article className="record membership-row" key={membership.id}>
+                  <div className="membership-row__who">
+                    <EstablishmentLogo logo={membership.establishment_logo} name={membership.establishment_name} />
+                    <div>
+                      <strong>{membership.establishment_name}</strong>
+                      <p className="muted">{membership.city}</p>
+                      <div className="actions">
+                        {membership.status === "active" && !isActive && <button type="button" className="button small" disabled={busy} onClick={() => void run(() => apiPost("/api/v1/establishments/active/", { establishment_id: membership.establishment_id }), "Établissement actif mis à jour.")}>Choisir comme actif</button>}
+                        {membership.status === "active" && <button type="button" className="button small danger" disabled={busy} onClick={() => { void confirm({ title: "Mettre fin à ce rattachement ?", message: "Vos accès cliniques futurs à cet établissement seront bloqués.", note: "Les consultations et l’historique existants ne sont pas supprimés.", confirmLabel: "Mettre fin au rattachement", cancelLabel: "Garder le rattachement", tone: "danger", mood: "farewell" }).then((ok) => { if (ok) void run(() => apiPost(`/api/v1/establishments/${membership.establishment_id}/memberships/leave/`, {}), "Rattachement terminé. L’historique et les dossiers existants restent conservés."); }); }}>Mettre fin à mon rattachement</button>}
+                      </div>
                     </div>
                   </div>
-                  <div className="stack" style={{ justifyItems: "end" }}>
+                  <div className="membership-row__status">
                     <span className={`badge ${STATUS[membership.status].css}`}>{STATUS[membership.status].label}</span>
                     {isActive && <span className="badge verified">Établissement actif</span>}
                   </div>
@@ -83,7 +80,7 @@ export function ProfessionalAccess() {
             })}
           </div>
         )}
-      </section>
+      </CollapsibleSection>
     </div>
   );
 }

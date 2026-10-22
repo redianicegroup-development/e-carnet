@@ -6,11 +6,14 @@ import { apiGet, apiPost } from "../infrastructure/api/client";
 import { AvatarBadge, displayName, useSpaceAccount } from "./shell/SpaceShell";
 import { useConfirm } from "./modal/ConfirmProvider";
 import { Icon } from "./ui/Icon";
+import "./join-codes.css";
 import { PageHeader } from "./ui/PageHeader";
 import { EstablishmentDashboardChart } from "./RoleDashboards";
+import { EstablishmentJoinCodes } from "./EstablishmentJoinCodes";
+import { splitFullName } from "../lib/join-codes";
 
 type Establishment = { id: string; name: string; city: string; status: "pending" | "active" | "rejected" | string };
-type Membership = { id: string; status: "pending" | "active" | "refused" | "suspended" | string; professional_name?: string; professional_email?: string };
+type Membership = { id: string; status: "pending" | "active" | "refused" | "suspended" | string; professional_name?: string; professional_email?: string; professional_avatar_url?: string };
 type Data = { establishment: Establishment | null; memberships: Membership[] };
 
 const STATUS_LABEL: Record<string, string> = { pending: "En attente", active: "Actif", refused: "Refusé", suspended: "Suspendu", terminated: "Terminé" };
@@ -37,6 +40,10 @@ function useConsole() {
   return { data, error, reload };
 }
 
+function MemberAvatar({ member }: { member: Membership }) {
+  return <AvatarBadge size={44} account={{ ...splitFullName(member.professional_name), email: member.professional_email ?? "", avatar_url: member.professional_avatar_url ?? "" }} />;
+}
+
 function NoEstablishment() {
   return (
     <section className="card establishment-empty">
@@ -60,7 +67,6 @@ function Pending({ establishment }: { establishment: Establishment }) {
 export function EstablishmentConsole({ view }: { view: "home" | "requests" | "doctors" }) {
   const account = useSpaceAccount();
   const { data, error, reload } = useConsole();
-  const [code, setCode] = useState<{ value: string; expires_at: string } | null>(null);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const confirm = useConfirm();
@@ -78,7 +84,6 @@ export function EstablishmentConsole({ view }: { view: "home" | "requests" | "do
     setMessage("");
     try { await action(); if (done) setMessage(done); await reload(); } catch (reason) { setMessage(reason instanceof Error ? reason.message : "Action impossible."); } finally { setBusy(false); }
   }
-  const createCode = () => run(async () => { const result = await apiPost<{ code: string; expires_at: string }>(`/api/v1/establishments/${establishment.id}/join-codes/`, {}); setCode({ value: result.code, expires_at: result.expires_at }); });
   const decide = async (id: string, decision: "approve" | "refuse") => {
     const member = data.memberships.find((entry) => entry.id === id);
     const who = member?.professional_name || member?.professional_email || "ce médecin";
@@ -93,16 +98,7 @@ export function EstablishmentConsole({ view }: { view: "home" | "requests" | "do
     await run(async () => { await apiPost(`/api/v1/establishments/${establishment.id}/memberships/${id}/decision/`, { decision }); }, approve ? "Rattachement confirmé : le médecin peut travailler." : "Demande refusée.");
   };
 
-  const codeCard = (
-    <section className="card" aria-labelledby="code-title">
-      <span className="eyebrow">Nouveau médecin</span>
-      <h2 id="code-title">Code à remettre à un médecin</h2>
-      <p className="muted">Un code est à usage unique et expire 48 h après sa création. Il n’est affiché qu’une seule fois : transmettez-le directement au médecin.</p>
-      {code && <div className="stack"><p className="code-box" aria-live="polite">{code.value}</p><p className="muted">Valable jusqu’au {new Date(code.expires_at).toLocaleString("fr-FR")}. Il ne sera plus affiché.</p></div>}
-      <div className="actions"><button type="button" className="button primary" disabled={!active || busy} onClick={() => void createCode()}>{code ? "Générer un autre code" : "Générer un code médecin"}</button></div>
-      {!active && <p className="muted">Disponible quand l’établissement est activé.</p>}
-    </section>
-  );
+  const codeCard = <EstablishmentJoinCodes establishmentId={establishment.id} active={active} />;
 
   const requestRows = (
     <section className="card" aria-labelledby="requests-title">
@@ -111,7 +107,7 @@ export function EstablishmentConsole({ view }: { view: "home" | "requests" | "do
         <div className="stack">
           {pending.map((item) => (
             <article className="record" key={item.id}>
-              <div><strong>{item.professional_name ?? "Médecin"}</strong><p className="muted">{item.professional_email ?? "Email non communiqué"}</p>
+              <div><div className="team-member"><MemberAvatar member={item} /><div><strong>{item.professional_name ?? "Médecin"}</strong><p className="muted">{item.professional_email ?? "Email non communiqué"}</p></div></div>
                 <div className="actions"><button type="button" className="button small primary" disabled={busy} onClick={() => void decide(item.id, "approve")}>Confirmer</button><button type="button" className="button small danger" disabled={busy} onClick={() => void confirm({ title: "Refuser cette demande ?", message: `${item.professional_name ?? "Ce médecin"} ne sera pas rattaché à votre établissement.`, confirmLabel: "Refuser la demande", cancelLabel: "Revenir", tone: "danger", mood: "decision" }).then((ok) => { if (ok) void decide(item.id, "refuse"); })}>Refuser</button></div></div>
               <span className="badge pending">En attente</span>
             </article>
@@ -126,7 +122,7 @@ export function EstablishmentConsole({ view }: { view: "home" | "requests" | "do
       <div className="section-heading"><div><span className="eyebrow">Équipe</span><h2 id="doctors-title">Médecins de l’établissement</h2></div><span className="count-badge">{doctors.length}</span></div>
       {doctors.length === 0 ? <p className="empty">Aucun médecin rattaché pour le moment.</p> : (
         <div className="stack">
-          {doctors.map((item) => <article className="record" key={item.id}><div><strong>{item.professional_name ?? "Médecin"}</strong><p className="muted">{item.professional_email ?? ""}</p></div><span className="badge active">{STATUS_LABEL[item.status] ?? item.status}</span></article>)}
+          {doctors.map((item) => <article className="record" key={item.id}><div className="team-member"><MemberAvatar member={item} /><div><strong>{item.professional_name ?? "Médecin"}</strong><p className="muted">{item.professional_email ?? ""}</p></div></div><span className="badge active">{STATUS_LABEL[item.status] ?? item.status}</span></article>)}
         </div>
       )}
     </section>

@@ -137,6 +137,8 @@ class EstablishmentJoinCode(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     establishment = models.ForeignKey(Establishment, on_delete=models.PROTECT, related_name="join_codes")
     code_hash = models.CharField(max_length=64, unique=True)
+    # Copie chiffrée du code, uniquement pour le réafficher à l'administrateur pendant 48 h ; vidée à l'usage, à la révocation ou à l'expiration.
+    code_encrypted = models.TextField(blank=True, default="")
     expires_at = models.DateTimeField()
     consumed_at = models.DateTimeField(null=True, blank=True)
     revoked_at = models.DateTimeField(null=True, blank=True)

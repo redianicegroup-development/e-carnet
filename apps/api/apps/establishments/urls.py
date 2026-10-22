@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    EstablishmentActiveJoinCodesView,
     EstablishmentCreateView,
     EstablishmentCatalogView,
     EstablishmentDetailView,
@@ -10,6 +11,7 @@ from .views import (
     EstablishmentJoinCodeRedeemView,
     EstablishmentListView,
     EstablishmentLogoView,
+    EstablishmentMemberAvatarView,
     EstablishmentMembershipListView,
     EstablishmentProfileView,
     EstablishmentPrescriptionTemplateView,
@@ -37,6 +39,8 @@ urlpatterns = [
     path("startup/<uuid:establishment_id>/administrator-invitation/", StaffAdministratorInvitationView.as_view()),
     path("startup/<uuid:establishment_id>/administrator-invitation/revoke/", StaffAdministratorInvitationRevokeView.as_view()),
     path("<uuid:establishment_id>/join-codes/", EstablishmentJoinCodeCreateView.as_view()),
+    path("<uuid:establishment_id>/join-codes/active/", EstablishmentActiveJoinCodesView.as_view()),
+    path("<uuid:establishment_id>/memberships/<uuid:membership_id>/avatar/", EstablishmentMemberAvatarView.as_view()),
     path("<uuid:establishment_id>/profile/", EstablishmentProfileView.as_view()),
     path("<uuid:establishment_id>/logo/", EstablishmentLogoView.as_view()),
     path("<uuid:establishment_id>/prescription-template/", EstablishmentPrescriptionTemplateView.as_view()),

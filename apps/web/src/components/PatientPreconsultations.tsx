@@ -4,30 +4,26 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { apiGet, apiPatch, apiPost } from "../infrastructure/api/client";
 import { describeVitals, emptyVitalsForm, parseVitalsForm, vitalsToForm, VITAL_FIELDS, type StoredVitals, type VitalsForm } from "../lib/vitals";
+import { buildObservations, isListed, numberOptions, OBSERVATIONS_MAX, OTHER_MAX, parseObservations, SYMPTOMS } from "../lib/preconsult";
+import "./preconsult-form.css";
 
 type Encounter = { id: string; facility_label: string; reason: string; observations: string; vitals?: StoredVitals; recorded_with_help?: string; status: "draft" | "closed"; closed_at: string | null; provenance: { label: string } };
-type FormState = { reason: string; observations: string; vitals: VitalsForm; recorded_with_help: string };
-const EMPTY_FORM: FormState = { reason: "", observations: "", vitals: emptyVitalsForm(), recorded_with_help: "" };
-const VITALS_STEP = 2;
+type FormState = { reason: string; selected: string[]; other: string; vitals: VitalsForm; recorded_with_help: string };
+const EMPTY_FORM: FormState = { reason: "", selected: [], other: "", vitals: emptyVitalsForm(), recorded_with_help: "" };
 
-/* Quatre questions (motif, symptômes, constantes, personne qui aide). Aucun établissement à choisir : c'est le médecin qui lit ce brouillon grâce au QR du patient,
-   puis le clôture en signant sa consultation. La personne qui aide (souvent un infirmier sans compte) remplit sur le téléphone du patient. */
-const QUESTIONS = [
-  { eyebrow: "Étape 1 sur 4", title: "Quel est le motif de la consultation ?", hint: "Quelques mots suffisent. La pré-consultation se remplit dans l’espace patient, avec l’aide éventuelle d’un infirmier ou d’un proche, sans compte propre pour cette personne." },
-  { eyebrow: "Étape 2 sur 4", title: "Quels symptômes, depuis quand ?", hint: "Symptômes, début, intensité, ce qui a déjà été tenté. Cette réponse est facultative." },
-  { eyebrow: "Étape 3 sur 4", title: "Quelles constantes ont été relevées ?", hint: "Seulement ce qui a été mesuré : laissez vide le reste. Tension et glycémie restent telles qu’écrites, sans conversion ni unité supposée." },
-  { eyebrow: "Étape 4 sur 4", title: "Qui remplit avec le patient ?", hint: "Indiquez le rôle ou le prénom (infirmier, infirmière, proche), ou passez cette étape." },
-];
-
+/* Un seul bloc, quatre sections (motif, symptômes, constantes, personne qui aide) : plus d'étapes à enchaîner.
+   Aucun établissement à choisir : c'est le médecin qui lit ce brouillon grâce au QR du patient, puis le clôture en signant sa consultation.
+   La personne qui aide (souvent un infirmier sans compte) remplit sur le téléphone du patient. */
 function formFrom(item: Encounter | null): FormState {
-  return item ? { reason: item.reason, observations: item.observations, vitals: vitalsToForm(item.vitals), recorded_with_help: item.recorded_with_help ?? "" } : { ...EMPTY_FORM, vitals: emptyVitalsForm() };
+  if (!item) return { ...EMPTY_FORM, selected: [], vitals: emptyVitalsForm() };
+  const symptoms = parseObservations(item.observations);
+  return { reason: item.reason, selected: symptoms.selected, other: symptoms.other, vitals: vitalsToForm(item.vitals), recorded_with_help: item.recorded_with_help ?? "" };
 }
 
 export function PatientPreconsultations() {
   const [items, setItems] = useState<Encounter[] | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [editing, setEditing] = useState(false);
-  const [step, setStep] = useState(0);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -43,68 +39,81 @@ export function PatientPreconsultations() {
   const closed = (items ?? []).filter((item) => item.status === "closed");
   const showWizard = items !== null && (!draft || editing);
 
-  async function save() {
-    // Les constantes sont revérifiées ici : « Passer » ou « Enregistrer » depuis une autre étape ne doit pas envoyer une valeur impossible.
+  async function save(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (busy) return;
+    if (!form.reason.trim()) { setMessage("Indiquez le motif de la consultation pour continuer."); document.getElementById("preconsult-reason")?.focus(); return; }
+    // Les constantes sont vérifiées ici : une valeur impossible n'est jamais envoyée.
     const parsedVitals = parseVitalsForm(form.vitals);
-    if (!parsedVitals.ok) { setStep(VITALS_STEP); setMessage(parsedVitals.message); return; }
+    if (!parsedVitals.ok) { setMessage(parsedVitals.message); return; }
     setBusy(true);
     setMessage("");
     try {
-      const payload = { reason: form.reason.trim(), observations: form.observations.trim(), vitals: parsedVitals.vitals, recorded_with_help: form.recorded_with_help.trim() };
+      const payload = { reason: form.reason.trim(), observations: buildObservations({ selected: form.selected, other: form.other }), vitals: parsedVitals.vitals, recorded_with_help: form.recorded_with_help.trim() };
       const saved = draft
         ? await apiPatch<Encounter>(`/api/v1/patient/care/encounters/${draft.id}/`, payload)
         : await apiPost<Encounter>("/api/v1/patient/care/encounters/", payload);
       setItems((current) => draft ? (current ?? []).map((item) => (item.id === saved.id ? saved : item)) : [saved, ...(current ?? [])]);
       setEditing(false);
-      setStep(0);
+      setForm({ ...EMPTY_FORM, selected: [], vitals: emptyVitalsForm() });
       setMessage("Brouillon enregistré. Le médecin le lira en scannant votre QR, puis le clôturera à la fin de la consultation.");
     } catch (error) { setMessage(error instanceof Error ? error.message : "Enregistrement refusé."); }
     finally { setBusy(false); }
   }
 
-  function advance(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (step === 0 && !form.reason.trim()) { setMessage("Indiquez le motif de la consultation pour continuer."); return; }
-    if (step === VITALS_STEP) {
-      const parsed = parseVitalsForm(form.vitals);
-      if (!parsed.ok) { setMessage(parsed.message); return; }
-    }
-    setMessage("");
-    if (step < QUESTIONS.length - 1) setStep((current) => current + 1);
-    else void save();
-  }
-
-  function skipOptionalStep() {
-    setMessage("");
-    if (step < QUESTIONS.length - 1) setStep((current) => current + 1);
-    else void save();
-  }
-
   function startEditing() {
     setForm(formFrom(draft));
-    setStep(0);
     setMessage("");
     setEditing(true);
   }
 
-  const question = QUESTIONS[step];
-  return <div className="stack-lg">
-    {showWizard && <section className="card preconsult-wizard" aria-labelledby="preconsult-question" aria-describedby="preconsult-hint">
-      <div className="preconsult-wizard__top"><span className="eyebrow">{draft ? "Modifier le brouillon" : "Préparer"} · {question.eyebrow}</span><span className="preconsult-wizard__counter">{step + 1}<span> / {QUESTIONS.length}</span></span></div>
-      <div className="preconsult-wizard__progress" aria-hidden="true"><i style={{ width: `${((step + 1) / QUESTIONS.length) * 100}%` }} /></div>
-      <h2 id="preconsult-question" key={step}>{question.title}</h2>
-      <p className="muted" id="preconsult-hint">{question.hint}</p>
-      <form onSubmit={advance}>
-        {step === 0 && <label className="field preconsult-wizard__field"><span>Motif</span><input autoFocus required maxLength={240} value={form.reason} onChange={(event) => { setForm({ ...form, reason: event.target.value }); setMessage(""); }} placeholder="Ex. fièvre depuis deux jours" /></label>}
-        {step === 1 && <label className="field preconsult-wizard__field"><span>Symptômes ou observations</span><textarea autoFocus maxLength={2000} rows={5} value={form.observations} onChange={(event) => setForm({ ...form, observations: event.target.value })} placeholder="Depuis quand ? Qu’est-ce qui gêne ?" /></label>}
-        {step === VITALS_STEP && <div className="vitals-grid" role="group" aria-label="Constantes relevées">{VITAL_FIELDS.map((field) => <label className="field" key={field.key}><span>{field.label}{field.unit ? ` (${field.unit})` : ""}</span><input type={field.freeText ? "text" : "number"} inputMode={field.freeText ? "text" : "decimal"} autoComplete="off" maxLength={field.freeText ? 24 : undefined} step={field.freeText ? undefined : field.step} min={field.freeText ? undefined : field.min} max={field.freeText ? undefined : field.max} value={form.vitals[field.key]} onChange={(event) => { const value = event.target.value; setForm((current) => ({ ...current, vitals: { ...current.vitals, [field.key]: value } })); setMessage(""); }} placeholder={field.placeholder} /></label>)}<p className="muted vitals-grid__hint">Tension et glycémie : saisissez la valeur comme elle apparaît sur le carnet, avec son unité si elle est indiquée.</p></div>}
-        {step === 3 && <label className="field preconsult-wizard__field"><span>Personne qui aide (facultatif)</span><input autoFocus maxLength={120} value={form.recorded_with_help} onChange={(event) => setForm({ ...form, recorded_with_help: event.target.value })} placeholder="Ex. infirmière Awa, un proche" /></label>}
+  function toggleSymptom(symptom: string) {
+    setForm((current) => ({ ...current, selected: current.selected.includes(symptom) ? current.selected.filter((item) => item !== symptom) : [...current.selected, symptom] }));
+    setMessage("");
+  }
+
+  const setVital = (key: keyof VitalsForm, value: string) => { setForm((current) => ({ ...current, vitals: { ...current.vitals, [key]: value } })); setMessage(""); };
+
+  return <div className="stack-lg" id="preparer">
+    {showWizard && <section className="card preconsult-wizard preconsult-form" aria-labelledby="preconsult-title">
+      <div className="preconsult-wizard__top"><span className="eyebrow">{draft ? "Modifier le brouillon" : "Préparer ma consultation"}</span></div>
+      <h2 id="preconsult-title">Préparer ma consultation</h2>
+      <p className="muted">Remplissez ce que vous savez : seul le motif est obligatoire. La pré-consultation se remplit dans l’espace patient, avec l’aide éventuelle d’un infirmier ou d’un proche, sans compte propre pour cette personne.</p>
+      <form onSubmit={save} noValidate>
+        <fieldset className="preconsult-section">
+          <legend><span className="preconsult-section__num">1</span>Quel est le motif de la consultation ?</legend>
+          <label className="field preconsult-wizard__field"><span>Motif</span><input id="preconsult-reason" required maxLength={240} value={form.reason} onChange={(event) => { setForm({ ...form, reason: event.target.value }); setMessage(""); }} placeholder="Ex. fièvre depuis deux jours" /></label>
+        </fieldset>
+
+        <fieldset className="preconsult-section">
+          <legend><span className="preconsult-section__num">2</span>Quels symptômes ou maux ressentez-vous ?</legend>
+          <p className="muted preconsult-section__hint">Cochez ce qui correspond (facultatif).</p>
+          <div className="symptom-grid" role="group" aria-label="Symptômes les plus fréquents">
+            {SYMPTOMS.map((symptom) => <label key={symptom} className={`symptom-chip${form.selected.includes(symptom) ? " is-on" : ""}`}><input type="checkbox" checked={form.selected.includes(symptom)} onChange={() => toggleSymptom(symptom)} /><span>{symptom}</span></label>)}
+          </div>
+          <label className="field"><span>Autre symptôme, depuis quand, intensité (facultatif)</span><textarea maxLength={OTHER_MAX} rows={3} value={form.other} onChange={(event) => setForm({ ...form, other: event.target.value })} placeholder="Si votre symptôme n’est pas dans la liste, écrivez-le ici." /></label>
+          {buildObservations({ selected: form.selected, other: form.other }).length > OBSERVATIONS_MAX && <p className="status" role="alert">Le texte est trop long : raccourcissez-le.</p>}
+        </fieldset>
+
+        <fieldset className="preconsult-section">
+          <legend><span className="preconsult-section__num">3</span>Quelles constantes ont été relevées ?</legend>
+          <p className="muted preconsult-section__hint">Seulement ce qui a été mesuré : laissez vide le reste. Tension et glycémie restent telles qu’écrites, sans conversion ni unité supposée.</p>
+          <div className="vitals-grid" role="group" aria-label="Constantes relevées">{VITAL_FIELDS.map((field) => <label className="field" key={field.key}><span>{field.label}{field.unit ? ` (${field.unit})` : ""}</span>
+            {isListed(field.key)
+              ? <select value={form.vitals[field.key]} onChange={(event) => setVital(field.key, event.target.value)}><option value="">—</option>{numberOptions(field.key, form.vitals[field.key]).map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
+              : <input type={field.freeText ? "text" : "number"} inputMode={field.freeText ? "text" : "decimal"} autoComplete="off" maxLength={field.freeText ? 24 : undefined} step={field.freeText ? undefined : field.step} min={field.freeText ? undefined : field.min} max={field.freeText ? undefined : field.max} value={form.vitals[field.key]} onChange={(event) => setVital(field.key, event.target.value)} placeholder={field.placeholder} />}
+          </label>)}<p className="muted vitals-grid__hint">Tension et glycémie : saisissez la valeur comme elle apparaît sur le carnet, avec son unité si elle est indiquée.</p></div>
+        </fieldset>
+
+        <fieldset className="preconsult-section">
+          <legend><span className="preconsult-section__num">4</span>Qui remplit avec le patient ? <small>(facultatif)</small></legend>
+          <label className="field preconsult-wizard__field"><span>Personne qui aide</span><input maxLength={120} value={form.recorded_with_help} onChange={(event) => setForm({ ...form, recorded_with_help: event.target.value })} placeholder="Ex. infirmière Awa, un proche" /></label>
+        </fieldset>
+
         <div className="preconsult-wizard__actions">
-          {step > 0 && <button type="button" className="button preconsult-wizard__back" disabled={busy} onClick={() => { setStep((current) => current - 1); setMessage(""); }}>Retour</button>}
-          {draft && step === 0 && <button type="button" className="button preconsult-wizard__back" disabled={busy} onClick={() => { setEditing(false); setMessage(""); }}>Annuler</button>}
-          <button className="button primary preconsult-wizard__next" type="submit" disabled={busy}>{busy ? "Enregistrement…" : step === QUESTIONS.length - 1 ? "Enregistrer le brouillon" : "Continuer"}</button>
+          {draft && <button type="button" className="button preconsult-wizard__back" disabled={busy} onClick={() => { setEditing(false); setMessage(""); }}>Annuler</button>}
+          <button className="button primary preconsult-wizard__next" type="submit" disabled={busy}>{busy ? "Enregistrement…" : "Enregistrer le brouillon"}</button>
         </div>
-        {step >= 1 && <button type="button" className="preconsult-wizard__skip" disabled={busy} onClick={skipOptionalStep}>{step === QUESTIONS.length - 1 ? "Enregistrer sans précision" : "Passer cette question"}</button>}
         <p className="status" role="status" aria-live="polite">{message}</p>
       </form>
     </section>}
