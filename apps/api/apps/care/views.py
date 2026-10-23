@@ -1,6 +1,7 @@
 from datetime import date
 import uuid
 from django.conf import settings
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from django.db.models import Q, Sum
 from django.http import FileResponse, HttpResponse
@@ -21,7 +22,7 @@ from apps.audit.services import record_event
 from apps.cloudinary_storage import CLOUDINARY_CONFIGURED, destroy as cloudinary_destroy, extension_from_name, signed_download, upload as cloudinary_upload
 from .models import AccessGrant, Appointment, CareEncounter, Consultation, ExamRequest, FollowUpPlan, FollowUpPlanItem, HealthMeasurement, MedicalDocument, MedicationIntake, MedicationReminder, PatientNotification, PreconsultationTemplate, Vaccination
 from .serializers import AccessGrantSerializer, AppointmentSerializer, CareEncounterSerializer, ConsultationSerializer, FollowUpPlanSerializer, HealthMeasurementSerializer, MedicalDocumentSerializer, MedicationIntakeSerializer, MedicationReminderSerializer, PatientNotificationSerializer, PreconsultationTemplateSerializer, ProfessionalAccessGrantSerializer, ProfessionalConsultationCreateSerializer, VaccinationSerializer
-from .services import QR_TOKEN_TTL_SECONDS, create_patient_qr_token, create_professional_grant, require_scope
+from .services import QR_TOKEN_TTL_SECONDS, SelfAccessRefused, create_patient_qr_token, create_professional_grant, require_scope
 from .consultation_services import validate_consultation
 
 
@@ -347,9 +348,18 @@ class ProfessionalFollowUpPlanCreateView(APIView):
         error = professional_clinical_access_error(profile)
         if error:
             return Response({"success": False, "message": error}, status=403)
-        grant = AccessGrant.objects.filter(pk=request.data.get("access_grant_id"), professional=profile, status="active").first()
-        if not grant or "consultations" not in (grant.scope or []):
-            return Response({"success": False, "message": "Un consentement de suivi avec le périmètre consultations est requis."}, status=403)
+        missing_consent = Response({"success": False, "message": "Un consentement de suivi avec le périmètre consultations est requis."}, status=403)
+        try:
+            # Même porte que les autres lectures cliniques : autorisation du professionnel, dans son établissement courant, encore valable.
+            grant = AccessGrant.objects.filter(pk=request.data.get("access_grant_id"), professional=profile, establishment=profile.active_establishment).select_related("patient").first()
+        except (ValueError, TypeError, DjangoValidationError):
+            grant = None
+        if not grant:
+            return missing_consent
+        try:
+            require_scope(grant, "consultations")
+        except PermissionDenied:
+            return missing_consent
         title = str(request.data.get("title", "")).strip()
         if not title:
             raise ValidationError({"title": "Indiquez le titre du plan de suivi."})
@@ -751,7 +761,7 @@ class ProfessionalAccessGrantListCreateView(APIView):
         access_error = professional_clinical_access_error(profile)
         if access_error:
             return Response({"success": False, "message": access_error}, status=403)
-        items = AccessGrant.objects.filter(professional=profile, establishment=profile.active_establishment).select_related("patient", "establishment")
+        items = AccessGrant.objects.filter(professional=profile, establishment=profile.active_establishment).exclude(patient__user_id=profile.user_id).select_related("patient", "establishment")
         for item in items:
             item.refresh_expiration()
         return Response({"success": True, "data": ProfessionalAccessGrantSerializer(items, many=True).data})
@@ -763,6 +773,12 @@ class ProfessionalAccessGrantListCreateView(APIView):
             return Response({"success": False, "message": "Le profil professionnel n’est pas disponible."}, status=403)
         try:
             item = create_professional_grant(professional=profile, qr_token=request.data.get("qr_token"), scope=request.data.get("scope"))
+        except SelfAccessRefused as exc:
+            # Refus tracé (le jeton n'est pas consommé) : le message renvoie le professionnel vers son espace patient.
+            record_event(event_type="access_grant.self_refused", actor=request.user, actor_role="professional", establishment=profile.active_establishment, metadata={"action": "self_access_refused", "status": "refused"})
+            detail = exc.detail
+            message = detail[0] if isinstance(detail, list) else detail
+            return Response({"success": False, "code": "self_access", "message": str(message)}, status=403)
         except ValidationError as exc:
             detail = exc.detail
             message = detail[0] if isinstance(detail, list) else detail

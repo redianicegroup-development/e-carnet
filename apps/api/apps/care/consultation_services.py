@@ -6,7 +6,7 @@ from rest_framework.exceptions import ValidationError
 
 from apps.professionals.access import professional_clinical_access_error
 from .models import AccessGrant, CareEncounter, Consultation, ConsultationRevision, ExamRequest, PreConsultationRevision, PrescriptionLine
-from .services import require_scope
+from .services import SELF_ACCESS_MESSAGE, is_own_patient_file, require_scope
 from .vitals import build_consultation_vitals
 
 
@@ -24,6 +24,9 @@ def validate_consultation(*, professional, data):
     grant = AccessGrant.objects.select_related("patient", "establishment").filter(id=data["access_grant_id"], professional=professional).first()
     if not grant:
         raise ValidationError("AccessGrant introuvable dans votre périmètre.")
+    if is_own_patient_file(professional, grant.patient):
+        # Défense en profondeur : une autorisation ne devrait jamais exister sur son propre dossier, mais on ne signe jamais pour soi.
+        raise ValidationError(SELF_ACCESS_MESSAGE)
     grant.refresh_expiration()
     if grant.status != "active" or grant.establishment_id != establishment.id:
         raise ValidationError("L’AccessGrant n’est plus actif dans votre établissement courant.")

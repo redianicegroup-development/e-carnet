@@ -79,3 +79,19 @@ class ForcePasswordChangeMiddleware:
         from .models import AccountProfile  # import tardif : le middleware est chargé avant que les modèles soient prêts
 
         return AccountProfile.objects.filter(user=user, must_change_password=True).exists()
+
+
+class ApiPrivateNoStoreMiddleware:
+    """Aucune réponse de l'API n'est mise en cache par un navigateur ou un intermédiaire, sauf si la vue le décide elle-même.
+
+    Les réponses dépendent de la session (dossier patient, consultations, équipe) : un cache partagé ne doit jamais pouvoir
+    les resservir à un autre compte. Les vues qui fixent déjà `Cache-Control` (logo, photo en cache privé d'une heure) gardent le leur."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        if request.path.startswith("/api/") and not response.has_header("Cache-Control"):
+            response["Cache-Control"] = "private, no-store"
+        return response

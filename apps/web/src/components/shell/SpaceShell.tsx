@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { ApiError, apiGet, apiPost } from "../../infrastructure/api/client";
 import { isSessionMissing } from "../../lib/session";
-import { SPACES, visibleTabsFor, type SpaceId } from "../../lib/spaces";
+import { SPACES, contextToActivate, spaceSwitchTarget, visibleTabsFor, type SpaceId } from "../../lib/spaces";
 import { useConfirm } from "../modal/ConfirmProvider";
 import { GreetingModal } from "../modal/GreetingModal";
 import { BrandMark } from "../ui/BrandMark";
@@ -80,8 +80,29 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
   const [clinicalReady, setClinicalReady] = useState<boolean | null>(null);
   const [clinicalTick, setClinicalTick] = useState(0);
   const [signingOut, setSigningOut] = useState(false);
+  const [switching, setSwitching] = useState(false);
+  const [switchError, setSwitchError] = useState("");
+  const synced = useRef(false);
   const [logoutMessage, setLogoutMessage] = useState("");
   function toggleNav() { setNavCollapsed((current) => !current); }
+  // « Changer d'espace » : un seul compte, deux espaces. Le serveur ne reconnaît qu'un contexte actif à la fois, c'est lui qu'on bascule.
+  async function switchSpace() {
+    const target = spaceSwitchTarget(space, state.status === "ready" ? state.account.contexts : undefined);
+    if (!target || switching) return;
+    setSwitching(true);
+    setSwitchError("");
+    try {
+      await apiPost("/api/v1/identity/contexts/select/", { role: target.role });
+      setPatientAccessQr(null);
+      setClinicalReady(null);
+      router.push(target.href);
+      router.refresh();
+    } catch {
+      setSwitchError("Le changement d’espace a échoué. Réessayez.");
+    } finally {
+      setSwitching(false);
+    }
+  }
   async function logout() {
     const ok = await confirm({ title: "Se déconnecter ?", message: "Vous allez être déconnecté de cet appareil.", note: "Vos données restent enregistrées dans votre compte.", confirmLabel: "Me déconnecter", cancelLabel: "Rester connecté", tone: "neutral", mood: "decision" });
     if (!ok) return;
@@ -197,10 +218,21 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
   const moi = config.tabs[config.tabs.length - 1];
   const showAdminLink = space === "patient" && state.status === "ready" && state.account.is_admin === true;
 
+  const switchTarget = state.status === "ready" ? spaceSwitchTarget(space, state.account.contexts) : null;
+
+  // Lien direct ou favori vers l'autre espace d'un compte professionnel : on active le bon contexte avant de laisser l'espace appeler l'API.
+  const toActivate = state.status === "ready" && !bare ? contextToActivate(space, state.account.contexts) : null;
+  useEffect(() => {
+    if (!toActivate || synced.current) return;
+    synced.current = true;
+    apiPost("/api/v1/identity/contexts/select/", { role: toActivate }).then(() => setLoadAttempt((n) => n + 1)).catch(() => { synced.current = false; });
+  }, [toActivate]);
+
   const visibleTabs = visibleTabsFor(space, clinicalReady === true);
   const items: SidebarItem[] = visibleTabs.map((tab) => ({ id: tab.id, label: tab.label, long: tab.long, icon: tab.icon, href: tab.href, active: tab.match(pathname), account: tab === moi }));
   const menu: SidebarMenuItem[] = [
     { id: "settings", label: "Profil et paramètres", icon: "sliders", href: moi.href },
+    ...(switchTarget ? [{ id: "switch-space", label: switching ? "Changement d’espace…" : `Changer d’espace : ${switchTarget.label.toLowerCase()}`, icon: "refresh" as const, disabled: switching, onSelect: () => void switchSpace() }] : []),
     { id: "help", label: "Centre d’aide", icon: "help", href: "/aide" },
     ...(showAdminLink ? [{ id: "admin", label: "Administration", icon: "shield" as const, href: "https://e-carnetci.vercel.app/admin/", external: true }] : []),
     { id: "logout", label: signingOut ? "Déconnexion…" : "Se déconnecter", icon: "logout", tone: "danger", disabled: signingOut, onSelect: () => void logout() },
@@ -215,7 +247,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
         account={state.status === "ready" ? { name: displayName(state.account), email: state.account.email, initials: initials(state.account), avatarUrl: state.account.avatar_url || undefined } : null}
         accountHref={moi.href}
         menu={menu}
-        notice={logoutMessage}
+        notice={logoutMessage || switchError}
         tools={space === "patient" && state.status === "ready" ? <NotificationBell placement="sidebar" /> : null}
         collapsed={navCollapsed}
         onToggle={toggleNav}
@@ -232,7 +264,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
             {/* Menu du compte en goutte (barre haute mobile) : sur grand écran, le même menu est dans la sidebar. */}
             <div className="space-mobile-header__actions">
               {space === "patient" && state.status === "ready" && <NotificationBell placement="mobile" />}
-              {state.status === "ready" && <GooeyAccountMenu account={{ name: displayName(state.account), email: state.account.email, initials: initials(state.account), avatarUrl: state.account.avatar_url || undefined }} menu={menu} notice={logoutMessage} />}
+              {state.status === "ready" && <GooeyAccountMenu account={{ name: displayName(state.account), email: state.account.email, initials: initials(state.account), avatarUrl: state.account.avatar_url || undefined }} menu={menu} notice={logoutMessage || switchError} />}
             </div>
           </header>
         )}

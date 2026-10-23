@@ -22,6 +22,19 @@ QR_INVALID_MESSAGE = "Ce QR est expiré, déjà utilisé ou invalide."
 QR_REQUIRED_MESSAGE = "Scannez le QR affiché par le patient : il est exigé pour chaque demande d’accès."
 
 
+SELF_ACCESS_MESSAGE = "Vous ne pouvez pas ouvrir votre propre dossier en tant que professionnel. Consultez-le depuis votre espace patient : un confrère peut vous soigner par le circuit habituel (QR, autorisation, consultation signée par lui)."
+
+
+class SelfAccessRefused(ValidationError):
+    """Un professionnel a présenté le QR de son propre dossier patient."""
+
+
+def is_own_patient_file(professional, patient):
+    """Vrai quand le dossier patient appartient au compte du professionnel (même utilisateur, deux espaces)."""
+    user_id = getattr(professional, "user_id", None)
+    return bool(user_id) and getattr(patient, "user_id", None) == user_id
+
+
 def require_scope(grant, scope):
     """Porte unique de lecture clinique : l’autorisation est active **et** couvre ce périmètre.
 
@@ -91,6 +104,9 @@ def create_professional_grant(*, professional, qr_token=None, scope=None):
         raise ValidationError(QR_REQUIRED_MESSAGE)
     token = patient_from_qr_token(qr_token.strip(), for_update=True)
     patient = token.patient
+    if is_own_patient_file(professional, patient):
+        # Un professionnel ne s'ouvre jamais son propre dossier : le jeton n'est pas consommé, il reste utilisable côté patient.
+        raise SelfAccessRefused(SELF_ACCESS_MESSAGE)
     requested_scope = list(dict.fromkeys(scope or DEFAULT_SCOPES))
     if not requested_scope or any(item not in ALLOWED_SCOPES for item in requested_scope):
         raise ValidationError("Le périmètre demandé contient une valeur non autorisée en V1.")

@@ -670,7 +670,8 @@ class MembershipDecisionView(APIView):
     def post(self, request, establishment_id, membership_id):
         admin = active_administrator(request.user, establishment_id)
         establishment = admin.establishment if admin else None
-        membership = EstablishmentMembership.objects.filter(id=membership_id, establishment=establishment).first()
+        # Seule une demande en attente se décide : une approbation ne ressuscite ni un rattachement quitté, ni un refus, ni un rattachement déjà actif.
+        membership = EstablishmentMembership.objects.select_for_update().filter(id=membership_id, establishment=establishment, status="pending").first()
         decision = request.data.get("decision")
         if not establishment or not membership or decision not in ("approve", "refuse"):
             return Response({"success": False, "message": "Décision de rattachement invalide."}, status=400)

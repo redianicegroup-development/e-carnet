@@ -130,3 +130,75 @@ test("le dossier patient et le QR de la carte virtuelle forment une seule sectio
   assert.match(home, /patient-dossier__qr/);
   assert.doesNotMatch(home, /patient-home-qr|patient-home-profile/);
 });
+
+test("QA-01 : 404, erreur, erreur globale et chargement existent et sont sur la marque", () => {
+  assert.match(read("src/app/not-found.tsx"), /Cette page n’existe pas/);
+  assert.match(read("src/app/not-found.tsx"), /href="\/patient"/);
+  const error = read("src/app/error.tsx");
+  assert.match(error, /^"use client";/);
+  assert.match(error, /ChunkLoadError/, "mise à jour pendant une session ouverte : rechargement proposé");
+  assert.match(error, /window\.location\.reload\(\)/);
+  assert.match(error, /error\.digest/, "référence à donner au support, jamais la pile technique");
+  assert.doesNotMatch(error, /error\.stack/);
+  assert.match(read("src/app/global-error.tsx"), /<html lang="fr">/);
+  assert.match(read("src/app/loading.tsx"), /ScreenLoader/);
+});
+
+test("QA-02 : la longueur minimale du mot de passe ne bloque que l’inscription, pas la connexion", () => {
+  assert.match(read("src/components/AuthForms.tsx"), /minLength=\{login \? undefined : 12\}/);
+});
+
+test("étape 4 : la question de récupération reste obligatoire et son texte dit la vérité du serveur", () => {
+  const setup = read("src/components/RecoverySetup.tsx");
+  assert.match(setup, /Étape 4 · récupération du compte</);
+  assert.doesNotMatch(setup, /Plus tard|facultative/);
+  assert.match(setup, /Quiconque connaît cette réponse peut changer votre mot de passe/);
+  // le serveur accepte la réponse seule tant que l'OTP n'existe pas : l'interface ne doit pas affirmer le contraire
+  assert.doesNotMatch(setup, /pas activée|ne suffit pas|ne peut pas, à elle seule/);
+  assert.match(setup, /SMS/);
+  assert.match(read("src/components/AuthForms.tsx"), /!account\.recovery_configured\) return "\/onboarding\/securite"/);
+});
+
+test("UX-05 : l’accueil patient ne tombe plus en bloc quand un appel échoue", () => {
+  const home = read("src/components/PatientHome.tsx");
+  assert.match(home, /Promise\.allSettled/);
+  assert.doesNotMatch(home, /Promise\.all\(/);
+  assert.match(home, /onClick=\{retry\}/);
+  // pas de zéro inventé : une information non chargée reste inconnue
+  assert.match(home, /: null\)/);
+});
+
+test("UX-02 : l’accueil regroupe les alertes en « À faire » et ne répète plus les onglets", () => {
+  const home = read("src/components/PatientHome.tsx");
+  assert.match(home, /id="home-todo-title"[^>]*>À faire</);
+  assert.doesNotMatch(home, /stat-grid|PatientDashboardChart|progress-card|alert-card"[^>]*aria-live/);
+  assert.equal((home.match(/apiGet</g) ?? []).length, 5, "cinq appels au lieu de huit");
+  assert.match(home, /className="button primary" href="\/patient\/consultations#preparer"/);
+  assert.match(home, /<PatientHomeIdentity account=\{account\} \/>/);
+});
+
+test("UX-04 : deux QR, deux noms — carte virtuelle (secours) et accès temporaire de 5 minutes (professionnel)", () => {
+  const identity = read("src/components/PatientHomeIdentity.tsx");
+  const grants = read("src/components/PatientAccessGrants.tsx");
+  const home = read("src/components/PatientHome.tsx");
+  assert.match(identity, /voit votre carte virtuelle, sans se connecter/);
+  assert.match(identity, /autre QR, valable 5 minutes/);
+  assert.match(identity, /href="\/patient\/acces#qr"/);
+  assert.match(grants, /Accès temporaire pour un professionnel/);
+  assert.match(grants, /Ce n’est pas le QR de votre carte virtuelle/);
+  assert.match(home, /Accès temporaire pour un professionnel/);
+  for (const text of [identity, grants, home]) assert.doesNotMatch(text, /QR d’accès|QR d'accès|QR public/);
+});
+
+test("titres en double : une rubrique « solo » masque le titre répété sous son bouton", () => {
+  const section = read("src/components/ui/CollapsibleSection.tsx");
+  const css = read("src/components/patient-sections.css");
+  const carnet = read("src/components/PatientCarnet.tsx");
+  assert.match(section, /solo \? " carnet-accordion__panel--solo" : ""/);
+  assert.match(css, /carnet-accordion__panel--solo > \.card > \.section-heading:first-child h2/);
+  for (const title of ["Mes documents", "Mes vaccins", "Rappels de médicaments", "Mes plans de suivi", "Rendez-vous"]) assert.match(carnet, new RegExp(`<CollapsibleSection title="${title}" solo>`));
+  // Les consultations vivent dans Visites : le carnet ne les répète pas.
+  assert.doesNotMatch(carnet, /Mes consultations|PatientConsultations/);
+  assert.doesNotMatch(carnet, /<h2>Exporter mon carnet<\/h2>/);
+  assert.doesNotMatch(carnet, /<span className="eyebrow">Ma carte d’urgence<\/span>/);
+});

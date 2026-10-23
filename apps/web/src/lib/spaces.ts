@@ -52,3 +52,28 @@ export function visibleTabsFor(space: SpaceId, clinicalReady: boolean): Tab[] {
   if (space === "professional" && !clinicalReady) return tabs.filter((tab) => (PROFESSIONAL_SETUP_TABS as readonly string[]).includes(tab.id));
   return tabs;
 }
+
+type ContextLike = { role: string; is_active?: boolean; onboarding_completed?: boolean };
+
+/** Un compte est « professionnel » quand son contexte professionnel existe et que son profil est créé. Les patients simples,
+    les comptes établissement et les médecins en cours d'inscription n'ont pas de second espace. */
+export function isProfessionalAccount(contexts: ContextLike[] | undefined): boolean {
+  return (contexts ?? []).some((context) => context.role === "professional" && context.onboarding_completed === true);
+}
+
+/** Entrée « Changer d'espace » du menu du compte : l'autre espace du même compte, ou `null` (menu sans l'entrée) pour tout compte
+    qui n'est pas professionnel. Le patient simple ne voit donc jamais ce choix, et l'espace établissement n'en a pas. */
+export function spaceSwitchTarget(space: SpaceId, contexts: ContextLike[] | undefined): { role: "patient" | "professional"; space: SpaceId; label: string; href: string } | null {
+  if (!isProfessionalAccount(contexts)) return null;
+  if (space === "patient") return { role: "professional", space: "professional", label: SPACES.professional.label, href: SPACES.professional.home };
+  if (space === "professional") return { role: "patient", space: "patient", label: SPACES.patient.label, href: SPACES.patient.home };
+  return null;
+}
+
+/** Contexte à activer côté serveur pour que l'espace affiché soit celui que le serveur reconnaît (lien direct, favori) :
+    seulement pour un compte professionnel qui possède l'espace demandé sans qu'il soit actif. `null` = rien à faire. */
+export function contextToActivate(space: SpaceId, contexts: ContextLike[] | undefined): "patient" | "professional" | null {
+  if (space === "establishment" || !isProfessionalAccount(contexts)) return null;
+  const wanted = (contexts ?? []).find((context) => context.role === SPACES[space].role);
+  return wanted && wanted.is_active !== true ? (SPACES[space].role as "patient" | "professional") : null;
+}

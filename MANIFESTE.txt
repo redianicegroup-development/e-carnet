@@ -1,0 +1,14 @@
+Fichiers modifiés ou ajoutés (à copier par-dessus le projet, après e-carnet-maj-2026-10-23.zip) :
+apps/api/apps/care/test_self_access.py
+apps/api/apps/care/views.py
+apps/api/apps/establishments/test_audit_qa_2026_10_23.py
+apps/api/apps/establishments/views.py
+apps/api/apps/identity/middleware.py
+apps/api/apps/identity/test_api_no_store.py
+apps/api/config/settings.py
+apps/api/requirements.in
+apps/web/src/components/PatientCarnet.tsx
+apps/web/tests/un-compte-deux-espaces.test.mjs
+apps/web/tests/ux-flows.test.mjs
+MODIFICATIONS-2026-10-23-b-audit-qa-carnet.md
+RAPPORT-QA-AKATECH-2026-10-23-medecin-etablissement.md
