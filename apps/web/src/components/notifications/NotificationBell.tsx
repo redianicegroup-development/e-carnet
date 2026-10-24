@@ -77,8 +77,10 @@ export function NotificationBell({ placement = "sidebar" }: NotificationBellProp
   const [marking, setMarking] = useState<Set<string>>(() => new Set());
   const [fit, setFit] = useState<PanelFit>({ align: "right", width: PANEL_MAX_WIDTH });
   const root = useRef<HTMLDivElement>(null);
+  const content = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const panel = useRef<HTMLDivElement>(null);
+  const content = useRef<HTMLDivElement>(null);
   const panelId = useId();
   const audioContext = useRef<AudioContext | null>(null);
   const knownIds = useRef<Set<string>>(new Set());
@@ -143,6 +145,19 @@ export function NotificationBell({ placement = "sidebar" }: NotificationBellProp
     return () => window.removeEventListener("resize", measure);
   }, [open]);
 
+  // Même goutte que le menu du compte (classes `gm__*`, voir soft-skin.css) : la hauteur du panneau ouvert est celle de son contenu.
+  useLayoutEffect(() => {
+    const host = root.current;
+    const inner = content.current;
+    if (!host || !inner) return;
+    const measure = () => host.style.setProperty("--gm-h", `${inner.offsetHeight}px`);
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(inner);
+    return () => observer.disconnect();
+  }, [fit.width]);
+
   useEffect(() => {
     if (!open) return;
     const onPointerDown = (event: PointerEvent) => {
@@ -200,35 +215,47 @@ export function NotificationBell({ placement = "sidebar" }: NotificationBellProp
     }
   }
 
+  // Hauteur du panneau = hauteur réelle du contenu (comme le menu du compte), et non plus une hauteur fixe de 420 px.
+  useEffect(() => {
+    const host = root.current;
+    const inner = content.current;
+    if (!host || !inner) return;
+    const measure = () => host.style.setProperty("--nb-h", `${inner.offsetHeight}px`);
+    measure();
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
+    observer?.observe(inner);
+    return () => observer?.disconnect();
+  }, [fit.width, notifications.length]);
+
   const latest = [...notifications].sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime()).slice(0, 6);
   const unreadLabel = unreadCount === 0 ? "aucune notification non lue" : `${unreadCount} notification${unreadCount > 1 ? "s" : ""} non lue${unreadCount > 1 ? "s" : ""}`;
   let itemIndex = 0;
   const step = () => ({ "--i": itemIndex++ } as CSSProperties);
 
   return (
-    <div className="notification-bell" data-placement={placement} data-open={open} data-align={fit.align} data-unread={unreadCount > 0} style={{ "--nb-w": `${fit.width}px` } as CSSProperties} ref={root}>
-      <span className="notification-bell__goo" aria-hidden="true"><i className="notification-bell__anchor" /><i className="notification-bell__blob" /></span>
-      <div className="notification-bell__panel" id={panelId} ref={panel} role="dialog" aria-labelledby={`${panelId}-title`} inert={!open}>
-        <div className="notification-bell__content">
-          <div className="notification-bell__panel-head" style={step()}>
+    <div className="notification-bell gm" data-placement={placement} data-open={open} data-align={fit.align} data-unread={unreadCount > 0} style={{ "--gm-w": `${fit.width}px` } as CSSProperties} ref={root}>
+      <span className="gm__goo" aria-hidden="true"><i className="gm__anchor" /><i className="gm__blob" /></span>
+      <div className="gm__panel notification-bell__panel" id={panelId} ref={panel} role="dialog" aria-labelledby={`${panelId}-title`} inert={!open}>
+        <div className="gm__content notification-bell__content" ref={content}>
+          <div className="gm__item notification-bell__panel-head" style={step()}>
             <div><h2 id={`${panelId}-title`}>Notifications</h2><span className="notification-bell__count" aria-live="polite">{unreadLabel}</span></div>
             <button type="button" className="notification-bell__sound" onClick={toggleSound} aria-pressed={soundEnabled} aria-label={soundEnabled ? "Désactiver la sonnerie" : "Activer la sonnerie"} title={soundEnabled ? "Sonnerie active" : "Sonnerie désactivée"}><span aria-hidden="true">{soundEnabled ? "♪" : "×"}</span></button>
           </div>
-          {hasError && <p className="notification-bell__status" style={step()} role="status">Actualisation momentanément indisponible.</p>}
-          {!loaded && <p className="notification-bell__status" style={step()} role="status">Chargement des notifications…</p>}
-          {loaded && latest.length === 0 && <p className="notification-bell__status" style={step()}>Vous n’avez pas encore de notification.</p>}
+          {hasError && <p className="gm__item notification-bell__status" style={step()} role="status">Actualisation momentanément indisponible.</p>}
+          {!loaded && <p className="gm__item notification-bell__status" style={step()} role="status">Chargement des notifications…</p>}
+          {loaded && latest.length === 0 && <p className="gm__item notification-bell__status" style={step()}>Vous n’avez pas encore de notification.</p>}
           {latest.length > 0 && <ul className="notification-bell__list">{latest.map((notification) => {
             const context = contextLink(notification.kind);
             const isMarking = marking.has(notification.id);
-            return <li className={`notification-bell__item${notification.read_at ? " is-read" : " is-unread"}`} style={step()} key={notification.id}>
+            return <li className={`gm__item notification-bell__item${notification.read_at ? " is-read" : " is-unread"}`} style={step()} key={notification.id}>
               <div className="notification-bell__item-copy"><strong>{notification.title}</strong>{notification.body && <p>{notification.body}</p>}<time dateTime={notification.created_at}>{formatDate(notification.created_at)}</time></div>
               <div className="notification-bell__item-actions"><a href={context.href}>{context.label}</a>{notification.read_at ? <span className="notification-bell__read-state">Lue</span> : <button type="button" onClick={() => void markAsRead(notification)} disabled={isMarking}>{isMarking ? "Marquage…" : "Marquer comme lue"}</button>}</div>
             </li>;
           })}</ul>}
-          <a className="notification-bell__all" style={step()} href="/patient/carnet#notifications">Voir toutes les notifications</a>
+          <a className="gm__item notification-bell__all" style={step()} href="/patient/carnet#notifications">Voir toutes les notifications</a>
         </div>
       </div>
-      <button ref={trigger} type="button" className="notification-bell__trigger" aria-label={`Notifications : ${unreadLabel}`} aria-haspopup="dialog" aria-expanded={open} aria-controls={panelId} onClick={() => void toggleOpen()}>
+      <button ref={trigger} type="button" className="gm__trigger notification-bell__trigger" aria-label={`Notifications : ${unreadLabel}`} aria-haspopup="dialog" aria-expanded={open} aria-controls={panelId} onClick={() => void toggleOpen()}>
         <Icon name="bell" size={22} />
         {unreadCount > 0 && <span className="notification-bell__badge" aria-hidden="true">{unreadCount > 99 ? "99+" : unreadCount}</span>}
       </button>

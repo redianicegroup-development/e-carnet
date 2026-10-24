@@ -50,3 +50,63 @@ body .patient-dossier__declared li > .badge { margin-top: 4px; justify-self: sta
   body .patient-dossier__qr { position: sticky; top: 16px; }
   body .patient-dossier__facts { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
 }
+
+/* Accueil : bloc « À faire » (remplace les cartes d'alerte empilées) */
+.home-todo-title { margin: 0; font-size: 1.05rem; }
+body .list-row--urgent { box-shadow: var(--press-sm), inset 4px 0 0 var(--status-declared-fg); }
+.patient-dossier__qr-hint { margin: 0; font-size: .85rem; color: var(--text-muted); }
+.patient-dossier__qr-hint a { font-weight: 700; }
+
+/* Rubrique repliable « solo » : pas de titre répété sous le bouton qui porte déjà le même (reste lu par les lecteurs d'écran). */
+.carnet-accordion__panel--solo > .card > .section-heading:first-child h2,
+.carnet-accordion__panel--solo > section > .section-heading:first-child h2 {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* =====================================================================================================
+   Grille de rubriques : chaque rubrique repliable est une tuile colorée (deux colonnes sur téléphone, davantage sur grand écran).
+   Une tuile ouverte prend toute la largeur de la grille et montre son contenu ; les autres se replacent autour d'elle.
+   Aucune couleur propre : les tuiles prennent la couleur de la palette choisie par l'utilisateur (--primary mélangé à la matière de la page),
+   donc elles changent avec la palette et restent lisibles dans toutes.
+   ===================================================================================================== */
+body .section-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 156px), 1fr)); gap: 14px; align-items: stretch; min-width: 0; }
+body .section-grid > .card.carnet-accordion {
+  --tile: color-mix(in srgb, var(--primary) 16%, var(--bg)); --tile-ink: var(--text);
+  position: relative; display: block; min-width: 0; min-height: 136px; border: 0; border-radius: 30px; background: var(--tile); color: var(--tile-ink); box-shadow: var(--raise-sm);
+  transition: transform .45s var(--spring-soft, cubic-bezier(.2, .8, .2, 1)), box-shadow .2s ease;
+}
+body .section-grid > .card.carnet-accordion:not([data-open="true"]):hover { transform: translateY(-2px); }
+body .section-grid > .card.carnet-accordion:not([data-open="true"]):active { transform: scale(.97); }
+
+body .section-grid .carnet-accordion__toggle {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "badge arrow" "label label"; align-content: space-between; align-items: start; gap: 16px 8px;
+  width: 100%; height: 100%; min-height: 136px; padding: 16px; border: 0; border-radius: inherit; background: transparent; color: inherit; text-align: left;
+}
+body .section-grid .carnet-accordion__badge { grid-area: badge; display: grid; place-items: center; width: 42px; height: 42px; border-radius: 16px; background: color-mix(in srgb, var(--primary) 24%, var(--bg)); color: var(--primary-text, var(--tile-ink)); }
+body .section-grid .carnet-accordion__label { grid-area: label; display: grid; gap: 2px; min-width: 0; align-self: end; }
+body .section-grid .carnet-accordion__name { font-size: 1.02rem; font-weight: 750; line-height: 1.2; overflow-wrap: anywhere; }
+body .section-grid .carnet-accordion__hint { color: color-mix(in srgb, var(--tile-ink) 62%, transparent); font-size: .78rem; font-weight: 600; line-height: 1.25; }
+body .section-grid .carnet-accordion__toggle > .icon { grid-area: arrow; color: var(--tile-ink); opacity: .75; transform: rotate(-45deg); transition: transform .3s var(--spring-soft, ease); }
+body .section-grid .carnet-accordion__toggle[aria-expanded="true"] > .icon { transform: rotate(90deg); }
+body .section-grid .carnet-accordion__toggle:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: 30px; }
+
+/* tuile ouverte : toute la largeur ; l'en-tête garde la couleur de la tuile, le contenu s'ouvre sur la matière de la page */
+body .section-grid > .card.carnet-accordion[data-open="true"] { grid-column: 1 / -1; min-height: 0; background: var(--bg); color: var(--text); box-shadow: var(--raise-md, var(--raise-sm)); overflow: hidden; }
+body .section-grid > .card.carnet-accordion[data-open="true"] .carnet-accordion__title { padding: 8px; }
+body .section-grid > .card.carnet-accordion[data-open="true"] .carnet-accordion__toggle { min-height: 64px; height: auto; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "badge label arrow"; align-items: center; padding: 10px 16px 10px 12px; border-radius: 24px; background: var(--tile); color: var(--tile-ink); }
+body .section-grid > .card.carnet-accordion[data-open="true"] .carnet-accordion__label { align-self: center; }
+body .section-grid > .card.carnet-accordion[data-open="true"] .carnet-accordion__panel { padding: 8px 14px 18px; }
+
+/* une rubrique seule dans sa grille : une tuile en ligne, pas une demi-largeur vide */
+body .section-grid > .card.carnet-accordion:only-child { grid-column: 1 / -1; min-height: 0; }
+body .section-grid > .card.carnet-accordion:only-child:not([data-open="true"]) .carnet-accordion__toggle { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "badge label arrow"; align-items: center; min-height: 76px; }
+body .section-grid > .card.carnet-accordion:only-child:not([data-open="true"]) .carnet-accordion__label { align-self: center; }
+
+@media (min-width: 820px) {
+  body .section-grid { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 16px; }
+  body .section-grid > .card.carnet-accordion { min-height: 156px; }
+  body .section-grid .carnet-accordion__toggle { min-height: 156px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body .section-grid > .card.carnet-accordion, body .section-grid .carnet-accordion__toggle > .icon { transition: none; }
+}

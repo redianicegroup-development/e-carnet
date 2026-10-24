@@ -14,12 +14,12 @@ test("goo.css : tout est préfixé par body, le gooey ne touche que des calques 
   const selectors = strip(goo).split("\n").map((line) => line.trim()).filter((line) => /^[.a-z]/.test(line) && line.includes("{"));
   assert.deepEqual(selectors.filter((line) => !/^(body|@)/.test(line) && !/^\d+%/.test(line)), []);
   assert.doesNotMatch(goo, /localStorage|@import|url\(["']?https?:/);
-  assert.match(goo, /body \.button::after/);
-  assert.match(goo, /filter: url\(#ecarnet-gooey-soft\)/);
+  assert.match(goo, /body \.button \{ animation: goo-button-grow/);
+  assert.match(read("src/app/soft-skin.css"), /filter: url\(#ecarnet-gooey-soft\)/);
   assert.match(goo, /filter: url\(#ecarnet-gooey\)/);
-  for (const frames of ["goo-in", "goo-drops", "goo-panel-in", "goo-blob", "goo-anchor", "goo-layer-life"]) assert.match(goo, new RegExp(`@keyframes ${frames}\\b`));
+  for (const frames of ["goo-in", "goo-button-grow", "goo-panel-in", "goo-blob-grow", "goo-item-in", "goo-anchor", "goo-layer-life"]) assert.match(goo, new RegExp(`@keyframes ${frames}\\b`));
   assert.match(goo, /@media \(prefers-reduced-motion: no-preference\)/);
-  assert.match(goo, /@media \(prefers-reduced-motion: reduce\) \{\s*body \.goo-layer, body \.button::after \{ display: none; \}/);
+  assert.match(goo, /@media \(prefers-reduced-motion: reduce\) \{\s*body \.goo-layer \{ display: none; \}/);
   // le filtre n'est jamais posé sur un bouton, un panneau ou du texte : seulement sur des pseudo-éléments et sur le calque aria-hidden
   assert.doesNotMatch(strip(goo), /body \.(button|modal-dialog|settings-modal|feedback-dialog|product-survey-dialog) \{[^}]*filter:/);
   const layout = read("src/app/layout.tsx");

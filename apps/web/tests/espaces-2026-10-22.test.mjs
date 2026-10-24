@@ -107,8 +107,8 @@ test("le médecin n'arrive jamais dans l'espace établissement et modifie son pr
 });
 
 test("Mes consultations, Vaccinations à confirmer et Mes rattachements sont pliables ; les logos des établissements s'affichent", () => {
-  assert.match(read("src/components/ProfessionalConsultations.tsx"), /<CollapsibleSection title="Mes consultations">/);
-  assert.match(read("src/app/professionnel/consultations/page.tsx"), /<CollapsibleSection title="Vaccinations à confirmer">/);
+  assert.match(read("src/components/ProfessionalConsultations.tsx"), /<CollapsibleSection title="Mes consultations"/);
+  assert.match(read("src/app/professionnel/consultations/page.tsx"), /<CollapsibleSection title="Vaccinations à confirmer"/);
   const access = read("src/components/ProfessionalAccess.tsx");
   assert.match(access, /<CollapsibleSection title="Mes rattachements"/);
   assert.match(access, /<EstablishmentLogo logo=\{membership\.establishment_logo\}/);

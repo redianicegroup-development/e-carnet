@@ -34,7 +34,7 @@ test("les salutations d’accueil sont des toasts illustrés, accessibles, non b
   assert.match(greeting, /Votre espace personnel est prêt/);
   assert.doesNotMatch(greeting, /WELCOME_TEXT|cta:|<button|aria-modal="true"/);
   assert.doesNotMatch(greeting, /useDialogBehavior|aria-modal="true"/);
-  assert.match(styles, /\.greeting-toast \{[^}]*position: fixed/);
+  assert.match(styles, /\.greeting-stage \{[^}]*position: fixed[^}]*justify-content: center/);
   assert.match(styles, /@media \(max-width: 520px\)[\s\S]*\.greeting-toast/);
   assert.match(styles, /prefers-reduced-motion: reduce/);
 });

@@ -196,7 +196,7 @@ test("titres en double : une rubrique « solo » masque le titre répété sous 
   const carnet = read("src/components/PatientCarnet.tsx");
   assert.match(section, /solo \? " carnet-accordion__panel--solo" : ""/);
   assert.match(css, /carnet-accordion__panel--solo > \.card > \.section-heading:first-child h2/);
-  for (const title of ["Mes documents", "Mes vaccins", "Rappels de médicaments", "Mes plans de suivi", "Rendez-vous"]) assert.match(carnet, new RegExp(`<CollapsibleSection title="${title}" solo>`));
+  for (const title of ["Mes documents", "Mes vaccins", "Rappels de médicaments", "Mes plans de suivi", "Rendez-vous"]) assert.match(carnet, new RegExp(`<CollapsibleSection title="${title}" solo`));
   // Les consultations vivent dans Visites : le carnet ne les répète pas.
   assert.doesNotMatch(carnet, /Mes consultations|PatientConsultations/);
   assert.doesNotMatch(carnet, /<h2>Exporter mon carnet<\/h2>/);

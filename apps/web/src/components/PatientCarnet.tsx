@@ -88,7 +88,8 @@ export function PatientCarnet() {
     <div className="stack-lg">
       <PageHeader eyebrow="Mon carnet" title="Ce que je déclare" lead="Chaque information garde sa provenance : déclarée par vous, jamais présentée comme confirmée tant qu’un médecin ne l’a pas validée." />
 
-      <CollapsibleSection title="Informations de ma carte virtuelle">
+      <div className="section-grid">
+      <CollapsibleSection title="Informations de ma carte virtuelle" icon="idcard" hint="Ce que la carte affiche">
       <section id="carte-urgence" className="card carnet-card-fields" aria-labelledby="card-fields-title">
         <div className="section-heading"><div><h2 id="card-fields-title">Ce que la carte affiche</h2></div></div>
         <p className="muted">Ces informations alimentent votre carte d’urgence. Modifiez-les ici : la carte et son QR se mettent à jour tout seuls.</p>
@@ -105,7 +106,7 @@ export function PatientCarnet() {
       </section>
       </CollapsibleSection>
 
-      <CollapsibleSection title="Déclarations et mesures de santé">
+      <CollapsibleSection title="Déclarations et mesures de santé" icon="pencil" hint="Allergies, mesures…">
       <div className="patient-grid">
         <form className="card" onSubmit={submit} ref={formRef} id="ajouter">
           <span className="eyebrow">{unique && current(form.kind) ? "Modifier" : "Ajouter"}</span>
@@ -145,13 +146,14 @@ export function PatientCarnet() {
       </div>
       <HealthMeasurements />
       </CollapsibleSection>
-      <CollapsibleSection title="Mes documents" solo><MedicalDocuments /></CollapsibleSection>
-      <CollapsibleSection title="Mes vaccins" solo><Vaccinations /></CollapsibleSection>
-      <CollapsibleSection title="Rappels de médicaments" solo><MedicationReminders /></CollapsibleSection>
-      <CollapsibleSection title="Mes plans de suivi" solo><FollowUpPlans /></CollapsibleSection>
-      <CollapsibleSection title="Rendez-vous" solo><PatientAppointments /></CollapsibleSection>
+      <CollapsibleSection title="Mes documents" solo icon="document" hint="Ordonnances, résultats"><MedicalDocuments /></CollapsibleSection>
+      <CollapsibleSection title="Mes vaccins" solo icon="drop" hint="Déclarés et confirmés"><Vaccinations /></CollapsibleSection>
+      <CollapsibleSection title="Rappels de médicaments" solo icon="bell" hint="Prises du jour"><MedicationReminders /></CollapsibleSection>
+      <CollapsibleSection title="Mes plans de suivi" solo icon="chart" hint="Prescrits par un médecin"><FollowUpPlans /></CollapsibleSection>
+      <CollapsibleSection title="Rendez-vous" solo icon="clock" hint="À venir"><PatientAppointments /></CollapsibleSection>
+      <CollapsibleSection title="Exporter mon carnet" icon="download" hint="PDF de mon carnet"><section className="card"><div className="section-heading"><div><span className="eyebrow">Portabilité</span></div></div><p className="muted">Téléchargez une copie PDF volontaire de vos déclarations, vaccinations et mesures récentes.</p><a className="button" href="/api/v1/patient/care/export/">Télécharger mon carnet PDF</a></section></CollapsibleSection>
+      </div>
       <PatientPreconsultations />
-      <CollapsibleSection title="Exporter mon carnet"><section className="card"><div className="section-heading"><div><span className="eyebrow">Portabilité</span></div></div><p className="muted">Téléchargez une copie PDF volontaire de vos déclarations, vaccinations et mesures récentes.</p><a className="button" href="/api/v1/patient/care/export/">Télécharger mon carnet PDF</a></section></CollapsibleSection>
     </div>
   );
 }

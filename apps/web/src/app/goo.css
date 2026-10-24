@@ -1,32 +1,32 @@
 /* =====================================================================================================
-   Gooey — l'identité visuelle de Mon E‑Carnet.
-   Toute apparition passe par la goutte : bouton, modal, confirmation (la barre de navigation et le menu du compte en goutte
-   sont dans soft-skin.css). Chargée APRÈS soft-skin.css, qui garde les surfaces, les ombres et la couleur des boutons ;
-   ici, seulement le mouvement et les calques décoratifs (aria-hidden) sur lesquels on pose les filtres SVG :
-   le texte n'est jamais filtré.
-   - Bouton : la face se forme en gélatine pendant que trois gouttes affleurent le bord haut puis se fondent dans la matière.
-   - Modal / confirmation : une goutte naît sous le panneau et le déborde un instant (calque posé par ui/GooLayer.tsx,
-     calé sur la taille réelle du panneau).
+   Gooey — l'identité visuelle de Mon E‑Carnet. UNE seule matière, celle du panneau de notifications (et du menu du compte) :
+   une goutte de la couleur du fond, filtrée (filtre SVG « gooey »), qui GRANDIT d'un petit disque vers la forme finale avec le même
+   ressort (--spring, .7 s), avec les mêmes ombres douces, puis le contenu apparaît en cascade en sortant du flou.
+   Boutons, modales, confirmations et toast de bienvenue reprennent exactement ce mouvement ; seul le point de départ change
+   (le bouton de la cloche pour le panneau, le centre du bouton pour un bouton, le bas du panneau pour une modale).
+   Chargée APRÈS soft-skin.css, qui garde les surfaces, les ombres et la couleur des boutons ;
+   ici, seulement le mouvement et les calques décoratifs (aria-hidden) sur lesquels on pose les filtres SVG : le texte n'est jamais filtré.
    - prefers-reduced-motion : aucun calque, aucune animation, mêmes états finaux.
    Chaque sélecteur est préfixé par `body`, comme soft-skin.css.
    ===================================================================================================== */
 
-body .button::after {
-  content: ""; position: absolute; z-index: -1; inset: -10px; pointer-events: none; opacity: 0; visibility: hidden;
-  filter: url(#ecarnet-gooey-soft); background-repeat: no-repeat;
-  background-size: 100% 100%, 100% 100%, 100% 100%, calc(100% - 32px) calc(100% - 32px);
-  background-position: 0 0, 0 0, 0 0, 50% 50%;
-  background-image:
-    radial-gradient(circle at 24% 50%, var(--goo-tone) 0 9px, transparent 10px),
-    radial-gradient(circle at 50% 50%, var(--goo-tone) 0 12px, transparent 13px),
-    radial-gradient(circle at 76% 50%, var(--goo-tone) 0 9px, transparent 10px),
-    linear-gradient(var(--goo-tone), var(--goo-tone));
+body {
+  --goo-grow: .7s var(--spring);
+  --goo-drop: 46px; /* diamètre de la goutte de départ : celui du bouton de la cloche */
+  --goo-shadow: drop-shadow(7px 8px 12px var(--neu-dark, rgb(0 0 0 / .2))) drop-shadow(-6px -6px 10px var(--neu-light, transparent));
 }
+
+/* ---------- Bouton : une goutte au centre grandit en pastille (même ressort que le panneau), l'étiquette sort du flou ---------- */
 @media (prefers-reduced-motion: no-preference) {
-  body .button, body .ax-back, body .ax-eye, body .feedback-dialog__close, body .settings-modal__close, body .cookie-consent__close { animation: goo-in .65s var(--spring-soft) backwards; }
-  body .button::after { animation: goo-drops .95s ease-out both; }
-  /* l'écran de connexion orchestre déjà l'entrée de ses éléments (GSAP) : le bouton y garde ses gouttes, pas la gélatine du corps */
+  body .button { animation: goo-button-grow var(--goo-grow) backwards; }
+  body .ax-back, body .ax-eye, body .feedback-dialog__close, body .settings-modal__close, body .cookie-consent__close { animation: goo-in .65s var(--spring-soft) backwards; }
+  /* l'écran de connexion orchestre déjà l'entrée de ses éléments (GSAP) : ses boutons gardent la goutte, pas l'orchestration en double */
   body .button[data-ax-item] { animation: none; }
+}
+@keyframes goo-button-grow {
+  0% { opacity: 1; clip-path: inset(calc(50% - 14px) calc(50% - 14px) round 999px); filter: blur(2px); }
+  35% { filter: blur(0); }
+  100% { opacity: 1; clip-path: inset(-40px round 999px); filter: blur(0); }
 }
 @keyframes goo-in {
   0% { opacity: 0; transform: scale(.72, .5); }
@@ -34,13 +34,8 @@ body .button::after {
   72% { transform: scale(.985, 1.03); }
   100% { opacity: 1; transform: none; }
 }
-@keyframes goo-drops {
-  0% { opacity: 0; visibility: visible; background-position: 0 0, 0 0, 0 0, 50% 50%; }
-  14% { opacity: 1; }
-  46% { opacity: 1; background-position: -14px -24px, 2px -30px, 16px -23px, 50% 50%; }
-  100% { opacity: 0; visibility: hidden; background-position: 0 0, 0 0, 0 0, 50% 50%; }
-}
 
+/* ---------- Modale / confirmation / toast : la goutte naît au bas du panneau, grandit jusqu'à sa taille et le déborde un instant ---------- */
 body .goo-layer { display: none; }
 @media (prefers-reduced-motion: no-preference) {
   body .modal-dialog, body .settings-modal, body .feedback-dialog, body .product-survey-dialog { animation: goo-panel-in .8s var(--spring) backwards; }
@@ -49,21 +44,35 @@ body .goo-layer { display: none; }
     display: block; position: absolute; z-index: 0; pointer-events: none;
     left: calc(var(--goo-x, 0px) - 60px); top: calc(var(--goo-y, 0px) - 60px);
     width: calc(var(--goo-w, 0px) + 120px); height: calc(var(--goo-h, 0px) + 120px);
-    filter: url(#ecarnet-gooey) drop-shadow(0 18px 24px rgb(0 0 0 / .28));
-    animation: goo-layer-life .95s linear both;
+    filter: url(#ecarnet-gooey) var(--goo-shadow);
+    animation: goo-layer-life 1s linear both;
   }
-  body .goo-layer__blob { position: absolute; left: 60px; top: 60px; width: var(--goo-w, 0px); height: var(--goo-h, 0px); border-radius: var(--goo-r, 24px); background: var(--bg); transform-origin: 50% 100%; animation: goo-blob .9s var(--spring) both; }
-  body .goo-layer__anchor { position: absolute; left: calc(60px + var(--goo-w, 0px) / 2 - 28px); top: calc(60px + var(--goo-h, 0px) - 8px); width: 56px; height: 56px; border-radius: 50%; background: var(--bg); transform-origin: 50% 0; animation: goo-anchor .9s ease-in both; }
+  body .goo-layer__blob { position: absolute; left: 60px; top: 60px; width: var(--goo-w, 0px); height: var(--goo-h, 0px); border-radius: var(--goo-r, 26px); background: var(--bg); animation: goo-blob-grow var(--goo-grow) both; }
+  body .goo-layer__anchor { position: absolute; left: calc(60px + var(--goo-w, 0px) / 2 - var(--goo-drop) / 2); top: calc(60px + var(--goo-h, 0px) - var(--goo-drop) - 4px); width: var(--goo-drop); height: var(--goo-drop); border-radius: 50%; background: var(--bg); transform-origin: 50% 50%; animation: goo-anchor .9s ease-in both; }
+  /* le contenu sort du flou en cascade, comme les lignes du panneau de notifications */
+  body .modal-dialog > :not(.modal-illustration),
+  body .greeting-toast__character, body .greeting-toast__copy { animation: goo-item-in .5s var(--spring-soft) backwards; animation-delay: calc(.3s + var(--k, 0) * .055s); }
+  body .modal-dialog > :nth-child(2), body .greeting-toast__copy { --k: 1; }
+  body .modal-dialog > :nth-child(3) { --k: 2; }
+  body .modal-dialog > :nth-child(4) { --k: 3; }
+  body .modal-dialog > :nth-child(5) { --k: 4; }
 }
+/* la goutte part du bas du panneau sous forme de disque, puis s'étire aux dimensions du panneau (même courbe que la goutte de la cloche) */
+@keyframes goo-blob-grow {
+  0% { left: calc(60px + var(--goo-w, 0px) / 2 - var(--goo-drop) / 2); top: calc(60px + var(--goo-h, 0px) - var(--goo-drop) - 4px); width: var(--goo-drop); height: var(--goo-drop); border-radius: calc(var(--goo-drop) / 2); }
+  100% { left: 60px; top: 60px; width: var(--goo-w, 0px); height: var(--goo-h, 0px); border-radius: var(--goo-r, 26px); }
+}
+/* le panneau net (texte non filtré) se fond sous la goutte dès qu'elle a pris sa taille */
 @keyframes goo-panel-in {
-  0% { opacity: 0; transform: translateY(26px) scale(.84, .6); }
-  30% { opacity: 1; }
+  0% { opacity: 0; transform: translateY(0) scale(.97); }
+  34% { opacity: 0; }
+  62% { opacity: 1; }
   100% { opacity: 1; transform: none; }
 }
-@keyframes goo-blob { 0% { transform: translateY(26px) scale(.1, .07); } 100% { transform: none; } }
+@keyframes goo-item-in { 0% { opacity: 0; transform: translateY(14px); filter: blur(6px); } 100% { opacity: 1; transform: none; filter: blur(0); } }
 @keyframes goo-anchor { 0% { transform: scale(1); } 60% { transform: scale(1); } 100% { transform: scale(.2); } }
 @keyframes goo-layer-life { 0% { opacity: 1; visibility: visible; } 78% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
 
 @media (prefers-reduced-motion: reduce) {
-  body .goo-layer, body .button::after { display: none; }
+  body .goo-layer { display: none; }
 }

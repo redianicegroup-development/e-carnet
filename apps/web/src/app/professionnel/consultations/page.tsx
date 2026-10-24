@@ -6,5 +6,5 @@ import { CollapsibleSection } from "../../../components/ui/CollapsibleSection";
 export const metadata = { title: "Consultations — Mon E-Carnet", robots: { index: false, follow: false } };
 
 export default function ProfessionalConsultationsPage() {
-  return <ClinicalGate><><ProfessionalConsultations /><CollapsibleSection title="Vaccinations à confirmer"><ProfessionalVaccinations /></CollapsibleSection></></ClinicalGate>;
+  return <ClinicalGate><><ProfessionalConsultations /><div className="section-grid"><CollapsibleSection title="Vaccinations à confirmer" icon="drop" hint="Preuves à valider"><ProfessionalVaccinations /></CollapsibleSection></div></></ClinicalGate>;
 }

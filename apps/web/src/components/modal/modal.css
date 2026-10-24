@@ -69,7 +69,9 @@
 @media (max-width: 600px) { .modal-dialog.modal-confirm { padding: 24px 20px calc(24px + env(safe-area-inset-bottom)); } }
 
 /* Bienvenue : toast visuel, accessible et totalement non bloquant. */
-.greeting-toast { position: fixed; z-index: 1300; top: max(18px, env(safe-area-inset-top)); right: max(18px, env(safe-area-inset-right)); display: grid; grid-template-columns: 88px minmax(0, 1fr); align-items: center; gap: 14px; width: min(460px, calc(100vw - 36px)); overflow: hidden; padding: 15px 20px 15px 14px; border: 1px solid color-mix(in srgb, var(--primary) 26%, var(--border)); border-radius: 24px; background: color-mix(in srgb, var(--surface) 94%, var(--primary)); color: var(--text); box-shadow: 0 20px 60px rgba(10, 31, 28, .18); pointer-events: none; }
+/* Le toast est centré sur ordinateur comme sur téléphone : la scène fixe occupe la largeur de l'écran, le toast s'y centre. */
+.greeting-stage { position: fixed; z-index: 1300; top: max(18px, env(safe-area-inset-top)); left: 0; right: 0; display: flex; justify-content: center; padding: 0 max(12px, env(safe-area-inset-right)) 0 max(12px, env(safe-area-inset-left)); pointer-events: none; }
+.greeting-toast { position: relative; z-index: 1; display: grid; grid-template-columns: 88px minmax(0, 1fr); align-items: center; gap: 14px; width: min(460px, 100%); overflow: hidden; padding: 15px 20px 15px 14px; border: 1px solid color-mix(in srgb, var(--primary) 26%, var(--border)); border-radius: 24px; background: color-mix(in srgb, var(--surface) 94%, var(--primary)); color: var(--text); box-shadow: 0 20px 60px rgba(10, 31, 28, .18); pointer-events: none; }
 .greeting-toast__halo { position: absolute; right: -32px; top: -56px; width: 150px; aspect-ratio: 1; border-radius: 50%; background: color-mix(in srgb, var(--primary) 13%, transparent); }
 .greeting-toast__character { position: relative; display: grid; place-items: center; width: 88px; height: 88px; border-radius: 22px; background: color-mix(in srgb, var(--primary) 11%, var(--surface)); }
 .greeting-toast__character { color: var(--primary-text); }
@@ -81,7 +83,7 @@
 .greeting-toast__spark { position: absolute; color: var(--primary); font-size: 1.2rem; }
 .greeting-toast__spark--one { top: 8px; left: 14px; }
 .greeting-toast__spark--two { right: 14px; bottom: 9px; font-size: .88rem; opacity: .7; }
-@media (max-width: 520px) { .greeting-toast { top: max(12px, env(safe-area-inset-top)); right: 12px; left: 12px; grid-template-columns: 66px minmax(0, 1fr); gap: 10px; width: auto; padding: 12px; border-radius: 20px; } .greeting-toast__character { width: 66px; height: 66px; border-radius: 18px; } .greeting-toast__character .wc { width: 60px; height: 60px; } .greeting-toast__copy p { font-size: .76rem; } }
+@media (max-width: 520px) { .greeting-stage { top: max(12px, env(safe-area-inset-top)); } .greeting-toast { grid-template-columns: 66px minmax(0, 1fr); gap: 10px; padding: 12px; border-radius: 20px; } .greeting-toast__character { width: 66px; height: 66px; border-radius: 18px; } .greeting-toast__character .wc { width: 60px; height: 60px; } .greeting-toast__copy p { font-size: .76rem; } }
 @media (prefers-reduced-motion: no-preference) {
   .greeting-toast { animation: greeting-arrive .62s cubic-bezier(.2,.8,.2,1) both; }
   .greeting-toast__spark--one { animation: greeting-spark 1.5s ease-in-out .4s both; }
