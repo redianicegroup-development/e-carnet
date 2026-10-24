@@ -20,9 +20,16 @@ export function QrScanner({ onResult, onClose }: { onResult: (token: string) => 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    if (!hasCameraSupport(navigator)) { setProblem(window.isSecureContext ? "unsupported" : "insecure"); setStatus("error"); return; }
     let cancelled = false;
     let controls: IScannerControls | null = null;
+    if (!hasCameraSupport(navigator)) {
+      void Promise.resolve().then(() => {
+        if (cancelled) return;
+        setProblem(window.isSecureContext ? "unsupported" : "insecure");
+        setStatus("error");
+      });
+      return () => { cancelled = true; };
+    }
     const reader = new BrowserQRCodeReader(undefined, { delayBetweenScanAttempts: 200 });
     reader.decodeFromConstraints({ audio: false, video: { facingMode: { ideal: "environment" } } }, video, (result, _error, current) => {
       if (cancelled || !result) return;

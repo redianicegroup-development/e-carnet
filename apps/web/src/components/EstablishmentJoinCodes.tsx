@@ -14,18 +14,26 @@ export function EstablishmentJoinCodes({ establishmentId, active, onChange }: { 
   const [copied, setCopied] = useState("");
   const [now, setNow] = useState(() => Date.now());
 
-  const load = useCallback(async () => {
-    try { setCodes(await apiGet<ActiveJoinCode[]>(`/api/v1/establishments/${establishmentId}/join-codes/active/`)); }
-    catch (error) { setCodes([]); setMessage(error instanceof Error ? error.message : "Codes indisponibles."); }
-  }, [establishmentId]);
+  const load = useCallback(() => apiGet<ActiveJoinCode[]>(`/api/v1/establishments/${establishmentId}/join-codes/active/`), [establishmentId]);
 
-  useEffect(() => { if (active) void load(); else setCodes([]); }, [active, load]);
+  useEffect(() => {
+    if (!active) return;
+    let cancelled = false;
+    void load().then((result) => {
+      if (!cancelled) setCodes(result);
+    }).catch((error: unknown) => {
+      if (cancelled) return;
+      setCodes([]);
+      setMessage(error instanceof Error ? error.message : "Codes indisponibles.");
+    });
+    return () => { cancelled = true; };
+  }, [active, load]);
   // Le compte à rebours suit l'heure : un code qui expire pendant que l'écran est ouvert disparaît sans recharger.
   useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 30_000); return () => window.clearInterval(timer); }, []);
 
   async function create() {
     setBusy(true); setMessage("");
-    try { await apiPost(`/api/v1/establishments/${establishmentId}/join-codes/`, {}); await load(); onChange?.(); setMessage("Nouveau code créé. Remettez-le au médecin."); }
+    try { await apiPost(`/api/v1/establishments/${establishmentId}/join-codes/`, {}); setCodes(await load()); onChange?.(); setMessage("Nouveau code créé. Remettez-le au médecin."); }
     catch (error) { setMessage(error instanceof Error ? error.message : "Le code n’a pas pu être créé."); }
     finally { setBusy(false); }
   }
@@ -35,7 +43,7 @@ export function EstablishmentJoinCodes({ establishmentId, active, onChange }: { 
     catch { setMessage("Copie impossible : sélectionnez le code et copiez-le à la main."); }
   }
 
-  const shown = usableCodes(codes ?? [], now);
+  const shown = active ? usableCodes(codes ?? [], now) : [];
   return <section className="card join-codes" aria-labelledby="code-title">
     <span className="eyebrow">Nouveau médecin</span>
     <h2 id="code-title">Code à remettre à un médecin</h2>

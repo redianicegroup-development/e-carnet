@@ -38,15 +38,27 @@ export function AdminRecoveryClient() {
   const [message, setMessage] = useState("Chargement…");
   const [busyId, setBusyId] = useState("");
 
-  const load = useCallback(async () => {
+  const load = useCallback(() => apiGet<RecoveryData>("/api/v1/identity/admin/recovery/"), []);
+  const refresh = useCallback(async () => {
     try {
-      setData(await apiGet<RecoveryData>("/api/v1/identity/admin/recovery/"));
+      setData(await load());
       setMessage("");
     } catch (error) {
       setMessage(error instanceof ApiError && error.status === 403 ? "Accès réservé aux administrateurs autorisés." : "Impossible de charger les récupérations de compte.");
     }
-  }, []);
-  useEffect(() => { void load(); }, [load]);
+  }, [load]);
+  useEffect(() => {
+    let cancelled = false;
+    void load().then((result) => {
+      if (cancelled) return;
+      setData(result);
+      setMessage("");
+    }).catch((error: unknown) => {
+      if (cancelled) return;
+      setMessage(error instanceof ApiError && error.status === 403 ? "Accès réservé aux administrateurs autorisés." : "Impossible de charger les récupérations de compte.");
+    });
+    return () => { cancelled = true; };
+  }, [load]);
 
   async function setStatus(item: HelpRequest, status: HelpRequest["status"]) {
     setBusyId(item.id);
@@ -73,7 +85,7 @@ export function AdminRecoveryClient() {
 
   return <div className="stack-lg admin-recovery">
     <section className="card">
-      <div className="admin-recovery__head"><div><span className="eyebrow">Sécurité des comptes</span><h2>Récupérations de compte</h2><p className="muted">Chaque tentative sur un compte réel laisse une trace datée. Les réponses secrètes et les mots de passe ne sont jamais affichés. Les adresses sans compte ne sont pas journalisées.</p></div><button type="button" className="button" onClick={() => void load()}>Actualiser</button></div>
+      <div className="admin-recovery__head"><div><span className="eyebrow">Sécurité des comptes</span><h2>Récupérations de compte</h2><p className="muted">Chaque tentative sur un compte réel laisse une trace datée. Les réponses secrètes et les mots de passe ne sont jamais affichés. Les adresses sans compte ne sont pas journalisées.</p></div>      <button type="button" className="button" onClick={() => void refresh()}>Actualiser</button></div>
       <div className="admin-recovery__cards">{cards.map((card) => <div key={card.label} className={`admin-recovery__card${card.tone ? ` is-${card.tone}` : ""}`}><strong>{card.value}</strong><span>{card.label}</span></div>)}</div>
       {message && <p className="status" role="status">{message}</p>}
     </section>
