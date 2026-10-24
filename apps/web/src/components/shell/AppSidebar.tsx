@@ -169,8 +169,31 @@ export function MenuEntry({ entry, onDone }: { entry: SidebarMenuItem; onDone: (
 function AccountMenu({ account, menu, notice, collapsed }: { account: SidebarAccount; menu: SidebarMenuItem[]; notice?: string; collapsed: boolean }) {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
+  const content = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const menuId = useId();
+
+  useEffect(() => {
+    const host = root.current;
+    const inner = content.current;
+    if (!host || !inner) return;
+    const measure = () => {
+      const rect = host.getBoundingClientRect();
+      const width = collapsed
+        ? Math.min(300, window.innerWidth - rect.right - 24)
+        : host.clientWidth;
+      host.style.setProperty("--gm-w", `${Math.max(180, width)}px`);
+      host.style.setProperty("--gm-h", `${inner.offsetHeight}px`);
+    };
+    measure();
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
+    observer?.observe(inner);
+    window.addEventListener("resize", measure);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [account.email, account.name, collapsed, menu, notice]);
 
   useEffect(() => {
     if (!open) return;
@@ -205,21 +228,29 @@ function AccountMenu({ account, menu, notice, collapsed }: { account: SidebarAcc
     entries[next].focus();
   }
 
+  const safe = menu.filter((entry) => entry.tone !== "danger");
+  const danger = menu.filter((entry) => entry.tone === "danger");
+  let itemIndex = 0;
+  const step = () => ({ "--i": itemIndex++ } as React.CSSProperties);
+
   return (
-    <div className="sb__foot" ref={root}>
-      {open && (
-        <div className="sb__menu" id={menuId} role="menu" aria-label={`Compte de ${account.name}`} onKeyDown={onMenuKeyDown}>
-          {account.email && <p className="sb__menu-email">{account.email}</p>}
-          {menu.filter((entry) => entry.tone !== "danger").map((entry) => <MenuEntry key={entry.id} entry={entry} onDone={() => close()} />)}
-          {menu.some((entry) => entry.tone === "danger") && <div className="sb__menu-sep" role="separator" />}
-          {menu.filter((entry) => entry.tone === "danger").map((entry) => <MenuEntry key={entry.id} entry={entry} onDone={() => close()} />)}
+    <div className="sb__foot">
+      <div className="gm gm--sidebar" ref={root} data-open={open}>
+        <span className="gm__goo" aria-hidden="true"><i className="gm__anchor" /><i className="gm__blob" /></span>
+        <div className="gm__panel" id={menuId} role="menu" aria-label={`Compte de ${account.name}`} inert={!open} onKeyDown={onMenuKeyDown}>
+          <div className="gm__content" ref={content}>
+            <p className="gm__who gm__item" style={step()}><strong>{account.name}</strong>{account.email && <small>{account.email}</small>}</p>
+            {safe.map((entry) => <div className="gm__item" style={step()} key={entry.id}><MenuEntry entry={entry} onDone={() => close()} /></div>)}
+            {danger.length > 0 && <div className="gm__sep gm__item" style={step()} role="separator" />}
+            {danger.map((entry) => <div className="gm__item" style={step()} key={entry.id}><MenuEntry entry={entry} onDone={() => close()} /></div>)}
+          </div>
         </div>
-      )}
-      <button ref={trigger} type="button" className={`sb__account${open ? " is-open" : ""}`} aria-haspopup="menu" aria-expanded={open} aria-controls={open ? menuId : undefined} aria-label={`Compte de ${account.name}`} data-tip={account.name} onClick={() => setOpen((current) => !current)}>
-        <SidebarAvatar account={account} />
-        <span className="sb__account-copy"><strong>{account.name}</strong>{account.email && <small>{account.email}</small>}</span>
-        <Icon name="chevron" size={16} />
-      </button>
+        <button ref={trigger} type="button" className={`sb__account gm__trigger${open ? " is-open" : ""}`} aria-haspopup="menu" aria-expanded={open} aria-controls={menuId} aria-label={`Compte de ${account.name}`} data-tip={account.name} onClick={() => setOpen((current) => !current)}>
+          <SidebarAvatar account={account} />
+          <span className="sb__account-copy"><strong>{account.name}</strong>{account.email && <small>{account.email}</small>}</span>
+          <Icon name="chevron" size={16} />
+        </button>
+      </div>
       {notice && !collapsed && <p className="sb__notice" role="alert">{notice}</p>}
     </div>
   );
