@@ -80,7 +80,6 @@ export function NotificationBell({ placement = "sidebar" }: NotificationBellProp
   const content = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const panel = useRef<HTMLDivElement>(null);
-  const content = useRef<HTMLDivElement>(null);
   const panelId = useId();
   const audioContext = useRef<AudioContext | null>(null);
   const knownIds = useRef<Set<string>>(new Set());

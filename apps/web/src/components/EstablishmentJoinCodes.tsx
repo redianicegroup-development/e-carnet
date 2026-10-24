@@ -8,7 +8,7 @@ import { expiryLabel, usableCodes, type ActiveJoinCode } from "../lib/join-codes
 /* « Code à remettre à un médecin » : les codes valables restent affichés pendant leurs 48 h (le serveur les conserve chiffrés),
    puis disparaissent d'eux-mêmes. Un code utilisé par un médecin disparaît aussi : il ne sert qu'une fois. */
 export function EstablishmentJoinCodes({ establishmentId, active, onChange }: { establishmentId: string; active: boolean; onChange?: () => void }) {
-  const [codes, setCodes] = useState<ActiveJoinCode[] | null>(null);
+  const [loadedCodes, setLoadedCodes] = useState<{ establishmentId: string; codes: ActiveJoinCode[] } | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [copied, setCopied] = useState("");
@@ -20,20 +20,20 @@ export function EstablishmentJoinCodes({ establishmentId, active, onChange }: { 
     if (!active) return;
     let cancelled = false;
     void load().then((result) => {
-      if (!cancelled) setCodes(result);
+      if (!cancelled) setLoadedCodes({ establishmentId, codes: result });
     }).catch((error: unknown) => {
       if (cancelled) return;
-      setCodes([]);
+      setLoadedCodes({ establishmentId, codes: [] });
       setMessage(error instanceof Error ? error.message : "Codes indisponibles.");
     });
     return () => { cancelled = true; };
-  }, [active, load]);
+  }, [active, establishmentId, load]);
   // Le compte à rebours suit l'heure : un code qui expire pendant que l'écran est ouvert disparaît sans recharger.
   useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 30_000); return () => window.clearInterval(timer); }, []);
 
   async function create() {
     setBusy(true); setMessage("");
-    try { await apiPost(`/api/v1/establishments/${establishmentId}/join-codes/`, {}); setCodes(await load()); onChange?.(); setMessage("Nouveau code créé. Remettez-le au médecin."); }
+    try { await apiPost(`/api/v1/establishments/${establishmentId}/join-codes/`, {}); setLoadedCodes({ establishmentId, codes: await load() }); onChange?.(); setMessage("Nouveau code créé. Remettez-le au médecin."); }
     catch (error) { setMessage(error instanceof Error ? error.message : "Le code n’a pas pu être créé."); }
     finally { setBusy(false); }
   }
@@ -43,7 +43,8 @@ export function EstablishmentJoinCodes({ establishmentId, active, onChange }: { 
     catch { setMessage("Copie impossible : sélectionnez le code et copiez-le à la main."); }
   }
 
-  const shown = active ? usableCodes(codes ?? [], now) : [];
+  const codes = active && loadedCodes?.establishmentId === establishmentId ? loadedCodes.codes : null;
+  const shown = usableCodes(codes ?? [], now);
   return <section className="card join-codes" aria-labelledby="code-title">
     <span className="eyebrow">Nouveau médecin</span>
     <h2 id="code-title">Code à remettre à un médecin</h2>
