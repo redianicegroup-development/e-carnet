@@ -102,7 +102,7 @@ test("le médecin n'arrive jamais dans l'espace établissement et modifie son pr
   assert.match(settings, /\/professionnel\/onboarding\?retour=parametres/);
   assert.doesNotMatch(read("src/components/ProfessionalAccess.tsx"), /Modifier mon profil/);
   assert.doesNotMatch(read("src/components/ProfessionalHome.tsx"), /\/etablissement/);
-  assert.match(read("src/components/ProfessionalOnboarding.tsx"), /returnTo \?\? "\/professionnel\/onboarding\/ordonnance"/);
+  assert.match(read("src/components/ProfessionalOnboarding.tsx"), /returnTo \?\? \(step3 \? "\/professionnel\/onboarding\/ordonnance\?etape=3" : "\/professionnel\/onboarding\/ordonnance"\)/);
   assert.match(read("src/app/professionnel/onboarding/page.tsx"), /retour === "parametres"/);
 });
 

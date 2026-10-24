@@ -135,6 +135,7 @@ function SignaturePad({ onDone, onCancel }: { onDone: (pixels: Pixels) => void; 
     observer.observe(canvas);
     render();
     return () => observer.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- observateur posé une seule fois ; render lit l'état courant du dessin
   }, []);
 
   function point(event: React.PointerEvent<HTMLCanvasElement>) {

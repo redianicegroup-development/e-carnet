@@ -1,14 +1,10 @@
-/* Cloche construite sur la même matière gooey que le menu de profil mobile. */
+/* Cloche : bouton, contenu et pastille. La goutte (classes gm__*) est celle du menu de profil, dans soft-skin.css ; sa version barre latérale est dans shell/sidebar.css. */
+.notification-bell__label { display: none; }
 .notification-bell { position: relative; z-index: 6; flex: 0 0 auto; width: 46px; height: 46px; }
 .notification-bell__trigger { position: relative; z-index: 3; display: grid; place-items: center; width: 46px; height: 46px; padding: 0; border: 0; border-radius: 50%; background: var(--bg); color: var(--text); cursor: pointer; box-shadow: var(--raise-sm, var(--shadow-sm)); transition: box-shadow .15s ease, transform .15s ease, color .15s ease; }
 .notification-bell__trigger:hover { color: var(--primary-text); }
 .notification-bell__trigger:active { transform: scale(.95); box-shadow: var(--press-sm, var(--shadow-sm)); }
 .notification-bell__trigger:focus-visible, .notification-bell__sound:focus-visible, .notification-bell__item-actions a:focus-visible, .notification-bell__item-actions button:focus-visible, .notification-bell__all:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
-.notification-bell__goo { position: absolute; z-index: 1; top: -30px; right: -30px; width: 106px; height: 106px; pointer-events: none; filter: url(#ecarnet-gooey) drop-shadow(7px 8px 12px var(--neu-dark, color-mix(in srgb, var(--text) 20%, transparent))) drop-shadow(-6px -6px 10px var(--neu-light, transparent)); transition: width 0s .75s, height 0s .75s; }
-.notification-bell[data-open="true"] .notification-bell__goo { width: calc(var(--nb-w, 360px) + 60px); height: calc(var(--nb-h, 420px) + 96px + 60px); transition: none; }
-.notification-bell__anchor, .notification-bell__blob { position: absolute; top: 30px; right: 30px; display: block; width: 46px; height: 46px; border-radius: 23px; background: var(--bg); }
-.notification-bell__blob { transform: translateY(0); transition: width .7s var(--spring, cubic-bezier(.2, .8, .2, 1)), height .7s var(--spring, cubic-bezier(.2, .8, .2, 1)), transform .7s var(--spring, cubic-bezier(.2, .8, .2, 1)), border-radius .7s var(--spring, cubic-bezier(.2, .8, .2, 1)); }
-.notification-bell[data-open="true"] .notification-bell__blob { width: var(--nb-w, 360px); height: var(--nb-h, 420px); border-radius: 26px; transform: translateY(60px); }
 .notification-bell__panel { position: absolute; z-index: 2; top: 0; right: 0; width: 46px; height: 46px; overflow: hidden; border-radius: 23px; pointer-events: none; visibility: hidden; transform: translateY(0); transition: width 0s .75s, height 0s .75s, visibility 0s .75s, transform .7s var(--spring, cubic-bezier(.2, .8, .2, 1)), border-radius .7s var(--spring, cubic-bezier(.2, .8, .2, 1)); }
 .notification-bell[data-open="true"] .notification-bell__panel { width: var(--nb-w, 360px); height: var(--nb-h, 420px); border-radius: 26px; pointer-events: auto; visibility: visible; transform: translateY(60px); transition-delay: 0s; }
 .notification-bell__content { position: absolute; top: 0; right: 0; width: var(--nb-w, 360px); display: grid; gap: 8px; max-height: min(68dvh, 560px); overflow-y: auto; padding: 16px 14px 14px; color: var(--text); }
@@ -36,24 +32,10 @@
 @keyframes notification-bell-pulse { 0%, 100% { box-shadow: var(--raise-sm, var(--shadow-sm)); } 50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--primary) 12%, transparent), var(--raise-sm, var(--shadow-sm)); } }
 .notification-bell__panel-head, .notification-bell__status, .notification-bell__item, .notification-bell__all { opacity: 0; transform: translateY(14px); filter: blur(6px); transition: opacity .2s ease, transform .2s ease, filter .2s ease; }
 .notification-bell[data-open="true"] .notification-bell__panel-head, .notification-bell[data-open="true"] .notification-bell__status, .notification-bell[data-open="true"] .notification-bell__item, .notification-bell[data-open="true"] .notification-bell__all { opacity: 1; transform: none; filter: blur(0); transition: opacity .4s ease calc(.16s + var(--i, 0) * .055s), transform .5s var(--spring-soft, cubic-bezier(.2, .8, .2, 1)) calc(.16s + var(--i, 0) * .055s), filter .4s ease calc(.16s + var(--i, 0) * .055s); }
-@media (min-width: 920px) {
-  .notification-bell[data-placement="sidebar"] .notification-bell__panel { top: auto; bottom: 60px; right: -8px; transform-origin: bottom right; }
-  .notification-bell[data-placement="sidebar"][data-open="true"] .notification-bell__panel { transform: translateY(0); }
-  .sb.is-collapsed .notification-bell[data-placement="sidebar"] .notification-bell__panel { right: auto; bottom: -8px; left: calc(100% + 10px); transform-origin: bottom left; }
-  .sb.is-collapsed .notification-bell[data-placement="sidebar"][data-open="true"] .notification-bell__panel { transform: translateY(0); }
-}
 @media (max-width: 919px) { .notification-bell[data-placement="mobile"] .notification-bell__panel { right: -8px; } }
-/* Ancrage à gauche : le bouton est trop près du bord gauche de l'écran (sidebar PC) pour que le panneau s'ouvre vers la gauche. */
-.notification-bell[data-align="left"] .notification-bell__goo { right: auto; left: -30px; }
-.notification-bell[data-align="left"] .notification-bell__anchor, .notification-bell[data-align="left"] .notification-bell__blob { right: auto; left: 30px; }
-.notification-bell[data-align="left"] .notification-bell__panel { right: auto; left: 0; transform-origin: top left; }
-.notification-bell[data-align="left"] .notification-bell__content { right: auto; left: 0; }
-@media (min-width: 920px) {
-  .notification-bell[data-align="left"][data-placement="sidebar"] .notification-bell__panel { right: auto; left: -8px; transform-origin: bottom left; }
-}
-@media (min-width: 920px) {
-  .sb.is-collapsed .notification-bell[data-align="left"][data-placement="sidebar"] .notification-bell__panel { right: auto; bottom: -8px; left: calc(100% + 10px); transform-origin: bottom left; }
-}
+/* Ancrage à gauche (en-tête mobile, bouton trop près du bord droit). La barre latérale PC a ses propres règles : voir shell/sidebar.css. */
+.notification-bell[data-placement="mobile"][data-align="left"] .notification-bell__panel { right: auto; left: 0; transform-origin: top left; }
+.notification-bell[data-placement="mobile"][data-align="left"] .notification-bell__content { right: auto; left: 0; }
 /* Garde-fou : quel que soit l'écran, le contenu ne dépasse jamais la largeur de la fenêtre. */
 .notification-bell__content { max-width: calc(100vw - 24px); box-sizing: border-box; }
 @media (prefers-reduced-motion: reduce) {

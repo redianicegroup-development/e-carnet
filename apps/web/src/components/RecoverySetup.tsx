@@ -42,6 +42,11 @@ export function RecoverySetup() {
     return () => { active = false; };
   }, []);
 
+  function destinationAfterRecovery() {
+    const context = account?.contexts.find((item) => item.is_active) ?? account?.contexts[0];
+    return context?.role === "professional" ? "/professionnel" : context?.role === "establishment" ? "/etablissement" : "/patient";
+  }
+
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const question = questionChoice === "__custom__" ? customQuestion.trim() : questionChoice;
@@ -54,14 +59,8 @@ export function RecoverySetup() {
     try {
       await apiPatch("/api/v1/identity/me/recovery/", { question, answer });
       setAnswer("");
-      setMessage("Méthode enregistrée. La réponse ne peut pas, à elle seule, ouvrir votre dossier médical.");
-      const context = account?.contexts.find((item) => item.is_active) ?? account?.contexts[0];
-      const destination = context?.role === "professional"
-        ? "/professionnel"
-        : context?.role === "establishment"
-          ? "/etablissement"
-          : "/patient";
-      router.replace(destination);
+      setMessage("Question de récupération enregistrée.");
+      router.replace(destinationAfterRecovery());
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Impossible d’enregistrer cette méthode. Réessayez.");
     } finally {
@@ -73,7 +72,7 @@ export function RecoverySetup() {
     <form className="card auth-form" onSubmit={submit}>
       <span className="eyebrow">Étape 4 · récupération du compte</span>
       <h1>Sécurisez l’accès à votre compte.</h1>
-      <p className="muted">Cette question est un indice de récupération complémentaire, pas une preuve d’identité suffisante pour accéder à votre dossier médical.</p>
+      <p className="muted">Si vous oubliez votre mot de passe, cette question vous permet de choisir un nouveau mot de passe et de retrouver votre compte.</p>
       <label className="field">
         <span>Choisissez une question</span>
         <select value={questionChoice} onChange={(event) => setQuestionChoice(event.target.value)} disabled={busy}>
@@ -104,7 +103,7 @@ export function RecoverySetup() {
           </button>
         </span>
       </label>
-      <p className="notice" role="note">Évitez les informations visibles publiquement. La réponse est enregistrée sous forme hachée et ne sera jamais affichée. La récupération par question seule n’est pas activée ; une vérification supplémentaire, comme un SMS, sera nécessaire.</p>
+      <p className="notice" role="note">Quiconque connaît cette réponse peut changer votre mot de passe : choisissez une réponse que seul vous connaissez, jamais visible sur vos réseaux. Elle est enregistrée sous forme hachée et ne s’affiche jamais. Un code reçu par SMS viendra renforcer cette récupération plus tard.</p>
       <button className="button primary" type="submit" disabled={busy || !account}>{busy ? "Enregistrement…" : "Enregistrer et terminer"}</button>
       <p className="status" role="status" aria-live="polite">{message}</p>
     </form>

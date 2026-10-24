@@ -61,7 +61,6 @@ export function PatientCarnet() {
       })
       .catch((error) => { if (active) { setItems([]); setMessage(error instanceof Error ? error.message : "Impossible de charger le carnet."); } });
     return () => { active = false; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- chargement unique ; chooseKind lit la liste via itemsRef
   }, []);
 
   async function submit(event: React.FormEvent) {

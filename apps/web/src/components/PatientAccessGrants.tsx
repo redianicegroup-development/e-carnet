@@ -204,8 +204,9 @@ export function PatientAccessGrants() {
 
       <section id="qr" className="card" aria-labelledby="qr-heading">
         <span className="eyebrow">Accès temporaire</span>
-        <h2 id="qr-heading">Présenter mon QR à un professionnel</h2>
+        <h2 id="qr-heading">Accès temporaire pour un professionnel</h2>
         <p className="muted">Le QR contient uniquement un jeton opaque à usage unique. Il ne contient aucune donnée médicale.</p>
+        <p className="muted">Ce n’est pas le QR de votre carte virtuelle (celui qui s’affiche sur votre accueil pour les secours) : celui-ci expire au bout de 5 minutes et ne sert qu’à un professionnel que vous autorisez.</p>
         {!qr
           ? <button type="button" className="button primary" onClick={() => void createQr()} disabled={qrBusy}>{qrBusy ? "Génération…" : "Générer un QR temporaire"}</button>
           : <ActiveAccessQr token={qr.token} expiresAt={qr.expiresAt} busy={qrBusy} onRenew={() => void createQr()} />}

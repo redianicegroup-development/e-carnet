@@ -85,7 +85,7 @@ export function PatientHomeIdentity({ account }: { account: SpaceAccount }) {
   }
 
   return <section className="card patient-dossier" aria-labelledby="home-profile-title">
-    <div className="section-heading"><div><span className="eyebrow">Mon dossier patient</span><h2 id="home-profile-title">Mon identité et mes informations déclarées</h2></div></div>
+    <div className="section-heading"><div><span className="eyebrow">Mon carnet · identité</span><h2 id="home-profile-title">Mon identité et mes informations déclarées</h2></div></div>
     {profileMessage && <p className="notice" role="status">{profileMessage}</p>}
     <div className="patient-dossier__layout">
       <dl className="patient-dossier__facts">
@@ -103,15 +103,16 @@ export function PatientHomeIdentity({ account }: { account: SpaceAccount }) {
 
       <aside className="patient-dossier__qr" aria-labelledby="home-qr-title">
         <h3 id="home-qr-title">Ma carte virtuelle</h3>
-        <p className="muted">Une personne qui scanne ce QR consulte votre carte d’urgence, sans se connecter.</p>
+        <p className="muted">Une personne qui scanne ce QR voit votre carte virtuelle, sans se connecter.</p>
         {qrLoading ? <p className="notice" role="status">Chargement du QR…</p> : publicUrl ? <>
-          <div className="patient-dossier__qr-code"><QRCodeSVG value={publicUrl} size={168} level="M" marginSize={3} title="QR public de ma carte virtuelle" /></div>
+          <div className="patient-dossier__qr-code"><QRCodeSVG value={publicUrl} size={168} level="M" marginSize={3} title="QR de ma carte virtuelle" /></div>
           <button className="button small" type="button" disabled={qrBusy} onClick={() => void toggleQr(false)}>{qrBusy ? "Mise à jour…" : "Désactiver le QR"}</button>
         </> : <>
-          <p className="patient-dossier__qr-off">Le QR public est désactivé.</p>
+          <p className="patient-dossier__qr-off">Le QR de votre carte virtuelle est désactivé.</p>
           <button className="button primary" type="button" disabled={qrBusy} onClick={() => void toggleQr(true)}>{qrBusy ? "Activation…" : "Activer mon QR"}</button>
         </>}
         {qrMessage && <p className="notice" role="status" aria-live="polite">{qrMessage}</p>}
+        <p className="patient-dossier__qr-hint">Pour autoriser un professionnel en consultation, c’est un autre QR, valable 5 minutes : <Link href="/patient/acces#qr">accès temporaire</Link>.</p>
       </aside>
 
       <div className="patient-dossier__declared">

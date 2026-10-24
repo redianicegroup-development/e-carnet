@@ -41,7 +41,9 @@ function ageLabel(birthDate: string): string {
 
 const DELIVERY_DATE = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 
-export function PatientOnboarding() {
+/** `forProfessional` : le titulaire est un professionnel. Son carnet patient est rempli en premier (partie 1 de l'étape 3), puis on active son
+    espace professionnel et on passe à son profil (partie 2). Pour un patient seul, rien ne change : étape 3 puis étape 4. */
+export function PatientOnboarding({ forProfessional = false }: { forProfessional?: boolean }) {
   const router = useRouter();
   const [form, setForm] = useState<Form>(EMPTY_FORM);
   const [issuedAt, setIssuedAt] = useState<Date>(() => new Date());
@@ -100,6 +102,12 @@ export function PatientOnboarding() {
         coverage_number: form.coverage_number.trim(),
         coverage_expiry: form.coverage_expiry || null,
       });
+      if (forProfessional) {
+        // Le carnet patient est prêt (contexte patient terminé) : on bascule sur l'espace professionnel, actif pour la suite et pour la reprise.
+        await apiPost("/api/v1/identity/contexts/select/", { role: "professional" });
+        router.push("/professionnel/onboarding?etape=3");
+        return;
+      }
       router.push("/onboarding/securite");
     } catch (error) {
       if (error instanceof ApiError && (error.status === 401 || error.status === 403)) setMessage("Connectez-vous à nouveau pour terminer votre onboarding.");
@@ -110,8 +118,9 @@ export function PatientOnboarding() {
   }
 
   return <form className="card auth-form" onSubmit={submit}>
-    <span className="eyebrow">Étape 3 · identité du titulaire</span>
-    <h1>Ouvrir votre carnet.</h1>
+    <span className="eyebrow">{forProfessional ? "Étape 3 · partie 1 sur 3 · votre carnet patient" : "Étape 3 · identité du titulaire"}</span>
+    <h1>{forProfessional ? "Ouvrir votre carnet patient." : "Ouvrir votre carnet."}</h1>
+    {forProfessional && <p className="notice" role="note">Un seul compte, deux espaces : vous êtes aussi patient. Remplissez votre carnet maintenant, il sera prêt le jour où vous passerez de votre espace professionnel à votre espace patient (menu du compte › Changer d’espace). Votre profil professionnel vient juste après.</p>}
     <p className="muted">Comme sur la couverture du carnet papier. Seuls le nom, les prénoms et la ville sont obligatoires ; l’âge et le genre se renseignent ici si vous le souhaitez, et vous pourrez tout modifier depuis votre profil.</p>
     <p className="notice" role="note">Utilisez des informations exactes et gardez votre compte personnel.</p>
     <div className="titulaire-cover" aria-label="Couverture du carnet">
@@ -136,7 +145,7 @@ export function PatientOnboarding() {
     <label className="field"><span>Organisme</span><input value={form.coverage_provider} onChange={event => update("coverage_provider", event.target.value)} /></label>
     <label className="field"><span>Numéro</span><input value={form.coverage_number} onChange={event => update("coverage_number", event.target.value)} /></label>
     <label className="field"><span>Date d’expiration</span><input type="date" value={form.coverage_expiry} onChange={event => update("coverage_expiry", event.target.value)} /></label>
-    <button className="button primary" type="submit" disabled={submitting}>{submitting ? "Enregistrement…" : "Ouvrir mon espace patient"}</button>
+    <button className="button primary" type="submit" disabled={submitting}>{submitting ? "Enregistrement…" : forProfessional ? "Enregistrer et passer à mon profil professionnel" : "Ouvrir mon espace patient"}</button>
     <p className="status" role="status">{message}</p>
   </form>;
 }

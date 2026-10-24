@@ -21,6 +21,8 @@ type Props = {
   variant?: "settings" | "onboarding";
   /** Appelé en onboarding après l'enregistrement ou « Passer ». */
   onDone?: () => void;
+  /** Libellé de l'étiquette en onboarding (par défaut « Étape facultative »). */
+  eyebrow?: string;
 };
 
 const COPY: Record<SealKind, { title: string; add: string; replace: string; saved: string; none: string; removeTitle: string }> = {
@@ -50,7 +52,7 @@ function SealField({ kind, uploaded, pending, refreshKey, busy, open, onOpen, on
   </div>;
 }
 
-export function ProfessionalCredentialsSettings({ profile, onSaved, variant = "settings", onDone }: Props) {
+export function ProfessionalCredentialsSettings({ profile, onSaved, variant = "settings", onDone, eyebrow }: Props) {
   const confirm = useConfirm();
   const onboarding = variant === "onboarding";
   const [identifier, setIdentifier] = useState(profile.professional_identifier ?? "");
@@ -132,7 +134,7 @@ export function ProfessionalCredentialsSettings({ profile, onSaved, variant = "s
   }
 
   return <form className="settings-modal-section" onSubmit={submit}>
-    <span className="eyebrow">{onboarding ? "Étape facultative" : "Ordonnance"}</span>
+    <span className="eyebrow">{onboarding ? eyebrow ?? "Étape facultative" : "Ordonnance"}</span>
     <h3>{onboarding ? "Votre cachet et votre signature" : "Coordonnées du prescripteur"}</h3>
     <p className="muted">Le numéro d’ordre est imprimé sur vos ordonnances. Le cachet et la signature sont facultatifs : s’ils sont enregistrés, ils sont ajoutés automatiquement en bas de l’ordonnance quand vous signez une consultation, avec la mention « Signé électroniquement dans Mon E‑Carnet ».</p>
     <label className="field"><span>Numéro d’ordre professionnel déclaré</span><input maxLength={120} value={identifier} onChange={(event) => setIdentifier(event.target.value)} placeholder="Votre numéro professionnel déclaré" disabled={busy} /></label>

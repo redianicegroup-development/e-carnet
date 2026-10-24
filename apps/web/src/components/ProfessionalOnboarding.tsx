@@ -6,7 +6,8 @@ import { apiGet, apiPatch } from "../infrastructure/api/client";
 
 type Profile = { specialty: string };
 
-export function ProfessionalOnboarding({ returnTo }: { returnTo?: string }) {
+/** `step3` : première inscription d'un professionnel, partie 2 sur 3 de l'étape 3 (après son carnet patient, avant le cachet et la signature). */
+export function ProfessionalOnboarding({ returnTo, step3 = false }: { returnTo?: string; step3?: boolean }) {
   const router = useRouter();
   const [specialties, setSpecialties] = useState<string[] | null>(null);
   const [selectedSpecialty, setSelectedSpecialty] = useState("");
@@ -43,7 +44,7 @@ export function ProfessionalOnboarding({ returnTo }: { returnTo?: string }) {
     try {
       await apiPatch("/api/v1/professionals/onboarding/", { specialty });
       setMessage("Spécialité déclarée. L’établissement vérifiera le professionnel en interne.");
-      router.push(returnTo ?? "/professionnel/onboarding/ordonnance");
+      router.push(returnTo ?? (step3 ? "/professionnel/onboarding/ordonnance?etape=3" : "/professionnel/onboarding/ordonnance"));
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Le profil n’a pas pu être enregistré.");
     } finally {
@@ -53,7 +54,7 @@ export function ProfessionalOnboarding({ returnTo }: { returnTo?: string }) {
 
   return (
     <form className="card auth-form" onSubmit={submit}>
-      <span className="eyebrow">Profil professionnel</span>
+      <span className="eyebrow">{step3 ? "Étape 3 · partie 2 sur 3 · profil professionnel" : "Profil professionnel"}</span>
       <h1>Déclarez votre rôle clinique.</h1>
       <p className="muted">Mon E‑Carnet ne vérifie pas les justificatifs médicaux et ne demande ici aucun numéro professionnel. L’établissement effectue ses vérifications en interne ; l’application enregistre ensuite sa décision de rattachement.</p>
 

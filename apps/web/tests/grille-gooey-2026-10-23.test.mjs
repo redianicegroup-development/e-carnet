@@ -45,9 +45,10 @@ test("gooey unique : boutons, modales et toast reprennent le ressort et les ombr
   assert.match(goo, /@keyframes goo-blob-grow/);
   assert.match(goo, /filter: url\(#ecarnet-gooey\) var\(--goo-shadow\)/);
   assert.match(goo, /@keyframes goo-item-in/);
-  const bell = read("src/components/notifications/notification-bell.css");
-  assert.match(bell, /drop-shadow\(7px 8px 12px/);
-  assert.match(bell, /\.7s var\(--spring/);
+  // la goutte de la cloche est celle du menu du compte (classes gm__*), définie une seule fois dans soft-skin.css
+  const skin = read("src/app/soft-skin.css");
+  assert.match(skin, /body \.gm__goo \{[^}]*drop-shadow\(7px 8px 12px/);
+  assert.match(skin, /body \.gm__blob \{[^}]*\.7s var\(--spring\)/);
 });
 
 test("le toast de bienvenue est centré sur ordinateur comme sur téléphone et porte la goutte", () => {

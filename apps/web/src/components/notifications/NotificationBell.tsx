@@ -134,6 +134,12 @@ export function NotificationBell({ placement = "sidebar" }: NotificationBellProp
     const measure = () => {
       const rect = trigger.current?.getBoundingClientRect();
       if (!rect) return;
+      if (placement === "sidebar") {
+        // Barre latérale PC : la goutte s'ouvre toujours vers le haut, collée au bord gauche du bouton, et peut déborder sur la page.
+        const width = Math.round(Math.max(PANEL_MIN_WIDTH, Math.min(PANEL_MAX_WIDTH, window.innerWidth - rect.left - PANEL_EDGE_MARGIN)));
+        setFit((current) => (current.align === "left" && current.width === width ? current : { align: "left", width }));
+        return;
+      }
       const room = { right: rect.right + PANEL_OVERHANG - PANEL_EDGE_MARGIN, left: window.innerWidth - rect.left + PANEL_OVERHANG - PANEL_EDGE_MARGIN };
       const align = room.right >= Math.min(PANEL_MAX_WIDTH, room.left) ? "right" : "left";
       const width = Math.round(Math.max(PANEL_MIN_WIDTH, Math.min(PANEL_MAX_WIDTH, room[align])));
@@ -142,7 +148,7 @@ export function NotificationBell({ placement = "sidebar" }: NotificationBellProp
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
-  }, [open]);
+  }, [open, placement]);
 
   // Même goutte que le menu du compte (classes `gm__*`, voir soft-skin.css) : la hauteur du panneau ouvert est celle de son contenu.
   useLayoutEffect(() => {
@@ -214,18 +220,6 @@ export function NotificationBell({ placement = "sidebar" }: NotificationBellProp
     }
   }
 
-  // Hauteur du panneau = hauteur réelle du contenu (comme le menu du compte), et non plus une hauteur fixe de 420 px.
-  useEffect(() => {
-    const host = root.current;
-    const inner = content.current;
-    if (!host || !inner) return;
-    const measure = () => host.style.setProperty("--nb-h", `${inner.offsetHeight}px`);
-    measure();
-    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
-    observer?.observe(inner);
-    return () => observer?.disconnect();
-  }, [fit.width, notifications.length]);
-
   const latest = [...notifications].sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime()).slice(0, 6);
   const unreadLabel = unreadCount === 0 ? "aucune notification non lue" : `${unreadCount} notification${unreadCount > 1 ? "s" : ""} non lue${unreadCount > 1 ? "s" : ""}`;
   let itemIndex = 0;
@@ -256,6 +250,7 @@ export function NotificationBell({ placement = "sidebar" }: NotificationBellProp
       </div>
       <button ref={trigger} type="button" className="gm__trigger notification-bell__trigger" aria-label={`Notifications : ${unreadLabel}`} aria-haspopup="dialog" aria-expanded={open} aria-controls={panelId} onClick={() => void toggleOpen()}>
         <Icon name="bell" size={22} />
+        <span className="notification-bell__label">Notifications</span>
         {unreadCount > 0 && <span className="notification-bell__badge" aria-hidden="true">{unreadCount > 99 ? "99+" : unreadCount}</span>}
       </button>
     </div>

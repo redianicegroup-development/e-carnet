@@ -127,7 +127,7 @@ export function AuthForms() {
       <label className="ax-field" data-ax-item><span>Adresse e-mail</span><input ref={firstField} type="email" required autoComplete="email" placeholder="vous@exemple.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></label>
       <label className="ax-field" data-ax-item><span>Mot de passe</span>
         <span className="ax-password">
-          <input type={showPassword ? "text" : "password"} required minLength={12} autoComplete={login ? "current-password" : "new-password"} aria-describedby={login ? undefined : "auth-password-hint"} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+          <input type={showPassword ? "text" : "password"} required minLength={login ? undefined : 12} autoComplete={login ? "current-password" : "new-password"} aria-describedby={login ? undefined : "auth-password-hint"} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
           <button type="button" className="ax-eye" aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"} aria-pressed={showPassword} onClick={() => setShowPassword((value) => !value)}><EyeIcon off={showPassword} /></button>
         </span>
         {!login && <><span className="ax-meter" aria-hidden="true"><i data-full={strength >= 1} style={{ transform: `scaleX(${strength})` }} /></span><small id="auth-password-hint" className="ax-hint">12 caractères minimum ({Math.min(form.password.length, 12)}/12). Choisissez un mot de passe que vous n’utilisez pas ailleurs.</small></>}
