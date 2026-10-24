@@ -51,6 +51,9 @@
 @media (min-width: 920px) {
   .notification-bell[data-align="left"][data-placement="sidebar"] .notification-bell__panel { right: auto; left: -8px; transform-origin: bottom left; }
 }
+@media (min-width: 920px) {
+  .sb.is-collapsed .notification-bell[data-align="left"][data-placement="sidebar"] .notification-bell__panel { right: auto; bottom: -8px; left: calc(100% + 10px); transform-origin: bottom left; }
+}
 /* Garde-fou : quel que soit l'écran, le contenu ne dépasse jamais la largeur de la fenêtre. */
 .notification-bell__content { max-width: calc(100vw - 24px); box-sizing: border-box; }
 @media (prefers-reduced-motion: reduce) {
