@@ -42,7 +42,8 @@ def require_scope(grant, scope):
     (`preconsultation`, `declarations`, `consultations`, `documents`). Le patient accorde ces périmètres à l’acceptation ; sans cette
     vérification, un périmètre refusé resterait lisible. Lève `PermissionDenied` (403) : l’appelant n’a rien d’autre à tester.
 
-    Ne vérifie pas l’établissement ni le professionnel : ces contrôles dépendent du contexte de la requête et restent à l’appelant.
+    Le rattachement au professionnel reste vérifié par l’appelant; un établissement suspendu ne peut plus servir de contexte à
+    une lecture clinique, même si le patient avait précédemment accordé une autorisation encore active.
     """
     if scope not in ALLOWED_SCOPES:
         # Une faute de frappe côté code ne doit jamais ouvrir ni fermer un accès par hasard.
@@ -50,6 +51,8 @@ def require_scope(grant, scope):
     grant.refresh_expiration()
     if grant.status != "active":
         raise PermissionDenied(GRANT_NOT_ACTIVE_MESSAGE)
+    if grant.establishment.status != "active":
+        raise PermissionDenied("L’établissement associé à cette autorisation est suspendu.")
     if scope not in (grant.scope or []):
         raise PermissionDenied(SCOPE_NOT_GRANTED_MESSAGE)
     return grant

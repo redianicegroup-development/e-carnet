@@ -1,4 +1,4 @@
-# 24/10/2026 (c) — Barre latérale gooey + onboarding du professionnel en trois parties
+# 24/10/2026 (c) — Barre latérale gooey, onboarding du professionnel en trois parties, visite guidée
 
 Trois sujets dans ce zip : (1) la cloche et le menu du compte de la barre latérale ; (2) l'onboarding du professionnel ; (3) 8 fichiers du 20/10 qui manquaient à votre v2.9.
 
@@ -67,3 +67,48 @@ Votre v2.9 n'avait pas reçu ces 8 fichiers, qui sont désormais à leur place d
 - Ils remplacent vos versions du 18–19/10 : comparez avec un `git diff` avant de copier si vous aviez modifié l'un d'eux entre-temps.
 - Effet constaté : 4 tests de `npm test` qui échouaient déjà dans la v2.9 (QA-01, QA-02, étape 4, UX-04) passent. Il reste 3 échecs connus, qui ne viennent pas de ces changements : le centre d'aide `/faq`, le QR d'urgence dans `AccountSettingsClient`, le cache du thème.
 - Contrôle fait : avec ces fichiers, tous les imports relatifs du projet se résolvent (aucun module manquant). **Non fait** : un vrai `tsc` / `next build` (les dépendances npm sont injoignables depuis mon environnement). Je ne peux donc pas affirmer que ces fichiers étaient la cause de vos erreurs de compilation en production : lancez `npm run build --workspace=@ecarnet/web` après copie et envoyez-moi l'erreur exacte si elle persiste.
+
+---
+
+## 4. Visite guidée à la première connexion (comme NexuraTour)
+Une visite interactive par espace : un cadre met en lumière un vrai onglet (ou bouton), une carte dit à quoi il sert, puis « Suivant ». Le reste de l'écran est assombri et rien n'est modifié pendant la visite (un écran transparent empêche de cliquer à travers). Tout vient des variables de la palette : aucune couleur propre. La carte naît avec la même goutte gooey que les autres panneaux (si « réduire les animations » est activé, elle apparaît sans mouvement).
+
+### Quels onglets, pour qui, et pourquoi
+Une étape = un onglet qui change ce que l'utilisateur fait. On n'explique pas tout : 5 à 7 étapes, faciles à finir.
+
+| Espace | Étapes (dans l'ordre) |
+|---|---|
+| **Patient** (7) | Bienvenue · **Accueil** (carte d'urgence, prochaines étapes) · **Mon carnet** (allergies, traitements, vaccins, documents) · **Visites** (historique, préparer la prochaine) · **Partage** (QR de 5 min, ce que le professionnel voit, retrait de l'accès) · **Notifications** (la cloche) · **Menu du compte** |
+| **Professionnel** (6) | Bienvenue · **Accueil** · **Rattachement** (à faire en premier : code de l'établissement) · **Patients** (accès par QR, tracé) · **Suivi** (consultations, ordonnances) · **Menu du compte** |
+| **Établissement** (6) | Bienvenue · **Accueil** (créer le code de 48 h pour un médecin) · **Équipe** · **Demandes** (confirmer ou refuser un rattachement) · **Paramètres** (pré-consultation, modèle d'ordonnance) · **Menu du compte** |
+
+- **Professionnel pas encore rattaché** : les onglets Patients et Suivi sont masqués, donc ces deux étapes sont sautées automatiquement (visite de 4 étapes, la 3ᵉ explique qu'ils apparaîtront après le rattachement). Même règle pour Demandes / Paramètres côté établissement et pour la cloche.
+- **Le menu du compte** est toujours la dernière étape : il indique où revoir la visite.
+
+### Quand elle démarre, quand elle reprend
+- Elle démarre seule à la première connexion, **une fois le choix des cookies fait** (la bannière passe avant), environ 5 secondes après l'arrivée pour laisser passer le message de bienvenue.
+- Elle est mémorisée **par compte et par espace** (un compte qui a les trois espaces voit trois visites, une par espace) dans le navigateur de l'appareil. **Si le cookie / les données du site sont effacés, la mémoire et le choix des cookies disparaissent : la visite reprend à la connexion suivante.** Nouvel appareil ou nouveau navigateur : elle reprend aussi.
+- **Pas de nouveau cookie** : le registre des cookies de `lib/legal/config.ts` (testé) est inchangé. La mémoire est une petite entrée `ecarnet.tour.v1.<compte>.<espace>` qui ne contient qu'une date, dans le stockage local, comme la copie du thème. Le code passe par le point d'accès unique `deviceStorage()` de `lib/themeStorage.ts` (un test du projet impose qu'un seul fichier touche au stockage local).
+- Sans stockage possible (navigation privée stricte), la visite ne se rejoue pas à chaque page.
+- **Revoir à tout moment** : « Revoir la visite guidée » dans le menu du compte (barre latérale PC, en-tête mobile) et une question dans le centre d'aide.
+- Clavier : Échap quitte, flèches gauche/droite naviguent, Tab reste dans la carte ; la carte est un dialogue accessible (`role="dialog"`).
+- Elle ne s'affiche jamais par-dessus un écran bloquant (changement de mot de passe obligatoire, profil à compléter).
+- La page de confidentialité (« Stockage local ») mentionne la mémoire de la visite.
+
+### Fichiers
+Nouveaux : `lib/tour.ts` (étapes, mémoire, placement ; sans React), `components/tour/ProductTour.tsx`, `components/tour/tour.css`, test `tests/visite-guidee-2026-10-24.test.mjs` (ajouté au script `test` de `package.json`).
+Modifiés : `components/shell/SpaceShell.tsx` (montage + entrée de menu), `components/shell/AppSidebar.tsx`, `components/shell/GooeyAccountMenu.tsx`, `components/notifications/NotificationBell.tsx` (repères `data-tour`), `lib/themeStorage.ts` (`deviceStorage()`), `components/help/helpContent.ts`, `app/confidentialite/page.tsx`.
+
+### Vérifié / non vérifié
+- **Vérifié dans Chromium** avec le vrai composant et les vraies feuilles de style des trois espaces, sur PC, rail replié et mobile : délai du premier affichage, 7/6/6 étapes avec les bons titres, cadre et carte bien placés (à droite de la barre latérale, au-dessus de la barre basse, sous l'en-tête mobile), pas de débordement, mémoire enregistrée, pas de rejeu après rechargement, **rejeu après effacement des données du site**, professionnel non rattaché (4 étapes).
+- Tests : `npm test` → 191 tests, 3 échecs déjà présents dans votre v2.9 (centre d'aide `/faq`, QR d'urgence dans `AccountSettingsClient`, cache du thème) ; tous les imports se résolvent ; syntaxe TypeScript contrôlée.
+- **Non exécuté** : dans l'application Next complète avec le vrai serveur (la mise en page a été contrôlée avec un harnais qui reproduit les espaces) ; ni `npm run lint`, ni `tsc`, ni `next build` (dépendances npm injoignables ici). Lancez `npm run lint` et `npm run build --workspace=@ecarnet/web` après copie.
+- Les textes des étapes sont en français courant et prudents (« peut consulter », pas de promesse médicale) : relisez-les, ils sont tous dans `lib/tour.ts`.
+
+---
+
+## 5. Fusion sur la base du 25/10 (e-carnet.zip)
+Le zip (c) a été appliqué sur le projet du 25/10, pas écrasé fichier par fichier. Deux fichiers ont été fusionnés à la main pour ne pas faire reculer des textes plus récents :
+- `components/help/helpContent.ts` : on garde la question « Quels dossiers l’administrateur d’un établissement peut-il consulter ? » du projet ; on ajoute seulement « Comment revoir la visite guidée ? ».
+- `app/confidentialite/page.tsx` : on garde la ligne « Administrateur d’établissement » du projet ; on remplace seulement la puce « Stockage local » (mention de la visite guidée).
+Les autres fichiers du zip (c) sont repris tels quels (ils n’ajoutaient que la visite guidée / les repères `data-tour`).

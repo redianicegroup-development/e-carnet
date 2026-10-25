@@ -25,7 +25,7 @@ check:
 # À lancer avec Python 3.12 (celui de l'image Docker) et un accès réseau ; relire le diff puis commiter requirements.txt.
 lock:
 	python3 -m pip install --quiet "pip-tools>=7.4"
-	cd apps/api && python3 -m pip_tools compile --quiet --generate-hashes --strip-extras --resolver=backtracking --output-file=requirements.txt requirements.in
+	cd apps/api && python3 -m piptools compile --quiet --generate-hashes --strip-extras --resolver=backtracking --output-file=requirements.txt requirements.in
 	python3 scripts/check-requirements-lock.py
 
 check-lock:

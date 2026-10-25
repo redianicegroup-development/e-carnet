@@ -1,6 +1,7 @@
 ZIP (c) — à copier par-dessus le projet (chemins relatifs), après e-carnet-maj-2026-10-24-fusion.zip.
 
 apps/web/package.json
+apps/web/src/app/confidentialite/page.tsx
 apps/web/src/app/error.tsx
 apps/web/src/app/global-error.tsx
 apps/web/src/app/loading.tsx
@@ -19,10 +20,19 @@ apps/web/src/components/ProfessionalCredentialsOnboarding.tsx
 apps/web/src/components/ProfessionalCredentialsSettings.tsx
 apps/web/src/components/ProfessionalOnboarding.tsx
 apps/web/src/components/RecoverySetup.tsx
+apps/web/src/components/help/helpContent.ts
 apps/web/src/components/notifications/NotificationBell.tsx
 apps/web/src/components/notifications/notification-bell.css
+apps/web/src/components/shell/AppSidebar.tsx
+apps/web/src/components/shell/GooeyAccountMenu.tsx
+apps/web/src/components/shell/SpaceShell.tsx
 apps/web/src/components/shell/sidebar.css
+apps/web/src/components/tour/ProductTour.tsx
+apps/web/src/components/tour/tour.css
+apps/web/src/lib/themeStorage.ts
+apps/web/src/lib/tour.ts
 apps/web/tests/espaces-2026-10-22.test.mjs
 apps/web/tests/grille-gooey-2026-10-23.test.mjs
 apps/web/tests/onboarding-professionnel-2026-10-24.test.mjs
 apps/web/tests/sidebar-goutte-2026-10-24.test.mjs
+apps/web/tests/visite-guidee-2026-10-24.test.mjs

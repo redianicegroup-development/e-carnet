@@ -83,7 +83,7 @@ Ton rédactionnel : français simple, direct et humain. Préférer « Vous déci
 
 - liste simple des demandes de rattachement ;
 - actions « Accepter » et « Refuser » avec explication de l’effet ;
-- rappeler que l’administrateur de l’établissement ne consulte pas les dossiers patients.
+- expliquer que l’administrateur consulte les dossiers liés à son établissement, tandis que le professionnel reste limité au cas qui lui est attribué; aucune donnée d’un autre établissement n’est ouverte automatiquement.
 
 ### Graphiques et schémas
 

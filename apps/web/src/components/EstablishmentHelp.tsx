@@ -10,10 +10,10 @@ export function EstablishmentHelp() {
       <HelpNotices />
       <HelpSteps steps={ESTABLISHMENT_STEPS} />
       <section className="card">
-        <span className="eyebrow">Ce que vous ne faites pas</span>
-        <h2>Aucun accès aux dossiers</h2>
-        <p className="muted">L’administrateur gère les rattachements. Il ne consulte pas les dossiers médicaux. Le partage de dossier entre établissements n’est pas disponible dans cette version.</p>
-        <div className="actions"><Link className="button" href="/securite">Notre approche de la sécurité</Link><Link className="button" href="/aide#patient">Guides patient et professionnel</Link></div>
+        <span className="eyebrow">Accès aux dossiers</span>
+        <h2>Un périmètre propre à chaque rôle</h2>
+        <p className="muted">L’administrateur consulte les dossiers ayant une pré-consultation clôturée ou une consultation dans son établissement. Le professionnel n’accède qu’au dossier de son cas attribué, selon l’autorisation du patient. Aucun accès automatique aux données d’un autre établissement.</p>
+        <div className="actions"><Link className="button" href="/etablissement/dossiers">Voir les dossiers de l’établissement</Link><Link className="button" href="/securite">Notre approche de la sécurité</Link></div>
       </section>
       <section className="stack" aria-labelledby="aide-questions">
         <h2 id="aide-questions">Questions fréquentes</h2>

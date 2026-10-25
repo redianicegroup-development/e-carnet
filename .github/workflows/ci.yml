@@ -35,9 +35,19 @@ jobs:
       - name: Dépendances verrouillées (versions exactes + empreintes)
         run: python scripts/check-requirements-lock.py
       - run: pip install -r apps/api/requirements.txt
+      - name: Installer qpdf pour les tests de documents PDF
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends qpdf
       - run: python apps/api/manage.py check
       - run: python apps/api/manage.py makemigrations --check --dry-run
-      - run: python apps/api/manage.py test
+      - name: Tests d’intégration Django (PostgreSQL)
+        working-directory: apps/api
+        run: python manage.py test
+      - name: Vérifier la syntaxe du contrôle de surveillance
+        run: bash -n ops/monitoring-check.sh
+      - name: Tester la sonde de surveillance (OK et panne)
+        run: python ops/test-monitoring-check.py
 
   web:
     runs-on: ubuntu-latest

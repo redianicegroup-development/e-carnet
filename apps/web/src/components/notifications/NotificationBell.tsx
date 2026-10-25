@@ -248,7 +248,7 @@ export function NotificationBell({ placement = "sidebar" }: NotificationBellProp
           <a className="gm__item notification-bell__all" style={step()} href="/patient/carnet#notifications">Voir toutes les notifications</a>
         </div>
       </div>
-      <button ref={trigger} type="button" className="gm__trigger notification-bell__trigger" aria-label={`Notifications : ${unreadLabel}`} aria-haspopup="dialog" aria-expanded={open} aria-controls={panelId} onClick={() => void toggleOpen()}>
+      <button ref={trigger} type="button" className="gm__trigger notification-bell__trigger" data-tour="notifications" aria-label={`Notifications : ${unreadLabel}`} aria-haspopup="dialog" aria-expanded={open} aria-controls={panelId} onClick={() => void toggleOpen()}>
         <Icon name="bell" size={22} />
         <span className="notification-bell__label">Notifications</span>
         {unreadCount > 0 && <span className="notification-bell__badge" aria-hidden="true">{unreadCount > 99 ? "99+" : unreadCount}</span>}

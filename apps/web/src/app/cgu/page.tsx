@@ -78,7 +78,7 @@ const sections: LegalSectionDef[] = [
         <ActorsFigure variant="terms" />
         <p><strong>Le patient</strong> décide des accès à son carnet, choisit le périmètre et la durée, et peut refuser ou révoquer une autorisation depuis son espace.</p>
         <p><strong>Le professionnel</strong> n’accède à un carnet que dans le cadre d’une autorisation active. Il reste responsable de ses actes, des informations qu’il saisit et du respect de ses obligations professionnelles, sous réserve du droit applicable et des contrats conclus avec son établissement.</p>
-        <p><strong>L’établissement</strong> confirme le rattachement d’un professionnel à sa structure. Cette confirmation ne vaut pas certification par l’éditeur de l’identité, des diplômes ou de la compétence du professionnel. L’administrateur gère l’établissement et les rattachements ; il ne consulte pas les dossiers patients depuis son espace.</p>
+        <p><strong>L’établissement</strong> confirme le rattachement d’un professionnel à sa structure. Cette confirmation ne vaut pas certification par l’éditeur de l’identité, des diplômes ou de la compétence du professionnel. L’administrateur actif consulte les dossiers ayant une pré-consultation clôturée ou une consultation dans son établissement. Le professionnel ne consulte que le dossier du cas qui lui est attribué, selon l’autorisation du patient. Aucun accès automatique aux données d’un autre établissement.</p>
         <p><strong>L’éditeur</strong> fournit le service et ne remplace ni le patient, ni le professionnel, ni l’établissement dans leurs décisions.</p>
       </>
     ),

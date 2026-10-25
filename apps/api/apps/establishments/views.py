@@ -11,6 +11,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.validators import validate_email
 from django.db import transaction
+from django.db.models import Q
 from django.http import Http404, HttpResponse
 from django.utils import timezone
 from rest_framework import status
@@ -22,6 +23,7 @@ from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from apps.identity.throttles import IpScopedThrottle
 
+from apps.audit.models import AuditEvent
 from apps.audit.services import record_event
 from apps.cloudinary_storage import CLOUDINARY_CONFIGURED, upload as cloudinary_upload
 from apps.identity.models import AccountContext
@@ -154,7 +156,7 @@ class StaffEstablishmentCreateView(APIView):
     permission_classes = [IsAuthenticated, IsAdminUser]
 
     def get(self, request):
-        queryset = Establishment.objects.filter(status="active").prefetch_related("administrator_history__user__account_profile")
+        queryset = Establishment.objects.filter(status__in=("active", "suspended")).prefetch_related("administrator_history__user__account_profile")
         total = queryset.count()
         items = []
         for establishment in queryset[:STAFF_LIST_LIMIT]:
@@ -163,6 +165,9 @@ class StaffEstablishmentCreateView(APIView):
                 "id": str(establishment.id),
                 "name": establishment.name,
                 "internal_code": establishment.internal_code,
+                "status": establishment.status,
+                "suspended_at": establishment.suspended_at,
+                "suspension_reason": establishment.suspension_reason,
                 "created_at": establishment.created_at,
                 "profile_completed_at": establishment.profile_completed_at,
                 # Mises à jour faites par l'établissement lui‑même : visibles de l'équipe, datées.
@@ -255,10 +260,10 @@ class StaffAdministratorInvitationView(APIView):
 
     @transaction.atomic
     def post(self, request, establishment_id):
-        establishment = Establishment.objects.filter(id=establishment_id, status="active").first()
+        establishment = Establishment.objects.select_for_update().filter(id=establishment_id, status="active").first()
         if not establishment:
             return Response({"success": False, "message": "Établissement actif introuvable."}, status=404)
-        current = EstablishmentAdministrator.objects.filter(establishment=establishment, status="active").select_related("user").first()
+        current = EstablishmentAdministrator.objects.select_for_update().filter(establishment=establishment, status="active").select_related("user").first()
         last = EstablishmentAdministrator.objects.filter(establishment=establishment).select_related("user").order_by("-started_at").first()
         previous = current or last
         email = str(request.data.get("email", "") or (previous.user.email if previous else "")).strip().lower()
@@ -281,6 +286,7 @@ class StaffAdministratorInvitationView(APIView):
                 "code": "administrator_exists",
                 "message": "Cette structure a déjà un administrateur actif : il sera remplacé immédiatement par ce nouveau responsable.",
             }, status=409)
+        replacing = bool(current and current.user.email.lower() != email)
         try:
             with transaction.atomic():
                 access = provision_administrator(
@@ -289,6 +295,8 @@ class StaffAdministratorInvitationView(APIView):
                 )
         except AccountConflict as conflict:
             return account_conflict_response(conflict)
+        if replacing:
+            record_event(event_type="establishment.administrator.replaced", actor=request.user, actor_role="ecarnet_staff", establishment=establishment, metadata={"action": "replaced", "status": "active"})
         return secret_response(access_response_data(None, access))
 
 
@@ -310,6 +318,66 @@ class StaffAdministratorInvitationRevokeView(APIView):
         disable_temporary_password(admin.user)
         record_event(event_type="establishment.administrator.revoked", actor=request.user, actor_role="ecarnet_staff", establishment=establishment, metadata={"action": "revoked", "status": "revoked"})
         return Response({"success": True, "data": {"revoked": 1}})
+
+
+class StaffEstablishmentStatusView(APIView):
+    """Suspend ou réactive une structure; le changement est réservé au staff et toujours journalisé."""
+    permission_classes = [IsAuthenticated, IsAdminUser]
+    REASONS = {"security_review", "compliance_review", "legal_request", "operational"}
+
+    @transaction.atomic
+    def post(self, request, establishment_id):
+        establishment = Establishment.objects.select_for_update().filter(id=establishment_id).first()
+        if not establishment:
+            return Response({"success": False, "message": "Établissement introuvable."}, status=404)
+        action = request.data.get("action")
+        now = timezone.now()
+        if action == "suspend":
+            reason = str(request.data.get("reason", ""))
+            if reason not in self.REASONS:
+                return Response({"success": False, "message": "Choisissez un motif de suspension valide."}, status=400)
+            if establishment.status != "active":
+                return Response({"success": False, "message": "Seul un établissement actif peut être suspendu."}, status=409)
+            establishment.status = "suspended"
+            establishment.suspended_at = now
+            establishment.suspended_by = request.user
+            establishment.suspension_reason = reason
+            event_type = "establishment.suspended"
+            metadata = {"action": action, "status": "suspended", "reason_code": reason}
+            fields = ("status", "suspended_at", "suspended_by", "suspension_reason", "updated_at")
+        elif action == "reactivate":
+            if establishment.status != "suspended":
+                return Response({"success": False, "message": "Seul un établissement suspendu peut être réactivé."}, status=409)
+            establishment.status = "active"
+            event_type = "establishment.reactivated"
+            metadata = {"action": action, "status": "active"}
+            fields = ("status", "updated_at")
+        else:
+            return Response({"success": False, "message": "Action attendue : suspend ou reactivate."}, status=400)
+        establishment.save(update_fields=fields)
+        record_event(event_type=event_type, actor=request.user, actor_role="ecarnet_staff", establishment=establishment, metadata=metadata)
+        return Response({"success": True, "data": {"id": str(establishment.id), "status": establishment.status, "suspended_at": establishment.suspended_at, "suspension_reason": establishment.suspension_reason}})
+
+
+class StaffEstablishmentAuditView(APIView):
+    """Journal opérationnel d'une structure, sans identifiants patients ni contenu clinique."""
+    permission_classes = [IsAuthenticated, IsAdminUser]
+
+    def get(self, request, establishment_id):
+        if not Establishment.objects.filter(id=establishment_id).exists():
+            return Response({"success": False, "message": "Établissement introuvable."}, status=404)
+        events = AuditEvent.objects.filter(establishment_id=establishment_id).filter(
+            Q(event_type__startswith="establishment.") | Q(event_type__startswith="membership.")
+        ).select_related("actor").order_by("-created_at")[:100]
+        items = [{
+            "id": str(event.id),
+            "event_type": event.event_type,
+            "actor_role": event.actor_role,
+            "actor": (f"{event.actor.first_name} {event.actor.last_name}".strip() or event.actor.email) if event.actor else "Système",
+            "metadata": {key: event.metadata[key] for key in ("action", "status", "reason_code") if key in event.metadata},
+            "created_at": event.created_at,
+        } for event in events]
+        return Response({"success": True, "data": {"items": items, "limit": 100}})
 
 
 class EstablishmentInvitationPreviewView(APIView):

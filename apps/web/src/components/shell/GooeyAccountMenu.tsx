@@ -74,7 +74,7 @@ export function GooeyAccountMenu({ account, menu, notice }: { account: SidebarAc
           {notice && <p className="gm__notice gm__item" style={step()} role="alert">{notice}</p>}
         </div>
       </div>
-      <button ref={trigger} type="button" className="gm__trigger" aria-haspopup="menu" aria-expanded={open} aria-controls={panelId} aria-label={open ? "Fermer le menu du compte" : `Ouvrir le menu du compte de ${account.name}`} onClick={() => setOpen((value) => !value)}>
+      <button ref={trigger} type="button" className="gm__trigger" data-tour="account" aria-haspopup="menu" aria-expanded={open} aria-controls={panelId} aria-label={open ? "Fermer le menu du compte" : `Ouvrir le menu du compte de ${account.name}`} onClick={() => setOpen((value) => !value)}>
         <SidebarAvatar account={account} />
       </button>
     </div>

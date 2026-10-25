@@ -1,6 +1,6 @@
 from .models import AuditEvent
 
-ALLOWED_METADATA_KEYS = {"action", "scope", "extension_count", "status", "source_type", "declaration_id", "encounter_id", "membership_id", "invitation_id", "join_code_id", "provider", "resource_type", "resource_count", "resource_id", "authorized_until", "access_duration_minutes"}
+ALLOWED_METADATA_KEYS = {"action", "scope", "extension_count", "status", "reason_code", "source_type", "declaration_id", "encounter_id", "membership_id", "invitation_id", "join_code_id", "provider", "resource_type", "resource_count", "resource_id", "authorized_until", "access_duration_minutes"}
 
 
 def record_event(*, event_type, actor, actor_role, patient=None, establishment=None, access_grant=None, consultation=None, metadata=None):

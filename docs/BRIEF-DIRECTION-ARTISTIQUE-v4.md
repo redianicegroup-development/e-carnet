@@ -280,7 +280,7 @@ Français simple, direct, humain. Les formulations ci-dessous respectent les ré
 
 1. **Patient sur téléphone :** accueil et demande en attente ; déclaré par moi / écrit par un professionnel ; écran d’autorisation (professionnel, établissement, contenu, durée) ; boutons Autoriser, Refuser, Révoquer faciles à distinguer ; historique des accès.
 2. **Professionnel :** demande et périmètre ; étapes du QR sans laisser croire qu’un scan ouvre le dossier ; saisie de consultation avec origine visible ; message clair si le rattachement ou l’établissement n’est pas actif.
-3. **Établissement et équipe interne :** demandes de rattachement, actions Accepter/Refuser expliquées ; rappel que l’administrateur ne consulte pas les dossiers patients.
+3. **Établissement et équipe interne :** demandes de rattachement, actions Accepter/Refuser expliquées ; accès administrateur limité aux dossiers associés à sa structure, professionnel limité à son cas attribué, sans accès automatique aux données d’une autre structure.
 
 ### Principes de mise en page (repris de la V3)
 

@@ -2,6 +2,7 @@ from datetime import date
 import uuid
 from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.core.files.base import ContentFile
 from django.db import transaction
 from django.db.models import Q, Sum
 from django.http import FileResponse, HttpResponse
@@ -21,6 +22,7 @@ from apps.audit.models import AuditEvent
 from apps.audit.services import record_event
 from apps.cloudinary_storage import CLOUDINARY_CONFIGURED, destroy as cloudinary_destroy, extension_from_name, signed_download, upload as cloudinary_upload
 from .models import AccessGrant, Appointment, CareEncounter, Consultation, ExamRequest, FollowUpPlan, FollowUpPlanItem, HealthMeasurement, MedicalDocument, MedicationIntake, MedicationReminder, PatientNotification, PreconsultationTemplate, Vaccination
+from .pdf_compression import compress_pdf_lossless
 from .serializers import AccessGrantSerializer, AppointmentSerializer, CareEncounterSerializer, ConsultationSerializer, FollowUpPlanSerializer, HealthMeasurementSerializer, MedicalDocumentSerializer, MedicationIntakeSerializer, MedicationReminderSerializer, PatientNotificationSerializer, PreconsultationTemplateSerializer, ProfessionalAccessGrantSerializer, ProfessionalConsultationCreateSerializer, VaccinationSerializer
 from .services import QR_TOKEN_TTL_SECONDS, SelfAccessRefused, create_patient_qr_token, create_professional_grant, require_scope
 from .consultation_services import validate_consultation
@@ -145,6 +147,16 @@ class PatientMedicalDocumentListCreateView(APIView):
         content_type = _document_signature(uploaded, extension)
         if not content_type:
             raise ValidationError({"file": "Format refusé : l’extension et la signature réelle du fichier doivent correspondre à PDF, PNG, JPG/JPEG ou WebP."})
+        # Le plafond protège aussi le traitement; le quota persistant utilise ensuite la taille réellement stockée.
+        if content_type == "application/pdf":
+            uploaded.seek(0)
+            original_pdf = uploaded.read()
+            optimized_pdf = compress_pdf_lossless(original_pdf)
+            if len(optimized_pdf) < len(original_pdf):
+                uploaded = ContentFile(optimized_pdf, name=filename)
+            else:
+                uploaded.seek(0)
+            actual_size = len(optimized_pdf)
         document_type = request.data.get("document_type", "other")
         valid_types = {choice[0] for choice in MedicalDocument.KIND_CHOICES}
         if document_type not in valid_types:

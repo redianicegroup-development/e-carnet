@@ -6,7 +6,7 @@
 
 - Application mobile-first, comptes uniques; contexte public limité à Patient / Professionnel.
 - L’établissement est privé, sans inscription publique, avec un administrateur nominatif (un seul actif en V1); pas de rôle global `root`. La structure envoie ses preuves par e-mail à E‑Carnet; staff vérifie puis crée le compte. Invitation unique 48 h, mot de passe choisi par le destinataire. Le médecin est vérifié en interne par la structure; aucun justificatif personnel ne remonte à E‑Carnet. Code médecin 48 h/une fois → demande en attente → approbation établissement.
-- Aucun accès clinique espace établissement. Dossiers demandés/consultés par le professionnel après rattachement actif, établissement actif et consentement patient.
+- **Matrice d’accès aux dossiers :** l’administrateur actif consulte les dossiers ayant une pré-consultation clôturée ou une consultation dans son établissement; le professionnel accède uniquement au dossier du cas qui lui est attribué, avec rattachement et établissement actifs et autorisation patient active. Aucun accès automatique aux données d’un autre établissement.
 - OTP SMS et TOTP/MFA : V3, non prérequis V1. Aucun rôle ou endpoint infirmier autonome.
 - Données fictives uniquement avant l’autorisation formelle de traitement réel.
 
@@ -31,7 +31,7 @@
 - Médecin : identité et profil nécessaires; pas d’upload de pièces personnelles à E‑Carnet. Vérification interne par l’établissement; code 48 h à usage unique crée une demande, puis l’établissement accepte/refuse.
 - Startup reçoit les preuves structure par e-mail, vérifie via ses équipes et crée l’accès administrateur nominatif à partir d’une console privée. Pas de Root global. Invitation unique 48 h pour choisir le mot de passe; aucun secret transmis par e-mail.
 - Un admin établissement actif par structure en V1; changement d’admin sans recréer la structure. Plusieurs admins éventuels plus tard.
-- Conserver les événements et anciennes associations; suspension/révocation plutôt que suppression. L’espace établissement n’accède pas aux dossiers médicaux.
+- Conserver les événements et anciennes associations; suspension/révocation plutôt que suppression. Les lectures des dossiers propres à l’établissement sont journalisées; la suspension bloque l’accès de son administrateur et de ses professionnels.
 - MFA TOTP reporté en V3; résidus TOTP dans le code ne doivent pas être présentés comme requis V1.
 - Prototypes : référence de design responsive/mobile seulement; anciens flows obsolètes ne sont pas à réintroduire.
 - Apparence V1 : défaut Miel mixte, titres Sora + texte Bricolage Grotesque; seconde paire Mooli/Manrope; Fredoka/Quicksand uniquement dans l’espace patient; cinq palettes librement choisies (Miel, Rose, Violet, Argile, Sauge); tailles de texte standard/grande/très grande, sans bloquer le zoom. Préférence au compte, copie locale non sensible pour affichage immédiat.

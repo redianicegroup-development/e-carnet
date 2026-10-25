@@ -127,7 +127,8 @@ function ItemBody({ item }: { item: SidebarItem }) {
 
 function NavItem({ item, tabs }: { item: SidebarItem; tabs: boolean }) {
   const className = `sb__item${item.active ? " is-active" : ""}${item.account ? " sb__item--account" : ""}`;
-  const common = { className, "aria-label": item.ariaLabel ?? item.long, "data-tip": item.long };
+  // `data-tour` : repère de la visite guidée (components/tour) ; un onglet = une étape.
+  const common = { className, "aria-label": item.ariaLabel ?? item.long, "data-tip": item.long, "data-tour": `nav-${item.id}` };
   if (tabs) {
     return <button type="button" role="tab" id={item.domId} aria-selected={item.active} aria-controls={item.controls} tabIndex={item.active ? 0 : -1} onClick={item.onSelect} {...common}><ItemBody item={item} /></button>;
   }
@@ -245,7 +246,7 @@ function AccountMenu({ account, menu, notice, collapsed }: { account: SidebarAcc
             {danger.map((entry) => <div className="gm__item" style={step()} key={entry.id}><MenuEntry entry={entry} onDone={() => close()} /></div>)}
           </div>
         </div>
-        <button ref={trigger} type="button" className={`sb__account gm__trigger${open ? " is-open" : ""}`} aria-haspopup="menu" aria-expanded={open} aria-controls={menuId} aria-label={`Compte de ${account.name}`} data-tip={account.name} onClick={() => setOpen((current) => !current)}>
+        <button ref={trigger} type="button" className={`sb__account gm__trigger${open ? " is-open" : ""}`} aria-haspopup="menu" aria-expanded={open} aria-controls={menuId} aria-label={`Compte de ${account.name}`} data-tip={account.name} data-tour="account" onClick={() => setOpen((current) => !current)}>
           <SidebarAvatar account={account} />
           <span className="sb__account-copy"><strong>{account.name}</strong>{account.email && <small>{account.email}</small>}</span>
           <Icon name="chevron" size={16} />

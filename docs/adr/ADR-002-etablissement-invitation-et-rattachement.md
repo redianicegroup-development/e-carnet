@@ -18,7 +18,7 @@ La V1 actuelle laisse un établissement soumettre une fiche via l’application,
 5. L’établissement vérifie le médecin en interne. E‑Carnet ne collecte pas ses justificatifs personnels. L’administrateur génère un code médecin aléatoire, à usage unique, valable 48 heures; le code permet seulement au compte Professionnel existant de créer une demande `pending`.
 6. L’administrateur établissement accepte ou refuse cette demande. Une acceptation crée le rattachement actif; elle ne donne pas accès à un dossier patient. La validation du rattachement devient la preuve institutionnelle au niveau de cette structure; l’AccessGrant et le consentement du patient restent des contrôles séparés.
 7. Les structures, invitations, codes, décisions et affiliations conservent une trace append-only. Une fin d’accès se fait par révocation/suspension et non par suppression de l’historique.
-8. L’espace établissement est privé et n’offre aucun accès clinique. Les dossiers ne sont accessibles que via le contexte professionnel, sous les permissions serveur et le consentement patient.
+8. L’espace établissement est privé. L’administrateur actif consulte les dossiers associés à sa structure; le professionnel ne consulte que le dossier de son cas attribué, avec l’autorisation patient active. Aucun accès automatique aux données d’un autre établissement.
 
 ## Alternatives écartées
 

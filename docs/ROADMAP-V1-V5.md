@@ -56,7 +56,7 @@ Le compte choisit une question prédéfinie ou saisit sa propre question, puis e
 3. Une invitation unique valable **48 heures** est envoyée au responsable; il définit lui-même son mot de passe. Aucun mot de passe temporaire n’est envoyé par e-mail. Une structure demeure indépendante de son administrateur; celui-ci peut être remplacé sans recréer l’établissement. Un seul administrateur actif est prévu en V1; plusieurs pourront être envisagés plus tard.
 4. L’administrateur établissement contrôle la vérification interne du médecin, génère un code aléatoire à usage unique valable **48 heures**, et le communique au médecin. E‑Carnet ne collecte pas les pièces personnelles du médecin.
 5. Le médecin déjà titulaire d’un compte Professionnel saisit le code; cela le consomme et crée seulement une demande de rattachement `pending`. L’administrateur établissement accepte ou refuse. Seule l’acceptation active le rattachement; un code ne confère jamais d’accès automatique.
-6. L’établissement ne consulte pas de dossiers médicaux. Le médecin rattaché demande l’accès dans son contexte professionnel; la lecture dépend encore de la structure active, du périmètre AccessGrant et du consentement patient.
+6. L’administrateur actif consulte les dossiers ayant une pré-consultation clôturée ou une consultation dans son établissement. Le professionnel accède uniquement au cas qui lui est attribué, avec un rattachement actif, un établissement actif et une autorisation patient active. Aucun accès automatique aux données d’un autre établissement.
 
 Le détail, les contrôles d’accès, la conservation et le plan de réalisation sont dans le [flow établissement](FLOW-ETABLISSEMENT.md) et l’[ADR-002](adr/ADR-002-etablissement-invitation-et-rattachement.md).
 

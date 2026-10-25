@@ -60,6 +60,8 @@ Tant que ces points ne sont pas prouvés et validés, utiliser uniquement des do
 - [Flow établissement](docs/FLOW-ETABLISSEMENT.md) · [ADR-002](docs/adr/ADR-002-etablissement-invitation-et-rattachement.md)
 - [Audit initial du 05/10 (historique)](docs/RAPPORT-AUDIT-ECARNET.md)
 - [Sécurité](docs/SECURITY.md) · [Déploiement](docs/DEPLOYMENT.md)
+- [Gouvernance des établissements, tests connectés et surveillance](docs/ADMIN-GOVERNANCE-AND-MONITORING.md)
+- [Compression PDF sans perte](docs/PDF-LOSSLESS-COMPRESSION.md)
 - [Journal d’implémentation du 05/10](docs/IMPLEMENTATION-DECISIONS-2026-10-05.md)
 
 ## Démarrer en local

@@ -25,7 +25,7 @@ def generate_internal_code():
 
 
 class Establishment(models.Model):
-    STATUS_CHOICES = (("pending", "En attente"), ("active", "Active"), ("rejected", "Refusée"))
+    STATUS_CHOICES = (("pending", "En attente"), ("active", "Active"), ("suspended", "Suspendue"), ("rejected", "Refusée"))
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=180)
@@ -48,6 +48,9 @@ class Establishment(models.Model):
     status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="pending")
     internal_code = models.CharField(max_length=24, unique=True, null=True, blank=True)
     activated_at = models.DateTimeField(null=True, blank=True)
+    suspended_at = models.DateTimeField(null=True, blank=True)
+    suspended_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="suspended_establishments")
+    suspension_reason = models.CharField(max_length=500, blank=True, default="")
     # Date de première complétion de la fiche (information). La complétude elle‑même se lit sur les champs : tant que la
     # fiche est incomplète, la structure n'apparaît pas dans le catalogue des médecins et ne peut pas émettre de code.
     profile_completed_at = models.DateTimeField(null=True, blank=True)

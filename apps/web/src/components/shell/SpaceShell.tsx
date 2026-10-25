@@ -11,6 +11,8 @@ import { GreetingModal } from "../modal/GreetingModal";
 import { BrandMark } from "../ui/BrandMark";
 import { ScreenLoader } from "../ui/ScreenLoader";
 import { NotificationBell } from "../notifications/NotificationBell";
+import { ProductTour } from "../tour/ProductTour";
+import { TOUR_RESTART_EVENT } from "../../lib/tour";
 import { GooeyAccountMenu } from "./GooeyAccountMenu";
 import { AppSidebar, type SidebarItem, type SidebarMenuItem } from "./AppSidebar";
 
@@ -234,6 +236,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
     { id: "settings", label: "Profil et paramètres", icon: "sliders", href: moi.href },
     ...(switchTarget ? [{ id: "switch-space", label: switching ? "Changement d’espace…" : `Changer d’espace : ${switchTarget.label.toLowerCase()}`, icon: "refresh" as const, disabled: switching, onSelect: () => void switchSpace() }] : []),
     { id: "help", label: "Centre d’aide", icon: "help", href: "/aide" },
+    { id: "tour", label: "Revoir la visite guidée", icon: "sparkle", onSelect: () => window.dispatchEvent(new Event(TOUR_RESTART_EVENT)) },
     ...(showAdminLink ? [{ id: "admin", label: "Administration", icon: "shield" as const, href: "https://e-carnetci.vercel.app/admin/", external: true }] : []),
     { id: "logout", label: signingOut ? "Déconnexion…" : "Se déconnecter", icon: "logout", tone: "danger", disabled: signingOut, onSelect: () => void logout() },
   ];
@@ -284,6 +287,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
         {!bare && <p className="space-footer"><Link href="/aide#donnees">Aide</Link></p>}
       </main>
       {state.status === "ready" && !bare && <GreetingModal account={state.account} space={space} />}
+      {state.status === "ready" && !bare && !passwordChangePending && !profilePending && <ProductTour space={space} accountId={state.account.id} />}
     </div>
   );
 }

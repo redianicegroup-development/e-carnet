@@ -5,6 +5,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1
 WORKDIR /app
 
+# qpdf recomprime les flux PDF de façon réversible, sans réencoder les images avec perte.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends qpdf \
+    && rm -rf /var/lib/apt/lists/*
 # requirements.txt est le fichier verrouillé (make lock) : dès qu'il porte des empreintes, pip refuse tout paquet non listé ou modifié.
 COPY apps/api/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt

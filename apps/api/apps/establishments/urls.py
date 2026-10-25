@@ -1,5 +1,6 @@
 from django.urls import path
 
+from .clinical_views import EstablishmentPatientRecordsView
 from .views import (
     EstablishmentActiveJoinCodesView,
     EstablishmentCreateView,
@@ -23,6 +24,8 @@ from .views import (
     StaffAdministratorInvitationRevokeView,
     StaffAdministratorInvitationView,
     StaffEstablishmentCreateView,
+    StaffEstablishmentAuditView,
+    StaffEstablishmentStatusView,
     StartupEstablishmentQueueView,
 )
 
@@ -38,10 +41,13 @@ urlpatterns = [
     path("startup/<uuid:establishment_id>/decision/", StartupEstablishmentQueueView.as_view()),
     path("startup/<uuid:establishment_id>/administrator-invitation/", StaffAdministratorInvitationView.as_view()),
     path("startup/<uuid:establishment_id>/administrator-invitation/revoke/", StaffAdministratorInvitationRevokeView.as_view()),
+    path("startup/<uuid:establishment_id>/status/", StaffEstablishmentStatusView.as_view()),
+    path("startup/<uuid:establishment_id>/audit/", StaffEstablishmentAuditView.as_view()),
     path("<uuid:establishment_id>/join-codes/", EstablishmentJoinCodeCreateView.as_view()),
     path("<uuid:establishment_id>/join-codes/active/", EstablishmentActiveJoinCodesView.as_view()),
     path("<uuid:establishment_id>/memberships/<uuid:membership_id>/avatar/", EstablishmentMemberAvatarView.as_view()),
     path("<uuid:establishment_id>/profile/", EstablishmentProfileView.as_view()),
+    path("<uuid:establishment_id>/patient-records/", EstablishmentPatientRecordsView.as_view()),
     path("<uuid:establishment_id>/logo/", EstablishmentLogoView.as_view()),
     path("<uuid:establishment_id>/prescription-template/", EstablishmentPrescriptionTemplateView.as_view()),
     path("<uuid:establishment_id>/memberships/", EstablishmentMembershipListView.as_view()),

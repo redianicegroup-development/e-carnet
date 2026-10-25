@@ -3,6 +3,12 @@ import { DEFAULT_THEME, normalizeTheme, type ThemeConfig } from "@ecarnet/ui/the
 const ACTIVE_ACCOUNT_KEY = "ecarnet:theme:v1:active-account";
 const ACCOUNT_THEME_PREFIX = "ecarnet:theme:v1:account:";
 
+/** Seul point d’accès au stockage local de l’application (le test `legal` l’impose et la politique de confidentialité le déclare).
+    Sert au cache du thème et à la mémoire « visite guidée déjà vue ». Retourne null si le navigateur le bloque. */
+export function deviceStorage(): Storage | null {
+  try { return window.localStorage; } catch { return null; }
+}
+
 function parseTheme(raw: string | null): ThemeConfig | null {
   if (!raw) return null;
   try {

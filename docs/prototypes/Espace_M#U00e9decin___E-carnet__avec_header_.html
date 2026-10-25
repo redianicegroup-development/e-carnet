@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mon Carnet Numérique — Espace Médecin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Mooli&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Palette de marque : 5 couleurs source, tout le reste en dérive */
+  --c1:#F2F5EF; --c2:#D8E2D0; --c3:#A9C4A5; --c4:#5B7F68; --c5:#2C3A33;
+  --teal:var(--c4); --teal-deep:var(--c5); --teal-tint:var(--c2);
+  --terra:var(--c5); --terra-tint:var(--c2);
+  --amber:#8A6100; --amber-bg:#FFF3D6;
+  --green:#1F8A5A; --green-bg:#E4F5EC;
+  --ink:var(--c5); --paper:#FFFFFF; --paper-warm:var(--c1);
+  --grey-600:rgba(44,58,51,.72); --grey-400:rgba(44,58,51,.55); --grey-300:var(--c2); --grey-100:var(--c1);
+  --r-sm:10px; --r-md:16px; --r-pill:999px;
+  --font:'Plus Jakarta Sans',sans-serif; --on-primary:#FFFFFF; --teal-text:var(--c4);
+}
+*,*::before,*::after{box-sizing:border-box;}
+body{margin:0;background:var(--c2);font-family:var(--font);color:var(--ink);padding:40px 20px 70px;display:flex;flex-direction:column;align-items:center;}
+svg.icon{width:18px;height:18px;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;}
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--teal-deep);background:var(--teal-tint);border-radius:var(--r-pill);padding:6px 14px;margin-bottom:14px;}
+h1{font-size:22px;margin:0 0 26px;font-weight:800;text-align:center;}
+.phone{width:320px;height:660px;background:var(--ink);border-radius:42px;padding:9px;box-shadow:0 30px 60px -28px rgba(15,40,32,.4);position:relative;}
+.island{position:absolute;top:18px;left:50%;transform:translateX(-50%);width:78px;height:20px;background:var(--ink);border-radius:12px;z-index:5;}
+.screen{width:100%;height:100%;border-radius:33px;overflow:hidden;background:var(--paper-warm);display:flex;flex-direction:column;}
+.statusbar{display:flex;justify-content:space-between;padding:14px 22px 0;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;flex-shrink:0;}
+.panel{flex:1;overflow:hidden;padding:14px 16px 8px;display:none;flex-direction:column;gap:12px;}
+.panel.active{display:flex;}
+.h-row{display:flex;justify-content:space-between;align-items:center;}
+.avatar{width:38px;height:38px;border-radius:50%;background:var(--teal);color:var(--on-primary);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;}
+.greet{font-size:12px;color:var(--grey-600);}
+.greet b{display:block;font-size:16px;color:var(--ink);font-weight:800;}
+.icon-btn{width:32px;height:32px;border-radius:50%;background:var(--paper);border:1px solid var(--grey-300);display:flex;align-items:center;justify-content:center;}
+.section-title{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--grey-400);font-weight:700;margin:2px 0 -4px;}
+.card{background:var(--paper);border:1px solid var(--grey-300);border-radius:var(--r-md);padding:12px 14px;}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.stat-card{background:var(--paper);border:1px solid var(--grey-300);border-radius:var(--r-md);padding:11px;}
+.stat-card .val{font-family:'JetBrains Mono',monospace;font-size:19px;font-weight:700;color:var(--teal-text,var(--teal));}
+.stat-card .lbl{font-size:10.5px;color:var(--grey-600);}
+.chip{display:flex;align-items:center;justify-content:space-between;background:var(--paper);border:1px solid var(--grey-300);border-radius:var(--r-sm);padding:9px 12px;}
+.chip .txt{font-size:12.5px;font-weight:600;}
+.badge{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:var(--r-pill);}
+.badge.declared{background:var(--amber-bg);color:var(--amber);}
+.badge.verified{background:var(--green-bg);color:var(--green);}
+.badge.expired{background:#FBEAE8;color:#A32D2D;}
+.row{display:flex;gap:10px;align-items:flex-start;background:var(--paper);border:1px solid var(--grey-300);border-radius:var(--r-sm);padding:10px 12px;}
+.row .dot{width:7px;height:7px;border-radius:50%;background:var(--teal);margin-top:5px;flex-shrink:0;}
+.row .t1{font-size:12.5px;font-weight:700;}
+.row .t2{font-size:11px;color:var(--grey-600);}
+.list-row{display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid var(--grey-100);font-size:13px;font-weight:600;color:var(--ink);}
+.list-row .lbl{flex:1;}
+.list-row.danger{color:#A32D2D;}
+.btn{border:none;border-radius:var(--r-pill);padding:11px 14px;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;}
+.btn.primary{background:var(--teal);color:var(--on-primary);width:100%;}
+.btn.ghost{background:transparent;border:1px solid var(--grey-300);color:var(--ink);width:100%;}
+.btn-row{display:flex;gap:8px;}
+.btn-row .btn{flex:1;padding:10px;}
+.search{display:flex;align-items:center;gap:8px;background:var(--paper);border:1px solid var(--grey-300);border-radius:var(--r-pill);padding:9px 14px;color:var(--grey-400);font-size:12.5px;}
+.scroll{overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-right:2px;}
+.bottom-nav{display:flex;justify-content:space-around;padding:9px 0 14px;border-top:1px solid var(--grey-300);flex-shrink:0;background:var(--paper-warm);}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:8.5px;color:var(--grey-400);font-weight:700;background:none;border:none;font-family:inherit;padding:0;}
+.nav-item.active{color:var(--teal-deep);}
+.nav-item svg.icon{width:16px;height:16px;stroke-width:1.9;}
+.note{font-size:11px;color:var(--grey-600);line-height:1.5;}
+
+
+.tools{display:flex;flex-direction:column;align-items:center;gap:14px;margin-bottom:24px;max-width:560px;}
+.selrow{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;}
+.sel{display:flex;flex-direction:column;gap:5px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--c5);}
+.sel select{font-family:inherit;font-size:12.5px;letter-spacing:0;text-transform:none;min-width:220px;padding:9px 12px;border-radius:12px;border:1px solid var(--c3);background:#fff;color:var(--c5);cursor:pointer;}
+.swatches{display:flex;gap:8px;}
+.sw{display:flex;flex-direction:column;align-items:center;gap:4px;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--c5);}
+.sw i{width:46px;height:26px;border-radius:8px;border:1px solid rgba(0,0,0,.12);display:block;}
+.btn:disabled{opacity:.5;cursor:default}
+.t1{font-size:12.5px;font-weight:700}.t2{font-size:11px;color:var(--grey-600)}
+.duo{display:flex;gap:40px;flex-wrap:wrap;justify-content:center;align-items:flex-start}
+.col{display:flex;flex-direction:column;align-items:center;gap:12px}
+.cap{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--c5)}
+.gp{flex:1;overflow:hidden;padding:14px 16px 8px;display:none;flex-direction:column;gap:12px}.gp.on{display:flex}
+.field{display:block;width:100%;border:1px solid var(--grey-300);border-radius:8px;background:var(--paper);padding:8px 10px;font:inherit;font-size:11.5px;color:var(--ink);resize:none}
+.lab{font-size:10.5px;font-weight:700;color:var(--grey-600);margin:0 0 3px}
+.codes{display:flex;gap:8px;justify-content:center}
+.codes b{width:42px;height:48px;border:1px solid var(--grey-300);border-radius:10px;background:var(--paper);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:20px}
+.pick{display:flex;align-items:center;gap:8px;border:1px solid var(--grey-300);background:var(--paper);border-radius:10px;padding:8px 10px;font-size:12px;font-weight:600;cursor:pointer}
+.pick.on{border-color:var(--teal);background:var(--teal-tint)}
+.pick small{margin-left:auto;font-size:10px;color:var(--grey-600);font-weight:500}
+#picks{display:flex;gap:6px;flex-wrap:wrap}#picks .pick{padding:6px 10px;font-size:11px}
+.sig{display:block;width:100%;height:70px;border:1px dashed var(--grey-400);border-radius:8px;background:var(--paper);color:var(--ink);touch-action:none}
+.chk{font-size:11.5px;line-height:1.7}
+.big{font-family:'JetBrains Mono',monospace;font-size:19px;font-weight:700;color:var(--teal-text,var(--teal))}
+.card>.note,.card>.big,.card>.chk,.card>.codes{margin-top:6px}
+
+/* Header d'application : logo E-carnet (gauche) + profil (droite) */
+.appbar{display:flex;align-items:center;justify-content:space-between;padding:7px 16px 9px;flex-shrink:0;border-bottom:1px solid var(--grey-300);}
+.brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:16px;letter-spacing:-.01em;color:var(--ink);}
+.brand .mark{width:26px;height:26px;border-radius:8px;background:var(--teal);color:var(--on-primary,#fff);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.brand .mark svg.icon{width:15px;height:15px;stroke-width:2;}
+.brand em{font-style:normal;color:var(--teal-text,var(--teal));}
+.profile-btn{width:32px;height:32px;border-radius:50%;border:none;background:var(--teal);color:var(--on-primary,#fff);font-family:inherit;font-weight:700;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.profile-btn.on{box-shadow:0 0 0 2px var(--paper-warm),0 0 0 4px var(--teal);}
+</style>
+</head>
+<body>
+
+<svg style="display:none" xmlns:xlink="http://www.w3.org/1999/xlink">
+<symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/><path d="M10 19v-5h4v5"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="M20 20l-5.2-5.2"/></symbol>
+<symbol id="i-stetho" viewBox="0 0 24 24"><path d="M6 4v6a4 4 0 0 0 8 0V4"/><circle cx="18" cy="16" r="3"/><path d="M14 10v2a4 4 0 0 0 1.2 2.9"/></symbol>
+<symbol id="i-share" viewBox="0 0 24 24"><circle cx="6" cy="12" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="18" cy="18" r="2"/><path d="M8 11l8-4M8 13l8 4"/></symbol>
+<symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></symbol>
+<symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8V5h3M20 8V5h-3M4 16v3h3M20 16v3h-3"/><circle cx="12" cy="12" r="3.5"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></symbol>
+<symbol id="i-chevron" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+<symbol id="i-building" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/></symbol>
+<symbol id="i-idcard" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="11" r="2"/><path d="M6 16c0-1.7 1.3-3 2.5-3s2.5 1.3 2.5 3M14 9h5M14 13h5"/></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 5H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h3M15 16l4-4-4-4M19 12H9"/></symbol>
+</svg>
+
+<span class="eyebrow">Mon Carnet Numérique — Espace Médecin</span>
+<h1>Parcours des 5 onglets</h1>
+<div class="tools" id="tools"></div>
+
+<div class="phone"><div class="island"></div>
+  <div class="screen">
+    <div class="statusbar"><span>9:41</span><span>●●●</span></div>
+    <div class="appbar">
+      <div class="brand"><span class="mark"><svg class="icon" viewBox="0 0 24 24"><rect x="6" y="4" width="12" height="16" rx="2"/><path d="M10 4v16M13 9h2"/></svg></span><span><em>E</em>-carnet</span></div>
+      <button class="profile-btn" id="profileBtn" aria-label="Mon profil — Dr. Yao Bamba">YB</button>
+    </div>
+
+
+    <!-- ACCUEIL -->
+    <div class="panel active" id="p-accueil">
+      <div class="h-row">
+        <div class="greet">Bonjour<b>Dr. Yao Bamba</b></div>
+        </div>
+      <div class="stat-grid">
+        <div class="stat-card"><div class="val">4</div><div class="lbl">Consultations du jour</div></div>
+        <div class="stat-card"><div class="val">1</div><div class="lbl">Demande d'accès en attente</div></div>
+      </div>
+      <div class="section-title">Raccourcis</div>
+      <div class="btn-row">
+        <button class="btn primary"><svg class="icon" style="width:14px;height:14px"><use href="#i-camera" xlink:href="#i-camera"/></svg>Scanner</button>
+        <button class="btn ghost"><svg class="icon" style="width:14px;height:14px"><use href="#i-plus" xlink:href="#i-plus"/></svg>Consultation</button>
+      </div>
+      <div class="section-title">À traiter</div>
+      <div class="row"><div class="dot"></div><div><div class="t1">Demande — Moussa Diarra</div><div class="t2">En attente du patient · code 7314 · 15 min</div></div></div>
+    </div>
+
+    <!-- PATIENTS -->
+    <div class="panel" id="p-patients">
+      <div class="search"><svg class="icon" style="width:15px;height:15px"><use href="#i-search" xlink:href="#i-search"/></svg>Rechercher un patient…</div>
+      <div class="section-title">Résultats récents</div>
+      <div class="row"><div class="dot"></div><div style="flex:1;"><div class="t1">Awa Koné</div><div class="t2">Dernière visite · 12 sept.</div></div><svg class="icon" style="width:14px;height:14px;color:var(--grey-400)"><use href="#i-chevron" xlink:href="#i-chevron"/></svg></div>
+      <div class="row"><div class="dot"></div><div style="flex:1;"><div class="t1">Moussa Diarra</div><div class="t2">Jamais consulté</div></div><svg class="icon" style="width:14px;height:14px;color:var(--grey-400)"><use href="#i-chevron" xlink:href="#i-chevron"/></svg></div>
+      <button class="btn ghost" data-goto="p-pcrecap" style="margin-top:8px">Scanner une pré-consultation</button>
+      <div class="section-title">Dossier autorisé — Awa Koné</div>
+      <div class="card">
+        <div class="h-row"><span style="font-weight:700;font-size:12.5px;">Diabète type 2</span><span class="badge declared" id="ant-b">Déclaré</span></div>
+        <div class="note" id="ant-n">Déclaré par Awa Koné · 20/09/2026</div>
+        <div class="btn-row" id="ant-a" style="margin-top:8px;flex-wrap:wrap;">
+          <button class="btn primary" id="a-ok" style="padding:8px;flex:1 1 40%;">✓ Confirmer</button>
+          <button class="btn ghost" id="a-keep" style="padding:8px;flex:1 1 40%;">Laisser déclaré</button>
+          <button class="btn ghost" id="a-no" style="padding:8px;flex:1 1 100%;">Ne pas confirmer</button>
+        </div>
+      </div>
+    </div>
+<div class="panel" id="p-pcrecap">
+  <div class="greet" style="font-weight:700;color:var(--ink);font-size:15px;">Moussa Diarra</div>
+  <div class="note">Accès accordé — relevé non modifiable</div>
+  <div class="card" style="margin-top:8px"><span class="badge declared">◔ Relevé en pré-consultation, saisi par Marie</span><div class="note" style="margin-top:4px">Non signé</div></div>
+  <div class="card" style="margin-top:8px">
+    <div class="section-title" style="margin-top:0">Constantes</div>
+    <div class="t2">Poids 72 kg · Taille 1,78 m</div>
+    <div class="t2">Température 37,4 °C · Tension 128/82</div>
+    <div class="t2">Pouls 76 bpm · Saturation 98 %</div>
+  </div>
+  <div class="card" style="margin-top:8px"><div class="section-title" style="margin-top:0">Motif</div><div class="t2">Douleurs abdominales depuis hier</div></div>
+  <button class="btn primary" data-goto="p-nouvelle" style="margin-top:10px">Ouvrir la consultation</button>
+</div>
+
+    <!-- CONSULTATIONS -->
+    <div class="panel" id="p-consultations">
+      <div class="h-row"><div class="greet" style="font-weight:700;color:var(--ink);font-size:15px;">Mes consultations</div><button class="btn primary" id="new-c" style="width:auto;padding:8px 12px;"><svg class="icon" style="width:13px;height:13px"><use href="#i-plus" xlink:href="#i-plus"/></svg>Créer</button></div>
+      <div class="scroll" style="flex:1;">
+        <div class="row"><div class="dot"></div><div><div class="t1">Awa Koné</div><div class="t2">Consultation générale · aujourd'hui</div></div></div>
+        <div class="row"><div class="dot"></div><div><div class="t1">Moussa Diarra</div><div class="t2">Consultation de suivi · hier</div></div></div>
+        <div class="section-title">Mes formulaires</div>
+        <div id="mf" style="display:flex;flex-direction:column;gap:6px"></div>
+        <button class="btn ghost" style="padding:9px"><svg class="icon" style="width:13px;height:13px"><use href="#i-plus" xlink:href="#i-plus"/></svg>Créer un formulaire</button>
+        <div class="note">Vous choisissez ou construisez votre formulaire de travail à partir d'un socle de champs communs.</div>
+      </div>
+    </div>
+    <div class="panel" id="p-nouvelle">
+      <div class="h-row"><div class="greet" style="font-weight:700;color:var(--ink);font-size:15px;">Nouvelle consultation</div><span class="badge declared" style="background:var(--teal-tint);color:var(--teal-deep)">Awa Koné</span></div>
+      <div class="scroll" style="flex:1;">
+        <div><div class="lab">Choisir un formulaire</div><div id="picks"></div></div>
+        <div id="flds" style="display:flex;flex-direction:column;gap:8px"></div>
+        <div class="note">Le socle commun (date, médecin, établissement, motif) reste enregistré pour la recherche. Ordonnance : V2.</div>
+      </div>
+      <div class="btn-row"><button class="btn ghost" id="n-save">Enregistrer</button><button class="btn primary" id="n-val">Enregistrer et valider</button></div>
+    </div>
+    <div class="panel" id="p-confirm">
+      <div class="greet" style="font-weight:700;color:var(--ink);font-size:15px;" id="c-title">Confirmer cet antécédent</div>
+      <div class="note">Diabète type 2 · déclaré par Awa Koné · 20/09/2026. La déclaration d'origine n'est jamais modifiée.</div>
+      <div><div class="lab">Motif *</div><textarea class="field" id="c-motif" rows="3" placeholder="Ex. ordonnance consultée, traitement confirmé…"></textarea></div>
+      <div id="c-sigbox"><div class="lab">Signature (attestation)</div><svg class="sig" id="sig" viewBox="0 0 260 70"><path id="sigp" d="" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <div class="note" style="margin-top:6px">Dr. Yao Bamba · médecin vérifié. Attestation sous identité professionnelle, pas une signature électronique qualifiée.</div></div>
+      <div class="btn-row" style="margin-top:auto"><button class="btn ghost" id="c-cancel">Annuler</button><button class="btn primary" id="c-go">Confirmer</button></div>
+    </div>
+
+    <!-- ACCES -->
+    <div class="panel" id="p-acces">
+      <div class="greet" style="font-weight:700;color:var(--ink);font-size:15px;">Mes accès</div>
+      <div class="section-title">Demandes envoyées — en attente</div>
+      <div class="card"><div class="h-row"><span style="font-weight:700;font-size:12.5px;">Moussa Diarra</span><span class="badge declared">En attente</span></div><div class="note">Patient sans smartphone : donnez ce code à saisir sur la tablette d'accueil</div><div class="codes"><b>7</b><b>3</b><b>1</b><b>4</b></div><div class="note" style="text-align:center">Valable 15 min · usage unique · n'ouvre pas le carnet</div></div>
+      <div class="section-title">Accès autorisés</div>
+      <div class="row"><div class="dot"></div><div><div class="t1">Awa Koné</div><div class="t2">Expire dans 1h47</div></div></div>
+      <div class="section-title">Refusés / expirés</div>
+      <div class="scroll" style="flex:1;">
+        <div class="h-row card"><span class="txt" style="font-size:12px;">Fatou Traoré</span><span class="badge expired">Expiré</span></div>
+      </div>
+    </div>
+
+    <!-- MOI -->
+    <div class="panel" id="p-moi">
+      <div class="h-row"><div class="avatar" style="width:52px;height:52px;font-size:15px;">YB</div><div><div style="font-weight:800;font-size:15px;">Dr. Yao Bamba</div><div class="note">Médecine générale</div></div></div>
+      <div>
+        <div class="list-row"><svg class="icon"><use href="#i-idcard" xlink:href="#i-idcard"/></svg><span class="lbl">Informations professionnelles</span><svg class="icon" style="width:14px;height:14px;color:var(--grey-400)"><use href="#i-chevron" xlink:href="#i-chevron"/></svg></div>
+        <div class="list-row"><svg class="icon"><use href="#i-building" xlink:href="#i-building"/></svg><span class="lbl">Mon établissement — Clinique Les Palmiers</span><svg class="icon" style="width:14px;height:14px;color:var(--grey-400)"><use href="#i-chevron" xlink:href="#i-chevron"/></svg></div>
+        <div class="list-row"><svg class="icon"><use href="#i-user" xlink:href="#i-user"/></svg><span class="lbl">Paramètres du compte</span><svg class="icon" style="width:14px;height:14px;color:var(--grey-400)"><use href="#i-chevron" xlink:href="#i-chevron"/></svg></div>
+        <div class="list-row"><svg class="icon"><use href="#i-lock" xlink:href="#i-lock"/></svg><span class="lbl">Sécurité et connexion</span><svg class="icon" style="width:14px;height:14px;color:var(--grey-400)"><use href="#i-chevron" xlink:href="#i-chevron"/></svg></div>
+        <div class="list-row danger"><svg class="icon"><use href="#i-logout" xlink:href="#i-logout"/></svg><span class="lbl">Se déconnecter</span></div>
+      </div>
+    </div>
+
+    <div class="bottom-nav" id="nav">
+      <button class="nav-item active" data-panel="p-accueil"><svg class="icon"><use href="#i-home" xlink:href="#i-home"/></svg>Accueil</button>
+      <button class="nav-item" data-panel="p-patients"><svg class="icon"><use href="#i-search" xlink:href="#i-search"/></svg>Patients</button>
+      <button class="nav-item" data-panel="p-consultations"><svg class="icon"><use href="#i-stetho" xlink:href="#i-stetho"/></svg>Consult.</button>
+      <button class="nav-item" data-panel="p-acces"><svg class="icon"><use href="#i-share" xlink:href="#i-share"/></svg>Accès</button>
+      <button class="nav-item" data-panel="p-moi"><svg class="icon"><use href="#i-user" xlink:href="#i-user"/></svg>Moi</button>
+    </div>
+  </div>
+</div>
+
+<script>
+document.getElementById('nav').addEventListener('click', e=>{
+  const btn = e.target.closest('.nav-item');
+  if(!btn) return;
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(btn.dataset.panel).classList.add('active');
+});
+</script>
+
+<script>
+document.body.addEventListener('click', function(e){
+  var g = e.target.closest('[data-goto]');
+  if(!g) return;
+  document.querySelectorAll('.nav-item').forEach(function(b){b.classList.remove('active')});
+  document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active')});
+  var tgt = document.getElementById(g.dataset.goto);
+  if(tgt) tgt.classList.add('active');
+  var nb = document.querySelector('.nav-item[data-panel="'+g.dataset.goto+'"]');
+  if(nb) nb.classList.add('active');
+});
+</script>
+
+<script>
+(function(){
+  var FONTS=["Plus Jakarta Sans", "Nunito", "Lexend", "Manrope", "Sora", "Mooli", "Unbounded", "Quicksand", "Bricolage Grotesque", "Barlow", "Ubuntu", "Fredoka"];
+  var PALS=[{"n": "Sauge", "c": ["#F2F5EF", "#D8E2D0", "#A9C4A5", "#5B7F68", "#2C3A33"]}, {"n": "Menthe", "c": ["#E9F7F2", "#BFE8D6", "#63C6A7", "#2F7E6A", "#1F2E2C"]}, {"n": "Brume", "c": ["#FFFFFF", "#F4F7F8", "#D6E2E6", "#58B7B0", "#20343A"]}, {"n": "Lagon", "c": ["#E6FFF7", "#B9F2E3", "#7AD8C8", "#4AA1A3", "#2A4B5D"]}, {"n": "Miel", "c": ["#FFF7E6", "#FFE3B3", "#FFC857", "#4BAA8B", "#1E3A34"]}, {"n": "Lavande", "c": ["#F6F2FF", "#E3D7FF", "#BCA6F6", "#5D64B8", "#1F2440"]}, {"n": "Rose", "c": ["#FFF1F5", "#FFD2DF", "#F28AA8", "#B94D6D", "#3A1E2A"]}, {"n": "Prairie", "c": ["#F5FAF4", "#DCEFD7", "#8CCF8A", "#2F8A5A", "#1F2D24"]}, {"n": "Argile", "c": ["#FFF4EC", "#F6D8C3", "#DDA57A", "#4D8F86", "#1D2F33"]}];
+  var root=document.documentElement;
+  function rgb(h){h=h.replace('#','');return [0,2,4].map(function(i){return parseInt(h.substr(i,2),16);});}
+  function lum(h){var c=rgb(h).map(function(v){v/=255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4);});return 0.2126*c[0]+0.7152*c[1]+0.0722*c[2];}
+  function cr(a,b){var l1=lum(a),l2=lum(b);return (Math.max(l1,l2)+0.05)/(Math.min(l1,l2)+0.05);}
+  var fontSel=document.createElement('select');
+  FONTS.forEach(function(n,i){var o=document.createElement('option');o.value=i;o.textContent=(i+1)+' \u00b7 '+n;o.style.fontFamily="'"+n+"',sans-serif";fontSel.appendChild(o);});
+  var palSel=document.createElement('select');
+  PALS.forEach(function(p,i){var o=document.createElement('option');o.value=i;o.textContent=(i+1)+' \u00b7 '+p.n;palSel.appendChild(o);});
+  var sw=document.createElement('div');sw.className='swatches';
+  function mk(label,sel){var l=document.createElement('label');l.className='sel';l.textContent=label;l.appendChild(sel);return l;}
+  var row=document.createElement('div');row.className='selrow';
+  row.appendChild(mk('Police',fontSel));row.appendChild(mk('Palette',palSel));
+  var tools=document.getElementById('tools');tools.appendChild(row);tools.appendChild(sw);
+  function setFont(i){
+    root.style.setProperty('--font',"'"+FONTS[i]+"',sans-serif");
+    fontSel.value=i;
+    try{localStorage.setItem('mcn-font',i);}catch(e){}
+  }
+  function setPal(i){
+    var c=PALS[i].c;
+    for(var k=0;k<5;k++){root.style.setProperty('--c'+(k+1),c[k]);}
+    var c4=c[3],c5=c[4];
+    root.style.setProperty('--on-primary',cr(c4,'#FFFFFF')>=cr(c4,c5)?'#FFFFFF':c5);
+    root.style.setProperty('--teal-text',cr(c4,'#FFFFFF')>=4.5?c4:c5);
+    root.style.setProperty('--grey-300',lum(c[1])>0.85?c[2]:c[1]);
+    var r=rgb(c5).join(',');
+    root.style.setProperty('--grey-600','rgba('+r+',.72)');
+    root.style.setProperty('--grey-400','rgba('+r+',.55)');
+    sw.innerHTML='';
+    c.forEach(function(h){var d=document.createElement('div');d.className='sw';d.innerHTML='<i style="background:'+h+'"></i><span>'+h+'</span>';sw.appendChild(d);});
+    palSel.value=i;
+    try{localStorage.setItem('mcn-pal',i);}catch(e){}
+  }
+  fontSel.addEventListener('change',function(){setFont(parseInt(fontSel.value));});
+  palSel.addEventListener('change',function(){setPal(parseInt(palSel.value));});
+  var f=0,p=0;
+  try{f=parseInt(localStorage.getItem('mcn-font'))||0;p=parseInt(localStorage.getItem('mcn-pal'))||0;}catch(e){}
+  if(f<0||f>=FONTS.length)f=0; if(p<0||p>=PALS.length)p=0;
+  setFont(f);setPal(p);
+})();
+</script>
+<script>
+(function(){
+  var pb=document.getElementById('profileBtn'), nav=document.getElementById('nav');
+  nav.addEventListener('click',function(e){var b=e.target.closest('.nav-item'); if(b) pb.classList.toggle('on', b.dataset.panel==='p-moi');});
+  pb.addEventListener('click',function(){document.querySelector('.nav-item[data-panel="p-moi"]').click();});
+})();
+</script>
+<script>
+(function(){
+var $=function(i){return document.getElementById(i)};
+function show(id){document.querySelectorAll(".panel").forEach(function(p){p.classList.toggle("active",p.id==id)})}
+function tab(id){show(id);document.querySelectorAll(".nav-item").forEach(function(b){b.classList.toggle("active",b.dataset.panel==id)})}
+var F={general:["Motif","Observations / symptômes","Examen clinique","Hypothèse / diagnostic","Conduite à tenir","Documents"],
+diabete:["Motif","Symptômes / observance","Glycémie · HbA1c","Examen (pieds, tension)","Hypothèse / diagnostic","Conduite à tenir","Documents"],
+pediatrie:["Motif","Symptômes","Poids · taille · température","Examen clinique","Hypothèse / diagnostic","Conduite à tenir","Documents"]};
+var N={general:"Consultation générale",diabete:"Suivi diabète",pediatrie:"Consultation pédiatrique"};
+function fld(k){var h="";F[k].forEach(function(l){h+=l=="Documents"?'<div><div class="lab">Documents</div><button class="btn ghost" style="padding:8px">+ Ajouter</button></div>':'<div><div class="lab">'+l+(l=="Conduite à tenir"?" (texte libre)":"")+'</div><textarea class="field" rows="'+(l=="Motif"?1:2)+'"></textarea></div>'});$("flds").innerHTML=h}
+function pick(k){document.querySelectorAll("#picks .pick").forEach(function(p){p.classList.toggle("on",p.dataset.f==k)});fld(k)}
+function openN(k){pick(k);show("p-nouvelle")}
+var pk="",mf="";
+Object.keys(N).forEach(function(k){pk+='<div class="pick" data-f="'+k+'">'+N[k]+"</div>";mf+='<div class="pick" data-f="'+k+'">'+N[k]+"<small>"+F[k].length+" champs"+(k=="general"?" · utilisé aujourd'hui":"")+"</small></div>"});
+$("picks").innerHTML=pk;$("mf").innerHTML=mf;
+document.querySelectorAll("#picks .pick").forEach(function(e){e.onclick=function(){pick(e.dataset.f)}});
+document.querySelectorAll("#mf .pick").forEach(function(e){e.onclick=function(){openN(e.dataset.f)}});
+$("new-c").onclick=function(){openN("general")};
+$("n-save").onclick=$("n-val").onclick=function(){tab("p-consultations")};
+var sg=$("sig"),sp=$("sigp"),dn=false,d="",mode="ok";
+function pt(e){var r=sg.getBoundingClientRect();return Math.round((e.clientX-r.left)*260/r.width)+" "+Math.round((e.clientY-r.top)*70/r.height)}
+sg.addEventListener("pointerdown",function(e){dn=true;d+=" M"+pt(e);sp.setAttribute("d",d);sg.setPointerCapture(e.pointerId)});
+sg.addEventListener("pointermove",function(e){if(dn){d+=" L"+pt(e);sp.setAttribute("d",d)}});
+sg.addEventListener("pointerup",function(){dn=false});
+function openC(x){mode=x;d="";sp.setAttribute("d","");$("c-motif").value="";$("c-motif").style.borderColor="";sg.style.borderColor="";
+ $("c-title").textContent=x=="ok"?"Confirmer cet antécédent":"Ne pas confirmer cet antécédent";
+ $("c-sigbox").style.display=x=="ok"?"":"none";$("c-go").textContent=x=="ok"?"Confirmer":"Ne pas confirmer";show("p-confirm")}
+$("a-ok").onclick=function(){openC("ok")};$("a-no").onclick=function(){openC("no")};
+$("a-keep").onclick=function(){$("ant-n").textContent="Laissé déclaré · en attente de vérification";$("ant-a").style.display="none"};
+$("c-cancel").onclick=function(){tab("p-patients")};
+$("c-go").onclick=function(){var v=$("c-motif").value.trim();
+ if(!v){$("c-motif").style.borderColor="#A32D2D";$("c-motif").focus();return}
+ if(mode=="ok"&&!d){sg.style.borderColor="#A32D2D";return}
+ var b=$("ant-b");
+ if(mode=="ok"){b.className="badge verified";b.textContent="✓ Confirmé";$("ant-n").textContent="Confirmé par Dr. Yao Bamba · 28/09/2026 · Motif : "+v}
+ else{b.className="badge expired";b.textContent="Non confirmé";$("ant-n").textContent="Non confirmé par Dr. Yao Bamba · 28/09/2026 · Motif : "+v}
+ $("ant-a").style.display="none";tab("p-patients")};
+})();
+</script>
+</body>
+</html>

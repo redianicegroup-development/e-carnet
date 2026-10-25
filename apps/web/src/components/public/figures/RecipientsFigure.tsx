@@ -1,15 +1,13 @@
 import { Icon, type IconName } from "../../ui/Icon";
 import { Figure, Line, Node, Svg } from "./parts";
 
-/* « Qui peut recevoir ces données » en un coup d'œil : le carnet, et ce que chaque destinataire peut en recevoir.
-   Les libellés résument les lignes du tableau juste en dessous (le tableau reste le texte de référence) :
-   seul le professionnel autorisé reçoit une partie du carnet, et uniquement avec l'autorisation du patient. */
+/* « Qui peut recevoir ces données » en un coup d'œil : chaque rôle ne voit que son périmètre. */
 
-/* gate : « open » = reçoit une partie du carnet avec l'autorisation du patient ; « closed » = ne consulte pas les dossiers patients depuis son espace (texte de la page) ;
+/* gate : « open » = accès aux dossiers de sa structure ou à son cas attribué ; « closed » = pas d'accès automatique ;
    « plain » = reçoit d'autres données (demandes et statuts ; données nécessaires à l'hébergement) : aucun cadenas, pour ne pas laisser croire que ces données sont inaccessibles. */
 const ROWS: { id: string; icon: IconName; title: string; sub: string; gate: "open" | "closed" | "plain"; open: boolean }[] = [
   { id: "pro", icon: "stethoscope", title: "Professionnel autorisé", sub: "périmètre autorisé, durée limitée", gate: "open", open: true },
-  { id: "admin", icon: "building", title: "Administrateur d’établissement", sub: "pas de dossiers depuis son espace", gate: "closed", open: false },
+  { id: "admin", icon: "building", title: "Administrateur d’établissement", sub: "dossiers associés à sa structure", gate: "open", open: true },
   { id: "team", icon: "users", title: "Équipe de Mon E‑Carnet", sub: "demandes d’établissements et statuts", gate: "plain", open: false },
   { id: "tech", icon: "sliders", title: "Prestataires techniques", sub: "hébergement, base et e‑mails", gate: "plain", open: false },
 ];
@@ -21,8 +19,8 @@ export function RecipientsFigure() {
   const mids = ROWS.map((_, index) => TOP + index * STEP + 28);
   return (
     <Figure
-      label="Schéma : à partir de votre carnet, le professionnel autorisé reçoit une partie du carnet, pour un périmètre et une durée limités. L’administrateur d’établissement ne consulte pas les dossiers patients depuis son espace. L’équipe de Mon E‑Carnet reçoit les demandes d’établissements et leurs statuts, et les prestataires techniques les données nécessaires à l’hébergement, à la base de données et aux e‑mails."
-      caption="Un rattachement à un établissement ne donne pas, à lui seul, accès à un dossier patient."
+      label="Schéma : le professionnel consulte uniquement le dossier du cas qui lui est attribué, selon le périmètre et la durée de l’autorisation patient. L’administrateur d’établissement consulte les dossiers associés à sa structure. Aucun accès automatique aux données d’un autre établissement."
+      caption="Chaque rôle est limité à son périmètre; les données d’un autre établissement ne sont pas ouvertes automatiquement."
     >
       <Svg viewBox={`0 0 360 ${TOP + (ROWS.length - 1) * STEP + 56}`}>
         <Line d={`M180 56 V80 H22 V${mids[mids.length - 1]}`} />

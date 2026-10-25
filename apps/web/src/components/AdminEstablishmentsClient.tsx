@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { Fragment, useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { ApiError, apiGet, apiPost } from "../infrastructure/api/client";
 import { useConfirm } from "./modal/ConfirmProvider";
 import "./admin-establishments.css";
@@ -10,6 +10,9 @@ type Stage = "awaiting_activation" | "awaiting_profile" | "ready";
 type Item = {
   id: string;
   name: string;
+  status: "active" | "suspended";
+  suspended_at: string | null;
+  suspension_reason: string;
   internal_code: string | null;
   created_at: string;
   profile_completed_at: string | null;
@@ -23,6 +26,7 @@ type Item = {
   access: { email: string; state: AccessState; expires_at: string | null } | null;
 };
 type Listing = { items: Item[]; total: number; truncated: boolean };
+type AuditEntry = { id: string; event_type: string; actor_role: string; actor: string; metadata: Record<string, string | number>; created_at: string };
 /* Réponse de création / renouvellement : le mot de passe temporaire n'y figure qu'une fois, il n'est ni stocké ni listé. */
 type Created = {
   email: string;
@@ -36,9 +40,16 @@ type Created = {
 type Credentials = { structure: string; email: string; password: string; loginUrl: string; expiresAt: string | null };
 
 const BLANK = { name: "", email: "", firstName: "", lastName: "", verified: false };
+const SUSPENSION_REASONS = [
+  ["security_review", "Vérification de sécurité"],
+  ["compliance_review", "Vérification de conformité"],
+  ["legal_request", "Demande juridique"],
+  ["operational", "Motif opérationnel"],
+] as const;
 
 /* Libellé et couleur de badge du suivi : une seule étiquette par structure, de la remise du mot de passe jusqu'à « Prête ». */
 function followUp(item: Item): { label: string; tone: string } {
+  if (item.status === "suspended") return { label: "Suspendue", tone: "revoked" };
   if (item.stage === "ready") return { label: "Prête", tone: "active" };
   if (item.stage === "awaiting_profile") return { label: "Fiche à compléter", tone: "pending" };
   switch (item.access?.state) {
@@ -67,6 +78,14 @@ export function AdminEstablishmentsClient({ aside }: { aside?: ReactNode }) {
   const [tick, setTick] = useState(0);
   const [credentials, setCredentials] = useState<Credentials | null>(null);
   const [copyStatus, setCopyStatus] = useState("");
+  const [suspendTarget, setSuspendTarget] = useState("");
+  const [suspendReason, setSuspendReason] = useState("security_review");
+  const [replacementTarget, setReplacementTarget] = useState("");
+  const [replacementEmail, setReplacementEmail] = useState("");
+  const [replacementFirstName, setReplacementFirstName] = useState("");
+  const [replacementLastName, setReplacementLastName] = useState("");
+  const [auditTarget, setAuditTarget] = useState("");
+  const [auditItems, setAuditItems] = useState<Record<string, AuditEntry[]>>({});
 
   useEffect(() => {
     let active = true;
@@ -218,6 +237,83 @@ export function AdminEstablishmentsClient({ aside }: { aside?: ReactNode }) {
     if (accepted) await run(() => apiPost(`/api/v1/establishments/startup/${item.id}/administrator-invitation/revoke/`, {}), "Accès révoqué.");
   }
 
+  async function changeEstablishmentStatus(item: Item, action: "suspend" | "reactivate") {
+    const suspending = action === "suspend";
+    const accepted = await confirm({
+      title: suspending ? `Suspendre « ${item.name} » ?` : `Réactiver « ${item.name} » ?`,
+      message: suspending
+        ? "Les actions administratives et les accès cliniques de cette structure seront bloqués. Les données et l’historique ne seront pas supprimés."
+        : "Les accès administratifs et cliniques seront de nouveau possibles selon les autorisations déjà en place.",
+      note: suspending ? "Choisissez un motif prédéfini. Le changement sera inscrit au journal d’audit." : "La réactivation sera inscrite au journal d’audit.",
+      confirmLabel: suspending ? "Suspendre l’établissement" : "Réactiver l’établissement",
+      tone: suspending ? "danger" : undefined,
+    });
+    if (!accepted) return;
+    await run(
+      () => apiPost(`/api/v1/establishments/startup/${item.id}/status/`, suspending ? { action, reason: suspendReason } : { action }),
+      suspending ? "Établissement suspendu. Les accès concernés sont bloqués." : "Établissement réactivé.",
+    );
+    setSuspendTarget("");
+  }
+
+  async function submitReplacement(item: Item) {
+    const email = replacementEmail.trim().toLowerCase();
+    if (!email || email === item.administrator?.email.toLowerCase() || !replacementFirstName.trim() || !replacementLastName.trim()) {
+      setError("Saisissez l’adresse e-mail, le prénom et le nom du nouveau responsable.");
+      return;
+    }
+    const accepted = await confirm({
+      title: "Remplacer le responsable ?",
+      message: `Le compte de ${item.administrator?.email ?? "l’ancien responsable"} perdra immédiatement son rôle dans « ${item.name} ». Le compte personnel et les autres rôles ne seront pas supprimés.`,
+      note: "Le nouveau responsable doit être vérifié hors application. Le remplacement sera inscrit au journal d’audit.",
+      confirmLabel: "Confirmer le remplacement",
+      tone: "danger",
+    });
+    if (!accepted) return;
+    setBusy(true); resetFeedback();
+    try {
+      const url = `/api/v1/establishments/startup/${item.id}/administrator-invitation/`;
+      let created: Created;
+      try {
+        created = await apiPost<Created>(url, { email, first_name: replacementFirstName.trim(), last_name: replacementLastName.trim(), confirm_replace: true });
+      } catch (reason) {
+        if (!(reason instanceof ApiError && reason.status === 409 && errorCode(reason) === "account_exists")) throw reason;
+        const link = await confirm({
+          title: "Un compte existe déjà avec cet e-mail",
+          message: reason.message,
+          note: "Le mot de passe du compte existant ne sera pas modifié.",
+          confirmLabel: "Rattacher ce compte",
+          cancelLabel: "Annuler le remplacement",
+          tone: "danger",
+        });
+        if (!link) return;
+        created = await apiPost<Created>(url, { email, first_name: replacementFirstName.trim(), last_name: replacementLastName.trim(), confirm_replace: true, use_existing_account: true });
+      }
+      if (created.temporary_password) {
+        setCredentials({ structure: item.name, email: created.email, password: created.temporary_password, loginUrl: created.login_url, expiresAt: created.expires_at });
+        setMessage("Responsable remplacé. Transmettez le mot de passe temporaire affiché une seule fois.");
+      } else {
+        setMessage(`Responsable remplacé par ${created.email}. Son mot de passe existant n’a pas été modifié.`);
+      }
+      setReplacementTarget(""); setReplacementEmail(""); refresh();
+    } catch (reason) {
+      setError(errorText(reason, "Remplacement impossible."));
+    } finally { setBusy(false); }
+  }
+
+  async function toggleAudit(item: Item) {
+    if (auditTarget === item.id) { setAuditTarget(""); return; }
+    setAuditTarget(item.id);
+    if (auditItems[item.id]) return;
+    try {
+      const result = await apiGet<{ items: AuditEntry[] }>(`/api/v1/establishments/startup/${item.id}/audit/`);
+      setAuditItems((current) => ({ ...current, [item.id]: result.items }));
+    } catch (reason) {
+      setAuditTarget("");
+      setError(errorText(reason, "Journal indisponible."));
+    }
+  }
+
   const canSubmit = form.name.trim() !== "" && form.email.trim() !== "" && form.verified && !busy;
 
   return (
@@ -275,7 +371,8 @@ export function AdminEstablishmentsClient({ aside }: { aside?: ReactNode }) {
                   const pendingActivation = item.stage === "awaiting_activation";
                   const renamed = Boolean(item.name_updated_at && item.original_name);
                   return (
-                    <tr key={item.id}>
+                    <Fragment key={item.id}>
+                    <tr>
                       <th scope="row">
                         <span className="admin-structure">
                           <span className="admin-structure__logo" aria-hidden="true">{item.logo ? <img src={item.logo} alt="" loading="lazy" /> : item.name.slice(0, 2).toUpperCase()}</span>
@@ -288,14 +385,21 @@ export function AdminEstablishmentsClient({ aside }: { aside?: ReactNode }) {
                       <td data-label="Mot de passe temporaire">{state === "temporary_password" && item.access?.expires_at ? <>Expire le {when(item.access.expires_at)}</> : state === "expired" ? <>Expiré</> : <span className="muted">—</span>}</td>
                       <td data-label="Dernière mise à jour">{item.profile_completed_at ? when(item.updated_at) : <span className="muted">Fiche non remplie</span>}</td>
                       <td className="admin-table__actions">
-                        {pendingActivation && item.access && (
+                        {pendingActivation && item.access && item.status === "active" && (
                           <span className="admin-inline-actions">
                             <button type="button" className="button small" disabled={busy} onClick={() => void reissue(item)}>{state === "revoked" ? "Rouvrir l’accès" : "Nouveau mot de passe"}</button>
                             {(state === "temporary_password" || state === "expired") && <button type="button" className="button small danger" disabled={busy} onClick={() => void revoke(item)}>Révoquer</button>}
                           </span>
                         )}
+                        {item.administrator && item.status === "active" && <button type="button" className="button small" disabled={busy} onClick={() => { setReplacementTarget(replacementTarget === item.id ? "" : item.id); setReplacementEmail(""); setReplacementFirstName(""); setReplacementLastName(""); }}>Remplacer le responsable</button>}
+                        {item.status === "active" ? <button type="button" className="button small danger" disabled={busy} onClick={() => { setSuspendTarget(suspendTarget === item.id ? "" : item.id); setReplacementTarget(""); }}>Suspendre</button> : <button type="button" className="button small primary" disabled={busy} onClick={() => void changeEstablishmentStatus(item, "reactivate")}>Réactiver</button>}
+                        <button type="button" className="button small" disabled={busy} aria-expanded={auditTarget === item.id} onClick={() => void toggleAudit(item)}>{auditTarget === item.id ? "Masquer le journal" : "Journal"}</button>
+                        {suspendTarget === item.id && item.status === "active" && <div className="stack"><label className="field"><span>Motif de suspension</span><select value={suspendReason} onChange={(event) => setSuspendReason(event.target.value)}>{SUSPENSION_REASONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><span className="admin-inline-actions"><button type="button" className="button small danger" disabled={busy} onClick={() => void changeEstablishmentStatus(item, "suspend")}>Confirmer la suspension</button><button type="button" className="button small" onClick={() => setSuspendTarget("")}>Annuler</button></span></div>}
+                        {replacementTarget === item.id && item.status === "active" && <div className="stack"><label className="field"><span>E-mail du nouveau responsable</span><input type="email" autoComplete="email" value={replacementEmail} onChange={(event) => setReplacementEmail(event.target.value)} /></label><label className="field"><span>Prénom</span><input autoComplete="given-name" value={replacementFirstName} onChange={(event) => setReplacementFirstName(event.target.value)} /></label><label className="field"><span>Nom</span><input autoComplete="family-name" value={replacementLastName} onChange={(event) => setReplacementLastName(event.target.value)} /></label><span className="admin-inline-actions"><button type="button" className="button small danger" disabled={busy || !replacementEmail.trim() || !replacementFirstName.trim() || !replacementLastName.trim()} onClick={() => void submitReplacement(item)}>Confirmer le remplacement</button><button type="button" className="button small" onClick={() => setReplacementTarget("")}>Annuler</button></span></div>}
                       </td>
                     </tr>
+                    {auditTarget === item.id && <tr><td colSpan={6}><section className="stack" aria-label={`Journal de ${item.name}`}><h3>Journal récent — {item.name}</h3>{auditItems[item.id] ? auditItems[item.id].length === 0 ? <p className="empty">Aucun événement enregistré.</p> : auditItems[item.id].map((event) => <article className="record" key={event.id}><div><strong>{event.event_type}</strong><p className="muted">{event.actor} · {event.actor_role}{event.metadata.status ? ` · ${event.metadata.status}` : ""}{event.metadata.reason_code ? ` · motif : ${event.metadata.reason_code}` : ""}</p></div><time dateTime={event.created_at}>{when(event.created_at)}</time></article>) : <p className="muted" role="status">Chargement du journal…</p>}<p className="muted">Les éléments affichés sont limités aux 100 derniers événements et ne contiennent pas de contenu médical.</p></section></td></tr>}
+                    </Fragment>
                   );
                 })}
               </tbody>

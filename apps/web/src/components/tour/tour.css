@@ -1,0 +1,47 @@
+/* Visite guidée : même matière que le panneau de notifications (soft-skin.css / goo.css) — fond de la palette, ombres douces,
+   goutte qui grandit avec le ressort, contenu qui sort du flou en cascade. Aucune couleur propre : tout vient des variables du thème.
+   Chaque sélecteur est préfixé par `body`, comme soft-skin.css. */
+
+body .tour { --tour-dim: rgb(8 19 29 / .6); position: fixed; inset: 0; z-index: 1500; animation: tour-fade .28s ease both; }
+body .tour[data-leaving] { opacity: 0; transition: opacity .2s ease; pointer-events: none; }
+body .tour__shield { position: absolute; inset: 0; } /* empêche de cliquer à travers : la visite ne modifie rien */
+
+/* Repère mis en lumière : le reste de l'écran est assombri par l'ombre étalée de ce cadre, qui glisse d'un repère au suivant. */
+body .tour__spot { position: absolute; left: var(--spot-x, 50%); top: var(--spot-y, 50%); width: var(--spot-w, 0px); height: var(--spot-h, 0px); border-radius: 16px; pointer-events: none; box-shadow: 0 0 0 200vmax var(--tour-dim); outline: 2px solid color-mix(in srgb, var(--primary) 78%, var(--bg)); outline-offset: 0; }
+body .tour__spot[data-empty] { outline-color: transparent; }
+body .tour__spot::after { content: ""; position: absolute; inset: -2px; border-radius: inherit; pointer-events: none; box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 45%, transparent); }
+
+body .tour__stage { position: absolute; inset: 0; pointer-events: none; }
+body .tour__card { position: absolute; z-index: 1; width: min(384px, calc(100vw - 24px)); box-sizing: border-box; display: grid; gap: 12px; padding: 20px 22px 18px; border-radius: 26px; background: var(--bg); color: var(--text); box-shadow: var(--raise-md); pointer-events: auto; visibility: hidden; }
+body .tour__card[data-ready="true"] { visibility: visible; }
+body .tour__head { display: flex; align-items: center; gap: 12px; }
+body .tour__badge { display: grid; place-items: center; flex: 0 0 auto; width: 44px; height: 44px; border-radius: 50%; background: color-mix(in srgb, var(--primary) 14%, var(--bg)); color: var(--primary-text); box-shadow: var(--press-sm); }
+body .tour__tag { flex: 1; min-width: 0; color: var(--primary-text); font-size: .72rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+body .tour__close { display: grid; place-items: center; flex: 0 0 auto; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--text-muted); cursor: pointer; transition: box-shadow .18s ease, color .18s ease; }
+body .tour__close:hover { color: var(--text); box-shadow: var(--press-sm); }
+body .tour__close:focus-visible, body .tour__card .button:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+body .tour__title { margin: 0; font-size: clamp(1.15rem, 2.4vw, 1.35rem); line-height: 1.2; overflow-wrap: anywhere; }
+body .tour__text { margin: 0; color: var(--text); font-size: .95rem; line-height: 1.55; overflow-wrap: anywhere; }
+body .tour__progress { height: 5px; border-radius: 999px; background: color-mix(in srgb, var(--text) 10%, transparent); overflow: hidden; }
+body .tour__progress > span { display: block; height: 100%; border-radius: inherit; background: var(--primary); transition: width .5s var(--spring); }
+body .tour__count { margin: -4px 0 0; color: var(--text-muted); font-size: .76rem; font-variant-numeric: tabular-nums; }
+body .tour__actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+body .tour__nav { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; }
+body .tour__card .button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; }
+
+@keyframes tour-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes tour-ring { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 45%, transparent); } 100% { box-shadow: 0 0 0 14px transparent; } }
+
+/* Mouvement : le cadre glisse avec le ressort, la carte naît comme les autres panneaux (goutte + cascade), l'anneau respire. */
+@media (prefers-reduced-motion: no-preference) {
+  body .tour__spot { transition: left .6s var(--spring), top .6s var(--spring), width .6s var(--spring), height .6s var(--spring), outline-color .3s ease; }
+  body .tour__spot:not([data-empty])::after { animation: tour-ring 2s ease-out .6s infinite; }
+  body .tour__card[data-ready="true"] { animation: goo-panel-in .8s var(--spring) backwards; }
+  body .tour__card[data-ready="true"] > * { animation: goo-item-in .5s var(--spring-soft) backwards; animation-delay: calc(.3s + var(--k, 0) * .055s); }
+}
+
+@media (max-width: 600px) {
+  body .tour__card { padding: 18px 18px 16px; border-radius: 22px; }
+  body .tour__text { font-size: .92rem; }
+}
+@media print { body .tour { display: none; } }
