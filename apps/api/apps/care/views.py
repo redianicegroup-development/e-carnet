@@ -24,7 +24,8 @@ from apps.cloudinary_storage import CLOUDINARY_CONFIGURED, destroy as cloudinary
 from .models import AccessGrant, Appointment, CareEncounter, Consultation, ExamRequest, FollowUpPlan, FollowUpPlanItem, HealthMeasurement, MedicalDocument, MedicationIntake, MedicationReminder, PatientNotification, PreconsultationTemplate, Vaccination
 from .pdf_compression import compress_pdf_lossless
 from .serializers import AccessGrantSerializer, AppointmentSerializer, CareEncounterSerializer, ConsultationSerializer, FollowUpPlanSerializer, HealthMeasurementSerializer, MedicalDocumentSerializer, MedicationIntakeSerializer, MedicationReminderSerializer, PatientNotificationSerializer, PreconsultationTemplateSerializer, ProfessionalAccessGrantSerializer, ProfessionalConsultationCreateSerializer, VaccinationSerializer
-from .services import QR_TOKEN_TTL_SECONDS, SelfAccessRefused, create_patient_qr_token, create_professional_grant, require_scope
+from .services import QR_TOKEN_TTL_SECONDS, SelfAccessRefused, create_patient_qr_token, create_professional_grant, is_own_patient_file, require_scope
+from .notifications import notify_patient
 from .consultation_services import validate_consultation
 
 
@@ -397,7 +398,7 @@ class PatientMedicationReminderListCreateView(APIView):
         serializer.is_valid(raise_exception=True)
         patient = profile_for(request.user, request)
         reminder = MedicationReminder.objects.create(patient=patient, **serializer.validated_data)
-        PatientNotification.objects.create(patient=patient, kind="medication.created", title="Rappel de médicament enregistré", body=f"Le rappel pour {reminder.name} est actif.", metadata={"reminder_id": str(reminder.id)})
+        notify_patient(patient, kind="medication.created", title="Rappel de médicament enregistré", body=f"Le rappel pour {reminder.name} est actif.", metadata={"reminder_id": str(reminder.id)})
         return Response({"success": True, "data": MedicationReminderSerializer(reminder).data}, status=201)
 
 
@@ -474,7 +475,7 @@ class PatientAppointmentListCreateView(APIView):
         serializer.is_valid(raise_exception=True)
         patient = profile_for(request.user, request)
         appointment = Appointment.objects.create(patient=patient, **serializer.validated_data)
-        PatientNotification.objects.create(patient=patient, kind="appointment.created", title="Demande de rendez-vous enregistrée", body=f"Votre demande « {appointment.reason} » a été enregistrée.", metadata={"appointment_id": str(appointment.id)})
+        notify_patient(patient, kind="appointment.created", title="Demande de rendez-vous enregistrée", body=f"Votre demande « {appointment.reason} » a été enregistrée.", metadata={"appointment_id": str(appointment.id)})
         return Response({"success": True, "data": AppointmentSerializer(appointment).data}, status=201)
 
 
@@ -550,8 +551,14 @@ class PatientAccessAuditView(APIView):
 
     def get(self, request):
         events = (
-            AuditEvent.objects.filter(patient=profile_for(request.user, request)).filter(Q(event_type__startswith="access_grant.") | Q(event_type="clinical_data.read"))
-            .select_related("access_grant")
+            AuditEvent.objects.filter(patient=profile_for(request.user, request)).filter(
+                Q(event_type__startswith="access_grant.")
+                | Q(event_type="clinical_data.read")
+                | Q(event_type__startswith="establishment_record.")
+                | Q(event_type__startswith="delegation.")
+                | Q(event_type__startswith="referral.")
+            )
+            .select_related("access_grant", "establishment")
             .order_by("-created_at")[:100]
         )
         data = []
@@ -568,8 +575,13 @@ class PatientAccessAuditView(APIView):
                 "extension_count": metadata.get("extension_count"),
                 "authorized_until": metadata.get("authorized_until"),
                 "access_duration_minutes": metadata.get("access_duration_minutes"),
+                "reason_category": metadata.get("reason_category"),
+                "opening_id": metadata.get("opening_id"),
+                "delegation_id": metadata.get("delegation_id"),
+                "referral_id": metadata.get("referral_id"),
+                "counterparty_establishment_id": metadata.get("counterparty_establishment_id"),
                 "professional_name": grant.professional_name if grant else "Professionnel",
-                "facility_label": grant.facility_label if grant else "Établissement",
+                "facility_label": grant.facility_label if grant else (event.establishment.name if event.establishment else "Établissement"),
                 "created_at": event.created_at,
             })
         return Response({"success": True, "data": data})
@@ -588,7 +600,7 @@ class PatientAccessGrantActionView(APIView):
             item.status = "expired"
             item.save(update_fields=("status",))
             AuditEvent.objects.create(event_type="access_grant.expired", actor=None, actor_role="system", patient=item.patient, establishment=item.establishment, access_grant=item, metadata={"action": "expired", "status": "expired"})
-            PatientNotification.objects.create(patient=item.patient, kind="access.expired", title="Un accès a expiré", body=f"L’accès de {item.professional_name} à {item.facility_label} a expiré.", metadata={"access_grant_id": str(item.id)})
+            notify_patient(item.patient, kind="access.expired", title="Un accès a expiré", body=f"L’accès de {item.professional_name} à {item.facility_label} a expiré.", metadata={"access_grant_id": str(item.id)})
             return Response({"success": False, "message": "Cette autorisation a expiré."}, status=409)
         update_fields = []
         if action == "accept" and item.status == "pending":
@@ -611,7 +623,7 @@ class PatientAccessGrantActionView(APIView):
         item.save(update_fields=update_fields)
         record_event(event_type=f"access_grant.{action}", actor=request.user, actor_role=patient_actor_role(request), patient=item.patient, establishment=item.establishment, access_grant=item, metadata={"action": action, "status": item.status, "extension_count": item.extension_count})
         if action == "accept":
-            PatientNotification.objects.create(patient=item.patient, kind="access.accepted", title="Accès accepté", body=f"Vous avez autorisé {item.professional_name} de {item.facility_label}.", metadata={"access_grant_id": str(item.id)})
+            notify_patient(item.patient, kind="access.accepted", title="Accès accepté", body=f"Vous avez autorisé {item.professional_name} de {item.facility_label}.", metadata={"access_grant_id": str(item.id)})
         return Response({"success": True, "data": AccessGrantSerializer(item).data})
 
 
@@ -796,7 +808,7 @@ class ProfessionalAccessGrantListCreateView(APIView):
             message = detail[0] if isinstance(detail, list) else detail
             return Response({"success": False, "message": str(message)}, status=400)
         record_event(event_type="access_grant.requested", actor=request.user, actor_role="professional", patient=item.patient, establishment=item.establishment, access_grant=item, metadata={"action": "requested", "scope": item.scope, "status": item.status})
-        PatientNotification.objects.create(patient=item.patient, kind="access.requested", title="Nouvelle demande d’accès", body=f"{item.professional_name} de {item.facility_label} demande l’accès à votre carnet.", metadata={"access_grant_id": str(item.id)})
+        notify_patient(item.patient, kind="access.requested", title="Nouvelle demande d’accès", body=f"{item.professional_name} de {item.facility_label} demande l’accès à votre carnet.", metadata={"access_grant_id": str(item.id)})
         return Response({"success": True, "data": ProfessionalAccessGrantSerializer(item).data}, status=status.HTTP_201_CREATED)
 
 
@@ -867,6 +879,57 @@ class ProfessionalAuthorizedEncounterListView(APIView):
         return Response({"success": True, "data": CareEncounterSerializer(items, many=True).data})
 
 
+class ProfessionalHealthMeasurementCreateView(APIView):
+    """Saisie d’une mesure pendant une prise en charge autorisée par le patient."""
+    permission_classes = [IsAuthenticated]
+
+    @transaction.atomic
+    def post(self, request, grant_id):
+        profile = getattr(request.user, "professional_profile", None)
+        access_error = professional_clinical_access_error(profile)
+        if access_error:
+            return Response({"success": False, "message": access_error}, status=403)
+
+        grant = AccessGrant.objects.select_for_update().filter(
+            pk=grant_id,
+            professional=profile,
+            establishment=profile.active_establishment,
+        ).select_related("patient", "establishment").first()
+        if not grant:
+            return Response({"success": False, "message": "Autorisation introuvable dans votre périmètre."}, status=404)
+        if is_own_patient_file(profile, grant.patient):
+            return Response({"success": False, "code": "self_access", "message": "Vous ne pouvez pas saisir une mesure dans votre propre dossier."}, status=403)
+        try:
+            require_scope(grant, "preconsultation")
+        except PermissionDenied as exc:
+            return Response({"success": False, "message": str(exc.detail)}, status=403)
+
+        payload = request.data.copy()
+        # L’origine et les champs d’attribution sont imposés par le serveur.
+        payload.pop("source", None)
+        payload.setdefault("measured_at", timezone.now())
+        serializer = HealthMeasurementSerializer(data=payload)
+        serializer.is_valid(raise_exception=True)
+        validated_at = timezone.now()
+        measurement = serializer.save(
+            patient=grant.patient,
+            establishment=grant.establishment,
+            professional=profile,
+            validated_at=validated_at,
+            source="measured",
+        )
+        record_event(
+            event_type="establishment_record.measurement_created",
+            actor=request.user,
+            actor_role="professional",
+            patient=measurement.patient,
+            establishment=measurement.establishment,
+            access_grant=grant,
+            metadata={"action": "measurement_created", "resource_type": "health_measurement", "resource_id": str(measurement.id)},
+        )
+        return Response({"success": True, "data": HealthMeasurementSerializer(measurement).data}, status=201)
+
+
 def _professional_vaccination_grant(request, grant_id):
     profile = getattr(request.user, "professional_profile", None)
     access_error = professional_clinical_access_error(profile)
@@ -933,8 +996,9 @@ class ProfessionalVaccinationConfirmView(APIView):
         item.status = "confirmed"
         item.confirmed_by = request.user.professional_profile
         item.confirmed_access_grant = grant
+        item.establishment = grant.establishment
         item.confirmed_at = timezone.now()
-        item.save(update_fields=("status", "confirmed_by", "confirmed_access_grant", "confirmed_at"))
+        item.save(update_fields=("status", "confirmed_by", "confirmed_access_grant", "establishment", "confirmed_at"))
         record_event(
             event_type="vaccination.confirmed",
             actor=request.user,
@@ -944,8 +1008,8 @@ class ProfessionalVaccinationConfirmView(APIView):
             access_grant=grant,
             metadata={"action": "confirmed", "vaccination_id": str(item.id), "status": item.status, "evidence": "attached_document" if item.document_id else "professional_review"},
         )
-        PatientNotification.objects.create(
-            patient=grant.patient,
+        notify_patient(
+            grant.patient,
             kind="vaccination.confirmed",
             title="Vaccination confirmée",
             body=f"La vaccination « {item.vaccine_name} » a été confirmée par un professionnel.",

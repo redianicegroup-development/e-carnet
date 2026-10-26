@@ -71,6 +71,7 @@ REST_FRAMEWORK = {
         "visitor_survey": os.environ.get("ECARNET_RATE_SURVEY", "5/hour"),
         "contact": os.environ.get("ECARNET_RATE_CONTACT", "5/hour"),
         "documents_upload": os.environ.get("ECARNET_RATE_DOCUMENTS_UPLOAD", "20/hour"),
+        "establishment_record_open": os.environ.get("ECARNET_RATE_ESTABLISHMENT_RECORD_OPEN", "30/hour"),
     },
     # Nombre de proxys de confiance devant l'API (Render, Vercel rewrite…). Mal réglé, l'IP client est falsifiable.
     "NUM_PROXIES": int(os.environ["DRF_NUM_PROXIES"]) if os.environ.get("DRF_NUM_PROXIES", "").isdigit() else (None if DEBUG else 1),
@@ -82,6 +83,9 @@ ECARNET_REPRESENTATION_LEGAL_AGE = (
     if os.environ.get("ECARNET_REPRESENTATION_LEGAL_AGE", "").isdigit()
     else None
 )
+ECARNET_TRUSTED_CONTACTS_ENABLED = os.environ.get("ECARNET_TRUSTED_CONTACTS_ENABLED", "false").lower() == "true"
+ECARNET_REFERRALS_ENABLED = os.environ.get("ECARNET_REFERRALS_ENABLED", "false").lower() == "true"
+ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ = os.environ.get("ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ", "true").lower() == "true"
 CORS_ALLOWED_ORIGINS = [origin.strip() for origin in os.environ.get("CORS_ALLOWED_ORIGINS", WEB_ORIGIN).split(",") if origin.strip()]
 CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in os.environ.get("CSRF_TRUSTED_ORIGINS", ",".join(CORS_ALLOWED_ORIGINS)).split(",") if origin.strip()]

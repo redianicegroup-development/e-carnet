@@ -367,14 +367,16 @@ class StaffEstablishmentAuditView(APIView):
         if not Establishment.objects.filter(id=establishment_id).exists():
             return Response({"success": False, "message": "Établissement introuvable."}, status=404)
         events = AuditEvent.objects.filter(establishment_id=establishment_id).filter(
-            Q(event_type__startswith="establishment.") | Q(event_type__startswith="membership.")
+            Q(event_type__startswith="establishment.")
+            | Q(event_type__startswith="establishment_record.")
+            | Q(event_type__startswith="membership.")
         ).select_related("actor").order_by("-created_at")[:100]
         items = [{
             "id": str(event.id),
             "event_type": event.event_type,
             "actor_role": event.actor_role,
             "actor": (f"{event.actor.first_name} {event.actor.last_name}".strip() or event.actor.email) if event.actor else "Système",
-            "metadata": {key: event.metadata[key] for key in ("action", "status", "reason_code") if key in event.metadata},
+            "metadata": {key: event.metadata[key] for key in ("action", "status", "reason_code", "resource_count") if key in event.metadata},
             "created_at": event.created_at,
         } for event in events]
         return Response({"success": True, "data": {"items": items, "limit": 100}})

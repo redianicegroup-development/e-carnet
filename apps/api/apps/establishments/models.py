@@ -178,3 +178,62 @@ class EstablishmentMembership(models.Model):
     class Meta:
         ordering = ("-requested_at",)
         constraints = [models.UniqueConstraint(fields=("establishment", "professional"), name="unique_establishment_professional_membership")]
+
+
+class EstablishmentRecordOpeningQuerySet(models.QuerySet):
+    def update(self, **kwargs):
+        raise TypeError("Les ouvertures de dossier sont immuables.")
+
+    def delete(self):
+        raise TypeError("Les ouvertures de dossier sont immuables.")
+
+    def bulk_update(self, objs, fields, batch_size=None):
+        raise TypeError("Les ouvertures de dossier sont immuables.")
+
+
+class EstablishmentRecordOpening(models.Model):
+    REASON_CHOICES = (
+        ("soins_en_cours", "Soins en cours"),
+        ("continuite_soins", "Continuité des soins"),
+        ("demande_patient", "Demande du patient"),
+        ("facturation_assurance", "Facturation / assurance"),
+        ("qualite_audit", "Qualité / audit"),
+        ("reclamation", "Réclamation"),
+        ("autre", "Autre"),
+    )
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    establishment = models.ForeignKey(Establishment, on_delete=models.PROTECT, related_name="record_openings")
+    patient = models.ForeignKey("patients.PatientProfile", on_delete=models.PROTECT, related_name="establishment_record_openings")
+    opened_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="establishment_record_openings")
+    opened_by_role = models.CharField(max_length=32, default="establishment_admin", editable=False)
+    reason_category = models.CharField(max_length=32, choices=REASON_CHOICES)
+    reason_note = models.CharField(max_length=140, blank=True, default="")
+    opened_at = models.DateTimeField(default=timezone.now)
+    expires_at = models.DateTimeField()
+
+    objects = EstablishmentRecordOpeningQuerySet.as_manager()
+
+    class Meta:
+        ordering = ("-opened_at",)
+        indexes = [
+            models.Index(fields=("establishment", "opened_at"), name="est_rec_est_opened_idx"),
+            models.Index(fields=("opened_by", "opened_at"), name="est_rec_actor_opened_idx"),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(reason_category__in=("soins_en_cours", "continuite_soins", "demande_patient", "facturation_assurance", "qualite_audit", "reclamation", "autre")),
+                name="est_rec_reason_category_ck",
+            ),
+            models.CheckConstraint(
+                condition=(models.Q(reason_category="autre", reason_note__gt="") | (~models.Q(reason_category="autre") & models.Q(reason_note=""))),
+                name="est_rec_other_note_ck",
+            ),
+        ]
+
+    def save(self, *args, **kwargs):
+        if self.pk and type(self).objects.filter(pk=self.pk).exists():
+            raise TypeError("Les ouvertures de dossier sont immuables.")
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise TypeError("Les ouvertures de dossier sont immuables.")

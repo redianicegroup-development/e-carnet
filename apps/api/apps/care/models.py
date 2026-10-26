@@ -187,7 +187,7 @@ def medical_document_upload_to(instance, filename):
 
 
 class MedicalDocument(models.Model):
-    """Document importé par le patient, lisible uniquement via l'API authentifiée."""
+    """Document importé par le patient ou validé par une structure, lisible via l’API authentifiée."""
     KIND_CHOICES = (
         ("prescription", "Ordonnance"),
         ("analysis", "Analyse"),
@@ -199,6 +199,9 @@ class MedicalDocument(models.Model):
     )
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name="medical_documents")
+    establishment = models.ForeignKey("establishments.Establishment", null=True, blank=True, on_delete=models.PROTECT, related_name="medical_documents")
+    professional = models.ForeignKey("professionals.ProfessionalProfile", null=True, blank=True, on_delete=models.PROTECT, related_name="medical_documents")
+    validated_at = models.DateTimeField(null=True, blank=True)
     exam_request = models.ForeignKey("ExamRequest", null=True, blank=True, on_delete=models.SET_NULL, related_name="result_documents")
     file = models.FileField(upload_to=medical_document_upload_to, blank=True, null=True)
     cloudinary_public_id = models.CharField(max_length=500, blank=True)
@@ -215,6 +218,12 @@ class MedicalDocument(models.Model):
 
     class Meta:
         ordering = ("-created_at",)
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(establishment__isnull=True) | (models.Q(professional__isnull=False) & models.Q(validated_at__isnull=False)),
+                name="care_md_estab_validator_ck",
+            ),
+        ]
 
 
 class Vaccination(models.Model):
@@ -222,6 +231,7 @@ class Vaccination(models.Model):
     STATUS_CHOICES = (("declared", "Déclarée"), ("documented", "Documentée"), ("confirmed", "Confirmée par un professionnel"))
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name="vaccinations")
+    establishment = models.ForeignKey("establishments.Establishment", null=True, blank=True, on_delete=models.PROTECT, related_name="vaccinations")
     document = models.ForeignKey(MedicalDocument, null=True, blank=True, on_delete=models.SET_NULL, related_name="vaccination_records")
     confirmed_by = models.ForeignKey("professionals.ProfessionalProfile", null=True, blank=True, on_delete=models.PROTECT, related_name="confirmed_vaccinations")
     confirmed_access_grant = models.ForeignKey("AccessGrant", null=True, blank=True, on_delete=models.SET_NULL, related_name="confirmed_vaccinations")
@@ -252,6 +262,9 @@ class HealthMeasurement(models.Model):
     SOURCE_CHOICES = (("measured", "Mesuré"), ("declared", "Déclaré"))
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name="health_measurements")
+    establishment = models.ForeignKey("establishments.Establishment", null=True, blank=True, on_delete=models.PROTECT, related_name="health_measurements")
+    professional = models.ForeignKey("professionals.ProfessionalProfile", null=True, blank=True, on_delete=models.PROTECT, related_name="health_measurements")
+    validated_at = models.DateTimeField(null=True, blank=True)
     kind = models.CharField(max_length=32, choices=KIND_CHOICES)
     value = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
     raw_value = models.CharField(max_length=32, blank=True)
@@ -264,6 +277,12 @@ class HealthMeasurement(models.Model):
     class Meta:
         ordering = ("-measured_at", "-created_at")
         indexes = [models.Index(fields=("patient", "kind", "measured_at"))]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(establishment__isnull=True) | (models.Q(professional__isnull=False) & models.Q(validated_at__isnull=False)),
+                name="care_hm_estab_validator_ck",
+            ),
+        ]
 
 
 class FollowUpPlan(models.Model):
@@ -328,6 +347,7 @@ class PatientNotification(models.Model):
     title = models.CharField(max_length=180)
     body = models.CharField(max_length=500)
     metadata = models.JSONField(default=dict, blank=True)
+    coalesce_key = models.CharField(max_length=255, null=True, blank=True, db_index=True)
     read_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

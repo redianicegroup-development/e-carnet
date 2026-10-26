@@ -48,6 +48,32 @@ class PatientAccessTests(TestCase):
         )
         return professional, establishment
 
+    def test_patient_audit_includes_new_foundation_events_and_establishment_name(self):
+        establishment = Establishment.objects.create(
+            created_by=self.user,
+            name="Clinique audit fondations",
+            status="active",
+        )
+        for event_type in ("establishment_record.opened", "delegation.accepted", "referral.created"):
+            AuditEvent.objects.create(
+                event_type=event_type,
+                actor=self.user,
+                actor_role="establishment_admin",
+                patient=self.profile,
+                establishment=establishment,
+                metadata={"reason_category": "soins_en_cours"},
+            )
+
+        self.client.force_authenticate(self.user)
+        response = self.client.get("/api/v1/patient/care/access-audit/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual({item["event_type"] for item in response.data["data"]}, {
+            "establishment_record.opened", "delegation.accepted", "referral.created"
+        })
+        self.assertTrue(all(item["facility_label"] == establishment.name for item in response.data["data"]))
+        self.assertTrue(all(item["reason_category"] == "soins_en_cours" for item in response.data["data"]))
+
     def test_patient_controls_two_extensions_then_revoke(self):
         professional, establishment = self.make_access_target("consent")
         grant = AccessGrant.objects.create(patient=self.profile, professional=professional, establishment=establishment, professional_name="Dr Test", facility_label=establishment.name, scope=["preconsultation"])

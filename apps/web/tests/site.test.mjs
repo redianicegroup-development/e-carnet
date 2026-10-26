@@ -102,7 +102,10 @@ test("les liens internes du pied de page ramènent en haut, sans détourner les 
   assert.match(footer, /<PublicFooterScrollToTop\s*\/>/);
   assert.match(scroll, /data-footer-zone="true"/);
   assert.match(scroll, /destination\.origin !== window\.location\.origin \|\| destination\.hash/);
-  assert.match(scroll, /window\.scrollTo\(0, 0\)/);
+  assert.match(scroll, /usePathname\(\)/);
+  assert.match(scroll, /sessionStorage\.setItem\(PENDING_FOOTER_SCROLL_KEY/);
+  assert.match(scroll, /window\.scrollTo\(\{ top: 0, left: 0, behavior: "instant" \}\)/);
+  assert.match(scroll, /window\.requestAnimationFrame\(scrollInstantlyToTop\)/);
   assert.match(scroll, /event\.metaKey \|\| event\.ctrlKey \|\| event\.shiftKey \|\| event\.altKey/);
 });
 

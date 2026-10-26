@@ -98,6 +98,8 @@ class ProfessionalVaccinationConfirmationTests(TestCase):
         item.refresh_from_db()
         self.assertEqual(item.confirmed_by_id, self.profile.id)
         self.assertEqual(item.confirmed_access_grant_id, grant.id)
+        self.assertEqual(item.establishment_id, self.establishment.id)
+        self.assertEqual(confirmed.data["data"]["establishment_id"], str(self.establishment.id))
         self.assertIsNotNone(item.confirmed_at)
         self.assertTrue(AuditEvent.objects.filter(event_type="vaccination.confirmed", patient=self.patient, access_grant=grant).exists())
         notice = PatientNotification.objects.get(patient=self.patient, kind="vaccination.confirmed")

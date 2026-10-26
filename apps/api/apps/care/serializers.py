@@ -88,11 +88,14 @@ class ConsultationSerializer(serializers.ModelSerializer):
 class MedicalDocumentSerializer(serializers.ModelSerializer):
     document_type_label = serializers.CharField(source="get_document_type_display", read_only=True)
     download_url = serializers.SerializerMethodField()
+    establishment_id = serializers.UUIDField(read_only=True)
+    professional_id = serializers.UUIDField(read_only=True)
+    validated_at = serializers.DateTimeField(read_only=True)
 
     class Meta:
         model = MedicalDocument
-        fields = ("id", "original_name", "document_type", "document_type_label", "document_date", "issuer", "content_type", "size_bytes", "verified", "exam_request_id", "created_at", "download_url")
-        read_only_fields = ("id", "original_name", "content_type", "size_bytes", "verified", "created_at", "download_url")
+        fields = ("id", "original_name", "document_type", "document_type_label", "document_date", "issuer", "content_type", "size_bytes", "verified", "exam_request_id", "establishment_id", "professional_id", "validated_at", "created_at", "download_url")
+        read_only_fields = ("id", "original_name", "content_type", "size_bytes", "verified", "establishment_id", "professional_id", "validated_at", "created_at", "download_url")
 
     def get_download_url(self, obj):
         return f"/api/v1/patient/care/documents/{obj.id}/download/"
@@ -102,11 +105,12 @@ class VaccinationSerializer(serializers.ModelSerializer):
     status_label = serializers.CharField(source="get_status_display", read_only=True)
     document_id = serializers.PrimaryKeyRelatedField(source="document", queryset=MedicalDocument.objects.all(), required=False, allow_null=True)
     confirmed_by_name = serializers.SerializerMethodField()
+    establishment_id = serializers.UUIDField(read_only=True)
 
     class Meta:
         model = Vaccination
-        fields = ("id", "vaccine_name", "dose_number", "administered_on", "batch_number", "facility", "professional", "next_due_on", "document_id", "confirmed_by_name", "confirmed_at", "status", "status_label", "notes", "created_at")
-        read_only_fields = ("id", "confirmed_by_name", "confirmed_at", "status", "status_label", "created_at")
+        fields = ("id", "vaccine_name", "dose_number", "administered_on", "batch_number", "facility", "professional", "next_due_on", "document_id", "confirmed_by_name", "confirmed_at", "establishment_id", "status", "status_label", "notes", "created_at")
+        read_only_fields = ("id", "confirmed_by_name", "confirmed_at", "establishment_id", "status", "status_label", "created_at")
 
     def get_confirmed_by_name(self, obj):
         if not obj.confirmed_by_id:
@@ -144,11 +148,14 @@ class HealthMeasurementSerializer(serializers.ModelSerializer):
     kind_label = serializers.CharField(source="get_kind_display", read_only=True)
     source_label = serializers.CharField(source="get_source_display", read_only=True)
     value = MeasurementValueField()
+    establishment_id = serializers.UUIDField(read_only=True)
+    professional_id = serializers.UUIDField(read_only=True)
+    validated_at = serializers.DateTimeField(read_only=True)
 
     class Meta:
         model = HealthMeasurement
-        fields = ("id", "kind", "kind_label", "value", "unit", "source", "source_label", "measured_at", "note", "created_at")
-        read_only_fields = ("id", "kind_label", "source_label", "created_at")
+        fields = ("id", "kind", "kind_label", "value", "unit", "source", "source_label", "measured_at", "note", "establishment_id", "professional_id", "validated_at", "created_at")
+        read_only_fields = ("id", "kind_label", "source_label", "establishment_id", "professional_id", "validated_at", "created_at")
 
     def validate_kind(self, value):
         if value not in {"blood_pressure", "glycemia", "weight", "height", "temperature", "heart_rate", "spo2"}:

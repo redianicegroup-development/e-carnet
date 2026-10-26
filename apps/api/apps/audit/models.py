@@ -32,7 +32,11 @@ class AuditEvent(models.Model):
 
     class Meta:
         ordering = ("created_at",)
-        indexes = [models.Index(fields=("event_type", "created_at")), models.Index(fields=("actor", "created_at"))]
+        indexes = [
+            models.Index(fields=("event_type", "created_at")),
+            models.Index(fields=("actor", "created_at")),
+            models.Index(fields=("establishment", "patient", "event_type", "created_at"), name="aud_evt_est_pt_type_time_idx"),
+        ]
 
     def save(self, *args, **kwargs):
         if self.pk and type(self).objects.filter(pk=self.pk).exists():
