@@ -117,16 +117,20 @@ test("les pré-consultations n’ont plus de pli : affichées directement dans l
 
 test("l’âge et le genre se renseignent à l’étape 3 de l’onboarding patient", () => {
   const onboarding = read("src/components/PatientOnboarding.tsx");
+  const fields = read("src/components/PatientIdentityFields.tsx");
   assert.match(onboarding, /Étape 3 · identité du titulaire/);
-  assert.match(onboarding, /gender: form\.gender/);
-  assert.match(onboarding, /function ageLabel/);
-  assert.match(onboarding, /<legend>Âge et genre/);
+  assert.match(fields, /gender: form\.gender/);
+  assert.match(fields, /ageLabel\(form\.birth_date\)/);
+  assert.match(read("src/lib/age.ts"), /export function ageLabel/);
+  assert.match(fields, /<legend>Âge et genre/);
 });
 
 test("le dossier patient et le QR de la carte virtuelle forment une seule section d’accueil", () => {
   const home = read("src/components/PatientHomeIdentity.tsx");
-  assert.equal((home.match(/<section /g) ?? []).length, 1, "une seule section");
-  assert.match(home, /className="card patient-dossier"/);
+  assert.equal((home.match(/<section /g) ?? []).length, 0, "la section vient du composant commun DossierCard");
+  assert.equal((read("src/components/DossierCard.tsx").match(/<section /g) ?? []).length, 1, "une seule section");
+  assert.match(home, /<DossierCard/);
+  assert.match(home, /className="patient-dossier"/);
   assert.match(home, /patient-dossier__qr/);
   assert.doesNotMatch(home, /patient-home-qr|patient-home-profile/);
 });

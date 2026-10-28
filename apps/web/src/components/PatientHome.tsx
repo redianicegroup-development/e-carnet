@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { apiGet } from "../infrastructure/api/client";
 import { AvatarBadge, displayName, useSpaceAccount } from "./shell/SpaceShell";
 import { Icon, type IconName } from "./ui/Icon";
+import { TileGrid, type TileItem } from "./ui/TileGrid";
 import { PatientHomeIdentity } from "./PatientHomeIdentity";
 import { SetupCard, type SetupStep } from "./SetupCard";
 
@@ -40,10 +41,13 @@ async function loadSummary(): Promise<Summary> {
   };
 }
 
-const SHORTCUTS: { href: string; icon: IconName; title: string; text: string }[] = [
+const SHORTCUTS: TileItem[] = [
   { href: "/patient/carnet", icon: "folder", title: "Mon carnet", text: "Allergies, documents, vaccins, traitements" },
-  { href: "/patient/acces#qr", icon: "qr", title: "Accès temporaire pour un professionnel", text: "Un QR valable 5 minutes, à lui présenter en consultation" },
   { href: "/patient/consultations", icon: "stethoscope", title: "Mes visites", text: "Pré-consultations et consultations validées" },
+  { href: "/patient/acces#qr", icon: "qr", title: "Partage QR", text: "Accès temporaire pour un professionnel : un QR valable 5 minutes, à lui présenter en consultation" },
+  { href: "/patient/proches", icon: "users", title: "Proches de confiance", text: "Donner un accès en lecture seule à un proche" },
+  { href: "/patient/adressages", icon: "share", title: "Adressages", text: "Les orientations vers un autre professionnel" },
+  { href: "/patient/parametres", icon: "sliders", title: "Réglages", text: "Mon compte, l’apparence et les notifications" },
 ];
 
 type Todo = { key: string; href: string; icon: IconName; title: string; text: string; urgent?: boolean };
@@ -111,15 +115,7 @@ export function PatientHome() {
       {summary?.partial && <p className="notice" role="status">Certaines informations de cette page n’ont pas pu être chargées. <button className="text-link" type="button" onClick={retry}>Réessayer</button></p>}
       {!summary && !error && <div className="skeleton" role="status"><span className="sr-only">Chargement de votre carnet…</span><i /></div>}
 
-      <section className="stack" aria-label="Raccourcis">
-        {SHORTCUTS.map((item) => (
-          <Link key={item.href} className="list-row" href={item.href}>
-            <span className="setting-item__icon"><Icon name={item.icon} /></span>
-            <span className="list-row__body"><strong>{item.title}</strong><br /><span className="muted">{item.text}</span></span>
-            <Icon name="chevron" size={18} />
-          </Link>
-        ))}
-      </section>
+      <TileGrid label="Raccourcis" items={SHORTCUTS} />
     </div>
   );
 }

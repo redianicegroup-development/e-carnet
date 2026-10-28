@@ -28,6 +28,9 @@ import "./screen-loader.css";
 import "../components/modal/modal.css";
 import "./soft-skin.css";
 import "./goo.css";
+import "./mobile-skin.css";
+import "./admin-skin.css";
+import "./pages-skin.css";
 
 // Polices auto-hébergées par Next au build : une seule paire est utilisée à l’écran,
 // sans requête Google Fonts à l’exécution ni préchargement des autres paires.

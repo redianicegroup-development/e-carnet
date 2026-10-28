@@ -199,14 +199,13 @@ export function PatientAccessGrants() {
     <section className="hero-page">
       <span className="eyebrow">Mon carnet · consentement</span>
       <h1>Qui peut accéder à mon carnet ?</h1>
-      <p className="muted">Chaque demande affiche le professionnel, l’établissement, le périmètre et la durée. Aucun accès n’est ouvert avant votre choix.</p>
+      <p className="muted">Rien n’est ouvert sans votre accord. Chaque demande indique qui, quoi et pour combien de temps.</p>
       <p className="notice" role="status" aria-live="polite">{message}</p>
 
       <section id="qr" className="card" aria-labelledby="qr-heading">
         <span className="eyebrow">Accès temporaire</span>
         <h2 id="qr-heading">Accès temporaire pour un professionnel</h2>
-        <p className="muted">Le QR contient uniquement un jeton opaque à usage unique. Il ne contient aucune donnée médicale.</p>
-        <p className="muted">Ce n’est pas le QR de votre carte virtuelle (celui qui s’affiche sur votre accueil pour les secours) : celui-ci expire au bout de 5 minutes et ne sert qu’à un professionnel que vous autorisez.</p>
+        <p className="muted">Ce n’est pas le QR de votre carte virtuelle : celui-ci expire au bout de 5 minutes. Le professionnel qui le scanne demande à voir vos informations et vos documents (lecture seule) ; c’est vous qui décidez ensuite.</p>
         {!qr
           ? <button type="button" className="button primary" onClick={() => void createQr()} disabled={qrBusy}>{qrBusy ? "Génération…" : "Générer un QR temporaire"}</button>
           : <ActiveAccessQr token={qr.token} expiresAt={qr.expiresAt} busy={qrBusy} onRenew={() => void createQr()} />}
@@ -224,8 +223,8 @@ export function PatientAccessGrants() {
                   <div><h3>{item.professional_name}</h3><p className="muted">{item.facility_label}</p></div>
                   <span className={item.status === "active" ? "badge verified" : "badge declared"}>{statusLabels[item.status] ?? item.status}</span>
                 </div>
-                <p className="muted">Périmètre demandé : {item.scope.map((scope) => scopeLabels[scope] ?? scope).join(", ") || "À préciser"}</p>
-                {item.status === "pending" && <p className="consent-explanation">Si vous autorisez : accès pendant <strong>2 heures</strong>, prolongeable deux fois d’une heure. Seuls les périmètres affichés ci-dessus seront partagés ; les documents médicaux ne le seront que si « Documents médicaux (lecture seule) » est explicitement demandé et autorisé. <strong>Aucune donnée n’est accessible avant votre décision.</strong></p>}
+                <p className="muted">Accès demandé : {item.scope.map((scope) => scopeLabels[scope] ?? scope).join(", ") || "À préciser"}</p>
+                {item.status === "pending" && <p className="consent-explanation">Si vous autorisez : accès pendant <strong>2 heures</strong> (prolongeable deux fois d’une heure), limité à ce qui est listé ci-dessus. <strong>Rien n’est accessible avant votre décision.</strong></p>}
                 <p className="muted">Durée initiale : 2 h, prolongeable deux fois d’1 h. {item.status === "active" && item.expires_at ? `Expiration : ${new Date(item.expires_at).toLocaleString("fr-FR")}.` : ""}</p>
                 <div className="actions">
                   {item.status === "pending" && <>

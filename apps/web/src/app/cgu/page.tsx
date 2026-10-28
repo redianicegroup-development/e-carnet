@@ -78,7 +78,7 @@ const sections: LegalSectionDef[] = [
         <ActorsFigure variant="terms" />
         <p><strong>Le patient</strong> décide des accès à son carnet, choisit le périmètre et la durée, et peut refuser ou révoquer une autorisation depuis son espace.</p>
         <p><strong>Le professionnel</strong> n’accède à un carnet que dans le cadre d’une autorisation active. Il reste responsable de ses actes, des informations qu’il saisit et du respect de ses obligations professionnelles, sous réserve du droit applicable et des contrats conclus avec son établissement.</p>
-        <p><strong>L’établissement</strong> confirme le rattachement d’un professionnel à sa structure. Cette confirmation ne vaut pas certification par l’éditeur de l’identité, des diplômes ou de la compétence du professionnel. L’administrateur actif consulte les dossiers ayant une pré-consultation clôturée ou une consultation dans son établissement. Le professionnel ne consulte que le dossier du cas qui lui est attribué, selon l’autorisation du patient. Aucun accès automatique aux données d’un autre établissement.</p>
+        <p><strong>L’établissement</strong> confirme le rattachement d’un professionnel à sa structure. Cette confirmation ne vaut pas certification par l’éditeur de l’identité, des diplômes ou de la compétence du professionnel. L’administrateur actif voit d’abord une liste sans contenu clinique et ne peut ouvrir un dossier de sa structure qu’avec un motif obligatoire ; l’ouverture est temporaire, auditée et notifiée au patient. Le professionnel ne consulte que le dossier du cas qui lui est attribué, selon l’autorisation du patient. Aucun accès automatique aux données d’un autre établissement.</p>
         <p><strong>L’éditeur</strong> fournit le service et ne remplace ni le patient, ni le professionnel, ni l’établissement dans leurs décisions.</p>
       </>
     ),
@@ -101,9 +101,10 @@ const sections: LegalSectionDef[] = [
           <li>Le patient peut présenter un QR code. Ce QR code ne contient aucune donnée médicale : il permet seulement d’initier une demande. Sa validité est de {TECH_VALIDITY.qr}.</li>
           <li>Le professionnel adresse une demande d’accès. Le patient reçoit cette demande, qui indique le professionnel, l’établissement et le périmètre demandé, avant de décider.</li>
           <li>Si le patient accepte, l’autorisation est valable {TECH_VALIDITY.accessInitial}, avec {TECH_VALIDITY.accessExtension}. Elle prend fin à son expiration ou si le patient la révoque.</li>
-          <li>Les documents ne sont pas accessibles dans la version actuelle.</li>
+          <li>La demande inclut la lecture seule des documents du patient. Le patient voit ce périmètre avant de décider et aucun document n’est accessible avant son accord.</li>
         </ol>
-        <p>Le patient vérifie le professionnel, l’établissement, le périmètre et la durée avant d’autoriser. La révocation ou l’expiration d’une autorisation n’efface pas les consultations déjà validées ni les traces d’audit.</p>
+        <p>Le patient vérifie le professionnel, l’établissement, le périmètre et la durée avant d’autoriser. Il peut aussi remettre à un proche de confiance un mot de rattachement à usage unique : le proche utilise son propre compte et ne reçoit qu’un accès en lecture seule à la fiche d’urgence dans le périmètre prévu. Cette délégation n’est ni un partage de mot de passe ni une représentation légale. La révocation ou l’expiration d’une autorisation ou d’un adressage n’efface pas les consultations déjà validées ni les traces d’audit.</p>
+        <p>Un adressage vers un autre établissement reste ciblé et soumis à la décision du patient. En V1, l’établissement destinataire ne peut pas rechercher librement des patients, son administrateur ne reçoit pas automatiquement le contenu clinique et aucune copie n’est conservée après la fenêtre de lecture.</p>
       </>
     ),
   },

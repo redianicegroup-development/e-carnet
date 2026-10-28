@@ -1,7 +1,9 @@
 # Roadmap produit — Mon Carnet Numérique, V1 à V5
 
-**Mise à jour : 13/10/2026 — décisions produit actives, périmètre V1–V3 clarifié.**  
+**Mise à jour : 26/10/2026 — décisions produit actives, périmètre V1–V3 clarifié.**  
 **Statut :** V1 en construction, non acceptée et interdite pour les données de santé réelles. Ce document fait foi pour l’intention produit ; l’état réellement implémenté et les preuves sont dans [ETAT-REEL-V1.md](ETAT-REEL-V1.md) et [RECETTE-V1.md](RECETTE-V1.md). Les validations médicales/juridiques et le déploiement restent à obtenir. Les changements locaux de cette passe ont passé les contrôles ciblés décrits dans l’état réel; cela ne vaut pas preuve de staging.
+
+> **Référence du reste à faire :** la liste opérationnelle classée V1 à V6 se trouve dans [RESTE-A-FAIRE-ACTUEL-V1-A-V6.md](RESTE-A-FAIRE-ACTUEL-V1-A-V6.md). Plusieurs éléments de cette roadmap historique sont maintenant livrés localement, notamment les rendez-vous, mesures, rappels, vaccinations, export PDF, proches de confiance, adressages C1 et historique C2.
 
 > Les prototypes HTML sont une **référence visuelle mobile** (ambiance, hiérarchie, navigation, densité, cartes et icônes), non une source de parcours fonctionnel. Ne pas recopier les anciens flows des maquettes lorsqu’ils contredisent cette roadmap.
 
@@ -56,7 +58,7 @@ Le compte choisit une question prédéfinie ou saisit sa propre question, puis e
 3. Une invitation unique valable **48 heures** est envoyée au responsable; il définit lui-même son mot de passe. Aucun mot de passe temporaire n’est envoyé par e-mail. Une structure demeure indépendante de son administrateur; celui-ci peut être remplacé sans recréer l’établissement. Un seul administrateur actif est prévu en V1; plusieurs pourront être envisagés plus tard.
 4. L’administrateur établissement contrôle la vérification interne du médecin, génère un code aléatoire à usage unique valable **48 heures**, et le communique au médecin. E‑Carnet ne collecte pas les pièces personnelles du médecin.
 5. Le médecin déjà titulaire d’un compte Professionnel saisit le code; cela le consomme et crée seulement une demande de rattachement `pending`. L’administrateur établissement accepte ou refuse. Seule l’acceptation active le rattachement; un code ne confère jamais d’accès automatique.
-6. L’administrateur actif consulte les dossiers ayant une pré-consultation clôturée ou une consultation dans son établissement. Le professionnel accède uniquement au cas qui lui est attribué, avec un rattachement actif, un établissement actif et une autorisation patient active. Aucun accès automatique aux données d’un autre établissement.
+6. L’administrateur actif voit une liste sans contenu puis ouvre temporairement les soins de son établissement avec motif obligatoire, audit et notification au patient. Le professionnel accède uniquement au cas qui lui est attribué, avec un rattachement actif, un établissement actif et une autorisation patient active. Aucun accès automatique aux données d’un autre établissement.
 
 Le détail, les contrôles d’accès, la conservation et le plan de réalisation sont dans le [flow établissement](FLOW-ETABLISSEMENT.md) et l’[ADR-002](adr/ADR-002-etablissement-invitation-et-rattachement.md).
 

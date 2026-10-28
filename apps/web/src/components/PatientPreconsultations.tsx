@@ -78,7 +78,7 @@ export function PatientPreconsultations() {
     {showWizard && <section className="card preconsult-wizard preconsult-form" aria-labelledby="preconsult-title">
       <div className="preconsult-wizard__top"><span className="eyebrow">{draft ? "Modifier le brouillon" : "Préparer ma consultation"}</span></div>
       <h2 id="preconsult-title">Préparer ma consultation</h2>
-      <p className="muted">Remplissez ce que vous savez : seul le motif est obligatoire. La pré-consultation se remplit dans l’espace patient, avec l’aide éventuelle d’un infirmier ou d’un proche, sans compte propre pour cette personne.</p>
+      <p className="muted">Remplissez ce que vous savez : seul le motif est obligatoire. Un proche ou un infirmier peut vous aider.</p>
       <form onSubmit={save} noValidate>
         <fieldset className="preconsult-section">
           <legend><span className="preconsult-section__num">1</span>Quel est le motif de la consultation ?</legend>
@@ -123,7 +123,7 @@ export function PatientPreconsultations() {
       {draft.observations && <p className="preconsult-draft__text">{draft.observations}</p>}
       {describeVitals(draft.vitals).length > 0 && <p className="preconsult-draft__vitals"><strong>Constantes :</strong> {describeVitals(draft.vitals).map((line) => `${line.label} ${line.text}`).join(" · ")}</p>}
       {draft.recorded_with_help && <p className="muted">Rempli avec l’aide de : {draft.recorded_with_help}</p>}
-      <p className="muted">Pour que le médecin le lise, ouvrez votre QR d’accès : il le verra, travaillera dessus, puis clôturera la pré-consultation en signant sa consultation. Vous pouvez encore la modifier d’ici là.</p>
+      <p className="muted">Pour que le médecin le lise, montrez-lui votre QR d’accès temporaire. Vous pouvez encore modifier le brouillon.</p>
       <div className="actions"><button type="button" className="button" onClick={startEditing}>Modifier le brouillon</button><Link className="button primary" href="/patient/acces">Ouvrir mon QR d’accès</Link></div>
       <p className="status" role="status" aria-live="polite">{message}</p>
     </section>}

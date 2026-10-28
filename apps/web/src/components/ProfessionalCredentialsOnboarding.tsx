@@ -7,7 +7,7 @@ import { apiGet } from "../infrastructure/api/client";
 import { ProfessionalCredentialsSettings, type Credentials } from "./ProfessionalCredentialsSettings";
 
 /** Étape facultative de l'onboarding médecin : cachet et signature. « Passer » mène toujours à l'étape suivante (sécurité du compte). */
-export function ProfessionalCredentialsOnboarding({ step3 = false }: { step3?: boolean }) {
+export function ProfessionalCredentialsOnboarding({ backHref = "/professionnel/onboarding" }: { backHref?: string }) {
   const router = useRouter();
   const [credentials, setCredentials] = useState<Credentials | null>(null);
   const [error, setError] = useState("");
@@ -24,7 +24,7 @@ export function ProfessionalCredentialsOnboarding({ step3 = false }: { step3?: b
 
   return <section className="card auth-form">
     {credentials
-      ? <ProfessionalCredentialsSettings variant="onboarding" eyebrow={step3 ? "Étape 3 · partie 3 sur 3 · facultatif" : undefined} profile={credentials} onSaved={setCredentials} onDone={next} />
+      ? <ProfessionalCredentialsSettings variant="onboarding" profile={credentials} onSaved={setCredentials} onDone={next} backHref={backHref} />
       : error
         ? <div className="stack"><h1>Cachet et signature</h1><p className="status" role="alert">{error}</p><div className="actions"><Link className="button" href="/professionnel/onboarding">Compléter mon profil</Link><button type="button" className="button primary" onClick={next}>Passer pour le moment</button></div></div>
         : <div className="skeleton" role="status"><span className="sr-only">Chargement…</span><i /><i /></div>}

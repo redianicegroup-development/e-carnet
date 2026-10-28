@@ -15,6 +15,7 @@ import { ProductTour } from "../tour/ProductTour";
 import { TOUR_RESTART_EVENT } from "../../lib/tour";
 import { GooeyAccountMenu } from "./GooeyAccountMenu";
 import { AppSidebar, type SidebarItem, type SidebarMenuItem } from "./AppSidebar";
+import { TrustedDelegationBanner } from "../TrustedDelegationBanner";
 
 export type SpaceAccount = {
   id: string;
@@ -280,6 +281,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
         {((state.status === "ready" && !passwordChangePending) || bare) && (
           <AccountContext.Provider value={state.status === "ready" ? state.account : null}>
             <PatientAccessQrContext.Provider value={{ qr: patientAccessQr, setQr: setPatientAccessQr }}>
+              {space === "patient" && state.status === "ready" && !bare && <TrustedDelegationBanner />}
               {children}
             </PatientAccessQrContext.Provider>
           </AccountContext.Provider>

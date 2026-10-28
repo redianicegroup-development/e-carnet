@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiGet, apiPatch } from "../infrastructure/api/client";
 import { Icon } from "./ui/Icon";
+import { OnboardingNav } from "./onboarding/OnboardingChrome";
 
 const QUESTIONS = [
   "Quel était le nom de votre première école ?",
@@ -32,15 +33,17 @@ export function RecoverySetup() {
       .then((current) => {
         if (!active) return;
         setAccount(current);
-        setMessage(current.recovery_configured
-          ? "Votre question de récupération est déjà configurée. Vous pouvez la remplacer."
-          : "Choisissez une question et une réponse dont vous vous souviendrez.");
+        setMessage(current.recovery_configured ? "Votre question de récupération est déjà configurée. Vous pouvez la remplacer." : "");
       })
       .catch((error) => {
         if (active) setMessage(error instanceof Error ? error.message : "Impossible de vérifier votre compte.");
       });
     return () => { active = false; };
   }, []);
+
+  const activeRole = (account?.contexts.find((item) => item.is_active) ?? account?.contexts[0])?.role;
+  // Retour : un professionnel revient au bloc de l'étape 3 (carnet patient et profil professionnel), un patient à son carnet.
+  const backHref = activeRole === "professional" ? "/onboarding/patient?suite=professionnel" : "/onboarding/patient";
 
   function destinationAfterRecovery() {
     const context = account?.contexts.find((item) => item.is_active) ?? account?.contexts[0];
@@ -103,8 +106,8 @@ export function RecoverySetup() {
           </button>
         </span>
       </label>
-      <p className="notice" role="note">Quiconque connaît cette réponse peut changer votre mot de passe : choisissez une réponse que seul vous connaissez, jamais visible sur vos réseaux. Elle est enregistrée sous forme hachée et ne s’affiche jamais. Un code reçu par SMS viendra renforcer cette récupération plus tard.</p>
-      <button className="button primary" type="submit" disabled={busy || !account}>{busy ? "Enregistrement…" : "Enregistrer et terminer"}</button>
+      <p className="notice" role="note">Quiconque connaît cette réponse peut changer votre mot de passe : choisissez-en une que vous seul connaissez. Un code reçu par SMS viendra renforcer cette récupération plus tard.</p>
+      <OnboardingNav backHref={backHref} nextLabel="Terminer" busy={busy} disabled={!account} />
       <p className="status" role="status" aria-live="polite">{message}</p>
     </form>
   );

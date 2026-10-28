@@ -1,0 +1,50 @@
+/* =====================================================================================================
+   Console d'administration et espace équipe (superadmin) — même matière que les maquettes mobile.
+   Chargée après mobile-skin.css. Les mises en page existantes (barre latérale, onglets, tiroir mobile) sont conservées ; cette couche ajoute :
+   cartes de KPI néomorphes sur 2 colonnes en mobile, tableaux qui se replient en cartes sous 860 px (avec data-label), cibles tactiles de 44 px,
+   en-tête qui s'empile, écran de connexion admin soigné. Aucune couleur nouvelle : dérivés de palette et statuts fixes uniquement.
+   ===================================================================================================== */
+
+/* ---------- Indicateurs ---------- */
+body .space--admin .admin-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (min-width: 720px) { body .space--admin .admin-metrics { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; } }
+body .space--admin .admin-metric { min-height: 118px; padding: 16px; border: 0; border-radius: 22px; background: var(--bg); box-shadow: var(--raise-md); overflow-wrap: anywhere; }
+body .space--admin .admin-metric::before { display: none; }
+body .space--admin .admin-metric strong { font-family: var(--font-heading); font-size: clamp(1.6rem, 6vw, 2.2rem); font-weight: 700; }
+body .space--admin .admin-metric > .muted:first-child { font-size: var(--fs-small); font-weight: 600; }
+body .space--admin .admin-metrics--compact .admin-metric { min-height: 96px; }
+
+/* ---------- Tableaux : creusés dans le fond sur PC, cartes sur mobile ---------- */
+body .admin-table-card { border-radius: var(--r-xl); }
+body .admin-table-wrap { border: 0; border-radius: 18px; background: var(--bg); box-shadow: var(--press-sm); }
+body .admin-table th { background: var(--tone-cream); }
+body .admin-table tbody tr:hover { background: color-mix(in srgb, var(--tone-honey-1) 30%, transparent); }
+@media (max-width: 860px) {
+  body .admin-table--stack tr { border: 0; background: var(--bg); box-shadow: var(--raise-md); }
+  body .admin-table--stack tbody tr:hover { background: var(--bg); }
+  /* champs courts côte à côte ; le premier (identité) et les actions prennent toute la largeur */
+  body .admin-table--stack tr { grid-template-columns: repeat(auto-fit, minmax(min(100%, 118px), 1fr)); gap: 12px 14px; }
+  body .admin-table--stack td:first-child, body .admin-table--stack td.admin-table__actions { grid-column: 1 / -1; }
+}
+
+/* ---------- En-tête, recherche, retours, graphiques ---------- */
+@media (max-width: 640px) {
+  body .admin-page-heading { flex-direction: column; align-items: stretch; }
+  body .admin-page-heading .button { width: 100%; }
+  body .admin-chart-plot { height: 220px; }
+}
+body .admin-search input { min-height: 48px; border-radius: 999px; }
+body .admin-feedback-item { border: 0; border-radius: 18px; background: var(--bg); box-shadow: var(--raise-sm); }
+body .admin-chart-card { border-radius: var(--r-xl); }
+body .admin-management-grid > .card { border-radius: 22px; }
+
+/* ---------- Écran de connexion administrateur ---------- */
+body .admin-login { border-radius: var(--r-xl); box-shadow: var(--raise-lg); }
+body .admin-login h1 { font-family: var(--font-heading); font-size: var(--fs-h1); letter-spacing: -.02em; }
+
+/* ---------- Mobile : cibles de 44 px, rien ne déborde ---------- */
+@media (max-width: 919.98px) {
+  body .space--admin .button, body .admin-management-grid .button { min-height: 44px; }
+  body .space--admin .field input, body .space--admin .field select, body .space--admin .field textarea { min-height: 48px; border-radius: 16px; }
+  body .space--admin .admin-space-main [role="tabpanel"] table { max-width: 100%; }
+}

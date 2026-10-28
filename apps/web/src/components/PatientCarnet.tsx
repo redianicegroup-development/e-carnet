@@ -85,7 +85,7 @@ export function PatientCarnet() {
   const physicalKind = form.kind === "height" || form.kind === "weight";
   return (
     <div className="stack-lg">
-      <PageHeader eyebrow="Mon carnet" title="Ce que je déclare" lead="Chaque information garde sa provenance : déclarée par vous, jamais présentée comme confirmée tant qu’un médecin ne l’a pas validée." />
+      <PageHeader eyebrow="Mon carnet" title="Ce que je déclare" lead="Ce que vous déclarez reste « déclaré » tant qu’un médecin ne l’a pas confirmé." />
 
       <div className="section-grid">
       <CollapsibleSection title="Informations de ma carte virtuelle" icon="idcard" hint="Ce que la carte affiche">
@@ -150,7 +150,7 @@ export function PatientCarnet() {
       <CollapsibleSection title="Rappels de médicaments" solo icon="bell" hint="Prises du jour"><MedicationReminders /></CollapsibleSection>
       <CollapsibleSection title="Mes plans de suivi" solo icon="chart" hint="Prescrits par un médecin"><FollowUpPlans /></CollapsibleSection>
       <CollapsibleSection title="Rendez-vous" solo icon="clock" hint="À venir"><PatientAppointments /></CollapsibleSection>
-      <CollapsibleSection title="Exporter mon carnet" icon="download" hint="PDF de mon carnet"><section className="card"><div className="section-heading"><div><span className="eyebrow">Portabilité</span></div></div><p className="muted">Téléchargez une copie PDF volontaire de vos déclarations, vaccinations et mesures récentes.</p><a className="button" href="/api/v1/patient/care/export/">Télécharger mon carnet PDF</a></section></CollapsibleSection>
+      <CollapsibleSection title="Exporter mon carnet" icon="download" hint="PDF de mon carnet"><section className="card"><div className="section-heading"><div><span className="eyebrow">Portabilité</span></div></div><p className="muted">Téléchargez une copie PDF de votre carnet.</p><a className="button" href="/api/v1/patient/care/export/">Télécharger mon carnet PDF</a></section></CollapsibleSection>
       </div>
       <PatientPreconsultations />
     </div>

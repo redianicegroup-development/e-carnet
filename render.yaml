@@ -40,6 +40,13 @@ services:
         value: https://e-carnetci.vercel.app
       - key: ECARNET_INVITATION_BASE_URL
         value: https://e-carnetci.vercel.app/etablissement/activation
+      # Web Push (facultatif : sans ces trois valeurs, le push est désactivé et l'API tourne normalement).
+      - key: ECARNET_VAPID_PUBLIC_KEY
+        sync: false
+      - key: ECARNET_VAPID_PRIVATE_KEY
+        sync: false
+      - key: ECARNET_VAPID_SUBJECT
+        sync: false
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: GOOGLE_CLIENT_SECRET

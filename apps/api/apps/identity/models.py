@@ -308,3 +308,29 @@ class AccountActionRequest(models.Model):
 
     def __str__(self):
         return f"{self.get_request_type_display()} · {self.user_id} · {self.get_status_display()}"
+
+
+class OperationalIncident(models.Model):
+    SEVERITY_CHOICES = (("info", "Information"), ("warning", "Avertissement"), ("major", "Majeur"), ("critical", "Critique"))
+    CATEGORY_CHOICES = (("api", "API"), ("database", "Base de données"), ("cache", "Cache"), ("storage", "Stockage"), ("backup", "Sauvegarde"), ("email", "E-mail"), ("security", "Sécurité"))
+    STATUS_CHOICES = (("open", "Ouvert"), ("acknowledged", "Reconnu"), ("resolved", "Résolu"))
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    incident_key = models.CharField(max_length=160, unique=True)
+    severity = models.CharField(max_length=16, choices=SEVERITY_CHOICES, default="warning")
+    category = models.CharField(max_length=24, choices=CATEGORY_CHOICES)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="open", db_index=True)
+    summary = models.CharField(max_length=240)
+    first_seen_at = models.DateTimeField(auto_now_add=True)
+    last_seen_at = models.DateTimeField(auto_now=True)
+    acknowledged_at = models.DateTimeField(null=True, blank=True)
+    acknowledged_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="acknowledged_operational_incidents")
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    resolution_note = models.CharField(max_length=500, blank=True)
+
+    class Meta:
+        ordering = ("status", "-last_seen_at")
+        indexes = [models.Index(fields=("status", "severity", "last_seen_at"))]
+
+    def __str__(self):
+        return f"{self.severity} · {self.category} · {self.incident_key}"

@@ -193,3 +193,15 @@ Définis dans `FIELDS` (`apps/web/src/lib/legal/config.ts`) ; on saisit la valeu
 | ✓ Testé | 20 tests `node --test` (13 ajoutés : cookie de mesure déclaré, aucun stockage navigateur, liens visiteurs et connectés, icônes déclarées existantes et de la bonne taille, aide sans promesse) ; types TypeScript stricts avec `noUnusedLocals` sur 20 fichiers ; rendu HTML de 8 pages avec le vrai CSS dans Chromium à 375 px et 1200 px (aucun id dupliqué, aucune ancre cassée, aucun débordement) ; extrait de `BrandMark` identique au pixel près au logo |
 | ✗ Non fait | `npm ci`, `next build`, `eslint` (pas de `node_modules`, réseau désactivé) ; tests Python (backend non modifié) ; polices réelles ; lecteur d’écran ; inspection des cookies sur un déploiement ; test de la fenêtre de paramètres elle-même (seule la rubrique a été rendue) |
 | ✗ Non déployé | Rien n’est en ligne |
+
+## 10. Mise à jour fonctionnelle du 26/10/2026
+
+Les nouveaux parcours doivent être ajoutés à la revue juridique avant toute ouverture à des données réelles :
+
+- la délégation « proche de confiance » utilise un compte propre au proche et un mot de rattachement à usage unique ; elle est limitée à la fiche d’urgence en lecture seule et ne constitue pas une représentation légale ;
+- les ouvertures locales par administrateur d’établissement sont motivées, temporaires, auditables et notifiées au patient ; elles ne donnent accès qu’aux soins de la structure concernée ;
+- les adressages C1 et la portée C2 `care_history` sont soumis au consentement granulaire du patient, à un professionnel actif et à une durée limitée ; les structures sources sont choisies par le patient ;
+- aucune copie inter-établissements n’est conservée en V1 ; C3 reste désactivé jusqu’à validation de la conservation, de la rectification et de l’effacement ;
+- aucune recherche libre de patients ni accès administrateur au contenu d’une autre structure n’est prévu ; le bris de glace reste hors périmètre.
+
+Les pages d’aide, de confidentialité, de CGU et de sécurité ont été actualisées le 26/10/2026. Elles restent marquées comme provisoires tant que les champs juridiques et la validation d’un juriste ivoirien ne sont pas complétés.

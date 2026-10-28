@@ -12,7 +12,7 @@ export function EstablishmentHelp() {
       <section className="card">
         <span className="eyebrow">Accès aux dossiers</span>
         <h2>Un périmètre propre à chaque rôle</h2>
-        <p className="muted">L’administrateur consulte les dossiers ayant une pré-consultation clôturée ou une consultation dans son établissement. Le professionnel n’accède qu’au dossier de son cas attribué, selon l’autorisation du patient. Aucun accès automatique aux données d’un autre établissement.</p>
+        <p className="muted">L’administrateur voit d’abord une liste sans contenu clinique. Il peut ouvrir temporairement un dossier de son établissement avec un motif obligatoire ; l’ouverture est auditée et notifiée au patient. Le professionnel n’accède qu’au dossier de son cas attribué, selon l’autorisation du patient. Aucun accès automatique aux données d’un autre établissement.</p>
         <div className="actions"><Link className="button" href="/etablissement/dossiers">Voir les dossiers de l’établissement</Link><Link className="button" href="/securite">Notre approche de la sécurité</Link></div>
       </section>
       <section className="stack" aria-labelledby="aide-questions">

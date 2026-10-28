@@ -19,9 +19,9 @@ export const LEGAL_REVIEW: { status: "pending" | "validated"; reviewer: string |
 };
 
 export const LEGAL_DOCS: Record<LegalDocKey, { path: string; title: string; short: string; version: string; lastUpdated: string }> = {
-  mentions: { path: "/mentions-legales", title: "Mentions légales", short: "Mentions légales", version: "2026-10-11-v1", lastUpdated: "2026-10-11" },
-  privacy: { path: "/confidentialite", title: "Politique de confidentialité", short: "Confidentialité", version: "2026-10-11-v1", lastUpdated: "2026-10-11" },
-  terms: { path: "/cgu", title: "Conditions générales d’utilisation", short: "Conditions d’utilisation", version: "2026-10-11-v1", lastUpdated: "2026-10-11" },
+  mentions: { path: "/mentions-legales", title: "Mentions légales", short: "Mentions légales", version: "2026-10-26-v2", lastUpdated: "2026-10-26" },
+  privacy: { path: "/confidentialite", title: "Politique de confidentialité", short: "Confidentialité", version: "2026-10-26-v2", lastUpdated: "2026-10-26" },
+  terms: { path: "/cgu", title: "Conditions générales d’utilisation", short: "Conditions d’utilisation", version: "2026-10-26-v2", lastUpdated: "2026-10-26" },
 };
 
 /** Date ISO (aaaa-mm-jj) → « 10 octobre 2026 », en UTC pour un rendu identique serveur/navigateur. */

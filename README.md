@@ -105,3 +105,7 @@ Tâches planifiées côté API (cron/Render) : `python manage.py cleanup_access_
 ## Sécurité des données
 
 Développement, staging et pilote n’utilisent que des données fictives (`example.test`). Toute donnée réelle reste bloquée tant que l’hébergement ivoirien, les avis juridique/médical, le stockage privé, la sécurité SVG, le plan d’incident, la restauration testée et les gates Go/No-Go ne sont pas validés.
+
+### Accès établissement — A6/A7
+
+Un administrateur actif peut consulter la liste sans contenu clinique, ouvrir un dossier de sa propre structure avec un motif obligatoire et lire temporairement les soins locaux. L’ouverture est journalisée, notifiée au patient et visible dans son historique. Les notifications sont coalescées sans réduire l’audit ; l’ancien endpoint `patient-records/` répond `410`. La validation juridique A8 reste requise avant l’usage de données réelles.

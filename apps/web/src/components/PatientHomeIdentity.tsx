@@ -6,35 +6,28 @@ import { QRCodeSVG } from "qrcode.react";
 import { apiGet, apiPatch } from "../infrastructure/api/client";
 import type { SpaceAccount } from "./shell/SpaceShell";
 import { useConfirm } from "./modal/ConfirmProvider";
+import { DossierCard, DossierRows, type DossierRow } from "./DossierCard";
+import { VirtualCardPanel } from "./emergency-card/VirtualCardPanel";
+import { emergencyCardProfessionLabel } from "./emergency-card/EmergencyCardVisual";
+import { useEmergencyCard, useOwnProfession, type EmergencyCardData } from "./emergency-card/useEmergencyCard";
+import { ageLabel } from "../lib/age";
 import "./patient-sections.css";
 
 type Profile = { first_name: string; last_name: string; birth_date: string | null; gender: string; phone: string; address: string; coverage_provider: string; coverage_number: string; coverage_expiry: string | null };
 type Declaration = { id: string; kind: string; label: string; details: string; provenance?: { label: string } };
-type EmergencyQr = { qr_enabled: boolean; qr_token: string };
-const EMPTY_QR: EmergencyQr = { qr_enabled: false, qr_token: "" };
 const GENDERS: Record<string, string> = { female: "Femme", male: "Homme", other: "Autre", prefer_not_to_say: "Préfère ne pas préciser" };
 const KIND_LABELS: Record<string, string> = { allergy: "Allergie", antecedent: "Antécédent", treatment: "Traitement", blood_group: "Groupe sanguin", city: "Ville", emergency_contact: "Contact d’urgence", height: "Taille", weight: "Poids" };
 
-function ageFromBirthDate(value: string | null) {
-  if (!value) return "";
-  const birth = new Date(`${value.slice(0, 10)}T00:00:00`);
-  const today = new Date();
-  if (Number.isNaN(birth.getTime()) || birth > today) return "";
-  let years = today.getFullYear() - birth.getFullYear();
-  if (today.getMonth() < birth.getMonth() || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) years -= 1;
-  if (years >= 130) return "";
-  if (years >= 1) return `${years} an${years > 1 ? "s" : ""}`;
-  const months = (today.getFullYear() - birth.getFullYear()) * 12 + today.getMonth() - birth.getMonth() - (today.getDate() < birth.getDate() ? 1 : 0);
-  return months >= 1 ? `${months} mois` : "Moins d’un mois";
-}
-
+/* « Dossier patient » : même présentation que le « Dossier médecin » (composant DossierCard : photo, nom en titre, informations en lignes ; lecture seule, on modifie dans les paramètres).
+   Les informations restent celles du dossier patient : âge, genre, ville, téléphone, adresse, couverture santé, puis les autres déclarations avec leur provenance.
+   Il porte aussi la carte virtuelle (avec le métier si le titulaire est un professionnel) et le QR de cette carte : une seule section d'accueil. */
 export function PatientHomeIdentity({ account }: { account: SpaceAccount }) {
   const confirm = useConfirm();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [declarations, setDeclarations] = useState<Declaration[] | null>(null);
   const [profileMessage, setProfileMessage] = useState("");
-  const [qr, setQr] = useState<EmergencyQr>(EMPTY_QR);
-  const [qrLoading, setQrLoading] = useState(true);
+  const { card, setCard, loading: cardLoading, error: cardError } = useEmergencyCard();
+  const profession = useOwnProfession(account);
   const [qrBusy, setQrBusy] = useState(false);
   const [qrMessage, setQrMessage] = useState("");
 
@@ -51,20 +44,30 @@ export function PatientHomeIdentity({ account }: { account: SpaceAccount }) {
     return () => { active = false; };
   }, []);
 
-  useEffect(() => {
-    let active = true;
-    apiGet<EmergencyQr>("/api/v1/patient/emergency-card/")
-      .then((data) => { if (active) setQr(data); })
-      .catch((error: unknown) => { if (active) setQrMessage(error instanceof Error ? error.message : "QR indisponible."); })
-      .finally(() => { if (active) setQrLoading(false); });
-    return () => { active = false; };
-  }, []);
-
   const city = declarations?.find((item) => item.kind === "city")?.label ?? "";
-  const age = ageFromBirthDate(profile?.birth_date ?? null);
+  const age = ageLabel(profile?.birth_date);
   const declared = (declarations ?? []).filter((item) => item.kind !== "city");
-  const publicUrl = qr.qr_enabled && qr.qr_token && typeof window !== "undefined"
-    ? `${window.location.origin}/urgence/${encodeURIComponent(qr.qr_token)}` : "";
+  const publicUrl = card.qr_enabled && card.qr_token && typeof window !== "undefined"
+    ? `${window.location.origin}/urgence/${encodeURIComponent(card.qr_token)}` : "";
+  const role = emergencyCardProfessionLabel(profession);
+  const rows: DossierRow[] = [
+    { label: "Âge", value: age || "Non renseigné" },
+    { label: "Genre déclaré", value: profile?.gender ? GENDERS[profile.gender] ?? profile.gender : "Non renseigné" },
+    { label: "Ville", value: city || "Non renseignée" },
+    ...(profile?.phone ? [{ label: "Téléphone", value: profile.phone }] : []),
+    ...(profile?.address ? [{ label: "Adresse", value: profile.address, wide: true }] : []),
+    ...(profile?.coverage_provider ? [{ label: "Couverture santé · organisme", value: profile.coverage_provider }] : []),
+    ...(profile?.coverage_number ? [{ label: "Couverture santé · numéro", value: profile.coverage_number }] : []),
+    ...(profile?.coverage_expiry ? [{ label: "Couverture santé · expiration", value: new Date(`${profile.coverage_expiry.slice(0, 10)}T00:00:00`).toLocaleDateString("fr-FR") }] : []),
+  ];
+  const declaredRows: DossierRow[] = declared.map((item) => ({
+    label: KIND_LABELS[item.kind] ?? item.kind,
+    value: <>
+      <span>{item.label}{item.kind === "height" ? " cm" : item.kind === "weight" ? " kg" : ""}</span>
+      {item.details && <small className="dossier__details">{item.details}</small>}
+      <span className="badge declared">{item.provenance?.label ?? "Déclaré par vous"}</span>
+    </>,
+  }));
 
   async function toggleQr(enable: boolean) {
     if (enable) {
@@ -77,56 +80,37 @@ export function PatientHomeIdentity({ account }: { account: SpaceAccount }) {
     setQrBusy(true);
     setQrMessage("");
     try {
-      setQr(await apiPatch<EmergencyQr>("/api/v1/patient/emergency-card/", { qr_enabled: enable }));
+      setCard(await apiPatch<EmergencyCardData>("/api/v1/patient/emergency-card/", { qr_enabled: enable }));
       setQrMessage(enable ? "QR activé." : "QR désactivé.");
     } catch (error) {
       setQrMessage(error instanceof Error ? error.message : "Impossible de modifier le QR.");
     } finally { setQrBusy(false); }
   }
 
-  return <section className="card patient-dossier" aria-labelledby="home-profile-title">
-    <div className="section-heading"><div><span className="eyebrow">Mon carnet · identité</span><h2 id="home-profile-title">Mon identité et mes informations déclarées</h2></div></div>
-    {profileMessage && <p className="notice" role="status">{profileMessage}</p>}
-    <div className="patient-dossier__layout">
-      <dl className="patient-dossier__facts">
-        <div><dt>Prénom</dt><dd>{profile?.first_name || account.first_name || "Non renseigné"}</dd></div>
-        <div><dt>Nom</dt><dd>{profile?.last_name || account.last_name || "Non renseigné"}</dd></div>
-        <div><dt>Âge</dt><dd>{age || "Non renseigné"}</dd></div>
-        <div><dt>Genre déclaré</dt><dd>{profile?.gender ? GENDERS[profile.gender] ?? profile.gender : "Non renseigné"}</dd></div>
-        <div><dt>Ville</dt><dd>{city || "Non renseignée"}</dd></div>
-        {profile?.phone && <div><dt>Téléphone</dt><dd>{profile.phone}</dd></div>}
-        {profile?.address && <div className="patient-dossier__wide"><dt>Adresse</dt><dd>{profile.address}</dd></div>}
-        {profile?.coverage_provider && <div><dt>Couverture santé · organisme</dt><dd>{profile.coverage_provider}</dd></div>}
-        {profile?.coverage_number && <div><dt>Couverture santé · numéro</dt><dd>{profile.coverage_number}</dd></div>}
-        {profile?.coverage_expiry && <div><dt>Couverture santé · expiration</dt><dd>{new Date(`${profile.coverage_expiry.slice(0, 10)}T00:00:00`).toLocaleDateString("fr-FR")}</dd></div>}
-      </dl>
-
+  return <DossierCard
+    account={account} eyebrow="Dossier patient" titleId="home-profile-title" role={role || undefined} rows={rows} className="patient-dossier"
+    note="Informations déclarées par vous : Mon E‑Carnet ne les certifie pas."
+    actions={<><Link className="button" href="/patient/parametres">Modifier mon profil</Link><Link className="button" href="/patient/carnet">Gérer mes déclarations</Link></>}
+    after={<VirtualCardPanel account={account} card={card} profession={profession} loading={cardLoading} error={cardError}>
       <aside className="patient-dossier__qr" aria-labelledby="home-qr-title">
-        <h3 id="home-qr-title">Ma carte virtuelle</h3>
+        <h3 id="home-qr-title">QR de ma carte</h3>
         <p className="muted">Une personne qui scanne ce QR voit votre carte virtuelle, sans se connecter.</p>
-        {qrLoading ? <p className="notice" role="status">Chargement du QR…</p> : publicUrl ? <>
+        {cardLoading ? <p className="notice" role="status">Chargement du QR…</p> : publicUrl ? <>
           <div className="patient-dossier__qr-code"><QRCodeSVG value={publicUrl} size={168} level="M" marginSize={3} title="QR de ma carte virtuelle" /></div>
           <button className="button small" type="button" disabled={qrBusy} onClick={() => void toggleQr(false)}>{qrBusy ? "Mise à jour…" : "Désactiver le QR"}</button>
         </> : <>
-          <p className="patient-dossier__qr-off">Le QR de votre carte virtuelle est désactivé.</p>
+          <p className="patient-dossier__qr-off">Le QR est désactivé.</p>
           <button className="button primary" type="button" disabled={qrBusy} onClick={() => void toggleQr(true)}>{qrBusy ? "Activation…" : "Activer mon QR"}</button>
         </>}
         {qrMessage && <p className="notice" role="status" aria-live="polite">{qrMessage}</p>}
         <p className="patient-dossier__qr-hint">Pour autoriser un professionnel en consultation, c’est un autre QR, valable 5 minutes : <Link href="/patient/acces#qr">accès temporaire</Link>.</p>
       </aside>
-
-      <div className="patient-dossier__declared">
-        <h3>Mes autres déclarations</h3>
-        {declarations === null ? <p className="muted">Chargement des déclarations…</p> : declared.length === 0 ? <p className="muted">Aucune autre déclaration enregistrée pour le moment.</p> : (
-          <ul>{declared.map((item) => <li key={item.id}>
-            <span className="patient-dossier__kind">{KIND_LABELS[item.kind] ?? item.kind}</span>
-            <strong className="patient-dossier__value">{item.label}{item.kind === "height" ? " cm" : item.kind === "weight" ? " kg" : ""}</strong>
-            {item.details && <small className="patient-dossier__details">{item.details}</small>}
-            <span className="badge declared">{item.provenance?.label ?? "Déclaré par vous"}</span>
-          </li>)}</ul>
-        )}
-      </div>
+    </VirtualCardPanel>}
+  >
+    {profileMessage && <p className="notice" role="status">{profileMessage}</p>}
+    <div className="dossier__group">
+      <h3>Mes autres déclarations</h3>
+      {declarations === null ? <p className="muted">Chargement des déclarations…</p> : declared.length === 0 ? <p className="muted">Aucune autre déclaration enregistrée pour le moment.</p> : <DossierRows rows={declaredRows} />}
     </div>
-    <div className="actions"><Link className="button" href="/patient/carnet">Gérer mes déclarations</Link><Link className="button" href="/patient/parametres">Modifier mon profil</Link></div>
-  </section>;
+  </DossierCard>;
 }

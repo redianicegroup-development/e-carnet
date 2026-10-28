@@ -1,0 +1,45 @@
+/* =====================================================================================================
+   Onglets de chaque espace (patient, professionnel, établissement) et onboarding — alignés sur les maquettes mobile.
+   Chargée après mobile-skin.css. S'appuie sur le vocabulaire déjà partagé par les écrans (.page-header, .record, .notice, .membership-row,
+   .patient-active-qr, .preconsult-*, .role-option, .onboarding-*) : aucun écran n'est réécrit, ils prennent la même matière que les accueils.
+   Mêmes règles que mobile-skin.css : préfixe body, dérivés de palette uniquement, texte en --text sur les couleurs de palette,
+   statuts fixes inchangés. Ne touche ni la connexion (auth-immersive.css), ni le SVG d'inscription, ni la landing.
+   ===================================================================================================== */
+
+/* ---------- En-têtes de page et rubriques ---------- */
+body .page-header h1, body .hero-page h1 { font-family: var(--font-heading); font-size: var(--fs-h1); font-weight: 600; letter-spacing: -.02em; line-height: 1.15; }
+body .page-header .lead, body .hero-page .lead { color: var(--text-muted); }
+body .count-badge { background: var(--text); color: var(--bg); box-shadow: none; font-weight: 700; }
+
+/* ---------- Notices : teinte crème dérivée du thème (les variantes d'erreur gardent leur couleur) ---------- */
+body .notice:not([class*="notice--"]):not(.trusted-delegation-banner) { background: var(--tone-cream); border-color: transparent; box-shadow: none; color: var(--text); }
+
+/* ---------- Accès d'un proche de confiance : bandeau d'encre des maquettes ---------- */
+body .notice.trusted-delegation-banner { border: 0; border-radius: 18px; background: var(--text); color: var(--bg); box-shadow: none; }
+body .trusted-delegation-banner strong, body .trusted-delegation-banner .muted { color: inherit; }
+body .trusted-delegation-banner a { color: var(--brand-3); font-weight: 650; }
+body .trusted-delegation-banner .button { background: transparent; border-color: var(--brand-3); box-shadow: none; color: var(--brand-3); font-weight: 650; }
+
+/* ---------- Rattachements, cartes de liste ---------- */
+body .membership-row { padding: 14px 16px; border: 0; border-radius: 22px; background: var(--bg); box-shadow: var(--raise-sm); }
+
+/* ---------- Partage : QR actif ---------- */
+body .patient-active-qr { border: 0; border-radius: var(--r-xl); background: var(--bg); box-shadow: var(--raise-md); }
+body .patient-active-qr__countdown { display: inline-flex; padding: 4px 12px; border-radius: 999px; background: var(--text); color: var(--bg); font-weight: 700; font-variant-numeric: tabular-nums; }
+@media (max-width: 560px) { body .patient-active-qr { flex-direction: column; align-items: center; text-align: center; } }
+
+/* ---------- Pré-consultation : numéro d'étape en orbe ---------- */
+body .preconsult-section__num { border: 0; background: var(--orb-honey); color: var(--text); box-shadow: var(--orb-shine); font-weight: 700; }
+
+/* ---------- Onboarding : progression, choix de l'espace, groupes, boutons ---------- */
+body .onboarding-frame .progress-bars { margin: 0 0 2px; }
+body .onboarding-frame .auth-form h1 { font-family: var(--font-heading); font-size: var(--fs-h1); letter-spacing: -.02em; }
+body .role-option { border: 2px solid transparent; border-radius: 22px; background: var(--bg); box-shadow: var(--raise-md); }
+body .role-option:hover { border-color: transparent; box-shadow: var(--raise-lg); }
+body .role-option[aria-checked="true"] { border-color: var(--primary); background: var(--bg); box-shadow: var(--press-sm); }
+body .role-option .choice-icon { display: grid; place-items: center; width: 48px; height: 48px; border-radius: var(--r-orb); color: var(--text); background: var(--orb-honey); box-shadow: var(--orb-shine), var(--orb-drop); }
+body .role-option:nth-child(2) .choice-icon { background: var(--orb-green); }
+body .onboarding-part { border: 0; border-radius: 22px; background: var(--bg); box-shadow: var(--press-sm); }
+body .onboarding-part > legend { font-size: var(--fs-xs); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); }
+body .onboarding-nav { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
+body .onboarding-nav .button { min-height: 52px; font-weight: 650; }

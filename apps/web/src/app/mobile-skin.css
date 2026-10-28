@@ -1,0 +1,117 @@
+/* =====================================================================================================
+   « Mon E‑Carnet » — couche « maquettes mobile ».
+   Chargée APRÈS soft-skin.css et goo.css, qui restent la référence : néomorphisme minimaliste (surfaces de la couleur du fond, deux ombres)
+   et gooey (mouvement + calques décoratifs). Cette couche n'ajoute que : les pastilles-objets (« orbes »), la grille de tuiles, les bandeaux
+   de carte, les KPI, les contrôles segmentés, la couverture d'onboarding. Tout est dérivé des cinq couleurs du thème actif (voir tokens.css) :
+   deux familles seulement — le MIEL et le VERT — plus l'encre et le fond.
+   Ne touche PAS : la landing (landing*.css), le logo (BrandLogo / BrandMark / public/brand), le SVG d'inscription et l'écran de connexion
+   (auth-immersive.css, welcome-character.css), la barre de navigation gooey (sidebar.css + soft-skin.css).
+
+   Règles de conduite
+   - Chaque sélecteur est préfixé par `body`, comme soft-skin.css.
+   - Un texte posé sur une couleur de palette utilise toujours --text (jamais --text-muted, trop pâle sur le miel) ; sur --primary, --on-primary.
+   - Aucune couleur sémantique n'est modifiée (statuts, danger) ; les variantes « danger » réutilisent les variables fixes.
+   - prefers-reduced-motion : les transitions sont déjà coupées par tokens.css ; aucune animation n'est ajoutée ici.
+   ===================================================================================================== */
+
+/* ---------- Orbes : pastilles-objets (icône sur dégradé de palette, reflet haut, ombre portée) ---------- */
+body .orb { display: grid; place-items: center; flex: none; width: 48px; height: 48px; border-radius: var(--r-orb); color: var(--text); background: var(--orb-honey); box-shadow: var(--orb-shine), var(--orb-drop); }
+body .orb .icon, body .orb svg { width: 24px; height: 24px; }
+body .orb--sm { width: 36px; height: 36px; border-radius: var(--r-orb-s); }
+body .orb--sm .icon, body .orb--sm svg { width: 18px; height: 18px; }
+body .orb--lg { width: 64px; height: 64px; border-radius: 20px; }
+body .orb--lg .icon, body .orb--lg svg { width: 30px; height: 30px; }
+body .orb--round { border-radius: 50%; }
+body .orb--green { background: var(--orb-green); }
+body .orb--cream { background: var(--orb-cream); }
+body .orb--mint { background: var(--orb-mint); }
+body .orb--deep { background: var(--orb-deep); }
+
+/* les pastilles d'icône déjà présentes prennent le même rendu (miel, puis vert une ligne sur deux) ; dans l'annuaire des réglages (.settings-directory)
+   elles restent plates, creusées dans le fond comme sur la maquette « Paramètres » ; .setting-list--orbs y remet des orbes (ex. « Profil clinique ») */
+body .setting-item__icon, body .establishment-welcome__icon { border-radius: 14px; color: var(--text); background: var(--orb-honey); box-shadow: var(--orb-shine), var(--orb-drop); }
+body .list-row:nth-child(even) .setting-item__icon { background: var(--orb-green); }
+body .settings-directory .setting-item__icon { width: 36px; height: 36px; border-radius: var(--r-orb-s); color: var(--text); background: var(--bg); box-shadow: var(--press-sm); }
+body .setting-list--orbs .setting-item__icon, body .settings-directory .setting-list--orbs .setting-item__icon { background: var(--orb-honey); box-shadow: var(--orb-shine), var(--orb-drop); }
+body .setting-list--orbs > li:nth-child(3n + 2) .setting-item__icon, body .settings-directory .setting-list--orbs > li:nth-child(3n + 2) .setting-item__icon { background: var(--orb-green); }
+body .setting-list--orbs > li:nth-child(3n) .setting-item__icon, body .settings-directory .setting-list--orbs > li:nth-child(3n) .setting-item__icon { background: var(--orb-cream); }
+body .setting-item__icon .icon { width: 20px; height: 20px; }
+body .setting-item--danger .setting-item__icon, body .settings-directory .setting-item--danger .setting-item__icon, body .settings-directory > .setting-item--danger .setting-item__icon { background: var(--status-contested-bg); color: var(--status-contested-fg); box-shadow: none; }
+body .avatar { background: var(--orb-honey); color: var(--text); box-shadow: var(--orb-shine); }
+
+/* ---------- Grille de tuiles : 3 colonnes sur mobile, plus large sur PC ---------- */
+body .tile-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; }
+body .tile { display: flex; flex-direction: column; justify-content: space-between; gap: 12px; min-height: 108px; padding: 14px 8px 14px 10px; border-radius: 22px; background: var(--bg); box-shadow: var(--raise-md); color: var(--text); text-decoration: none; font-size: .78rem; font-weight: 650; line-height: 1.25; overflow-wrap: break-word; hyphens: auto; transition: transform .2s ease, box-shadow .2s ease; }
+body .tile:hover { transform: translateY(-2px); box-shadow: var(--raise-lg); }
+body .tile:active { transform: none; box-shadow: var(--press-sm); }
+body .tile--add { grid-column: 1 / -1; flex-direction: row; align-items: center; justify-content: center; min-height: 72px; border: 2px dashed var(--border-strong); background: transparent; box-shadow: none; }
+@media (min-width: 920px) { body .tile-grid { grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 16px; } }
+
+/* ---------- Titre d'accueil et boutons de la maquette ---------- */
+body .hero-title { margin: 0; font-family: var(--font-heading); font-size: var(--fs-display); font-weight: 600; line-height: 1.12; letter-spacing: -.02em; }
+body .hero-title em { display: block; font-style: normal; color: var(--primary-text); }
+body .button.dark { background: var(--text); color: var(--bg); border-color: var(--text); box-shadow: var(--raise-sm); }
+body .button.dark:hover { background: color-mix(in srgb, var(--text) 86%, var(--primary)); }
+body .button.outline { background: transparent; border-color: var(--text); box-shadow: none; }
+body .button.block { width: 100%; }
+body .button-row { display: flex; gap: 10px; }
+body .button-row > * { flex: 1; }
+
+/* ---------- Contrôle segmenté et pastilles de filtre ---------- */
+body .seg { display: flex; gap: 2px; padding: 4px; border-radius: 999px; background: var(--bg); box-shadow: var(--press-sm); }
+body .seg > * { flex: 1; min-height: 40px; padding: 8px 14px; border: 0; border-radius: 999px; background: transparent; color: var(--text-muted); font: inherit; font-size: var(--fs-small); font-weight: 650; text-align: center; text-decoration: none; cursor: pointer; }
+body .seg > .is-active, body .seg > [aria-pressed="true"], body .seg > [aria-selected="true"], body .seg > [aria-current] { background: var(--text); color: var(--bg); box-shadow: var(--raise-sm); }
+body .chip { display: inline-flex; align-items: center; min-height: 36px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--bg); box-shadow: var(--raise-sm); color: var(--text); font: inherit; font-size: var(--fs-small); font-weight: 650; text-decoration: none; cursor: pointer; }
+body .chip.is-active { background: var(--text); color: var(--bg); }
+body .badge.is-soft { background: var(--tone-cream); color: var(--text); }
+
+/* ---------- Bandeau de carte (consultations, examens) : miel, puis vert une carte sur deux ---------- */
+body .band, body .visit-card > .section-heading:first-child { padding: 14px 16px; border-radius: 18px; color: var(--text); background: var(--orb-honey); box-shadow: var(--orb-shine); }
+body .band--green, body .visit-card:nth-of-type(even) > .section-heading:first-child { background: var(--orb-mint); } /* bandeau vert clair : le texte courant exige 4,5:1 */
+body .band .muted, body .visit-card > .section-heading:first-child .muted { color: color-mix(in srgb, var(--text) 82%, transparent); }
+body .kv { display: grid; gap: 6px; margin: 0; }
+body .kv > div { display: flex; justify-content: space-between; gap: 12px; font-size: var(--fs-small); }
+body .kv dt { color: var(--text-muted); }
+body .kv dd { margin: 0; font-weight: 650; text-align: right; }
+
+/* ---------- KPI et graphiques (espace établissement) ---------- */
+body .kpi-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (min-width: 920px) { body .kpi-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; } }
+body .kpi, body .stat-card { display: grid; gap: 4px; align-content: start; padding: 16px; border: 0; border-radius: 22px; background: var(--bg); box-shadow: var(--raise-md); }
+body .kpi__top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+body .kpi__label { color: var(--text-muted); font-size: var(--fs-small); }
+body .kpi__value, body .stat-card .val, body .stat-card > strong { font-family: var(--font-heading); font-size: 1.75rem; font-weight: 700; line-height: 1.1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+body .kpi__delta { padding: 2px 8px; border-radius: 999px; background: var(--status-verified-bg); color: var(--status-verified-fg); font-size: var(--fs-xs); font-weight: 700; }
+body .kpi__delta.is-down { background: var(--status-contested-bg); color: var(--status-contested-fg); }
+body .role-chart-plot .recharts-cartesian-grid line { stroke: color-mix(in srgb, var(--text) 12%, transparent); stroke-dasharray: 3 4; }
+body .role-chart-plot .recharts-text { fill: var(--text-muted); font-size: 11px; }
+body .chart-tooltip { padding: 6px 10px; border-radius: 10px; background: var(--text); color: var(--bg); font-size: var(--fs-xs); box-shadow: var(--raise-sm); }
+
+/* ---------- Onboarding : couverture du carnet, cartes de choix, barres de progression ---------- */
+body .titulaire-cover { padding: 16px 18px; border: 0; border-radius: 22px; background: linear-gradient(145deg, var(--primary), color-mix(in srgb, var(--primary) 76%, #000)); color: var(--on-primary); box-shadow: var(--raise-md); }
+body .titulaire-cover .muted { color: color-mix(in srgb, var(--on-primary) 86%, transparent); }
+body .choice-card:has(input:checked), body .choice-card.is-selected, body .choice-card[aria-pressed="true"] { box-shadow: var(--press-sm); outline: 2px solid var(--primary); outline-offset: -2px; }
+body .progress-bars { display: flex; gap: 6px; }
+body .progress-bars > i { flex: 1; height: 6px; border-radius: 9px; background: var(--tone-honey-1); }
+body .progress-bars > i.is-done { background: var(--primary); }
+
+/* ---------- Bandeau d'encre (« Carnet de … · Revenir à mon dossier ») ---------- */
+body .banner-ink { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 16px; border-radius: 18px; background: var(--text); color: var(--bg); font-size: var(--fs-small); }
+body .banner-ink a { display: inline-flex; align-items: center; min-height: 44px; color: var(--brand-3); font-weight: 650; }
+
+/* ---------- Champs : cible tactile de 52 px sur mobile ---------- */
+@media (max-width: 919.98px) { body .field input, body .field select { min-height: 52px; border-radius: 16px; } }
+
+/* ---------- Grille de tuiles rendue en liste (TileGrid) : l'élément de liste porte la case, la tuile la remplit ---------- */
+body .tile-grid > li { display: flex; min-width: 0; }
+body .tile-grid > li > .tile { flex: 1; }
+body .tile-grid > li:has(> .tile--add) { grid-column: 1 / -1; }
+
+/* ---------- Graphiques de l'établissement : courbe pleine largeur, puis deux cartes ---------- */
+body .role-chart-card--wide { grid-column: 1 / -1; }
+body .role-chart-plot--area { height: 240px; }
+body .role-chart-plot--donut { height: 200px; }
+body .role-chart-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 0; padding: 0; list-style: none; }
+body .kpi.card-link { text-decoration: none; color: inherit; transition: transform .2s ease, box-shadow .2s ease; }
+body .kpi.card-link:hover { transform: translateY(-2px); box-shadow: var(--raise-lg); }
+@media (min-width: 920px) { body .role-chart-plot--area { height: 280px; } }

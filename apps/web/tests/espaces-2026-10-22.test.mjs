@@ -102,7 +102,7 @@ test("le médecin n'arrive jamais dans l'espace établissement et modifie son pr
   assert.match(settings, /\/professionnel\/onboarding\?retour=parametres/);
   assert.doesNotMatch(read("src/components/ProfessionalAccess.tsx"), /Modifier mon profil/);
   assert.doesNotMatch(read("src/components/ProfessionalHome.tsx"), /\/etablissement/);
-  assert.match(read("src/components/ProfessionalOnboarding.tsx"), /returnTo \?\? \(step3 \? "\/professionnel\/onboarding\/ordonnance\?etape=3" : "\/professionnel\/onboarding\/ordonnance"\)/);
+  assert.match(read("src/components/ProfessionalOnboarding.tsx"), /returnTo \?\? "\/professionnel\/onboarding\/ordonnance"/);
   assert.match(read("src/app/professionnel/onboarding/page.tsx"), /retour === "parametres"/);
 });
 
@@ -166,7 +166,8 @@ test("la console établissement affiche le code 48 h et la photo des médecins",
   const console_ = read("src/components/EstablishmentConsole.tsx");
   assert.match(console_, /<EstablishmentJoinCodes establishmentId=\{establishment\.id\} active=\{active\} \/>/);
   assert.doesNotMatch(console_, /createCode|qu’une seule fois/);
-  assert.equal((console_.match(/<MemberAvatar member=\{item\} \/>/g) ?? []).length, 2, "équipe et demandes");
+  assert.equal((console_.match(/<MemberAvatar member=\{item\} \/>/g) ?? []).length, 1, "demandes : photo, nom et e-mail");
+  assert.match(console_, /<MemberAvatar member=\{item\} size=\{64\} \/>/, "équipe : la photo seule");
   assert.match(console_, /professional_avatar_url/);
 });
 

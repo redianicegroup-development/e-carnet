@@ -1,9 +1,10 @@
 import hashlib
 import hmac
 import uuid
-from datetime import date
+from datetime import date, timedelta
 from django.conf import settings
 from django.db import IntegrityError, transaction
+from django.db.models import Count, Max
 from django.utils import timezone
 from rest_framework import serializers, status
 from rest_framework.exceptions import PermissionDenied
@@ -11,14 +12,49 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from apps.audit.services import record_event
+from apps.establishments.models import EstablishmentRecordOpening
 from apps.identity.throttles import IpScopedThrottle, WriteScopedThrottle
 from apps.care.notifications import notify_patient
 from .access import PatientAccess
-from .models import ClinicalDeclaration, PatientEmergencyCard, PatientProfile, PatientRepresentation, RepresentationTransferRequest
+from .models import ClinicalDeclaration, PatientEmergencyCard, PatientProfile, PatientRepresentation, RepresentationTransferRequest, TrustedContactDelegation
 from .serializers import ClinicalDeclarationSerializer, PatientEmergencyCardSerializer, PatientProfileSerializer
 
 
-def profile_for(user, request=None):
+def profile_for(user, request=None, scope=None):
+    if request is not None and request.session.get("active_delegation_id"):
+        delegation = TrustedContactDelegation.objects.select_related("patient").filter(
+            pk=request.session.get("active_delegation_id"),
+            delegate=user,
+            status="active",
+            patient__user__isnull=False,
+        ).first()
+        if not delegation:
+            raise PermissionDenied("La délégation sélectionnée n’est plus active.")
+        if delegation.expires_at and delegation.expires_at <= timezone.now():
+            TrustedContactDelegation.objects.filter(pk=delegation.pk, status="active").update(status="expired", updated_at=timezone.now())
+            raise PermissionDenied("La délégation sélectionnée est expirée.")
+        if request.method not in {"GET", "HEAD", "OPTIONS"} or scope not in set(delegation.scopes or []):
+            raise PermissionDenied("Ce proche dispose uniquement d’une lecture limitée de la fiche d’urgence.")
+        request.patient_access = PatientAccess(mode="delegate", delegation=delegation, scopes=frozenset(delegation.scopes or []))
+        delegation.last_used_at = timezone.now()
+        delegation.save(update_fields=("last_used_at", "updated_at"))
+        record_event(
+            event_type="delegation.accessed",
+            actor=user,
+            actor_role="delegate",
+            patient=delegation.patient,
+            metadata={"action": "accessed", "delegation_id": str(delegation.id), "scope": scope},
+        )
+        notify_patient(
+            delegation.patient,
+            kind="delegation.accessed",
+            title="Votre fiche d’urgence a été consultée",
+            body="Un proche de confiance a consulté votre fiche d’urgence.",
+            metadata={"delegation_id": str(delegation.id), "scope": scope},
+            coalesce_key=f"delegation-access:{delegation.id}:{timezone.localdate().isoformat()}",
+            window=timedelta(days=1),
+        )
+        return delegation.patient
     selected_id = request.session.get("active_patient_profile_id") if request is not None else None
     if selected_id:
         representation = PatientRepresentation.objects.select_related("patient").filter(
@@ -380,6 +416,50 @@ class PatientProfileView(APIView):
         return Response({"success": True, "data": serializer.data})
 
 
+class PatientRecordViewsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        patient = profile_for(request.user, request)
+        summaries = (
+            EstablishmentRecordOpening.objects.filter(patient=patient)
+            .values("establishment_id", "establishment__name")
+            .annotate(openings_count=Count("id"), last_opened_at=Max("opened_at"))
+            .order_by("-last_opened_at", "establishment__name")
+        )
+        data = {
+            str(row["establishment_id"]): {
+                "establishment_id": str(row["establishment_id"]),
+                "establishment_name": row["establishment__name"],
+                "openings_count": row["openings_count"],
+                "last_opened_at": row["last_opened_at"],
+                "openings": [],
+            }
+            for row in summaries
+        }
+        reason_labels = dict(EstablishmentRecordOpening.REASON_CHOICES)
+        openings = (
+            EstablishmentRecordOpening.objects.filter(patient=patient)
+            .select_related("establishment", "opened_by")
+            .order_by("-opened_at")[:100]
+        )
+        for opening in openings:
+            actor = opening.opened_by
+            data[str(opening.establishment_id)]["openings"].append({
+                "opening_id": str(opening.id),
+                "who": actor.get_full_name().strip() or getattr(actor, "email", "") or actor.get_username(),
+                "role": opening.opened_by_role,
+                "when": opening.opened_at,
+                "reason_category": opening.reason_category,
+                "reason_label": reason_labels[opening.reason_category],
+                "reason_note": opening.reason_note,
+            })
+
+        response = Response({"success": True, "data": list(data.values())})
+        response["Cache-Control"] = "private, no-store"
+        return response
+
+
 class DeclarationListCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -470,8 +550,12 @@ class PatientEmergencyCardView(APIView):
     MOVED_TO_CARNET = ("city", "contact_name", "contact_phone", "offline_declaration_ids")
 
     def get(self, request):
-        card, _ = PatientEmergencyCard.objects.get_or_create(patient=profile_for(request.user, request))
-        return Response({"success": True, "data": emergency_card_data(card)})
+        card, _ = PatientEmergencyCard.objects.get_or_create(patient=profile_for(request.user, request, scope="emergency_card"))
+        data = emergency_card_data(card)
+        if getattr(getattr(request, "patient_access", None), "mode", None) == "delegate":
+            data.pop("qr_token", None)
+            data.pop("qr_enabled", None)
+        return Response({"success": True, "data": data})
 
     def patch(self, request):
         # Une ancienne version de l’application (PWA en cache) peut encore envoyer ces champs : mieux vaut refuser que les ignorer en silence.

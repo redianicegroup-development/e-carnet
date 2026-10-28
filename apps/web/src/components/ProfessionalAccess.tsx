@@ -39,15 +39,15 @@ export function ProfessionalAccess() {
 
   return (
     <div className="stack-lg">
-      <PageHeader eyebrow="Établissement" title="Mon rattachement" lead="L’établissement vérifie le médecin et ses justificatifs en interne. Mon E‑Carnet ne collecte pas ces pièces : l’application enregistre la décision de rattachement prise par l’établissement." />
+      <PageHeader eyebrow="Établissement" title="Mon rattachement" lead="Votre établissement vérifie votre profil. Une fois votre rattachement confirmé, vous accédez à vos patients." />
 
       <section className="card" aria-labelledby="code-title">
         <span className="eyebrow">Rattachement</span>
         <h2 id="code-title">Saisir mon code médecin</h2>
-        <p className="muted">Le code est à usage unique et expire 48 h après sa création. Après votre demande, l’administrateur nominatif confirme ou refuse le rattachement. La décision est journalisée.</p>
+        <p className="muted">Le code vous est remis par votre établissement. Il est valable 48 h. L’administrateur confirme ensuite votre rattachement.</p>
         <form onSubmit={(event) => { event.preventDefault(); void run(async () => { await apiPost("/api/v1/establishments/join-codes/redeem/", { code: code.trim(), agreement_accepted: agreementAccepted, agreement_version: "2026-10-08-v1" }); setCode(""); setAgreementAccepted(false); }, "Demande envoyée. L’administrateur de l’établissement doit maintenant la confirmer."); }}>
           <label className="field"><span>Code médecin</span><input className="mono" value={code} onChange={(event) => setCode(event.target.value)} autoComplete="off" spellCheck={false} required minLength={6} placeholder="XXXX-XXXX" disabled={busy} /></label>
-          <label className="field"><span><input type="checkbox" required checked={agreementAccepted} onChange={(event) => setAgreementAccepted(event.target.checked)} disabled={busy} /> J’accepte les <Link href="/conditions-rattachement" target="_blank" rel="noreferrer">conditions d’accès et de rattachement médecin</Link>, notamment la confidentialité de l’établissement et des patients, l’exactitude des informations médicales et la conservation de l’historique après fin du rattachement.</span></label>
+          <label className="field"><span><input type="checkbox" required checked={agreementAccepted} onChange={(event) => setAgreementAccepted(event.target.checked)} disabled={busy} /> J’accepte les <Link href="/conditions-rattachement" target="_blank" rel="noreferrer">conditions d’accès et de rattachement médecin</Link>.</span></label>
           <button className="button primary" type="submit" disabled={busy || !agreementAccepted || code.trim().length < 6}>{busy ? "Envoi…" : "Envoyer ma demande"}</button>
         </form>
         <p className="status" role="status" aria-live="polite">{message}</p>

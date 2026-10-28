@@ -64,3 +64,9 @@ Screenshot_20261012_053515_Chrome.jpg
 docs/prod.md
 voirrr.zip
 .REGARDE LE MODEL/CARNET.jpg
+akatech-v3.1.zip
+
+# Fichiers téléversés (documents médicaux, images) : jamais dans Git ni dans une archive.
+private-media/
+Fichier.txt
+phase2-celery/README.md

@@ -30,7 +30,7 @@ class AccessGrantSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AccessGrant
-        fields = ("id", "patient_id", "professional_id", "establishment_id", "professional_name", "facility_label", "scope", "status", "requested_at", "starts_at", "expires_at", "extension_count", "revoked_at", "refused_at")
+        fields = ("id", "patient_id", "professional_id", "establishment_id", "professional_name", "facility_label", "scope", "source_establishments", "status", "requested_at", "starts_at", "expires_at", "extension_count", "revoked_at", "refused_at")
         read_only_fields = fields
 
 

@@ -21,11 +21,12 @@ from apps.professionals.models import ProfessionalProfile
 from apps.audit.models import AuditEvent
 from apps.audit.services import record_event
 from apps.cloudinary_storage import CLOUDINARY_CONFIGURED, destroy as cloudinary_destroy, extension_from_name, signed_download, upload as cloudinary_upload
-from .models import AccessGrant, Appointment, CareEncounter, Consultation, ExamRequest, FollowUpPlan, FollowUpPlanItem, HealthMeasurement, MedicalDocument, MedicationIntake, MedicationReminder, PatientNotification, PreconsultationTemplate, Vaccination
+from .models import AccessGrant, Appointment, CareEncounter, Consultation, ExamRequest, FollowUpPlan, FollowUpPlanItem, HealthMeasurement, MedicalDocument, MedicationIntake, MedicationReminder, PatientNotification, PreconsultationTemplate, PushSubscription, Vaccination
 from .pdf_compression import compress_pdf_lossless
 from .serializers import AccessGrantSerializer, AppointmentSerializer, CareEncounterSerializer, ConsultationSerializer, FollowUpPlanSerializer, HealthMeasurementSerializer, MedicalDocumentSerializer, MedicationIntakeSerializer, MedicationReminderSerializer, PatientNotificationSerializer, PreconsultationTemplateSerializer, ProfessionalAccessGrantSerializer, ProfessionalConsultationCreateSerializer, VaccinationSerializer
 from .services import QR_TOKEN_TTL_SECONDS, SelfAccessRefused, create_patient_qr_token, create_professional_grant, is_own_patient_file, require_scope
 from .notifications import notify_patient
+from .push import is_allowed_endpoint, push_enabled, vapid_public_key
 from .consultation_services import validate_consultation
 
 
@@ -542,8 +543,15 @@ class PatientAccessQrCreateView(APIView):
     throttle_scope = "qr_create"
 
     def post(self, request):
-        raw = create_patient_qr_token(patient=profile_for(request.user, request))
-        return Response({"success": True, "data": {"token": raw, "expires_in_seconds": QR_TOKEN_TTL_SECONDS, "scope": ["preconsultation", "declarations"]}})
+        patient = profile_for(request.user, request)
+        raw = create_patient_qr_token(patient=patient)
+        source_ids = set(Consultation.objects.filter(patient=patient, establishment__isnull=False).values_list("establishment_id", flat=True))
+        source_ids.update(HealthMeasurement.objects.filter(patient=patient, establishment__isnull=False, validated_at__isnull=False).values_list("establishment_id", flat=True))
+        source_ids.update(MedicalDocument.objects.filter(patient=patient, establishment__isnull=False, validated_at__isnull=False, verified=True).values_list("establishment_id", flat=True))
+        source_ids.update(Vaccination.objects.filter(patient=patient, establishment__isnull=False, status="confirmed").values_list("establishment_id", flat=True))
+        from apps.establishments.models import Establishment
+        sources = Establishment.objects.filter(id__in=source_ids, status="active").values("id", "name", "city")
+        return Response({"success": True, "data": {"token": raw, "expires_in_seconds": QR_TOKEN_TTL_SECONDS, "scope": ["preconsultation", "declarations", "documents", "care_history"], "source_establishments": [{"id": str(item["id"]), "name": item["name"], "city": item["city"]} for item in sources]}})
 
 
 class PatientAccessAuditView(APIView):
@@ -604,6 +612,13 @@ class PatientAccessGrantActionView(APIView):
             return Response({"success": False, "message": "Cette autorisation a expiré."}, status=409)
         update_fields = []
         if action == "accept" and item.status == "pending":
+            if "care_history" in (item.scope or []):
+                selected_sources = {str(source) for source in request.data.get("source_establishments", item.source_establishments or [])}
+                proposed_sources = {str(source) for source in (item.source_establishments or [])}
+                if not selected_sources or not selected_sources.issubset(proposed_sources):
+                    return Response({"success": False, "message": "Choisissez au moins une structure source proposée."}, status=400)
+                item.source_establishments = sorted(selected_sources)
+                update_fields.append("source_establishments")
             item.status, item.starts_at, item.expires_at = "active", now, now + timezone.timedelta(hours=2)
             update_fields = ["status", "starts_at", "expires_at"]
         elif action == "refuse" and item.status == "pending":
@@ -796,7 +811,7 @@ class ProfessionalAccessGrantListCreateView(APIView):
         if not profile:
             return Response({"success": False, "message": "Le profil professionnel n’est pas disponible."}, status=403)
         try:
-            item = create_professional_grant(professional=profile, qr_token=request.data.get("qr_token"), scope=request.data.get("scope"))
+            item = create_professional_grant(professional=profile, qr_token=request.data.get("qr_token"), scope=request.data.get("scope"), source_establishments=request.data.get("source_establishments"))
         except SelfAccessRefused as exc:
             # Refus tracé (le jeton n'est pas consommé) : le message renvoie le professionnel vers son espace patient.
             record_event(event_type="access_grant.self_refused", actor=request.user, actor_role="professional", establishment=profile.active_establishment, metadata={"action": "self_access_refused", "status": "refused"})
@@ -810,6 +825,42 @@ class ProfessionalAccessGrantListCreateView(APIView):
         record_event(event_type="access_grant.requested", actor=request.user, actor_role="professional", patient=item.patient, establishment=item.establishment, access_grant=item, metadata={"action": "requested", "scope": item.scope, "status": item.status})
         notify_patient(item.patient, kind="access.requested", title="Nouvelle demande d’accès", body=f"{item.professional_name} de {item.facility_label} demande l’accès à votre carnet.", metadata={"access_grant_id": str(item.id)})
         return Response({"success": True, "data": ProfessionalAccessGrantSerializer(item).data}, status=status.HTTP_201_CREATED)
+
+
+class ProfessionalCareHistoryView(APIView):
+    """Expose l’historique des structures choisies, sans copie conservée côté B."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, grant_id):
+        profile = getattr(request.user, "professional_profile", None)
+        grant = AccessGrant.objects.select_related("patient", "establishment").filter(
+            pk=grant_id,
+            professional=profile,
+            establishment=getattr(profile, "active_establishment", None),
+        ).first()
+        if not grant:
+            return Response({"success": False, "message": "Autorisation introuvable."}, status=404)
+        require_scope(grant, "care_history")
+        source_ids = {str(item) for item in (grant.source_establishments or []) if str(item) != str(grant.establishment_id)}
+        if not source_ids:
+            return Response({"success": True, "data": []})
+        from apps.establishments.models import Establishment
+        source_establishments = {str(item.id): item for item in Establishment.objects.filter(id__in=source_ids)}
+        source_names = {key: item.name for key, item in source_establishments.items()}
+        records = []
+        for item in Consultation.objects.filter(patient=grant.patient, establishment_id__in=source_ids).order_by("-validated_at"):
+            records.append({"record_type": "consultation", "id": str(item.id), "source_establishment_id": str(item.establishment_id), "source_establishment_name": source_names.get(str(item.establishment_id), "Établissement"), "professional_name": item.professional_name, "reason": item.reason, "observations": item.observations, "diagnosis": item.diagnosis, "validated_at": item.validated_at})
+        for item in HealthMeasurement.objects.filter(patient=grant.patient, establishment_id__in=source_ids, validated_at__isnull=False).order_by("-measured_at"):
+            records.append({"record_type": "measurement", "id": str(item.id), "source_establishment_id": str(item.establishment_id), "source_establishment_name": source_names.get(str(item.establishment_id), "Établissement"), "kind": item.kind, "value": str(item.value) if item.value is not None else item.raw_value, "unit": item.unit, "measured_at": item.measured_at, "validated_at": item.validated_at})
+        for item in MedicalDocument.objects.filter(patient=grant.patient, establishment_id__in=source_ids, validated_at__isnull=False, verified=True).order_by("-created_at"):
+            records.append({"record_type": "document", "id": str(item.id), "source_establishment_id": str(item.establishment_id), "source_establishment_name": source_names.get(str(item.establishment_id), "Établissement"), "document_type": item.document_type, "original_name": item.original_name, "document_date": item.document_date, "validated_at": item.validated_at})
+        for item in Vaccination.objects.filter(patient=grant.patient, establishment_id__in=source_ids, status="confirmed", confirmed_at__isnull=False).order_by("-administered_on"):
+            records.append({"record_type": "vaccination", "id": str(item.id), "source_establishment_id": str(item.establishment_id), "source_establishment_name": source_names.get(str(item.establishment_id), "Établissement"), "vaccine_name": item.vaccine_name, "administered_on": item.administered_on, "confirmed_at": item.confirmed_at})
+        for source_id in source_ids:
+            record_event(event_type="clinical_data.read", actor=request.user, actor_role="professional", patient=grant.patient, establishment=source_establishments.get(source_id), access_grant=grant, metadata={"action": "read_care_history", "resource_type": "care_history", "resource_count": len([record for record in records if record["source_establishment_id"] == source_id]), "counterparty_establishment_id": str(grant.establishment_id)})
+        response = Response({"success": True, "data": records})
+        response["Cache-Control"] = "no-store"
+        return response
 
 
 class ProfessionalConsultationListCreateView(APIView):
@@ -1016,3 +1067,54 @@ class ProfessionalVaccinationConfirmView(APIView):
             metadata={"vaccination_id": str(item.id)},
         )
         return Response({"success": True, "data": VaccinationSerializer(item).data})
+
+
+class VapidPublicKeyView(APIView):
+    """Clé publique VAPID dont le navigateur a besoin pour s'abonner. ``enabled`` est faux tant que le push n'est pas configuré."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return Response({"success": True, "data": {"enabled": push_enabled(), "public_key": vapid_public_key() if push_enabled() else ""}})
+
+
+class PushSubscriptionView(APIView):
+    """Enregistre ou retire l'abonnement Web Push de l'appareil courant."""
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [WriteScopedThrottle]
+    throttle_scope = "push_subscription"
+    MAX_PER_USER = 10
+
+    def post(self, request):
+        sub = request.data.get("subscription") if hasattr(request.data, "get") else None
+        keys = sub.get("keys") if isinstance(sub, dict) else None
+        endpoint = sub.get("endpoint") if isinstance(sub, dict) else None
+        p256dh = keys.get("p256dh") if isinstance(keys, dict) else None
+        auth = keys.get("auth") if isinstance(keys, dict) else None
+        values = (endpoint, p256dh, auth)
+        if not all(isinstance(value, str) and value for value in values) or len(endpoint) > 600 or len(p256dh) > 200 or len(auth) > 100:
+            return Response({"success": False, "message": "Abonnement invalide."}, status=status.HTTP_400_BAD_REQUEST)
+        if not is_allowed_endpoint(endpoint):
+            return Response({"success": False, "message": "Ce service de notification n’est pas pris en charge."}, status=status.HTTP_400_BAD_REQUEST)
+        with transaction.atomic():
+            # Un appareil partagé qui change de compte : l'abonnement passe au compte connecté.
+            PushSubscription.objects.filter(endpoint=endpoint).exclude(user=request.user).delete()
+            PushSubscription.objects.update_or_create(
+                endpoint=endpoint,
+                defaults={
+                    "user": request.user,
+                    "p256dh": p256dh,
+                    "auth": auth,
+                    "user_agent": request.META.get("HTTP_USER_AGENT", "")[:300],
+                    "active": True,
+                },
+            )
+            # Plafond par utilisateur : on garde les plus récents.
+            stale = PushSubscription.objects.filter(user=request.user).order_by("-updated_at").values_list("pk", flat=True)[self.MAX_PER_USER:]
+            PushSubscription.objects.filter(pk__in=list(stale)).delete()
+        return Response({"success": True})
+
+    def delete(self, request):
+        endpoint = request.data.get("endpoint") if hasattr(request.data, "get") else None
+        if isinstance(endpoint, str) and endpoint:
+            PushSubscription.objects.filter(user=request.user, endpoint=endpoint).delete()
+        return Response({"success": True})

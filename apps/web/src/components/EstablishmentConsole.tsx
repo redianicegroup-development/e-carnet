@@ -1,22 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { apiGet, apiPost } from "../infrastructure/api/client";
 import { AvatarBadge, displayName, useSpaceAccount } from "./shell/SpaceShell";
 import { useConfirm } from "./modal/ConfirmProvider";
+import { useDialogBehavior } from "./modal/useDialogBehavior";
 import { Icon } from "./ui/Icon";
 import "./join-codes.css";
 import { PageHeader } from "./ui/PageHeader";
-import { EstablishmentDashboardChart } from "./RoleDashboards";
+import { EstablishmentKpis } from "./EstablishmentKpis";
 import { EstablishmentJoinCodes } from "./EstablishmentJoinCodes";
 import { splitFullName } from "../lib/join-codes";
 
 type Establishment = { id: string; name: string; city: string; status: "pending" | "active" | "suspended" | "rejected" | string };
-type Membership = { id: string; status: "pending" | "active" | "refused" | "suspended" | string; professional_name?: string; professional_email?: string; professional_avatar_url?: string };
+type Membership = { id: string; status: "pending" | "active" | "refused" | "suspended" | string; professional_name?: string; professional_first_name?: string; professional_last_name?: string; professional_email?: string; professional_avatar_url?: string; professional_title?: string; professional_specialty?: string; professional_age?: number | null; requested_at?: string | null; reviewed_at?: string | null };
 type Data = { establishment: Establishment | null; memberships: Membership[] };
-
-const STATUS_LABEL: Record<string, string> = { pending: "En attente", active: "Actif", refused: "Refusé", suspended: "Suspendu", terminated: "Terminé" };
 
 async function fetchConsole(): Promise<Data> {
   const items = await apiGet<Establishment[]>("/api/v1/establishments/");
@@ -40,8 +39,37 @@ function useConsole() {
   return { data, error, reload };
 }
 
-function MemberAvatar({ member }: { member: Membership }) {
-  return <AvatarBadge size={44} account={{ ...splitFullName(member.professional_name), email: member.professional_email ?? "", avatar_url: member.professional_avatar_url ?? "" }} />;
+function MemberAvatar({ member, size = 44 }: { member: Membership; size?: number }) {
+  return <AvatarBadge size={size} account={{ ...splitFullName(member.professional_name), email: member.professional_email ?? "", avatar_url: member.professional_avatar_url ?? "" }} />;
+}
+
+/* Équipe : une photo par médecin ; un clic ouvre sa fiche (nom, prénoms, métier, âge) avec la possibilité de révoquer le rattachement. */
+function MemberDetail({ member, busy, onClose, onRevoke }: { member: Membership; busy: boolean; onClose: () => void; onRevoke: () => void }) {
+  const dialog = useRef<HTMLElement>(null);
+  const closeButton = useRef<HTMLButtonElement>(null);
+  const titleId = useId();
+  useDialogBehavior({ open: true, container: dialog, initialFocus: closeButton, onEscape: onClose });
+  const names = splitFullName(member.professional_name);
+  const lastName = member.professional_last_name || names.last_name;
+  const firstName = member.professional_first_name || names.first_name;
+  const job = [member.professional_title, member.professional_specialty].filter(Boolean).join(" · ");
+  const rows: [string, string][] = [
+    ["Nom", lastName || "Non renseigné"],
+    ["Prénoms", firstName || "Non renseigné"],
+    ["Métier", job || "Non renseigné"],
+    ["Âge", typeof member.professional_age === "number" ? `${member.professional_age} an${member.professional_age > 1 ? "s" : ""}` : "Non renseigné"],
+  ];
+  return <div className="modal-backdrop modal-backdrop--confirm" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+    <section ref={dialog} className="modal-dialog team-detail" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+      <MemberAvatar member={member} size={84} />
+      <h2 id={titleId}>{member.professional_name || "Médecin"}</h2>
+      <dl className="team-detail__list">{rows.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
+      <div className="modal-actions">
+        <button ref={closeButton} type="button" className="button" onClick={onClose}>Fermer</button>
+        <button type="button" className="button primary danger" disabled={busy} onClick={onRevoke}>Révoquer</button>
+      </div>
+    </section>
+  </div>;
 }
 
 function NoEstablishment() {
@@ -49,7 +77,7 @@ function NoEstablishment() {
     <section className="card establishment-empty">
       <span className="establishment-welcome__icon"><Icon name="building" size={26} /></span>
       <h2>Aucun établissement n’est rattaché à ce compte</h2>
-      <p className="muted">L’ouverture est gérée par l’équipe Mon E‑Carnet. Consultez le guide pour préparer votre demande et connaître les étapes.</p>
+      <p className="muted">L’ouverture est gérée par l’équipe Mon E‑Carnet. Le guide explique les étapes.</p>
       <div className="actions"><Link className="button" href="/aide#establishment">Guide établissement</Link><Link className="button" href="/">Retour à l’accueil</Link></div>
     </section>
   );
@@ -59,7 +87,7 @@ function Pending({ establishment }: { establishment: Establishment }) {
   return (
     <section className="card alert-card" aria-live="polite">
       <h2>{establishment.status === "suspended" ? "Espace établissement suspendu" : establishment.status === "rejected" ? "Demande non retenue" : "Votre structure n’est pas encore activée"}</h2>
-      <p>{establishment.status === "suspended" ? "Les actions de gestion et les accès cliniques liés à cette structure sont temporairement bloqués. Contactez l’équipe Mon E‑Carnet pour obtenir des informations." : establishment.status === "rejected" ? "Votre demande n’a pas été retenue en l’état. L’équipe peut vous préciser les raisons." : "Notre équipe termine l’examen de votre demande. Vous pourrez ensuite générer les codes pour vos médecins."}</p>
+      <p>{establishment.status === "suspended" ? "Les actions de gestion et l’accès aux dossiers sont bloqués pour le moment. Contactez l’équipe Mon E‑Carnet." : establishment.status === "rejected" ? "Votre demande n’a pas été retenue. L’équipe peut vous en expliquer les raisons." : "Notre équipe examine votre demande. Vous pourrez ensuite remettre un code à vos médecins."}</p>
     </section>
   );
 }
@@ -70,6 +98,7 @@ export function EstablishmentConsole({ view }: { view: "home" | "requests" | "do
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const confirm = useConfirm();
+  const [openMemberId, setOpenMemberId] = useState<string | null>(null);
 
   if (error) return <p className="notice" role="alert">{error}</p>;
   if (!data) return <div className="skeleton" role="status"><span className="sr-only">Chargement…</span><i /><i /></div>;
@@ -98,6 +127,14 @@ export function EstablishmentConsole({ view }: { view: "home" | "requests" | "do
     await run(async () => { await apiPost(`/api/v1/establishments/${establishment.id}/memberships/${id}/decision/`, { decision }); }, approve ? "Rattachement confirmé : le médecin peut travailler." : "Demande refusée.");
   };
 
+  const revoke = async (member: Membership) => {
+    setOpenMemberId(null);
+    const ok = await confirm({ title: "Révoquer ce médecin ?", message: `${member.professional_name || "Ce médecin"} ne pourra plus travailler au nom de ${establishment.name}.`, note: "Les dossiers et les traces existants sont conservés.", confirmLabel: "Révoquer", cancelLabel: "Garder", tone: "danger", mood: "farewell" });
+    if (!ok) return;
+    await run(async () => { await apiPost(`/api/v1/establishments/${establishment.id}/memberships/${member.id}/terminate/`, {}); }, "Rattachement révoqué.");
+  };
+  const openMember = doctors.find((item) => item.id === openMemberId) ?? null;
+
   const codeCard = <EstablishmentJoinCodes establishmentId={establishment.id} active={active} />;
 
   const requestRows = (
@@ -121,33 +158,29 @@ export function EstablishmentConsole({ view }: { view: "home" | "requests" | "do
     <section className="card" aria-labelledby="doctors-title">
       <div className="section-heading"><div><span className="eyebrow">Équipe</span><h2 id="doctors-title">Médecins de l’établissement</h2></div><span className="count-badge">{doctors.length}</span></div>
       {doctors.length === 0 ? <p className="empty">Aucun médecin rattaché pour le moment.</p> : (
-        <div className="stack">
-          {doctors.map((item) => <article className="record" key={item.id}><div className="team-member"><MemberAvatar member={item} /><div><strong>{item.professional_name ?? "Médecin"}</strong><p className="muted">{item.professional_email ?? ""}</p></div></div><span className="badge active">{STATUS_LABEL[item.status] ?? item.status}</span></article>)}
-        </div>
+        <ul className="team-grid" aria-label="Médecins de l’établissement">
+          {doctors.map((item) => <li key={item.id}><button type="button" className="team-photo" aria-label={`Voir la fiche de ${item.professional_name || "ce médecin"}`} title={item.professional_name || "Médecin"} onClick={() => setOpenMemberId(item.id)}><MemberAvatar member={item} size={64} /></button></li>)}
+        </ul>
       )}
+      {openMember && <MemberDetail member={openMember} busy={busy} onClose={() => setOpenMemberId(null)} onRevoke={() => void revoke(openMember)} />}
     </section>
   );
 
   const status = <p className="status" role="status" aria-live="polite">{message}</p>;
 
-  if (view === "requests") return <div className="stack-lg"><PageHeader eyebrow={establishment.name} title="Demandes" lead="Un médecin qui saisit votre code apparaît ici. Vous confirmez ou refusez : sans votre accord, il ne peut rien faire." />{!active && <Pending establishment={establishment} />}{requestRows}{status}</div>;
-  if (view === "doctors") return <div className="stack-lg"><PageHeader eyebrow={establishment.name} title="Médecins" lead="Les médecins rattachés exercent sous votre établissement. Chacun accède au dossier correspondant à son cas attribué, selon l’autorisation du patient." />{codeCard}{doctorRows}{status}</div>;
+  if (view === "requests") return <div className="stack-lg"><PageHeader eyebrow={establishment.name} title="Demandes" lead="Un médecin qui saisit votre code apparaît ici. Vous confirmez ou refusez." />{!active && <Pending establishment={establishment} />}{requestRows}{status}</div>;
+  if (view === "doctors") return <div className="stack-lg"><PageHeader eyebrow={establishment.name} title="Médecins" lead="Les médecins de votre établissement. Touchez une photo pour voir sa fiche." />{codeCard}{doctorRows}{status}</div>;
 
   return (
     <div className="stack-lg">
       <div className="greeting">{account && <AvatarBadge account={account} size={52} />}<div className="greeting__text"><small>{establishment.name} · {establishment.city}</small><h1>{account ? displayName(account) : "Administrateur"}</h1></div></div>
       {!active && <Pending establishment={establishment} />}
-      <section className="stat-grid" aria-label="Résumé">
-        <Link className="stat-card card-link" href="/etablissement/demandes"><span className="val">{pending.length}</span><span className="lbl">Demande{pending.length > 1 ? "s" : ""} à traiter</span></Link>
-        <Link className="stat-card card-link" href="/etablissement/medecins"><span className="val">{doctors.length}</span><span className="lbl">Médecin{doctors.length > 1 ? "s" : ""} actif{doctors.length > 1 ? "s" : ""}</span></Link>
-        <Link className="stat-card card-link" href="/etablissement/dossiers"><span className="val">Voir</span><span className="lbl">Dossiers patients</span></Link>
-      </section>
-      {!active && <section className="card progress-card"><div className="section-heading"><div><span className="eyebrow">Mise en route</span><h2>Activer l’espace établissement</h2></div></div><p className="muted">L’équipe Mon E‑Carnet doit valider la structure avant l’ouverture des fonctions de rattachement.</p><div className="progress-card__line" role="progressbar" aria-valuemin={0} aria-valuemax={2} aria-valuenow={establishment.status === "pending" ? 1 : 0}><span style={{ width: `${establishment.status === "pending" ? 50 : 0}%` }} /></div><div className="progress-card__meta"><span>{establishment.status === "pending" ? "Demande reçue" : "Fiche à préparer"}</span><Link className="text-link" href="/etablissement/parametres">Voir les paramètres</Link></div></section>}
-      <div className="role-dashboard-grid"><EstablishmentDashboardChart pending={pending.length} active={doctors.length} /></div>
+      <EstablishmentKpis memberships={memberships} />
+      {!active && <section className="card progress-card"><div className="section-heading"><div><span className="eyebrow">Mise en route</span><h2>Activer l’espace établissement</h2></div></div><p className="muted">L’équipe Mon E‑Carnet doit d’abord valider votre structure.</p><div className="progress-card__line" role="progressbar" aria-valuemin={0} aria-valuemax={2} aria-valuenow={establishment.status === "pending" ? 1 : 0}><span style={{ width: `${establishment.status === "pending" ? 50 : 0}%` }} /></div><div className="progress-card__meta"><span>{establishment.status === "pending" ? "Demande reçue" : "Fiche à préparer"}</span><Link className="text-link" href="/etablissement/parametres">Voir les paramètres</Link></div></section>}
       {pending.length > 0 && <section className="card alert-card"><h2>{pending.length} médecin{pending.length > 1 ? "s attendent" : " attend"} votre confirmation</h2><div className="actions"><Link className="button" href="/etablissement/demandes">Traiter les demandes</Link></div></section>}
       {codeCard}
       {status}
-      <section className="notice"><strong>Accès aux dossiers.</strong> L’administrateur consulte les dossiers ayant une pré-consultation clôturée ou une consultation dans son établissement. Le professionnel ne consulte que le dossier de son cas attribué, selon l’autorisation du patient. Aucun accès automatique aux données d’un autre établissement.</section>
+      <section className="notice"><strong>Dossiers.</strong> Vous voyez les dossiers qui ont une pré-consultation clôturée ou une consultation dans votre établissement. Un médecin ne voit que le dossier que le patient l’a autorisé à ouvrir.</section>
     </div>
   );
 }

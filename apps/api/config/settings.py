@@ -18,7 +18,7 @@ INSTALLED_APPS = [
     "django.contrib.admin", "django.contrib.auth", "django.contrib.contenttypes",
     "django.contrib.sessions", "django.contrib.messages", "django.contrib.staticfiles",
     "corsheaders", "rest_framework", "apps.identity", "apps.patients", "apps.care",
-    "apps.establishments", "apps.professionals", "apps.audit",
+    "apps.establishments", "apps.professionals", "apps.audit", "apps.referrals",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware", "whitenoise.middleware.WhiteNoiseMiddleware", "apps.identity.middleware.AdminLoginThrottleMiddleware", "corsheaders.middleware.CorsMiddleware",
@@ -61,6 +61,10 @@ REST_FRAMEWORK = {
         "auth_recovery_email": os.environ.get("ECARNET_RATE_RECOVERY_EMAIL", "8/hour"),
         "representation_changes": os.environ.get("ECARNET_RATE_REPRESENTATION", "20/hour"),
         "representation_transfer": os.environ.get("ECARNET_RATE_REPRESENTATION_TRANSFER", "5/hour"),
+        "trusted_contact_changes": os.environ.get("ECARNET_RATE_TRUSTED_CONTACT", "10/hour"),
+        "trusted_contact_accept": os.environ.get("ECARNET_RATE_TRUSTED_CONTACT_ACCEPT", "5/minute"),
+        "referral_changes": os.environ.get("ECARNET_RATE_REFERRAL_CHANGES", "30/hour"),
+        "referral_reads": os.environ.get("ECARNET_RATE_REFERRAL_READS", "60/hour"),
         "code_redeem": os.environ.get("ECARNET_RATE_CODE", "10/hour"),
         "grant_request": os.environ.get("ECARNET_RATE_GRANT", "60/hour"),
         "qr_create": os.environ.get("ECARNET_RATE_QR_CREATE", "30/hour"),
@@ -72,6 +76,7 @@ REST_FRAMEWORK = {
         "contact": os.environ.get("ECARNET_RATE_CONTACT", "5/hour"),
         "documents_upload": os.environ.get("ECARNET_RATE_DOCUMENTS_UPLOAD", "20/hour"),
         "establishment_record_open": os.environ.get("ECARNET_RATE_ESTABLISHMENT_RECORD_OPEN", "30/hour"),
+        "push_subscription": os.environ.get("ECARNET_RATE_PUSH_SUBSCRIPTION", "30/hour"),
     },
     # Nombre de proxys de confiance devant l'API (Render, Vercel rewrite…). Mal réglé, l'IP client est falsifiable.
     "NUM_PROXIES": int(os.environ["DRF_NUM_PROXIES"]) if os.environ.get("DRF_NUM_PROXIES", "").isdigit() else (None if DEBUG else 1),
@@ -86,6 +91,37 @@ ECARNET_REPRESENTATION_LEGAL_AGE = (
 ECARNET_TRUSTED_CONTACTS_ENABLED = os.environ.get("ECARNET_TRUSTED_CONTACTS_ENABLED", "false").lower() == "true"
 ECARNET_REFERRALS_ENABLED = os.environ.get("ECARNET_REFERRALS_ENABLED", "false").lower() == "true"
 ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ = os.environ.get("ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ", "true").lower() == "true"
+ECARNET_OPERATIONS_ADMIN_EMAILS = tuple(
+    email.strip().lower()
+    for email in os.environ.get("ECARNET_OPERATIONS_ADMIN_EMAILS", "").split(",")
+    if email.strip()
+)
+ECARNET_MONITOR_WEBHOOK_SECRET = os.environ.get("ECARNET_MONITOR_WEBHOOK_SECRET", "")
+
+# --- Web Push (VAPID) ---------------------------------------------------------------------------------------------
+# Sans clés, le push est simplement désactivé : les notifications dans l'application restent la source de vérité.
+# Générer une paire : voir docs/WEB-PUSH.md. La clé privée ne doit jamais quitter le serveur.
+ECARNET_VAPID_PUBLIC_KEY = os.environ.get("ECARNET_VAPID_PUBLIC_KEY", "")
+ECARNET_VAPID_PRIVATE_KEY = os.environ.get("ECARNET_VAPID_PRIVATE_KEY", "")
+ECARNET_VAPID_SUBJECT = os.environ.get("ECARNET_VAPID_SUBJECT", "")  # ex. mailto:contact@votre-domaine
+# Santé : par défaut, la notification affichée sur l'écran verrouillé ne contient ni nom de médicament ni dose.
+ECARNET_PUSH_SHOW_DETAILS = os.environ.get("ECARNET_PUSH_SHOW_DETAILS", "").lower() in {"1", "true", "yes"}
+# Durée pendant laquelle le service de push garde un message si l'appareil est éteint ou hors ligne (secondes).
+ECARNET_PUSH_TTL_SECONDS = int(os.environ["ECARNET_PUSH_TTL_SECONDS"]) if os.environ.get("ECARNET_PUSH_TTL_SECONDS", "").isdigit() else 3600
+# Anti-SSRF : le serveur n'appelle que les services de push connus (le navigateur fournit l'adresse, pas nous).
+ECARNET_PUSH_ALLOWED_HOSTS = tuple(
+    host.strip().lower()
+    for host in os.environ.get(
+        "ECARNET_PUSH_ALLOWED_HOSTS",
+        "fcm.googleapis.com,android.googleapis.com,updates.push.services.mozilla.com,push.services.mozilla.com,web.push.apple.com,push.apple.com,notify.windows.com",
+    ).split(",")
+    if host.strip()
+)
+# Rappels de prise : fuseau dans lequel les horaires « HH:MM » saisis par les patients sont interprétés.
+# TIME_ZONE reste UTC : seul send_due_reminders lit ce réglage.
+ECARNET_REMINDER_TIMEZONE = os.environ.get("ECARNET_REMINDER_TIMEZONE", "Africa/Abidjan")
+# Rattrapage : si une exécution du planificateur est manquée, les rappels dus depuis moins de N minutes partent encore.
+ECARNET_REMINDER_CATCHUP_MINUTES = int(os.environ["ECARNET_REMINDER_CATCHUP_MINUTES"]) if os.environ.get("ECARNET_REMINDER_CATCHUP_MINUTES", "").isdigit() else 10
 CORS_ALLOWED_ORIGINS = [origin.strip() for origin in os.environ.get("CORS_ALLOWED_ORIGINS", WEB_ORIGIN).split(",") if origin.strip()]
 CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in os.environ.get("CSRF_TRUSTED_ORIGINS", ",".join(CORS_ALLOWED_ORIGINS)).split(",") if origin.strip()]

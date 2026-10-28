@@ -32,4 +32,7 @@ urlpatterns = [
     path("api/v1/identity/", include("apps.identity.urls")), path("api/v1/patient/", include("apps.patients.urls")),
     path("api/v1/patient/care/", include("apps.care.urls")), path("api/v1/establishments/", include("apps.establishments.urls")),
     path("api/v1/professionals/", include("apps.professionals.urls")),
+    path("api/v1/patient/referrals/", include("apps.referrals.patient_urls")),
+    path("api/v1/establishments/<uuid:establishment_id>/referrals/", include("apps.referrals.establishment_urls")),
+    path("api/v1/referrals/", include("apps.referrals.urls")),
 ]

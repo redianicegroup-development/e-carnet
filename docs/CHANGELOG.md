@@ -173,3 +173,10 @@
 - Documentation initiale, API et prototypes archivés.
 
 Les entrées historiques consignent l’état à leur date; pour l’état courant, voir [rapport d’audit](RAPPORT-AUDIT-ECARNET.md), [roadmap](ROADMAP-V1-V5.md) et [recette](RECETTE-V1.md).
+## 2026-10-26 — Proche de confiance, adressage inter-établissements et accès local audité
+
+- **B2-B6** : compte séparé du proche, mot de rattachement à usage unique remis directement par le patient, lecture seule de la fiche d’urgence, bandeau de contexte, retrait immédiat et refus par défaut hors périmètre.
+- **C1-C1.5** : adressage professionnel vers un établissement destinataire, consentement granulaire du patient, inbox sans contenu, ouverture explicite et instantané en lecture seule.
+- **C2** : portée `care_history`, sélection des structures sources par le patient, lecture temporaire des soins validés provenant d’autres structures, audit par établissement et absence de copie conservée en V1.
+- **A6-A7** : documentation alignée, coalescence des notifications sans réduction de l’audit, liste établissement sans contenu clinique et fermeture `410` de l’ancien endpoint.
+- **Aide et pages légales** : parcours proches, adressages, ouvertures administrateur, destinataires et limites inter-établissements actualisés ; versions légales datées du 26/10/2026, toujours en attente de validation juridique.

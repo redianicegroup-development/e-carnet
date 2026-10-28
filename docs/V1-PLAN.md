@@ -1,12 +1,12 @@
 # Plan d’implémentation — V1 de Mon Carnet Numérique
 
-**État revu le 13/10/2026 :** V1 en construction, non acceptée. Ce plan est un aide-mémoire, pas une liste de tâches à appliquer aveuglément : comparer chaque point au [code et aux preuves](ETAT-REEL-V1.md), et prendre les flows dans la [roadmap active](ROADMAP-V1-V5.md). Les prototypes ne dictent que la direction visuelle. Les changements locaux du 13/10 doivent encore passer les contrôles automatisés décrits dans l’état réel.
+**État revu le 26/10/2026 :** V1 en construction, non acceptée. Ce plan décrit le périmètre V1 ; le backlog réel et classé V1 à V6 est désormais dans [RESTE-A-FAIRE-ACTUEL-V1-A-V6.md](RESTE-A-FAIRE-ACTUEL-V1-A-V6.md). Comparer chaque point au [code et aux preuves](ETAT-REEL-V1.md). Les prototypes ne dictent que la direction visuelle. Les changements B2-C2 et A6-A7 ont passé les contrôles ciblés ; la recette staging et les validations médicales/juridiques restent nécessaires.
 
 ## Périmètre et règles
 
 - Application mobile-first, comptes uniques; contexte public limité à Patient / Professionnel.
 - L’établissement est privé, sans inscription publique, avec un administrateur nominatif (un seul actif en V1); pas de rôle global `root`. La structure envoie ses preuves par e-mail à E‑Carnet; staff vérifie puis crée le compte. Invitation unique 48 h, mot de passe choisi par le destinataire. Le médecin est vérifié en interne par la structure; aucun justificatif personnel ne remonte à E‑Carnet. Code médecin 48 h/une fois → demande en attente → approbation établissement.
-- **Matrice d’accès aux dossiers :** l’administrateur actif consulte les dossiers ayant une pré-consultation clôturée ou une consultation dans son établissement; le professionnel accède uniquement au dossier du cas qui lui est attribué, avec rattachement et établissement actifs et autorisation patient active. Aucun accès automatique aux données d’un autre établissement.
+- **Matrice d’accès aux dossiers :** l’administrateur actif voit d’abord une liste sans contenu, puis ouvre temporairement les soins de son établissement avec motif obligatoire, audit et notification au patient; le professionnel accède uniquement au dossier du cas qui lui est attribué, avec rattachement et établissement actifs et autorisation patient active. Aucun accès automatique aux données d’un autre établissement.
 - OTP SMS et TOTP/MFA : V3, non prérequis V1. Aucun rôle ou endpoint infirmier autonome.
 - Données fictives uniquement avant l’autorisation formelle de traitement réel.
 
@@ -52,7 +52,7 @@ Le modèle et le flow établissement sont désormais présents dans l’archive.
 
 ## Améliorations à garder en backlog
 
-Les prochaines améliorations V1.x et V2/V3 sont détaillées dans [ROADMAP-V1-V5.md](ROADMAP-V1-V5.md) : brouillons pré-consultation persistés côté serveur seulement, checklist patient, exports PDF, rappels et patients récents; profils de proches et carte hors ligne après revue juridique; MFA/OTP et services conditionnels en V3. Ne pas commencer les fonctionnalités conditionnées avant les décisions et validations requises.
+Les fonctions autrefois listées ici comme futures — export PDF, rappels, rendez-vous, mesures, vaccinations, proche de confiance, adressage et historique C2 — sont désormais présentes au moins partiellement dans le code. Leur finalisation et leurs recettes sont classées dans [RESTE-A-FAIRE-ACTUEL-V1-A-V6.md](RESTE-A-FAIRE-ACTUEL-V1-A-V6.md). Ne pas recommencer ces fonctions ; traiter d’abord les portes V1.
 
 ## Vérifications exécutées
 

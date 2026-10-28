@@ -5,6 +5,8 @@ from .contact_views import PublicContactView
 from .views import CurrentAccountThemeView
 from .visitor_views import AnonymousClickView, AnonymousVisitView, ProductActionSurveyTriggerView, ProductExperienceSurveySubmitView, ProductSurveySubmitView, ProductSurveySummaryView, PublicFeedbackView
 from .admin_views import AdminContactMessageStatusView, AdminDashboardView, AdminFeedbackStatusView, AdminRecoveryView
+from .admin_operations import AdminOperationsIncidentView, AdminOperationsSummaryView
+from .monitoring_webhook import MonitoringWebhookView
 from .account_action_views import AdminAccountActionRequestStatusView, AdminAccountActionRequestsView, AdminDeleteRequestedAccountView, CurrentAccountActionRequestsView
 urlpatterns = [
     path("register/", RegisterView.as_view()), path("login/", LoginView.as_view()), path("logout/", LogoutView.as_view()),
@@ -19,6 +21,9 @@ urlpatterns = [
     path("admin/dashboard/", AdminDashboardView.as_view(), name="admin-dashboard"),
     path("admin/feedback/<uuid:feedback_id>/", AdminFeedbackStatusView.as_view(), name="admin-feedback-status"),
     path("admin/recovery/", AdminRecoveryView.as_view(), name="admin-recovery"),
+    path("admin/operations/summary/", AdminOperationsSummaryView.as_view(), name="admin-operations-summary"),
+    path("admin/operations/incidents/<uuid:incident_id>/", AdminOperationsIncidentView.as_view(), name="admin-operations-incident"),
+    path("monitoring/webhook/", MonitoringWebhookView.as_view(), name="monitoring-webhook"),
     path("admin/contact-messages/<uuid:message_id>/", AdminContactMessageStatusView.as_view(), name="admin-contact-message-status"),
     path("admin/account-requests/", AdminAccountActionRequestsView.as_view(), name="admin-account-action-requests"),
     path("admin/account-requests/<uuid:request_id>/", AdminAccountActionRequestStatusView.as_view(), name="admin-account-action-request-status"),

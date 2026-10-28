@@ -5,7 +5,7 @@
 Deux périmètres restent distincts côté serveur :
 
 - les opérations de gouvernance (remplacement, suspension/réactivation et lecture du journal) exigent une session authentifiée avec le rôle staff Django (`is_staff`, via `IsAdminUser`) ;
-- les opérations courantes d’un établissement exigent un administrateur actif rattaché à cet établissement (`active_administrator`). Cela inclut la consultation des dossiers ayant une pré-consultation clôturée ou une consultation dans sa structure, via `GET /api/v1/establishments/{id}/patient-records/`. La requête ne retourne que les enregistrements associés à cet établissement; elle ne donne pas accès aux routes staff ni aux dossiers d’autres établissements.
+- les opérations courantes d’un établissement exigent un administrateur actif rattaché à cet établissement (`active_administrator`). La liste sans contenu passe par `GET /api/v1/establishments/{id}/patients/`, l’ouverture motivée par `POST /api/v1/establishments/{id}/patients/{patient_id}/openings/`, puis la lecture temporaire par `GET /api/v1/establishments/{id}/openings/{opening_id}/record/`. Ces routes ne retournent que les soins de la structure concernée; l’ancien endpoint `/patient-records/` répond `410` et aucun dossier d’une autre structure n’est accessible.
 
 Le remplacement d’un responsable reste une opération du staff, avec confirmation explicite. La transaction verrouille l’établissement et son responsable courant; le précédent rôle est terminé et le nouveau rôle est créé par le service de provisionnement. Le compte personnel précédent n’est pas supprimé et les autres rôles de ce compte ne sont pas modifiés. L’événement `establishment.administrator.replaced` est inscrit au journal.
 
@@ -56,3 +56,8 @@ ECARNET_MONITOR_WEBHOOK_URL="$MONITORING_WEBHOOK_URL" \
 Exécuter la sonde toutes les cinq minutes depuis un service indépendant de l’hébergeur. Stocker l’URL de webhook dans le gestionnaire de secrets de l’ordonnanceur, jamais dans le dépôt. Liveness mesure que le processus répond; readiness vérifie aussi la base de données. Une panne de webhook ne masque pas l’échec de la sonde : le script retourne un code non nul.
 
 **À configurer par l’exploitant avant ouverture :** l’ordonnanceur externe, le webhook/outil d’alerte, les destinataires, les seuils et l’escalade. Le code ne peut pas créer ou authentifier un compte de surveillance externe sans configuration et accès opérateur.
+
+
+## Évolution prévue de la console admin
+
+La console admin actuelle couvre la gouvernance des établissements, les récupérations de compte et les journaux métier. Elle doit encore recevoir une rubrique séparée **Surveillance technique** : disponibilité API/base, erreurs, latence, sauvegardes, stockage, incidents et accusés de prise en compte. Cette rubrique sera réservée à l’exploitation autorisée et ne remplacera pas la sonde externe, qui doit continuer à fonctionner même lorsque l’API est indisponible. Le plan détaillé est décrit dans [`PLAN-ADMIN-SURVEILLANCE-ET-ALERTES.md`](PLAN-ADMIN-SURVEILLANCE-ET-ALERTES.md).

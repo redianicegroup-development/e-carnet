@@ -2,6 +2,7 @@ import uuid
 import hashlib
 from datetime import timedelta
 
+from django.conf import settings
 from django.db import models, transaction
 from django.utils import timezone
 from apps.patients.models import PatientProfile
@@ -46,6 +47,7 @@ class AccessGrant(models.Model):
     professional_name = models.CharField(max_length=180)
     facility_label = models.CharField(max_length=180)
     scope = models.JSONField(default=list)
+    source_establishments = models.JSONField(default=list, blank=True)
     status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="pending")
     requested_at = models.DateTimeField(auto_now_add=True)
     starts_at = models.DateTimeField(null=True, blank=True)
@@ -386,3 +388,36 @@ class PreconsultationTemplate(models.Model):
     class Meta:
         ordering = ("-active", "name")
         constraints = [models.UniqueConstraint(fields=("establishment", "name"), name="unique_preconsultation_template_name")]
+
+
+class PushSubscription(models.Model):
+    """Abonnement Web Push d'un navigateur ou d'un appareil (plusieurs possibles par utilisateur).
+
+    Les clés ``p256dh`` / ``auth`` servent uniquement à chiffrer la charge utile : elles ne sont jamais exposées par l'API.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="push_subscriptions")
+    endpoint = models.URLField(max_length=600, unique=True)
+    p256dh = models.CharField(max_length=200)
+    auth = models.CharField(max_length=100)
+    user_agent = models.CharField(max_length=300, blank=True)
+    active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [models.Index(fields=("user", "active"), name="care_push_user_active_idx")]
+
+
+class MedicationReminderDispatch(models.Model):
+    """Trace d'un créneau de rappel déjà traité : rend ``send_due_reminders`` rejouable sans doublon.
+
+    Séparée de ``MedicationIntake`` pour ne pas fausser l'observance : une ligne ici ne dit rien sur la prise.
+    """
+    reminder = models.ForeignKey(MedicationReminder, on_delete=models.CASCADE, related_name="dispatches")
+    scheduled_for = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=("reminder", "scheduled_for"), name="unique_medication_dispatch_slot")]
+        indexes = [models.Index(fields=("scheduled_for",), name="care_dispatch_slot_idx")]

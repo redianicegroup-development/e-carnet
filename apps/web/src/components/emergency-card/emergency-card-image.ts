@@ -1,16 +1,17 @@
-import { EMERGENCY_CARD_FOOTNOTE, emergencyCardFullName, type EmergencyCardPhoto, type EmergencyCardView } from "./EmergencyCardVisual";
+import { EMERGENCY_CARD_FOOTNOTE, emergencyCardFullName, emergencyCardProfessionLabel, type EmergencyCardPhoto, type EmergencyCardView } from "./EmergencyCardVisual";
 import { PROJECT_LOGO_WEBP } from "../../lib/brand";
 
 /*
  * Export PNG de la carte d’urgence : même contenu et même mise en page que <EmergencyCardVisual />, dessinés en canvas
- * (aucune dépendance supplémentaire, rien n’est envoyé à un serveur). L’image est large de 1600 px : nette sur un écran
+ * (aucune dépendance supplémentaire, rien n’est envoyé à un serveur). L’image est large de 1600 px et haute de 1020 px (plus si la carte est très remplie) : nette sur un écran
  * de verrouillage comme à l’impression. À la place du QR, la carte porte la photo de profil (ou l’avatar) du titulaire : l’image
  * ne donne accès à rien d’autre que ce qu’elle montre. Elle affiche pourtant identité, allergies et contact : à partager avec précaution.
  */
 const W = 1600;
 const PAD = 64;
-const BAND = 108;
-const CARD_HEIGHT = 1020;
+const BAND = 120;
+const CARD_HEIGHT = 1020; // hauteur habituelle ; l’image s’allonge seulement si le contenu est plus haut
+const TILE = "#f5f8f6";
 const PHOTO_W = 340;
 const PHOTO_H = 425;
 const INK = "#17231f";
@@ -177,6 +178,13 @@ function drawBrandMark(ctx: Ctx, image: HTMLImageElement | null, x: number, y: n
   }
 }
 
+function tile(ctx: Ctx, x: number, y: number, w: number, h: number, bg: string, border: string) {
+  roundRect(ctx, x, y, w, h, 22);
+  ctx.fillStyle = bg; ctx.fill();
+  ctx.lineWidth = 2; ctx.strokeStyle = border; ctx.stroke();
+}
+
+/** Dessine la carte et renvoie la hauteur réellement nécessaire (au moins CARD_HEIGHT). */
 function paint(ctx: Ctx, card: EmergencyCardView, photo: LoadedPhoto, brandLogo: LoadedPhoto, style: Style): number {
   currentBody = style.body;
   const heading = style.heading;
@@ -185,32 +193,43 @@ function paint(ctx: Ctx, card: EmergencyCardView, photo: LoadedPhoto, brandLogo:
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, W, ctx.canvas.height);
 
-  // bandeau
+  // bandeau : couleur du thème + halo clair à droite (sans l’assombrir : le texte garde son contraste)
   ctx.fillStyle = style.accent;
   ctx.fillRect(0, 0, W, BAND);
-  const mark = 64;
+  const halo = ctx.createRadialGradient(W - 140, 0, 0, W - 140, 0, 420);
+  halo.addColorStop(0, "rgba(255,255,255,.28)");
+  halo.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = halo;
+  ctx.fillRect(0, 0, W, BAND);
+  const mark = 68;
   drawBrandMark(ctx, brandLogo.image, PAD, (BAND - mark) / 2, mark, style);
   ctx.fillStyle = style.onAccent;
-  ctx.font = `800 46px ${heading}`;
-  ctx.fillText("Mon E‑Carnet", PAD + mark + 22, BAND / 2 + 16);
-  ctx.font = `800 26px ${style.body}`;
+  ctx.font = `800 48px ${heading}`;
+  ctx.fillText("Mon E‑Carnet", PAD + mark + 24, BAND / 2 + 17);
+  ctx.font = `800 24px ${style.body}`;
   ctx.letterSpacing = "5px";
   ctx.textAlign = "right";
   ctx.fillText("CARTE D’URGENCE", W - PAD, BAND / 2 + 9);
   ctx.textAlign = "left";
   ctx.letterSpacing = "0px";
 
-  const top = BAND + PAD;
+  const top = BAND + 52;
 
-  // photo de profil à droite, à la place du QR
+  // photo de profil à droite, à la place du QR, sur un fond légèrement teinté
   const photoX = W - PAD - PHOTO_W;
+  ctx.save();
+  ctx.globalAlpha = 0.1;
+  ctx.fillStyle = style.accent;
+  roundRect(ctx, photoX - 26, top - 24, PHOTO_W + 52, PHOTO_H + 100, 36);
+  ctx.fill();
+  ctx.restore();
   drawPhoto(ctx, photo, photoX, top, style);
   ctx.fillStyle = MUTED;
   ctx.font = `700 22px ${style.body}`;
   ctx.textAlign = "center";
-  ctx.fillText("Titulaire de la carte", photoX + PHOTO_W / 2, top + PHOTO_H + 30);
+  ctx.fillText("Titulaire de la carte", photoX + PHOTO_W / 2, top + PHOTO_H + 38);
   ctx.textAlign = "left";
-  const photoBottom = top + PHOTO_H + 48;
+  const photoBottom = top + PHOTO_H + 76;
 
   // informations à gauche
   const x = PAD;
@@ -224,72 +243,94 @@ function paint(ctx: Ctx, card: EmergencyCardView, photo: LoadedPhoto, brandLogo:
   nameLines.forEach((line, index) => ctx.fillText(line, x, y + 54 + index * 68));
   y += nameLines.length * 68 + 10;
 
-  // groupe sanguin | ville
-  const bloodW = 330;
-  const rowTop = y;
-  const labelH = label(ctx, "Groupe sanguin", x, rowTop);
-  label(ctx, "Ville", x + bloodW, rowTop);
-  ctx.font = `850 62px ${heading}`;
+  // métier du professionnel : pastille sous le nom
+  const role = emergencyCardProfessionLabel(card.profession);
+  if (role) {
+    ctx.font = `800 28px ${style.body}`;
+    const [text] = limitLines(ctx, [role], 1, width - 92);
+    const pillW = Math.min(ctx.measureText(text).width + 92, width);
+    ctx.save();
+    ctx.globalAlpha = 0.2;
+    ctx.fillStyle = style.accent;
+    roundRect(ctx, x, y, pillW, 54, 27);
+    ctx.fill();
+    ctx.restore();
+    // petite croix médicale
+    ctx.fillStyle = INK;
+    roundRect(ctx, x + 24, y + 22, 22, 7, 3); ctx.fill();
+    roundRect(ctx, x + 31.5, y + 14.5, 7, 22, 3); ctx.fill();
+    ctx.fillText(text, x + 62, y + 37);
+    y += 54 + 18;
+  } else y += 6;
+
+  // groupe sanguin | ville, puis taille | poids : quatre tuiles
+  const gap = 16, tileW = Math.floor((width - gap) / 2), tileH = 110;
+  const row1 = y, row2 = y + tileH + gap;
+  tile(ctx, x, row1, tileW, tileH, "#fff1ee", "#f1c2b8");
+  tile(ctx, x + tileW + gap, row1, tileW, tileH, TILE, LINE);
+  tile(ctx, x, row2, tileW, tileH, TILE, LINE);
+  tile(ctx, x + tileW + gap, row2, tileW, tileH, TILE, LINE);
+  label(ctx, "Groupe sanguin", x + 24, row1 + 12);
+  label(ctx, "Ville", x + tileW + gap + 24, row1 + 12);
+  label(ctx, "Taille déclarée", x + 24, row2 + 12);
+  label(ctx, "Poids déclaré", x + tileW + gap + 24, row2 + 12);
+  ctx.font = card.blood_group ? `850 58px ${heading}` : `500 26px ${style.body}`;
   ctx.fillStyle = card.blood_group ? DANGER : MUTED;
-  if (!card.blood_group) ctx.font = `500 26px ${style.body}`;
-  ctx.fillText(card.blood_group || "Non renseigné", x, rowTop + labelH + (card.blood_group ? 58 : 30));
+  ctx.fillText(card.blood_group || "Non renseigné", x + 24, row1 + (card.blood_group ? 94 : 82));
   ctx.font = card.city ? `700 32px ${style.body}` : `500 26px ${style.body}`;
   ctx.fillStyle = card.city ? INK : MUTED;
-  const cityLines = limitLines(ctx, wrap(ctx, card.city || "Non renseignée", width - bloodW), 1, width - bloodW);
-  cityLines.forEach((line) => ctx.fillText(line, x + bloodW, rowTop + labelH + 36));
-  y = rowTop + labelH + Math.max(card.blood_group ? 68 : 38, 38) + 12;
-
-  // taille et poids déclarés ou dernières valeurs connues
-  const physicalTop = y;
-  const half = Math.floor(width / 2);
-  label(ctx, "Taille déclarée", x, physicalTop);
-  label(ctx, "Poids déclaré", x + half, physicalTop);
-  ctx.font = `700 30px ${style.body}`;
+  limitLines(ctx, wrap(ctx, card.city || "Non renseignée", tileW - 48), 1, tileW - 48).forEach((line) => ctx.fillText(line, x + tileW + gap + 24, row1 + 82));
+  ctx.font = card.height_cm ? `700 32px ${style.body}` : `500 26px ${style.body}`;
   ctx.fillStyle = card.height_cm ? INK : MUTED;
-  ctx.fillText(card.height_cm || "Non renseignée", x, physicalTop + 62);
+  ctx.fillText(card.height_cm || "Non renseignée", x + 24, row2 + 82);
+  ctx.font = card.weight_kg ? `700 32px ${style.body}` : `500 26px ${style.body}`;
   ctx.fillStyle = card.weight_kg ? INK : MUTED;
-  ctx.fillText(card.weight_kg || "Non renseigné", x + half, physicalTop + 62);
-  y = physicalTop + 82;
+  ctx.fillText(card.weight_kg || "Non renseigné", x + tileW + gap + 24, row2 + 82);
+  y = row2 + tileH + 26;
 
   // allergies
   y += label(ctx, "Allergies", x, y);
-  if (card.allergies.length) y += chips(ctx, card.allergies.map((item) => item.label), x, y, width, "allergy") + 18;
-  else { ctx.font = `500 26px ${style.body}`; ctx.fillStyle = MUTED; ctx.fillText("Aucune allergie déclarée", x, y + 28); y += 28 + 18; }
+  if (card.allergies.length) y += chips(ctx, card.allergies.map((item) => item.label), x, y, width, "allergy") + 20;
+  else { ctx.font = `500 26px ${style.body}`; ctx.fillStyle = MUTED; ctx.fillText("Aucune allergie déclarée", x, y + 28); y += 28 + 20; }
 
   // traitements (seulement s’il y en a, comme à l’écran)
   if (card.treatments.length) {
     y += label(ctx, "Traitements", x, y);
-    y += chips(ctx, card.treatments.map((item) => item.label), x, y, width, "treatment") + 18;
+    y += chips(ctx, card.treatments.map((item) => item.label), x, y, width, "treatment") + 20;
   }
 
-  // contact d’urgence
-  y += label(ctx, "Contact d’urgence", x, y);
-  if (card.contact_name || card.contact_phone) {
+  // contact d’urgence : tuile pleine largeur
+  const hasContact = Boolean(card.contact_name || card.contact_phone);
+  const contactH = 22 + 28 + (hasContact ? (card.contact_name ? 38 : 0) + (card.contact_phone ? 36 : 0) : 32) + 14;
+  tile(ctx, x, y, width, contactH, TILE, LINE);
+  let cy = y + 12;
+  cy += label(ctx, "Contact d’urgence", x + 24, cy);
+  if (hasContact) {
     if (card.contact_name) {
       ctx.font = `800 34px ${style.body}`; ctx.fillStyle = INK;
-      const lines = limitLines(ctx, wrap(ctx, card.contact_name, width), 1, width);
-      lines.forEach((line) => ctx.fillText(line, x, y + 32));
-      y += 38;
+      limitLines(ctx, wrap(ctx, card.contact_name, width - 48), 1, width - 48).forEach((line) => ctx.fillText(line, x + 24, cy + 32));
+      cy += 38;
     }
     if (card.contact_phone) {
       ctx.font = `600 30px ${style.body}`; ctx.fillStyle = MUTED;
-      ctx.fillText(card.contact_phone, x, y + 30);
-      y += 36;
+      ctx.fillText(card.contact_phone, x + 24, cy + 30);
+      cy += 36;
     }
-  } else { ctx.font = `500 26px ${style.body}`; ctx.fillStyle = MUTED; ctx.fillText("Non renseigné", x, y + 28); y += 32; }
+  } else { ctx.font = `500 26px ${style.body}`; ctx.fillStyle = MUTED; ctx.fillText("Non renseigné", x + 24, cy + 28); }
+  y += contactH;
 
   // pied de carte
   ctx.font = `500 20px ${style.body}`;
   const footLines = wrap(ctx, EMERGENCY_CARD_FOOTNOTE, W - PAD * 2);
   const footH = 18 + footLines.length * 26 + 14;
-  const footTop = Math.max(Math.max(y, photoBottom) + 16, CARD_HEIGHT - footH);
-  ctx.fillStyle = "#f5f8f6";
+  const footTop = Math.max(Math.max(y, photoBottom) + 20, CARD_HEIGHT - footH);
+  ctx.fillStyle = TILE;
   ctx.fillRect(0, footTop, W, footH);
   ctx.fillStyle = LINE;
   ctx.fillRect(0, footTop, W, 2);
   ctx.fillStyle = MUTED;
   footLines.forEach((line, index) => ctx.fillText(line, PAD, footTop + 18 + 20 + index * 26 - 4));
-  return CARD_HEIGHT;
+  return footTop + footH;
 }
 
 export async function renderEmergencyCardPng(card: EmergencyCardView, photoSource: EmergencyCardPhoto): Promise<Blob> {
@@ -307,8 +348,14 @@ export async function renderEmergencyCardPng(card: EmergencyCardView, photoSourc
   const [photoImage, logoImage] = await Promise.all([loadPhoto(photoSource.url), loadPhoto(PROJECT_LOGO_WEBP)]);
   const photo: LoadedPhoto = { image: photoImage, initials: photoSource.initials };
   const brandLogo: LoadedPhoto = { image: logoImage, initials: "" };
+  // Premier passage sur une toile haute pour connaître la hauteur nécessaire : rien n’est coupé, même avec beaucoup d’allergies ou de traitements.
+  const scratch = document.createElement("canvas");
+  scratch.width = W; scratch.height = 2400;
+  const scratchCtx = scratch.getContext("2d") as Ctx | null;
+  if (!scratchCtx) throw new Error("Le dessin de la carte n’est pas disponible sur cet appareil.");
+  const needed = Math.max(CARD_HEIGHT, Math.ceil(paint(scratchCtx, card, photo, brandLogo, style)));
   const out = document.createElement("canvas");
-  out.width = W; out.height = CARD_HEIGHT;
+  out.width = W; out.height = needed;
   const ctx = out.getContext("2d") as Ctx | null;
   if (!ctx) throw new Error("Le dessin de la carte n’est pas disponible sur cet appareil.");
   paint(ctx, card, photo, brandLogo, style);

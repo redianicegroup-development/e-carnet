@@ -9,6 +9,7 @@ import { AdminRepresentationTransfersClient } from "../../components/AdminRepres
 import { AdminRecoveryClient } from "../../components/AdminRecoveryClient";
 import { AdminEstablishmentsClient } from "../../components/AdminEstablishmentsClient";
 import { AdminSettingsClient } from "../../components/AdminSettingsClient";
+import { AdminOperationsClient } from "../../components/AdminOperationsClient";
 import { useConfirm } from "../../components/modal/ConfirmProvider";
 import { BrandMark } from "../../components/ui/BrandMark";
 import { Icon, type IconName } from "../../components/ui/Icon";
@@ -45,10 +46,11 @@ type Dashboard = {
   visitors: Visitor[]; feedback: Feedback[]; survey_responses: SurveyResponse[];
 };
 type AdminProfile = { email: string; first_name: string; last_name: string; avatar_url?: string };
-type AdminTab = "overview" | "activity" | "feedback" | "survey" | "establishments" | "account-requests" | "recovery" | "representation-transfers" | "settings";
+type AdminTab = "overview" | "operations" | "activity" | "feedback" | "survey" | "establishments" | "account-requests" | "recovery" | "representation-transfers" | "settings";
 
 const tabs: { id: AdminTab; label: string; short: string; icon: IconName }[] = [
   { id: "overview", label: "Vue d’ensemble", short: "Accueil", icon: "home" },
+  { id: "operations", label: "Surveillance technique", short: "Surveillance", icon: "shield" },
   { id: "activity", label: "Visites & clics", short: "Activité", icon: "chart" },
   { id: "feedback", label: "Feedback", short: "Feedback", icon: "pencil" },
   { id: "survey", label: "Enquête UX", short: "Enquête", icon: "document" },
@@ -219,7 +221,7 @@ export default function AdminPage() {
   const adminName = [adminProfile?.first_name, adminProfile?.last_name].filter(Boolean).join(" ") || adminProfile?.email || "Administrateur";
   const adminInitials = `${adminProfile?.first_name?.[0] ?? ""}${adminProfile?.last_name?.[0] ?? ""}`.toUpperCase() || adminProfile?.email?.[0]?.toUpperCase() || "A";
 
-  const tabGroup: Partial<Record<AdminTab, string>> = { overview: "Pilotage", establishments: "Gestion", "representation-transfers": "Gestion", settings: "Compte" };
+  const tabGroup: Partial<Record<AdminTab, string>> = { overview: "Pilotage", operations: "Pilotage", establishments: "Gestion", "representation-transfers": "Gestion", settings: "Compte" };
   const sidebarItems: SidebarItem[] = tabs.map((tab) => ({
     id: tab.id, label: tab.short, long: tab.label, icon: tab.icon, active: activeTab === tab.id,
     onSelect: () => setActiveTab(tab.id), domId: `admin-tab-${tab.id}`, controls: `admin-panel-${tab.id}`, heading: tabGroup[tab.id],
@@ -269,11 +271,13 @@ export default function AdminPage() {
       <section className="card admin-table-card"><div className="admin-table-title"><div><span className="eyebrow">Résumé</span><h2>Activité récente</h2></div><div className="admin-inline-actions"><button className="button small" onClick={() => setActiveTab("activity")}>Voir les visites et clics</button><button className="button small" onClick={() => setActiveTab("survey")}>Voir l’enquête UX</button></div></div><p className="muted">Les détails par visiteur pseudonyme, la recherche et les dernières catégories de clic sont disponibles dans l’onglet Visites & clics.</p></section>
     </section>}
 
+    {activeTab === "operations" && <section id="admin-panel-operations" role="tabpanel" aria-labelledby="admin-tab-operations" className="stack-lg"><AdminOperationsClient /></section>}
+
     {activeTab === "activity" && <section id="admin-panel-activity" role="tabpanel" aria-labelledby="admin-tab-activity" className="stack-lg">
       <div className="admin-metrics admin-metrics--compact"><article className="card admin-metric"><span className="muted">Pages vues</span><strong>{dashboard.page_views_total}</strong></article><article className="card admin-metric"><span className="muted">Clics anonymisés</span><strong>{dashboard.clicks_total}</strong></article><article className="card admin-metric"><span className="muted">Connexions réussies</span><strong>{dashboard.auth_successes_total}</strong></article><article className="card admin-metric"><span className="muted">Échecs login</span><strong>{dashboard.login_failures_total}</strong></article></div>
       <section className="card admin-table-card"><div className="admin-table-title"><div><span className="eyebrow">Mesure de fréquentation</span><h2>Visiteurs pseudonymes</h2></div><span className="muted">{filteredVisitors.length} résultat(s) · 200 visiteurs les plus récents chargés</span></div>
         <label className="field admin-search"><span>Rechercher par identifiant ou catégorie</span><input type="search" value={visitorSearch} onChange={(event) => setVisitorSearch(event.target.value)} placeholder="ID, accueil, inscription, clic…" /></label>
-        {filteredVisitors.length === 0 ? <p className="empty">Aucun visiteur ne correspond à cette recherche.</p> : <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Visiteur</th><th>Dernière page</th><th>Pages</th><th>Clics</th><th>Dernier clic</th><th>Connexions</th><th>Échecs</th><th>Dernière activité</th></tr></thead><tbody>{filteredVisitors.map((visitor) => <tr key={visitor.visitor_id}><td><code>{visitor.visitor_id.slice(0, 8)}…</code><small>Depuis {formatDate(visitor.first_seen)}</small></td><td>{categoryLabel[visitor.last_page_category] ?? "Autre"}</td><td>{visitor.page_view_count}</td><td>{visitor.click_count}</td><td>{clickLabel[visitor.last_click_category] ?? "—"}<small>{visitor.last_click_at ? `${categoryLabel[visitor.last_click_page_category] ?? "Autre"} · ${formatDate(visitor.last_click_at)}` : "Aucun clic mesuré"}</small></td><td>{visitor.login_success_count + visitor.registration_count + visitor.oauth_success_count}</td><td>{visitor.login_failure_count}</td><td>{formatDate(visitor.last_seen)}<small>{eventLabel[visitor.last_auth_event] ?? "—"}</small></td></tr>)}</tbody></table></div>}
+        {filteredVisitors.length === 0 ? <p className="empty">Aucun visiteur ne correspond à cette recherche.</p> : <div className="admin-table-wrap"><table className="admin-table admin-table--stack"><thead><tr><th>Visiteur</th><th>Dernière page</th><th>Pages</th><th>Clics</th><th>Dernier clic</th><th>Connexions</th><th>Échecs</th><th>Dernière activité</th></tr></thead><tbody>{filteredVisitors.map((visitor) => <tr key={visitor.visitor_id}><td data-label="Visiteur"><code>{visitor.visitor_id.slice(0, 8)}…</code><small>Depuis {formatDate(visitor.first_seen)}</small></td><td data-label="Dernière page">{categoryLabel[visitor.last_page_category] ?? "Autre"}</td><td data-label="Pages">{visitor.page_view_count}</td><td data-label="Clics">{visitor.click_count}</td><td data-label="Dernier clic">{clickLabel[visitor.last_click_category] ?? "—"}<small>{visitor.last_click_at ? `${categoryLabel[visitor.last_click_page_category] ?? "Autre"} · ${formatDate(visitor.last_click_at)}` : "Aucun clic mesuré"}</small></td><td data-label="Connexions">{visitor.login_success_count + visitor.registration_count + visitor.oauth_success_count}</td><td data-label="Échecs">{visitor.login_failure_count}</td><td data-label="Dernière activité">{formatDate(visitor.last_seen)}<small>{eventLabel[visitor.last_auth_event] ?? "—"}</small></td></tr>)}</tbody></table></div>}
         <p className="admin-privacy-note">Pour protéger la vie privée, le système ne conserve ni texte de bouton, ni URL complète, ni IP, ni user-agent, et ignore les clics dans les espaces de santé et les consoles privées.</p>
       </section>
     </section>}

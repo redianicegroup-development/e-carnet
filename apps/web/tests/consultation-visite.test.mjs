@@ -61,7 +61,7 @@ test("la provenance de chaque constante d'une consultation signée est conservé
 });
 
 test("l'étape 1 patient devient « Identité du titulaire » : ville obligatoire, profession facultative, pas d'ethnie, date de délivrance automatique", () => {
-  const onboarding = read("src/components/PatientOnboarding.tsx");
+  const onboarding = read("src/components/PatientOnboarding.tsx") + read("src/components/PatientIdentityFields.tsx");
   assert.match(onboarding, /identité du titulaire/i);
   assert.match(onboarding, /Délivré le/);
   assert.match(onboarding, /profession/);

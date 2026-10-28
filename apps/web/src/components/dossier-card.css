@@ -1,0 +1,16 @@
+/* « Dossier » de l'accueil : même présentation pour le dossier médecin et le dossier patient (photo, nom en titre, informations en lignes). */
+.dossier { display: grid; gap: 14px; }
+.dossier__head { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.dossier__head h2 { margin: 2px 0 0; overflow-wrap: anywhere; }
+.dossier__role { display: inline-flex; align-items: center; gap: 6px; width: fit-content; max-width: 100%; margin: 6px 0 0; padding: 3px 11px; border-radius: 999px; background: color-mix(in srgb, var(--primary) 14%, var(--surface)); color: var(--text); font-size: .82rem; font-weight: 750; overflow-wrap: anywhere; }
+.dossier__role .icon { flex: 0 0 auto; }
+.dossier__list { display: grid; gap: 10px; margin: 0; }
+.dossier__list > div { display: grid; gap: 2px; min-width: 0; }
+.dossier__list dt, .dossier__label { color: var(--text-muted); font-size: .78rem; font-weight: 700; letter-spacing: .02em; }
+.dossier__list dd { display: grid; gap: 2px; margin: 0; font-weight: 650; overflow-wrap: anywhere; justify-items: start; }
+.dossier__details { color: var(--text-muted); font-size: .82rem; font-weight: 500; line-height: 1.4; }
+.dossier__wide { grid-column: 1 / -1; }
+.dossier__group { display: grid; gap: 10px; min-width: 0; }
+.dossier__group h3 { margin: 0; font-size: 1rem; }
+.dossier__note { margin: 0; font-size: .85rem; }
+@media (min-width: 720px) { .dossier__list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

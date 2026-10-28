@@ -32,6 +32,24 @@ npm run lint
 npm run build
 ```
 
+## Image frontend de production
+
+`apps/web/Dockerfile` utilise maintenant trois étapes : installation des dépendances, build Next.js et image d’exécution minimale. L’image finale ne lance jamais `next dev` : elle utilise le serveur standalone avec un utilisateur non root (`nextjs`, UID 1001).
+
+Depuis la racine du dépôt :
+
+```bash
+docker build \
+  --build-arg ECARNET_API_ORIGIN=https://api.example.tld \
+  -f apps/web/Dockerfile \
+  -t ecarnet-web:production .
+docker run --rm -p 3000:3000 ecarnet-web:production
+```
+
+`ECARNET_API_ORIGIN` est injecté au build, car il sert à générer la règle de réécriture Next.js. Sur Render ou Hodi, le renseigner dans les arguments de build avec l’URL publique de l’API, sans slash final. Ne pas confondre cette valeur avec `NEXT_PUBLIC_API_URL`, qui doit également être définie si le frontend l’utilise côté navigateur.
+
+Le build active `output: "standalone"` et conserve le monorepo UI grâce à `outputFileTracingRoot`. Le conteneur expose le port `3000`, écoute sur `0.0.0.0` et doit recevoir le port fourni par l’hébergeur via sa configuration de service. Le Compose local reste volontairement en mode développement pour préserver le hot reload ; l’image ci-dessus est la référence staging/production.
+
 Vérifications de code consignées le 05/10/2026 (soir) : 71 tests Django OK et 1 ignoré sous SQLite, check/migrations/lint/tsc OK, build avec 31 routes ; `npm audit --omit=dev` ne trouvait alors aucune vulnérabilité de production, avec 5 alertes `high` dans l’outillage. Authlib signalait `authlib.jose` déprécié. Ces relevés n’ont pas été rejoués le 08/10 : ne pas présenter leur nombre de tests/routes ni leur état de dépendances comme résultats actuels.
 
 Le 08/10/2026, la suite Django a réussi sur PostgreSQL 16 local : 77 tests, zéro échec et zéro ignoré ; un smoke séparé a restauré une archive dans une base isolée. Ces preuves ne concernent pas Neon/staging et ne mesurent pas le RPO/RTO opérationnel : voir [rapport de tests](../reports/postgres-tests-20261008.txt) et [rapport de restauration](../reports/postgres-restore-20261008T081823Z.txt).
@@ -52,7 +70,7 @@ Lier une identité secondaire doit se faire après connexion au compte existant;
 
 ## Invitations établissement — finition avant production
 
-Le flow d’invitation est présent côté API/UI : lien hashé à usage unique valable 48 h, activation et choix du mot de passe par le destinataire. L’API n’inclut jamais le jeton brut dans sa réponse staff ; l’e-mail d’invitation le transporte. L’envoi utilise le backend SMTP configurable : configurer et tester les identifiants SMTP, SPF/DKIM/DMARC et le domaine expéditeur en staging avant production. Les preuves légales de la structure sont examinées hors application ; leur rétention, leurs accès et leur suppression restent à décider avec conseil juridique. Les justificatifs professionnels des médecins ne sont pas collectés par la plateforme. Le V1/V2 restent sur Vercel + Render + Neon ; l’éventuelle centralisation sur VPS est à réévaluer après V2 et après validation juridique, sécurité, sauvegardes et exploitation.
+Le flow d’invitation est présent côté API/UI : lien hashé à usage unique valable 48 h, activation et choix du mot de passe par le destinataire. L’API n’inclut jamais le jeton brut dans sa réponse staff ; l’e-mail d’invitation le transporte. L’envoi utilise le backend SMTP configurable : configurer et tester les identifiants SMTP, SPF/DKIM/DMARC et le domaine expéditeur en staging avant production. Les preuves légales de la structure sont examinées hors application ; leur rétention, leurs accès et leur suppression restent à décider avec conseil juridique. Les justificatifs professionnels des médecins ne sont pas collectés par la plateforme. La cible d’hébergement retenue par le CDC est désormais Hodi Site Pro pour un staging/pilote fictif, sous réserve des confirmations écrites sur les données de santé, le stockage privé, les sauvegardes et la copie en Europe. Aucun basculement de données réelles n’est autorisé sur cette seule décision.
 
 ## Tâches planifiées et limites de débit
 
@@ -90,7 +108,7 @@ Sans `DATABASE_URL`, Django utilise SQLite pour le local/tests seulement; le pil
 
 ## Séparation environnements et mise en production
 
-Local, preview et staging utilisent uniquement des données synthétiques. Le choix actuel V1/V2 est Vercel + Render + Neon ; un VPS reste une piste ultérieure, sans présumer qu’il est automatiquement plus conforme. Une preuve locale de restauration PostgreSQL existe depuis le 08/10 (voir les rapports ci-dessus). Avant toute donnée réelle : cartographie des lieux de traitement/sauvegarde/journaux, validations juridique et médicale, politique de conservation approuvée, domaine/HTTPS, cookies/CSRF, PostgreSQL/trigger, sauvegardes/restaurations et RPO/RTO mesurés, procédure d’incident, sécurité SVG, revue de dépendances, OAuth configuré, console staff et espace établissement privés, SMTP vérifié et invitation testée. Aucun Compose local ne remplace ces preuves.
+Local, preview et staging utilisent uniquement des données synthétiques. La cible V1 est Hodi Site Pro, avec une seule instance API au départ, un reverse proxy/TLS, PostgreSQL partagé et stockage privé persistant ; une configuration multi-instance/load balancer n’est envisagée qu’après mesure et confirmation de la capacité Hodi. Une preuve locale de restauration PostgreSQL existe depuis le 08/10 (voir les rapports ci-dessus), mais elle ne vaut pas preuve Hodi. Avant toute donnée réelle : cartographie des lieux de traitement/sauvegarde/journaux, validations juridique et médicale, politique de conservation approuvée, domaine/HTTPS, cookies/CSRF, PostgreSQL/trigger, sauvegardes/restaurations et RPO/RTO mesurés, procédure d’incident, sécurité SVG, revue de dépendances, OAuth configuré, console staff et espace établissement privés, SMTP vérifié et invitation testée. Aucun Compose local ne remplace ces preuves. Voir [`AKATECH-PLAN-OPTIMISATION-CHARGE-HODI.md`](AKATECH-PLAN-OPTIMISATION-CHARGE-HODI.md) pour les seuils et l’ordre de montée en charge.
 
 
 ## Domaine et cookies — requis avant le staging
@@ -116,4 +134,5 @@ La configuration CORS/CSRF reste nécessaire, car `app.` et `api.` sont deux ori
 - HTTPS : redirection, `SECURE_PROXY_SSL_HEADER`, HSTS 1 jour (relever ensuite), cookies Secure et `SameSite=None`. Les sondes `/api/v1/health/` sont exemptées de la redirection.
 - `DRF_NUM_PROXIES` : nombre de proxys de confiance (1 par défaut hors debug). Une valeur fausse rend l'IP client falsifiable et affaiblit la limitation des tentatives.
 - Limitation des tentatives : compteurs dans la table `ecarnet_cache`, créée automatiquement par `manage.py migrate`. Console d'administration : 10 essais de connexion par 15 minutes et par IP ; changer `DJANGO_ADMIN_PATH`. Les comptes staff n'ont pas de MFA en V1 : mots de passe longs obligatoires.
+- Surveillance technique : renseigner `ECARNET_OPERATIONS_ADMIN_EMAILS` avec un ou plusieurs e-mails de superadministrateurs autorisés, séparés par des virgules. La connexion utilise le mot de passe normal du compte Django ; aucun compte partagé ni mot de passe de monitoring n'est créé. La même variable fonctionne en local, sur Render et sur Hodi.
 - Invitation établissement : l’API ne renvoie jamais le jeton brut ; un lien est envoyé via le backend SMTP configurable. La configuration SMTP, SPF/DKIM/DMARC et la délivrabilité restent à vérifier sur staging.

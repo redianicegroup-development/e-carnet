@@ -58,8 +58,8 @@ export function ProfessionalVaccinations() {
 
   /* Rendu dans une rubrique pliable « Vaccinations à confirmer » (page Suivi) : le titre est celui du bouton de la rubrique. */
   return <div className="stack" id="vaccinations">
-    <p className="muted">Le patient peut déclarer une vaccination et joindre un justificatif. Confirmez uniquement après vérification du carnet ou de la pièce, dans le périmètre de son autorisation active.</p>
-    {grants === null ? <p className="empty">Chargement des autorisations…</p> : grants.length === 0 ? <p className="empty">Aucun accès actif avec le périmètre déclarations.</p> : <label className="field"><span>Autorisation patient active</span><select value={grantId} onChange={(event) => { setError(""); setMessage(""); setGrantId(event.target.value); }}>{grants.map((grant) => <option key={grant.id} value={grant.id}>{grant.facility_label} · accès {grant.reference}</option>)}</select></label>}
+    <p className="muted">Le patient déclare ses vaccins. Confirmez-les après avoir vérifié son carnet ou le justificatif.</p>
+    {grants === null ? <p className="empty">Chargement des autorisations…</p> : grants.length === 0 ? <p className="empty">Aucun accès actif pour le moment.</p> : <label className="field"><span>Autorisation patient active</span><select value={grantId} onChange={(event) => { setError(""); setMessage(""); setGrantId(event.target.value); }}>{grants.map((grant) => <option key={grant.id} value={grant.id}>{grant.facility_label} · accès {grant.reference}</option>)}</select></label>}
     {error && <p className="status error" role="alert">{error}</p>}
     {message && <p className="status success" role="status" aria-live="polite">{message}</p>}
     {items === null && grantId && <p className="empty">Chargement du carnet partagé…</p>}
@@ -69,7 +69,7 @@ export function ProfessionalVaccinations() {
         {item.next_due_on && <small className="muted">Rappel indiqué : {date(item.next_due_on)}</small>}
         {item.document_id && (canReadDocuments
           ? <small className="muted"><br /><a href={`/api/v1/patient/care/professional/access-grants/${grantId}/documents/${item.document_id}/download/`} target="_blank" rel="noreferrer">Consulter le justificatif partagé</a></small>
-          : <small className="muted"><br />Justificatif joint, mais le périmètre documents n’est pas accordé.</small>)}
+          : <small className="muted"><br />Justificatif joint, mais le patient n’a pas autorisé l’accès aux documents.</small>)}
         {item.confirmed_by_name && item.confirmed_at && <small className="muted"><br />Confirmée par {item.confirmed_by_name} le {new Date(item.confirmed_at).toLocaleDateString("fr-FR")}</small>}
         {item.status !== "confirmed" && <div className="actions"><button className="button small" type="button" disabled={busyId === item.id || Boolean(item.document_id && !canReadDocuments)} title={item.document_id && !canReadDocuments ? "Le patient doit aussi autoriser le périmètre documents pour que vous puissiez consulter la pièce." : undefined} onClick={() => confirm(item)}>{busyId === item.id ? "Confirmation…" : "Confirmer après vérification"}</button></div>}
       </div><span className={`badge ${item.status === "confirmed" ? "verified" : item.status === "documented" ? "pending" : "declared"}`}>{item.status_label}</span>

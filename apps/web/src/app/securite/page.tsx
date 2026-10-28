@@ -13,7 +13,7 @@ type SecurityPrinciple = { icon: IconName; title: string; text: string };
 const PRINCIPLES: SecurityPrinciple[] = [
   { icon: "lock", title: "Accès limités", text: "Le patient voit le périmètre et la durée d’une autorisation, puis peut la retirer à tout moment." },
   { icon: "clock", title: "Durée maîtrisée", text: "Une autorisation clinique est temporaire. Elle ne devient jamais un accès permanent par défaut." },
-  { icon: "check", title: "Décision explicite", text: "Un professionnel doit être rattaché à son établissement et recevoir l’accord du patient avant de consulter le carnet." },
+  { icon: "check", title: "Décision explicite", text: "Un professionnel doit être rattaché à son établissement et recevoir l’accord du patient avant de consulter le carnet. Un administrateur ne peut ouvrir que les soins de sa propre structure, avec un motif enregistré et une notification au patient." },
   { icon: "document", title: "Historique conservé", text: "Les demandes, décisions et consultations validées laissent une trace dans le carnet pour garder le fil." },
   { icon: "shield", title: "Compte personnel", text: "Gardez vos identifiants confidentiels et utilisez uniquement votre compte. Les services d’urgence restent indépendants du carnet." },
   { icon: "chart", title: "Suivi mesuré", text: "Les statistiques du site utilisent des catégories de pages et des clics publics, sans conserver les URL complètes ni les adresses IP." },
@@ -45,7 +45,7 @@ export default function SecurityPage() {
           </section>
 
           <section className="security__flow" aria-labelledby="flux-titre">
-            <div className="info-page__section-intro"><span className="eyebrow">Le contrôle en pratique</span><h2 id="flux-titre">Un rattachement ne suffit jamais à ouvrir un dossier.</h2><p className="muted">Le professionnel peut demander un accès, mais le patient garde la décision sur le périmètre et la durée.</p></div>
+            <div className="info-page__section-intro"><span className="eyebrow">Le contrôle en pratique</span><h2 id="flux-titre">Un rattachement ne suffit jamais à ouvrir un dossier.</h2><p className="muted">Le professionnel peut demander un accès, mais le patient garde la décision sur le périmètre et la durée. Les partages entre établissements sont ciblés, temporaires, en lecture seule et sans copie conservée en V1.</p></div>
             <RecipientsFigure />
           </section>
 

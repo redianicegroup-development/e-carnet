@@ -332,11 +332,11 @@ test("admin : les nouveaux retours sont annoncés dans la navigation et les indi
   assert.match(styles, /\.space--admin \.admin-metric::before/);
 });
 
-test("les documents médicaux restent un périmètre d’accès séparé, facultatif et lisible pour le patient", () => {
+test("scanner le QR demande aussi la lecture seule des documents : plus de case à cocher, et le patient voit ce périmètre avant de décider", () => {
   const professional = read("src/components/ProfessionalAccessGrants.tsx");
   const patient = read("src/components/PatientAccessGrants.tsx");
-  assert.match(professional, /useState\(false\)/);
-  assert.match(professional, /includeDocuments \? \["preconsultation", "declarations", "documents"\] : \["preconsultation", "declarations"\]/);
+  assert.doesNotMatch(professional, /includeDocuments|type="checkbox"/);
+  assert.match(professional, /requestProfessionalGrant\(\["preconsultation", "declarations", "documents"\]/);
   assert.match(professional, /Documents médicaux \(lecture seule\)/);
   assert.match(patient, /documents: "Documents médicaux \(lecture seule\)"/);
 });

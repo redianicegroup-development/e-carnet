@@ -824,6 +824,13 @@ class ScopeGateTests(TestCase):
         grant = self.grant(["documents"])
         self.assertIs(require_scope(grant, "documents"), grant)
 
+    def test_care_history_is_an_explicitly_allowed_but_separate_scope(self):
+        from .services import require_scope
+        grant = self.grant(["care_history"])
+        grant.source_establishments = [str(self.establishment.id)]
+        grant.save(update_fields=("source_establishments",))
+        self.assertIs(require_scope(grant, "care_history"), grant)
+
     def test_refuses_pending_revoked_refused_and_expired_grants(self):
         from rest_framework.exceptions import PermissionDenied
         from .services import require_scope

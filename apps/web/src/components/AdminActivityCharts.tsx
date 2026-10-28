@@ -9,6 +9,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { tooltipStyle, tooltipText } from "./RoleDashboards";
 
 export type DailyActivityPoint = {
   date: string;
@@ -20,13 +21,13 @@ export type DailyActivityPoint = {
   average_rating: number | null;
 };
 
-const axisColor = "#68747d";
-const gridColor = "#e4e9e7";
+const axisColor = "var(--chart-text)";
+const gridColor = "var(--chart-grid)";
 const activityLegend = [
-  ["#16835d", "Nouveaux visiteurs"],
-  ["#5477d4", "Feedback"],
-  ["#d58b16", "Enquête visiteurs"],
-  ["#8a55a2", "Enquête utilisateurs"],
+  ["var(--chart-1)", "Nouveaux visiteurs"],
+  ["var(--chart-2)", "Feedback"],
+  ["var(--chart-3)", "Enquête visiteurs"],
+  ["var(--chart-4)", "Enquête utilisateurs"],
 ] as const;
 const formatShortDate = (value: string) => new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "short" }).format(new Date(`${value}T12:00:00`));
 const formatLongDate = (value: string) => new Intl.DateTimeFormat("fr-FR", { dateStyle: "full" }).format(new Date(`${value}T12:00:00`));
@@ -44,11 +45,11 @@ export function AdminActivityCharts({ data }: { data: DailyActivityPoint[] }) {
             <CartesianGrid vertical={false} stroke={gridColor} strokeDasharray="3 3" />
             <XAxis dataKey="date" tickFormatter={formatShortDate} tick={{ fill: axisColor, fontSize: 11 }} tickLine={false} axisLine={false} minTickGap={24} />
             <YAxis allowDecimals={false} width={36} tick={{ fill: axisColor, fontSize: 11 }} tickLine={false} axisLine={false} />
-            <Tooltip labelFormatter={(label) => formatLongDate(String(label))} formatter={(value, name) => [Number(value ?? 0), String(name)]} contentStyle={{ background: "var(--surface)", borderColor: "var(--border)", borderRadius: 12, boxShadow: "0 8px 24px rgba(16, 24, 40, .12)" }} />
-            <Line type="monotone" dataKey="new_visitors" name="Nouveaux visiteurs" stroke="#16835d" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} isAnimationActive={false} />
-            <Line type="monotone" dataKey="feedback_submissions" name="Feedback" stroke="#5477d4" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} isAnimationActive={false} />
-            <Line type="monotone" dataKey="visitor_survey_responses" name="Enquête visiteurs" stroke="#d58b16" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} isAnimationActive={false} />
-            <Line type="monotone" dataKey="product_survey_responses" name="Enquête utilisateurs" stroke="#8a55a2" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} isAnimationActive={false} />
+            <Tooltip labelFormatter={(label) => formatLongDate(String(label))} formatter={(value, name) => [Number(value ?? 0), String(name)]} contentStyle={tooltipStyle} itemStyle={tooltipText} labelStyle={tooltipText} />
+            <Line type="monotone" dataKey="new_visitors" name="Nouveaux visiteurs" stroke="var(--chart-1)" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} isAnimationActive={false} />
+            <Line type="monotone" dataKey="feedback_submissions" name="Feedback" stroke="var(--chart-2)" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} isAnimationActive={false} />
+            <Line type="monotone" dataKey="visitor_survey_responses" name="Enquête visiteurs" stroke="var(--chart-3)" strokeWidth={2.5} strokeDasharray="6 4" dot={false} activeDot={{ r: 4 }} isAnimationActive={false} />
+            <Line type="monotone" dataKey="product_survey_responses" name="Enquête utilisateurs" stroke="var(--chart-4)" strokeWidth={2.5} strokeDasharray="2 5" dot={false} activeDot={{ r: 4 }} isAnimationActive={false} />
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -64,8 +65,8 @@ export function AdminActivityCharts({ data }: { data: DailyActivityPoint[] }) {
             <CartesianGrid vertical={false} stroke={gridColor} strokeDasharray="3 3" />
             <XAxis dataKey="date" tickFormatter={formatShortDate} tick={{ fill: axisColor, fontSize: 11 }} tickLine={false} axisLine={false} minTickGap={24} />
             <YAxis domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} width={32} tick={{ fill: axisColor, fontSize: 11 }} tickLine={false} axisLine={false} />
-            <Tooltip labelFormatter={(label) => formatLongDate(String(label))} formatter={(value) => [`${Number(value).toFixed(1)} / 5`, "Facilité moyenne"]} contentStyle={{ background: "var(--surface)", borderColor: "var(--border)", borderRadius: 12, boxShadow: "0 8px 24px rgba(16, 24, 40, .12)" }} />
-            <Line type="monotone" dataKey="average_rating" name="Facilité moyenne" stroke="#b27100" strokeWidth={3} dot={{ r: 3, fill: "#b27100" }} activeDot={{ r: 5 }} connectNulls={false} isAnimationActive={false} />
+            <Tooltip labelFormatter={(label) => formatLongDate(String(label))} formatter={(value) => [`${Number(value).toFixed(1)} / 5`, "Facilité moyenne"]} contentStyle={tooltipStyle} itemStyle={tooltipText} labelStyle={tooltipText} />
+            <Line type="monotone" dataKey="average_rating" name="Facilité moyenne" stroke="var(--chart-1)" strokeWidth={3} dot={{ r: 3, fill: "var(--chart-1)" }} activeDot={{ r: 5 }} connectNulls={false} isAnimationActive={false} />
           </LineChart>
         </ResponsiveContainer>
       </div> : <div className="admin-chart-empty">La courbe apparaîtra après les premiers retours produit.</div>}

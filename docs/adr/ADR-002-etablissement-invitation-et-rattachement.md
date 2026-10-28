@@ -18,7 +18,7 @@ La V1 actuelle laisse un établissement soumettre une fiche via l’application,
 5. L’établissement vérifie le médecin en interne. E‑Carnet ne collecte pas ses justificatifs personnels. L’administrateur génère un code médecin aléatoire, à usage unique, valable 48 heures; le code permet seulement au compte Professionnel existant de créer une demande `pending`.
 6. L’administrateur établissement accepte ou refuse cette demande. Une acceptation crée le rattachement actif; elle ne donne pas accès à un dossier patient. La validation du rattachement devient la preuve institutionnelle au niveau de cette structure; l’AccessGrant et le consentement du patient restent des contrôles séparés.
 7. Les structures, invitations, codes, décisions et affiliations conservent une trace append-only. Une fin d’accès se fait par révocation/suspension et non par suppression de l’historique.
-8. L’espace établissement est privé. L’administrateur actif consulte les dossiers associés à sa structure; le professionnel ne consulte que le dossier de son cas attribué, avec l’autorisation patient active. Aucun accès automatique aux données d’un autre établissement.
+8. L’espace établissement est privé. L’administrateur actif ne reçoit d’abord qu’une liste sans contenu et ouvre temporairement les soins associés à sa structure avec un motif obligatoire; l’ouverture est auditée et notifiée au patient. Le professionnel ne consulte que le dossier de son cas attribué, avec l’autorisation patient active. Aucun accès automatique aux données d’un autre établissement.
 
 ## Alternatives écartées
 
@@ -27,7 +27,7 @@ La V1 actuelle laisse un établissement soumettre une fiche via l’application,
 - **Mot de passe temporaire envoyé par e-mail :** rejeté; lien à usage unique et définition du secret par son destinataire sont préférés.
 - **Code médecin permanent ou rattachement activé à sa saisie :** rejetés; un code de 48 h ouvre une demande, ensuite approuvée par l’établissement.
 - **Dépôt de pièces professionnelles du médecin dans E‑Carnet :** rejeté pour le flow V1; cette vérification reste interne à l’établissement.
-- **Accès aux dossiers pour administrateur établissement :** rejeté; le périmètre établissement est administratif, le périmètre clinique est individuel/professionnel avec consentement patient.
+- **Accès illimité aux dossiers pour administrateur établissement :** rejeté; seul un accès local temporaire, motivé, audité et notifié est admis par le chantier A. Le périmètre inter-établissements reste fermé à l’administrateur.
 - **Rôle global nommé `root` :** non retenu; l’appellation produit est « administrateur établissement ».
 
 ## État livré le 08/10/2026

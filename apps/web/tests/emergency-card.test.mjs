@@ -25,8 +25,8 @@ test("les réglages gardent l’aperçu privé tandis que l’accueil affiche le
   const visual = read("src/components/emergency-card/EmergencyCardVisual.tsx");
   const account = read("src/components/AccountSettingsClient.tsx");
   const home = read("src/components/PatientHomeIdentity.tsx");
-  assert.match(settings, /<EmergencyCardVisual card=\{card\} showQr=\{false\} photo=\{photo\} \/>/);
-  assert.match(settings, /downloadEmergencyCardPng\(card, photo\)/);
+  assert.match(settings, /<EmergencyCardVisual card=\{shown\} showQr=\{false\} photo=\{photo\} \/>/);
+  assert.match(settings, /downloadEmergencyCardPng\(shown, photo\)/);
   assert.match(settings, /Télécharger en PNG/);
   // « Ma carte virtuelle » ne porte plus qu'un lien : ville, contact et le reste se modifient dans les déclarations du carnet
   assert.match(settings, /href="\/patient\/carnet#carte-urgence">Modifier ma carte</);
@@ -39,16 +39,17 @@ test("les réglages gardent l’aperçu privé tandis que l’accueil affiche le
   // L’activation et la désactivation du QR stable sont maintenant sur l’accueil patient.
   assert.doesNotMatch(account, /QRCodeSVG|settings-account-summary__emergency-qr|emergency-card\//);
   assert.match(home, /<QRCodeSVG value=\{publicUrl\}/);
-  assert.match(home, /apiGet<EmergencyQr>\("\/api\/v1\/patient\/emergency-card\//);
-  assert.match(home, /apiPatch<EmergencyQr>\("\/api\/v1\/patient\/emergency-card\//);
+  assert.match(read("src/components/emergency-card/useEmergencyCard.ts"), /apiGet<EmergencyCardData>\("\/api\/v1\/patient\/emergency-card\//);
+  assert.match(home, /apiPatch<EmergencyCardData>\("\/api\/v1\/patient\/emergency-card\//);
   assert.match(home, /qr_enabled/);
   assert.match(visual, /Taille déclarée/);
   assert.match(visual, /Poids déclaré/);
   assert.match(home, /home-profile-title/);
-  assert.match(home, /<dt>Prénom<\/dt>/);
-  assert.match(home, /<dt>Âge<\/dt>/);
-  assert.match(home, /<dt>Genre déclaré<\/dt>/);
-  assert.match(home, /<dt>Ville<\/dt>/);
+  // « Dossier patient » : même présentation que le dossier médecin (nom en titre, informations clés en lignes)
+  assert.match(home, /Dossier patient/);
+  assert.match(home, /label: "Âge"/);
+  assert.match(home, /label: "Genre déclaré"/);
+  assert.match(home, /label: "Ville"/);
   // le PNG remplace le QR par la photo de profil ou l'avatar (monogramme si l'image est illisible), sans dépendance ni réseau applicatif
   assert.doesNotMatch(image, /qrCanvas|QRCode/);
   assert.match(image, /function loadPhoto/);
@@ -79,7 +80,7 @@ test("le QR temporaire de visite reste dans Partage et le compte ne porte aucun 
   assert.match(shell, /export function usePatientAccessQr/);
   assert.match(grants, /QRCodeSVG|ActiveAccessQr|access-qr\//);
   assert.match(grants, /id="qr"/);
-  assert.match(grants, /documents médicaux .* explicitement demandé et autorisé/);
+  assert.match(grants, /vos documents \(lecture seule\)/);
   assert.doesNotMatch(settings, /ActiveAccessQr|usePatientAccessQr|access-qr\/|visit-qr/);
   assert.match(home, /href: "\/patient\/acces#qr"/);
   assert.doesNotMatch(styles, /settings-account-summary__visit-qr|settings-visit-qr-modal/);

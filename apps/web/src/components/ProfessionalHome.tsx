@@ -1,17 +1,28 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AvatarBadge, displayName, useSpaceAccount } from "./shell/SpaceShell";
 import { useProfessionalProfile } from "./ClinicalGate";
-import { Icon, type IconName } from "./ui/Icon";
+import { type IconName } from "./ui/Icon";
+import { TileGrid } from "./ui/TileGrid";
 import { listProfessionalConsultations, listProfessionalGrants } from "../application/professional-access-grants";
 import { ProfessionalDashboardChart } from "./RoleDashboards";
 import { ProfessionalDossier } from "./ProfessionalDossier";
+import { VirtualCardPanel } from "./emergency-card/VirtualCardPanel";
+import { useEmergencyCard } from "./emergency-card/useEmergencyCard";
+import type { ProfessionalProfile } from "./ClinicalGate";
+import type { SpaceAccount } from "./shell/SpaceShell";
 import { SetupCard, type SetupStep } from "./SetupCard";
 
+/* Carte virtuelle du médecin : son identité de patient et son métier déclaré, même carte et même image PNG que dans l'espace patient. */
+function ProfessionalVirtualCard({ account, profile }: { account: SpaceAccount; profile: ProfessionalProfile }) {
+  const { card, loading, error } = useEmergencyCard();
+  const profession = { title: profile.professional_title, specialty: profile.specialty || undefined };
+  return <section className="card professional-card" aria-label="Ma carte virtuelle"><VirtualCardPanel account={account} card={card} profession={profession} loading={loading} error={error} /></section>;
+}
+
 /* Accueil médecin, dans l'ordre où on en a besoin : bonjour · « Mise en route » (comme chez le patient : elle disparaît une fois tout configuré) ·
-   dossier médecin (tout ce qui a été déclaré) · raccourcis · activité. Tant que le rattachement n'est pas validé, seul le rattachement est proposé. */
+   dossier médecin (tout ce qui a été déclaré) · carte virtuelle · raccourcis · activité. Tant que le rattachement n'est pas validé, seul le rattachement est proposé. */
 export function ProfessionalHome() {
   const account = useSpaceAccount();
   const state = useProfessionalProfile();
@@ -31,14 +42,14 @@ export function ProfessionalHome() {
 
   const steps: SetupStep[] = [
     { key: "profile", title: "Profil professionnel", text: hasProfile ? `${profile?.specialty || "Spécialité à renseigner"} · déclarée, non certifiée par Mon E‑Carnet.` : "Déclarez votre profession et votre spécialité, sans numéro ni pièce justificative.", done: hasProfile, href: "/professionnel/onboarding" },
-    { key: "attach", title: "Rattachement à un établissement", text: attached ? "L’établissement a confirmé votre rattachement." : pending ? "Votre établissement examine votre demande en interne." : "Saisissez le code remis par votre établissement après sa vérification interne.", done: attached, href: "/professionnel/acces" },
-    { key: "active", title: "Établissement actif", text: ready ? "Vos accès cliniques sont ouverts." : "L’accès clinique s’ouvre avec un rattachement actif et l’autorisation du patient.", done: ready, href: "/professionnel/acces" },
+    { key: "attach", title: "Rattachement à un établissement", text: attached ? "L’établissement a confirmé votre rattachement." : pending ? "Votre établissement examine votre demande." : "Saisissez le code remis par votre établissement.", done: attached, href: "/professionnel/acces" },
+    { key: "active", title: "Établissement actif", text: ready ? "Vos accès cliniques sont ouverts." : "Il faut un rattachement actif et l’accord du patient.", done: ready, href: "/professionnel/acces" },
   ];
   const actionLabel = !hasProfile ? "Compléter mon profil" : !attached ? (pending ? "Voir ma demande" : "Saisir mon code") : "Choisir mon établissement";
 
   const shortcuts: { href: string; icon: IconName; title: string; text: string; locked: boolean }[] = [
     { href: "/professionnel/patients", icon: "qr", title: "Scanner un QR / demander un accès", text: "Le patient reste maître de l’autorisation.", locked: !ready },
-    { href: "/professionnel/consultations", icon: "stethoscope", title: "Consultations", text: "Pré-consultation du même établissement et consultation validée.", locked: !ready },
+    { href: "/professionnel/consultations", icon: "stethoscope", title: "Consultations", text: "Pré-consultations et consultations validées.", locked: !ready },
     { href: "/professionnel/acces", icon: "building", title: "Mon rattachement", text: "Code médecin, établissements, établissement actif.", locked: false },
   ];
 
@@ -49,9 +60,8 @@ export function ProfessionalHome() {
       {state.status === "error" && <p className="notice" role="alert">{state.message}</p>}
       {state.status !== "loading" && state.status !== "error" && <SetupCard title="Quelques étapes avant d’ouvrir un carnet" steps={steps} actionLabel={actionLabel} />}
       {account && hasProfile && <ProfessionalDossier account={account} profile={profile} />}
-      {state.status !== "loading" && <section className="stack" aria-label="Raccourcis">
-        {shortcuts.filter((item) => !item.locked).map((item) => <Link key={item.href} className="list-row" href={item.href}><span className="setting-item__icon"><Icon name={item.icon} /></span><span className="list-row__body"><strong>{item.title}</strong><br /><span className="muted">{item.text}</span></span><Icon name="chevron" size={18} /></Link>)}
-      </section>}
+      {account && profile && <ProfessionalVirtualCard account={account} profile={profile} />}
+      {state.status !== "loading" && <TileGrid label="Raccourcis" items={shortcuts.filter((item) => !item.locked)} />}
       {activity && ready && <div className="role-dashboard-grid"><ProfessionalDashboardChart metrics={[{ label: "Demandes", value: activity.grants }, { label: "Accès actifs", value: activity.activeGrants }, { label: "Consultations", value: activity.consultations }]} /></div>}
     </div>
   );

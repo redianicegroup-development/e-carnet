@@ -4,6 +4,7 @@ import { useEffect, useId, useState } from "react";
 import Link from "next/link";
 import { apiGet } from "../infrastructure/api/client";
 import { EmergencyCardVisual } from "./emergency-card/EmergencyCardVisual";
+import { useOwnProfession } from "./emergency-card/useEmergencyCard";
 import { downloadEmergencyCardPng } from "./emergency-card/emergency-card-image";
 import { initials, useSpaceAccount } from "./shell/SpaceShell";
 import { Icon } from "./ui/Icon";
@@ -45,13 +46,15 @@ export function PatientEmergencyCardSettingsClient() {
     return () => { active = false; };
   }, []);
 
+  const profession = useOwnProfession(account);
+  const shown = { ...card, profession };
   const photo = { url: account?.avatar_url || undefined, initials: account ? initials(account) : "?" };
 
   async function downloadPng() {
     setExporting(true);
     setMessage("");
     try {
-      await downloadEmergencyCardPng(card, photo);
+      await downloadEmergencyCardPng(shown, photo);
       setMessage("Carte enregistrée en image PNG. Elle montre vos informations d’urgence : ne la partagez qu’avec des personnes de confiance.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "L’image n’a pas pu être générée.");
@@ -67,7 +70,7 @@ export function PatientEmergencyCardSettingsClient() {
 
     {loading ? <p className="notice" role="status">Chargement de la carte…</p> : <>
       <div id={cardPanelId} className="ecard-panel__content" hidden={!cardOpen}>
-      <EmergencyCardVisual card={card} showQr={false} photo={photo} />
+      <EmergencyCardVisual card={shown} showQr={false} photo={photo} />
 
       <div className="ecard-panel__actions">
         <button type="button" className="button primary" disabled={exporting} onClick={() => void downloadPng()}><Icon name="download" />{exporting ? "Création de l’image…" : "Télécharger en PNG"}</button>

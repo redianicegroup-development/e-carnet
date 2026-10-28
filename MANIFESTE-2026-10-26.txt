@@ -1,0 +1,42 @@
+MANIFESTE 2026-10-26 — fusion sur e-carnet_v2-2.zip
+
+Modifiés :
+  apps/api/apps/care/views.py
+  apps/web/src/app/cgu/page.tsx
+  apps/web/src/app/confidentialite/page.tsx
+  apps/web/src/app/onboarding/patient/page.tsx
+  apps/web/src/app/professionnel/onboarding/ordonnance/page.tsx
+  apps/web/src/app/professionnel/onboarding/page.tsx
+  apps/web/src/components/EstablishmentInvitationActivation.tsx
+  apps/web/src/components/PatientCarnet.tsx
+  apps/web/src/components/PatientHomeIdentity.tsx
+  apps/web/src/components/PatientOnboarding.tsx
+  apps/web/src/components/PatientPreconsultations.tsx
+  apps/web/src/components/ProfessionalAccess.tsx
+  apps/web/src/components/ProfessionalCredentialsOnboarding.tsx
+  apps/web/src/components/ProfessionalCredentialsSettings.tsx
+  apps/web/src/components/ProfessionalDossier.tsx
+  apps/web/src/components/ProfessionalOnboarding.tsx
+  apps/web/src/components/ProfessionalVaccinations.tsx
+  apps/web/src/components/RecoverySetup.tsx
+  apps/web/src/components/help/helpContent.ts
+  apps/web/src/components/onboarding/onboarding.css
+  apps/web/src/components/patient-sections.css
+  apps/web/src/components/professional-dossier.css
+  apps/web/tests/consultation-visite.test.mjs
+  apps/web/tests/dossier-carte-onboarding-2026-10-25.test.mjs
+  apps/web/tests/emergency-card.test.mjs
+  apps/web/tests/espaces-2026-10-22.test.mjs
+  apps/web/tests/onboarding-professionnel-2026-10-24.test.mjs
+  apps/web/tests/site.test.mjs
+  apps/web/tests/ux-flows.test.mjs
+
+Nouveaux :
+  apps/api/apps/care/test_qr_documents_scope.py
+  apps/api/apps/establishments/test_member_detail.py
+  apps/web/src/components/DossierCard.tsx
+  apps/web/src/components/PatientIdentityFields.tsx
+  apps/web/src/components/ProfessionalStep3.tsx
+  apps/web/src/components/dossier-card.css
+  MODIFICATIONS-2026-10-26-dossier-carte-onboarding.md
+  MANIFESTE-2026-10-26.txt

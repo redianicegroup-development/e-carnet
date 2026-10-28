@@ -636,6 +636,16 @@ def member_avatar_url(membership):
     return profile.avatar_url or ""
 
 
+def member_age(user):
+    """Âge en années tiré du carnet patient du médecin, jamais sa date de naissance."""
+    birth = getattr(getattr(user, "patient_profile", None), "birth_date", None)
+    if not birth:
+        return None
+    today = timezone.localdate()
+    years = today.year - birth.year - ((today.month, today.day) < (birth.month, birth.day))
+    return years if 0 <= years < 130 else None
+
+
 class EstablishmentMemberAvatarView(APIView):
     """Photo d'un médecin rattaché (ou ayant demandé son rattachement), servie à l'administrateur de la structure uniquement."""
     permission_classes = [IsAuthenticated]
@@ -682,12 +692,18 @@ class EstablishmentMembershipListView(APIView):
         admin = active_administrator(request.user, establishment_id)
         if not admin:
             return Response({"success": False, "message": "Vous n’êtes pas administrateur de cet établissement actif."}, status=403)
-        items = EstablishmentMembership.objects.filter(establishment=admin.establishment).select_related("professional__user")
+        items = EstablishmentMembership.objects.filter(establishment=admin.establishment).select_related("professional__user__patient_profile")
         data = MembershipSerializer(items, many=True).data
         for item, membership in zip(data, items):
-            item["professional_name"] = f"{membership.professional.user.first_name} {membership.professional.user.last_name}".strip() or membership.professional.professional_title
-            item["professional_email"] = membership.professional.user.email
+            user = membership.professional.user
+            item["professional_name"] = f"{user.first_name} {user.last_name}".strip() or membership.professional.professional_title
+            item["professional_first_name"] = user.first_name
+            item["professional_last_name"] = user.last_name
+            item["professional_email"] = user.email
             item["professional_avatar_url"] = member_avatar_url(membership)
+            item["professional_title"] = membership.professional.professional_title
+            item["professional_specialty"] = membership.professional.specialty
+            item["professional_age"] = member_age(user)
         return Response({"success": True, "data": data})
 
 

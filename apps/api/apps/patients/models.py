@@ -1,7 +1,9 @@
+import hashlib
 import uuid
 
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 
 class PatientProfile(models.Model):
@@ -87,6 +89,64 @@ class RepresentationTransferRequest(models.Model):
             ),
         ]
         ordering = ("-created_at",)
+
+
+class TrustedContactDelegation(models.Model):
+    """Délégation adulte, distincte d'une représentation légale."""
+    RELATION_CHOICES = (
+        ("conjoint", "Conjoint·e"),
+        ("enfant_adulte", "Enfant adulte"),
+        ("parent", "Parent"),
+        ("ami", "Ami·e"),
+        ("autre", "Autre"),
+    )
+    STATUS_CHOICES = (
+        ("pending", "En attente"),
+        ("active", "Active"),
+        ("declined", "Refusée"),
+        ("revoked", "Révoquée"),
+        ("expired", "Expirée"),
+    )
+    SCOPE_EMERGENCY_CARD = "emergency_card"
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    patient = models.ForeignKey(PatientProfile, on_delete=models.PROTECT, related_name="trusted_contact_delegations")
+    delegate = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="trusted_contact_delegations")
+    invited_email = models.EmailField()
+    relationship_label = models.CharField(max_length=24, choices=RELATION_CHOICES)
+    scopes = models.JSONField(default=list)
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="pending")
+    token_hash = models.CharField(max_length=64, unique=True)
+    invitation_expires_at = models.DateTimeField()
+    requested_duration_days = models.PositiveSmallIntegerField(default=30)
+    accepted_at = models.DateTimeField(null=True, blank=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    revoked_at = models.DateTimeField(null=True, blank=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+        constraints = [
+            models.UniqueConstraint(
+                fields=("patient", "invited_email"),
+                condition=models.Q(status__in=("pending", "active")),
+                name="unique_pending_active_trusted_email",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=("patient", "status")),
+            models.Index(fields=("delegate", "status")),
+            models.Index(fields=("invited_email", "status")),
+        ]
+
+    @staticmethod
+    def digest(raw_token):
+        return hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
+
+    @property
+    def is_active_now(self):
+        return self.status == "active" and bool(self.expires_at and self.expires_at > timezone.now())
 
 
 class ClinicalDeclaration(models.Model):

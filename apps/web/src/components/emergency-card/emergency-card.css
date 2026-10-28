@@ -60,6 +60,21 @@
 /* version sans QR (page publique) : une seule colonne */
 .ecard--solo .ecard__body { grid-template-columns: minmax(0, 1fr); }
 
+/* Version soignée : bandeau en dégradé, tuiles, pastille du métier, cadre photo.
+   La carte peut grandir si son contenu est plus haut que le 16/9 (plus de texte coupé) ; les coins restent arrondis. */
+.ecard { overflow: visible; border-radius: 24px; background: linear-gradient(180deg, #fff 52%, color-mix(in srgb, var(--primary) 7%, #fff)); box-shadow: 0 20px 40px -22px rgba(23, 35, 31, .5); }
+.ecard__band { position: relative; overflow: hidden; border-radius: 23px 23px 0 0; padding-block: clamp(6px, 1.5cqi, 12px); background: linear-gradient(115deg, var(--primary), color-mix(in srgb, var(--primary) 82%, #fff)); }
+.ecard__band::after { content: ""; position: absolute; inset: -80% -6% -80% auto; width: 34%; background: radial-gradient(closest-side, rgba(255, 255, 255, .26), transparent); pointer-events: none; }
+.ecard__brand, .ecard__tag { position: relative; z-index: 1; }
+.ecard__tag { padding: 2px clamp(5px, 1.1cqi, 10px); border: 1px solid color-mix(in srgb, var(--on-primary) 40%, transparent); border-radius: 999px; }
+.ecard__role { display: inline-flex; align-items: center; gap: 4px; width: fit-content; max-width: 100%; margin: 0; padding: 2px clamp(6px, 1.2cqi, 11px); border-radius: 999px; background: color-mix(in srgb, var(--primary) 18%, #fff); color: var(--ecard-ink); font-size: clamp(.5rem, 1.2cqi, .8rem); font-weight: 800; line-height: 1.2; overflow-wrap: anywhere; }
+.ecard__role .icon { flex: 0 0 auto; color: var(--primary-text, var(--ecard-ink)); }
+.ecard__field { padding: clamp(2px, .55cqi, 5px) clamp(4px, 1cqi, 9px); border: 1px solid color-mix(in srgb, var(--primary) 16%, #e4ebe7); border-radius: 10px; background: color-mix(in srgb, var(--primary) 5%, #fff); }
+.ecard__field--blood { border-color: #f1c2b8; background: #fff1ee; }
+.ecard__field--contact { border-color: var(--ecard-line); background: #f5f8f6; }
+.ecard__photo-frame { border: 0; border-radius: 18px; box-shadow: 0 0 0 3px #fff, 0 0 0 5px color-mix(in srgb, var(--primary) 60%, #fff), 0 10px 18px -10px rgba(0, 0, 0, .45); }
+.ecard__foot { border-radius: 0 0 23px 23px; }
+
 /* conteneur étroit : la carte reste paysage, en deux colonnes compactes */
 @container ecard (max-width: 430px) {
   .ecard__body { grid-template-columns: minmax(0, 1fr) auto; }
@@ -128,3 +143,8 @@
 .ecard-qr__box svg { display: block; width: 100%; height: auto; max-width: none; }
 .ecard-qr__inner p { margin: 0; color: var(--text-muted); font-size: .82rem; line-height: 1.4; max-width: 38ch; }
 @media (prefers-reduced-motion: reduce) { .ecard-qr__panel, .ecard-qr__toggle .icon { transition: none; } }
+
+/* « Ma carte virtuelle » sur les accueils patient et professionnel */
+.virtual-card { display: grid; gap: 12px; min-width: 0; }
+.virtual-card__title { margin: 2px 0 0; font-size: 1.05rem; }
+.virtual-card .ecard-wrap { max-width: 640px; }

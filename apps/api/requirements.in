@@ -13,3 +13,4 @@ whitenoise>=6.8,<7
 reportlab>=4.2,<5
 cloudinary>=1.44,<2
 cryptography>=42,<48
+pywebpush>=2.0,<3

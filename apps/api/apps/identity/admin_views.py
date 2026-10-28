@@ -1,5 +1,10 @@
 from datetime import datetime, time, timedelta
+import os
+import time as monotonic_time
 
+from django.conf import settings
+from django.core.cache import cache
+from django.db import connection
 from django.db.models import Avg, Count, Sum
 from django.db.models.functions import TruncDate
 from django.shortcuts import get_object_or_404
@@ -25,6 +30,23 @@ class IsSuperuserOnly(BasePermission):
 
     def has_permission(self, request, view):
         return bool(request.user and request.user.is_authenticated and request.user.is_superuser)
+
+
+class IsOperationsAdmin(IsSuperuserOnly):
+    """Superadmin autorisé par e-mail pour la surveillance technique.
+
+    En local, une liste vide conserve la compatibilité avec les superadmins de test.
+    En staging/production, renseigner ECARNET_OPERATIONS_ADMIN_EMAILS pour réduire
+    le périmètre aux comptes d'exploitation explicitement autorisés.
+    """
+
+    message = "Accès réservé aux e-mails d’exploitation configurés."
+
+    def has_permission(self, request, view):
+        if not super().has_permission(request, view):
+            return False
+        allowed = getattr(settings, "ECARNET_OPERATIONS_ADMIN_EMAILS", ())
+        return not allowed or request.user.email.strip().lower() in allowed
 
 
 class AdminDashboardView(APIView):

@@ -1,10 +1,11 @@
 from django.contrib.auth import get_user_model
-from datetime import date
+from datetime import date, timedelta
 from django.test import TestCase, override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
 from apps.care.models import CareEncounter, PreConsultationRevision
 from apps.audit.models import AuditEvent
+from apps.establishments.models import Establishment, EstablishmentRecordOpening
 from apps.identity.models import AccountContext
 from .models import ClinicalDeclaration, PatientProfile, PatientRepresentation, RepresentationTransferRequest
 
@@ -34,6 +35,69 @@ class PatientOwnedDataTests(TestCase):
         self.client.force_authenticate(self.b)
         self.assertEqual(self.client.get("/api/v1/patient/declarations/").data["data"], [])
         self.assertEqual(self.client.get("/api/v1/patient/profile/").status_code, 200)
+
+    def test_record_views_are_grouped_by_establishment_and_scoped_to_active_patient(self):
+        user = User.objects.create_user(username="record-view-owner", first_name="Ada", last_name="Patient")
+        patient = PatientProfile.objects.create(user=user)
+        establishment = Establishment.objects.create(name="Clinique locale", status="active")
+        other_establishment = Establishment.objects.create(name="Clinique distante", status="active")
+        admin = User.objects.create_user(username="record-view-admin", first_name="Awa", last_name="Admin")
+        EstablishmentRecordOpening.objects.create(
+            establishment=establishment,
+            patient=patient,
+            opened_by=admin,
+            reason_category="soins_en_cours",
+            opened_at=timezone.now() - timedelta(hours=1),
+            expires_at=timezone.now(),
+        )
+        latest_opening = EstablishmentRecordOpening.objects.create(
+            establishment=establishment,
+            patient=patient,
+            opened_by=admin,
+            reason_category="autre",
+            reason_note="Contrôle administratif",
+            opened_at=timezone.now(),
+            expires_at=timezone.now() + timedelta(minutes=30),
+        )
+        EstablishmentRecordOpening.objects.create(
+            establishment=other_establishment,
+            patient=patient,
+            opened_by=admin,
+            reason_category="demande_patient",
+            opened_at=timezone.now(),
+            expires_at=timezone.now() + timedelta(minutes=30),
+        )
+
+        self.client.force_authenticate(user)
+        response = self.client.get("/api/v1/patient/record-views/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Cache-Control"], "private, no-store")
+        self.assertEqual(len(response.data["data"]), 2)
+        local = next(item for item in response.data["data"] if item["establishment_id"] == str(establishment.id))
+        self.assertEqual(local["establishment_name"], establishment.name)
+        self.assertEqual(local["openings_count"], 2)
+        self.assertEqual(local["last_opened_at"], latest_opening.opened_at)
+        self.assertEqual(local["openings"][0]["opening_id"], str(latest_opening.id))
+        latest = local["openings"][0]
+        self.assertEqual(latest["who"], "Awa Admin")
+        self.assertEqual(latest["role"], "establishment_admin")
+        self.assertEqual(latest["reason_category"], "autre")
+        self.assertEqual(latest["reason_label"], "Autre")
+        self.assertEqual(latest["reason_note"], "Contrôle administratif")
+
+        other_user = User.objects.create_user(username="record-view-other")
+        PatientProfile.objects.create(user=other_user)
+        self.client.force_authenticate(other_user)
+        isolated = self.client.get("/api/v1/patient/record-views/")
+        self.assertEqual(isolated.status_code, 200)
+        self.assertEqual(isolated.data["data"], [])
+
+    def test_record_views_requires_authentication(self):
+        response = self.client.get("/api/v1/patient/record-views/")
+
+        # DRF SessionAuthentication renvoie 403 lorsqu’aucun mécanisme d’authentification n’a pu authentifier la requête.
+        self.assertEqual(response.status_code, 403)
 
 
     def test_height_and_weight_are_singleton_declarations_in_private_and_public_card(self):

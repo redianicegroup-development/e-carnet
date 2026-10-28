@@ -14,7 +14,9 @@ import { ThemeSettingsClient } from "./ThemeSettingsClient";
 import { AccountActionRequestsSettingsClient } from "./AccountActionRequestsSettingsClient";
 import { PatientEmergencyCardSettingsClient } from "./PatientEmergencyCardSettingsClient";
 import { PatientRepresentationsSettingsClient } from "./PatientRepresentationsSettingsClient";
+import { TrustedContactDelegationClient } from "./TrustedContactDelegationClient";
 import { PatientNotifications } from "./PatientNotifications";
+import { PushNotificationToggle } from "./PushNotificationToggle";
 import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
 
 const API = "";
@@ -24,6 +26,7 @@ const sections: SettingsNavItem[] = [
   { id: "sante", title: "Informations de santé déclaratives", description: "Téléphone, adresse et couverture santé.", icon: "heart" },
   { id: "notifications", title: "Notifications", description: "Consulter les notifications de votre carnet et les marquer comme lues.", icon: "bell" },
   { id: "proches", title: "Proches et personnes représentées", description: "Gérer les dossiers distincts des enfants représentés.", icon: "users" },
+  { id: "proches-de-confiance", title: "Proches de confiance", description: "Inviter ou retirer un accès limité à la fiche d’urgence.", icon: "users" },
   { id: "compte", title: "Paramètres du compte", description: "Personnaliser l’apparence de l’application.", icon: "sparkle" },
   { id: "securite", title: "Sécurité et connexion", description: "Gérer les fournisseurs liés au compte.", icon: "lock" },
   { id: "en-savoir-plus", title: "En savoir plus", description: "Aide, informations et documents Mon E‑Carnet.", icon: "help" },
@@ -143,11 +146,16 @@ export function AccountSettingsClient() {
         <PatientHealthSettingsClient />
       </div></SettingsModal>}
 
-      {activeSection === "notifications" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><PatientNotifications /></div></SettingsModal>}
+      {activeSection === "notifications" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><PushNotificationToggle /><div className="settings-modal-section"><PatientNotifications /></div></SettingsModal>}
 
       {activeSection === "proches" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section">
         <span className="eyebrow">Représentation explicite</span>
         <PatientRepresentationsSettingsClient />
+      </div></SettingsModal>}
+
+      {activeSection === "proches-de-confiance" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section">
+        <span className="eyebrow">Délégation limitée et révocable</span>
+        <TrustedContactDelegationClient />
       </div></SettingsModal>}
 
       {activeSection === "compte" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section">

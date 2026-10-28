@@ -21,6 +21,8 @@ La V1 n’est toutefois pas finalisée :
 - callbacks et interface de liaison/déliaison OAuth présents ; credentials réels, essais avec les fournisseurs et contrôle de sécurité du parcours restent à faire ;
 - la sanitation SVG est maintenant une allowlist stricte, couverte par des tests adversariaux ;
 - l’invitation utilise le transport SMTP Django configurable ; le jeton brut n’est jamais renvoyé par l’API, même en mode debug ;
+- le proche de confiance dispose d’un compte séparé et d’une délégation à usage unique, lecture seule et limitée à la fiche d’urgence ; aucun mot de passe n’est partagé ;
+- les adressages C1 permettent un consentement granulaire patient et une inbox destinataire sans contenu avant ouverture ; C2 ajoute la portée `care_history`, les structures sources sélectionnées par le patient, la lecture temporaire en lecture seule et l’audit par établissement ; aucune copie n’est conservée en V1 ;
 - PostgreSQL 16 local et restauration isolée locale sont démontrés ; Docker Compose de bout en bout, cible PostgreSQL managée, sauvegardes planifiées, RPO/RTO opérationnel, staging, mobile/4G et validations médicales/juridiques ne sont pas démontrés.
 
 ## Contrôles et preuves disponibles (dates/contextes explicites)
@@ -77,7 +79,7 @@ Le nouveau flow est **largement présent** :
 - invitation hashée, unique et valable 48 h ; le responsable choisit son mot de passe ;
 - modèle de code médecin hashé, à usage unique et valable 48 h ; la saisie crée `pending` ;
 - acceptation/refus par l’administrateur établissement ; suspension/départ historisé ;
-- isolation entre établissements et espace établissement sans lecture clinique ;
+- isolation entre établissements et espace établissement : liste sans contenu, ouverture locale avec motif obligatoire, lecture temporaire auditée et notification patient ; aucune lecture inter-établissements par l’administrateur ;
 - pages web de console staff, activation d’invitation, gestion établissement et rattachements présentes.
 
 Limites restantes : configurer et vérifier SMTP/délivrabilité en staging, tester les permissions et durcir la console staff avant production. Ne jamais réintroduire le jeton brut dans une réponse API.
@@ -123,3 +125,7 @@ Limites restantes : configurer et vérifier SMTP/délivrabilité en staging, tes
 - [Sécurité](SECURITY.md)
 - [Flow établissement](FLOW-ETABLISSEMENT.md)
 - [Audit détaillé](RAPPORT-AUDIT-ECARNET.md)
+
+## Mise à jour A6-A7 — accès établissement local
+
+Le lot A6-A7 est aligné avec l’implémentation actuelle : l’administrateur actif consulte uniquement la liste sans contenu, ouvre un dossier local avec un motif catégorisé, puis lit pendant la fenêtre autorisée. Le patient reçoit une notification et retrouve l’ouverture dans son historique. L’ancien endpoint `patient-records/` répond `410` pour les anciennes PWA. La coalescence ne concerne que les notifications ; l’audit reste exhaustif. La validation juridique A8 demeure nécessaire avant activation production.

@@ -16,12 +16,20 @@ export type EmergencyCardView = {
   treatments: EmergencyCardItem[];
   contact_name: string;
   contact_phone: string;
+  /** Métier déclaré, seulement sur la carte d'un professionnel affichée dans l'application ou téléchargée par lui. Jamais envoyé par le serveur : la page publique du QR ne le montre pas. */
+  profession?: EmergencyCardProfession | null;
 };
+export type EmergencyCardProfession = { title: string; specialty?: string };
 
 /** Photo de profil ou avatar du titulaire : affichée à la place du QR sur la carte téléchargée. */
 export type EmergencyCardPhoto = { url?: string; initials: string };
 
 export const EMERGENCY_CARD_FOOTNOTE = "Informations déclarées par le titulaire, non vérifiées par Mon E‑Carnet. Elles ne remplacent ni un avis médical ni les services de secours.";
+
+export function emergencyCardProfessionLabel(profession?: EmergencyCardProfession | null) {
+  if (!profession?.title) return "";
+  return [profession.title, profession.specialty].filter(Boolean).join(" · ");
+}
 
 export function emergencyCardFullName(card: Pick<EmergencyCardView, "first_name" | "last_name">) {
   return [card.first_name, card.last_name].filter(Boolean).join(" ").trim();
@@ -32,13 +40,14 @@ function Chips({ items, tone }: { items: EmergencyCardItem[]; tone: "allergy" | 
 }
 
 /**
- * Carte d’urgence : identité, groupe sanguin, ville, allergies et contact à gauche, QR (scan public) ou photo du titulaire (carte téléchargée) à côté.
+ * Carte d’urgence (et carte du médecin : même carte, avec son métier) : identité, groupe sanguin, ville, allergies et contact à gauche, QR (scan public) ou photo du titulaire (carte téléchargée) à côté.
  * Elle se met en colonne toute seule quand son conteneur est étroit (container query), sans dépendre de la taille de l’écran.
  * Le même visuel est dessiné en PNG par emergency-card-image.ts.
  */
 export function EmergencyCardVisual({ card, qrUrl = "", showQr = true, photo }: { card: EmergencyCardView; qrUrl?: string; showQr?: boolean; photo?: EmergencyCardPhoto }) {
   const name = emergencyCardFullName(card);
   const hasContact = Boolean(card.contact_name || card.contact_phone);
+  const role = emergencyCardProfessionLabel(card.profession);
   return (
     <div className="ecard-wrap">
       <article className={`ecard${showQr || photo ? "" : " ecard--solo"}`} aria-label="Carte d’urgence">
@@ -52,6 +61,7 @@ export function EmergencyCardVisual({ card, qrUrl = "", showQr = true, photo }: 
         <div className="ecard__body">
           <div className="ecard__info">
             <h3 className={`ecard__name${name ? "" : " is-empty"}`}>{name || "Identité non renseignée"}</h3>
+            {role && <p className="ecard__role"><Icon name="stethoscope" size={14} />{role}</p>}
             <dl className="ecard__fields">
               <div className={`ecard__field ecard__field--blood${card.blood_group ? "" : " is-empty"}`}><dt>Groupe sanguin</dt><dd>{card.blood_group || "Non renseigné"}</dd></div>
               <div className={`ecard__field${card.city ? "" : " is-empty"}`}><dt>Ville</dt><dd>{card.city || "Non renseignée"}</dd></div>

@@ -1,21 +1,10 @@
-"use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { primeCsrf, readCsrfToken } from "../../infrastructure/api/client";
+import { OnboardingFrame } from "../../components/onboarding/OnboardingChrome";
+import { RoleChoice } from "../../components/RoleChoice";
 
-const API = "";
-export default function OnboardingPage() {
-  const router = useRouter();
-  const [message, setMessage] = useState("");
-  async function choose(role: "patient" | "professional") {
-    setMessage("Préparation de votre espace…");
-    await primeCsrf();
-    const token = readCsrfToken();
-    const response = await fetch(`${API}/api/v1/identity/contexts/select/`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json", "X-CSRFToken": token }, body: JSON.stringify({ role: "patient" }) });
-    if (!response.ok) { setMessage("Cette session n’est plus disponible. Reconnectez-vous."); return; }
-    // Un professionnel est aussi patient (un compte, deux espaces) : il remplit d'abord son carnet patient, prêt pour le jour où il changera d'espace,
-    // puis son profil professionnel (suite de l'étape 3), puis la sécurité du compte (étape 4).
-    router.push(role === "patient" ? "/onboarding/patient" : "/onboarding/patient?suite=professionnel");
-  }
-  return <main className="shell onboarding-choice"><section className="hero-page"><span className="eyebrow">Étape 2 · votre contexte</span><h1>Comment allez-vous utiliser Mon E-Carnet ?</h1><p className="lead">Un seul compte. Choisissez votre espace ; vous pourrez compléter ses informations ensuite.</p><div className="grid"><button className="card choice-card" onClick={() => choose("patient")}><span className="choice-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg></span><strong>Je suis patient</strong><span className="muted">Mon carnet personnel, mes informations et mes autorisations.</span></button><button className="card choice-card" onClick={() => choose("professional")}><span className="choice-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></span><strong>Je suis professionnel</strong><span className="muted">Mon profil, ma vérification, mon rattachement et mes patients autorisés. Vous remplissez d’abord votre carnet patient : un seul compte, deux espaces.</span></button></div><p className="status" role="status">{message}</p></section></main>;
+export const metadata = { title: "Votre espace — Mon E-Carnet", robots: { index: false, follow: false } };
+
+/* `?role=` : au retour depuis l'étape 3, le choix déjà fait reste sélectionné. */
+export default async function OnboardingPage({ searchParams }: { searchParams: Promise<{ role?: string }> }) {
+  const { role } = await searchParams;
+  return <OnboardingFrame><RoleChoice initialRole={role === "professional" ? "professional" : role === "patient" ? "patient" : undefined} /></OnboardingFrame>;
 }

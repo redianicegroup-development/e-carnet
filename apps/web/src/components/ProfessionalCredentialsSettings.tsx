@@ -5,6 +5,7 @@ import { apiDelete, apiUploadPatch } from "../infrastructure/api/client";
 import { InkCapture } from "./InkCapture";
 import { useConfirm } from "./modal/ConfirmProvider";
 import { useSealImage, type SealKind } from "./useSealImage";
+import { OnboardingNav } from "./onboarding/OnboardingChrome";
 import "./ink-capture.css";
 
 export type Credentials = {
@@ -23,6 +24,8 @@ type Props = {
   onDone?: () => void;
   /** Libellé de l'étiquette en onboarding (par défaut « Étape facultative »). */
   eyebrow?: string;
+  /** Page du bouton « Retour » en onboarding. */
+  backHref?: string;
 };
 
 const COPY: Record<SealKind, { title: string; add: string; replace: string; saved: string; none: string; removeTitle: string }> = {
@@ -52,9 +55,10 @@ function SealField({ kind, uploaded, pending, refreshKey, busy, open, onOpen, on
   </div>;
 }
 
-export function ProfessionalCredentialsSettings({ profile, onSaved, variant = "settings", onDone, eyebrow }: Props) {
+/** Brouillon des informations d'ordonnance : numéro d'ordre, cachet et signature en attente d'enregistrement.
+    Commun aux paramètres, à l'étape facultative « cachet et signature » et au bloc unique de l'étape 3 d'un professionnel. */
+export function useCredentialsDraft(profile: Credentials, onSaved: (profile: Credentials) => void) {
   const confirm = useConfirm();
-  const onboarding = variant === "onboarding";
   const [identifier, setIdentifier] = useState(profile.professional_identifier ?? "");
   const [pending, setPending] = useState<Partial<Record<SealKind, Pending>>>({});
   const [open, setOpen] = useState<SealKind | null>(null);
@@ -64,6 +68,8 @@ export function ProfessionalCredentialsSettings({ profile, onSaved, variant = "s
   const urls = useRef<string[]>([]);
 
   useEffect(() => () => { urls.current.forEach((url) => URL.revokeObjectURL(url)); }, []);
+
+  const changed = identifier.trim() !== (profile.professional_identifier ?? "") || Boolean(pending.stamp) || Boolean(pending.signature);
 
   function pick(kind: SealKind, file: File) {
     const previous = pending[kind];
@@ -104,47 +110,68 @@ export function ProfessionalCredentialsSettings({ profile, onSaved, variant = "s
     }
   }
 
+  /** Envoie le numéro d'ordre et les images choisies (espace professionnel). Lève l'erreur de l'API ; à l'appelant d'afficher le message. */
+  async function upload() {
+    const form = new FormData();
+    form.append("professional_identifier", identifier.trim());
+    if (pending.stamp) form.append("stamp", pending.stamp.file);
+    if (pending.signature) form.append("signature", pending.signature.file);
+    const saved = await apiUploadPatch<Credentials>("/api/v1/professionals/credentials/", form);
+    onSaved(saved);
+    setPending({});
+    setOpen(null);
+    setVersion((value) => value + 1);
+    return saved;
+  }
+
+  return { identifier, setIdentifier, pending, open, setOpen, version, busy, setBusy, message, setMessage, changed, pick, discard, removeSaved, upload };
+}
+export type CredentialsDraft = ReturnType<typeof useCredentialsDraft>;
+
+/** Numéro d'ordre, cachet et signature. À mettre dans un <form>. */
+export function CredentialFields({ draft, profile }: { draft: CredentialsDraft; profile: Credentials }) {
+  const { pending, open, setOpen, version, busy } = draft;
+  return <>
+    <label className="field"><span>Numéro d’ordre professionnel déclaré</span><input maxLength={120} value={draft.identifier} onChange={(event) => draft.setIdentifier(event.target.value)} placeholder="Votre numéro professionnel déclaré" disabled={busy} /></label>
+    <SealField kind="stamp" uploaded={profile.stamp_uploaded} pending={pending.stamp} refreshKey={version} busy={busy} open={open === "stamp"} onOpen={() => setOpen("stamp")} onClose={() => setOpen(null)} onPick={(file) => draft.pick("stamp", file)} onDiscard={() => draft.discard("stamp")} onRemoveSaved={() => void draft.removeSaved("stamp")} />
+    <SealField kind="signature" uploaded={profile.signature_uploaded} pending={pending.signature} refreshKey={version} busy={busy} open={open === "signature"} onOpen={() => setOpen("signature")} onClose={() => setOpen(null)} onPick={(file) => draft.pick("signature", file)} onDiscard={() => draft.discard("signature")} onRemoveSaved={() => void draft.removeSaved("signature")} />
+  </>;
+}
+
+export function ProfessionalCredentialsSettings({ profile, onSaved, variant = "settings", onDone, eyebrow, backHref = "/professionnel/onboarding" }: Props) {
+  const onboarding = variant === "onboarding";
+  const draft = useCredentialsDraft(profile, onSaved);
+  const { busy, message } = draft;
+
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-    const changed = identifier.trim() !== (profile.professional_identifier ?? "") || Boolean(pending.stamp) || Boolean(pending.signature);
-    if (!changed) {
+    if (!draft.changed) {
       if (onboarding) onDone?.();
-      else setMessage("Aucun changement à enregistrer.");
+      else draft.setMessage("Aucun changement à enregistrer.");
       return;
     }
-    setBusy(true);
-    setMessage("");
+    draft.setBusy(true);
+    draft.setMessage("");
     try {
-      const form = new FormData();
-      form.append("professional_identifier", identifier.trim());
-      if (pending.stamp) form.append("stamp", pending.stamp.file);
-      if (pending.signature) form.append("signature", pending.signature.file);
-      const saved = await apiUploadPatch<Credentials>("/api/v1/professionals/credentials/", form);
-      onSaved(saved);
-      setPending({});
-      setOpen(null);
-      setVersion((value) => value + 1);
-      setMessage("Informations d’ordonnance enregistrées.");
+      await draft.upload();
+      draft.setMessage("Informations d’ordonnance enregistrées.");
       if (onboarding) onDone?.();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Enregistrement impossible.");
+      draft.setMessage(error instanceof Error ? error.message : "Enregistrement impossible.");
     } finally {
-      setBusy(false);
+      draft.setBusy(false);
     }
   }
 
   return <form className="settings-modal-section" onSubmit={submit}>
     <span className="eyebrow">{onboarding ? eyebrow ?? "Étape facultative" : "Ordonnance"}</span>
     <h3>{onboarding ? "Votre cachet et votre signature" : "Coordonnées du prescripteur"}</h3>
-    <p className="muted">Le numéro d’ordre est imprimé sur vos ordonnances. Le cachet et la signature sont facultatifs : s’ils sont enregistrés, ils sont ajoutés automatiquement en bas de l’ordonnance quand vous signez une consultation, avec la mention « Signé électroniquement dans Mon E‑Carnet ».</p>
-    <label className="field"><span>Numéro d’ordre professionnel déclaré</span><input maxLength={120} value={identifier} onChange={(event) => setIdentifier(event.target.value)} placeholder="Votre numéro professionnel déclaré" disabled={busy} /></label>
-    <SealField kind="stamp" uploaded={profile.stamp_uploaded} pending={pending.stamp} refreshKey={version} busy={busy} open={open === "stamp"} onOpen={() => setOpen("stamp")} onClose={() => setOpen(null)} onPick={(file) => pick("stamp", file)} onDiscard={() => discard("stamp")} onRemoveSaved={() => void removeSaved("stamp")} />
-    <SealField kind="signature" uploaded={profile.signature_uploaded} pending={pending.signature} refreshKey={version} busy={busy} open={open === "signature"} onOpen={() => setOpen("signature")} onClose={() => setOpen(null)} onPick={(file) => pick("signature", file)} onDiscard={() => discard("signature")} onRemoveSaved={() => void removeSaved("signature")} />
-    <div className={onboarding ? "onboarding-skip" : "actions"}>
-      <button className="button primary" type="submit" disabled={busy}>{busy ? "Enregistrement…" : onboarding ? "Enregistrer et continuer" : "Enregistrer"}</button>
-      {onboarding && <button className="button" type="button" onClick={() => onDone?.()} disabled={busy}>Passer pour le moment</button>}
-    </div>
-    {onboarding && <p className="muted">Vous pourrez les ajouter ou les modifier plus tard dans Paramètres › Informations professionnelles.</p>}
+    <p className="muted">Le numéro d’ordre, le cachet et la signature figurent sur vos ordonnances. Le cachet et la signature sont facultatifs.</p>
+    <CredentialFields draft={draft} profile={profile} />
+    {onboarding
+      ? <OnboardingNav backHref={backHref} busy={busy} />
+      : <div className="actions"><button className="button primary" type="submit" disabled={busy}>{busy ? "Enregistrement…" : "Enregistrer"}</button></div>}
+    {onboarding && <p className="muted">Vous pourrez les ajouter plus tard dans vos paramètres.</p>}
     <p className="status" role="status" aria-live="polite">{message}</p>
   </form>;
 }

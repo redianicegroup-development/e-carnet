@@ -1,0 +1,1351 @@
+diff -ruN -x __pycache__ -x '*.pyc' -x README-CORRECTIONS.md a/.env.example b/.env.example
+--- a/.env.example	2026-10-27 05:30:50.000000000 +0000
++++ b/.env.example	2026-10-28 02:35:50.840904950 +0000
+@@ -71,3 +71,15 @@
+ 
+ # -------------------- Front (public, optionnel) --------------------
+ # NEXT_PUBLIC_CONTACT_EMAIL=contact@exemple.ci
++
++# -------------------- Web Push (optionnel) --------------------
++# Générer la paire avec : python apps/api/scripts/generate-vapid-keys.py (voir docs/WEB-PUSH.md).
++# La clé privée est un secret serveur : jamais dans le dépôt, jamais préfixée NEXT_PUBLIC_.
++# ECARNET_VAPID_PUBLIC_KEY=
++# ECARNET_VAPID_PRIVATE_KEY=
++# ECARNET_VAPID_SUBJECT=mailto:contact@votre-domaine
++# ECARNET_PUSH_SHOW_DETAILS=false        # true = nom du médicament visible sur l'écran verrouillé (déconseillé)
++# ECARNET_PUSH_TTL_SECONDS=3600
++# ECARNET_REMINDER_TIMEZONE=Africa/Abidjan
++# ECARNET_REMINDER_CATCHUP_MINUTES=10
++# ECARNET_RATE_PUSH_SUBSCRIPTION=30/hour
+diff -ruN -x __pycache__ -x '*.pyc' -x README-CORRECTIONS.md a/apps/api/apps/care/management/commands/send_due_reminders.py b/apps/api/apps/care/management/commands/send_due_reminders.py
+--- a/apps/api/apps/care/management/commands/send_due_reminders.py	1970-01-01 00:00:00.000000000 +0000
++++ b/apps/api/apps/care/management/commands/send_due_reminders.py	2026-10-28 02:33:03.520600155 +0000
+@@ -0,0 +1,108 @@
++"""Envoie les rappels de prise de médicament arrivés à échéance.
++
++À planifier toutes les 5 minutes (cron cPanel sur Hodi, ou service planifié) :
++
++    python manage.py send_due_reminders
++
++Rejouable sans risque : chaque créneau n'est traité qu'une fois (``MedicationReminderDispatch``), et la commande
++n'écrit jamais dans ``MedicationIntake`` (l'observance ne dépend que de ce que le patient confirme).
++"""
++import logging
++from datetime import date, datetime, time, timedelta, timezone as dt_timezone
++from zoneinfo import ZoneInfo
++
++from django.conf import settings
++from django.core.management.base import BaseCommand, CommandError
++from django.db import transaction
++from django.utils import timezone
++from django.utils.dateparse import parse_datetime
++
++from apps.care.models import MedicationIntake, MedicationReminder, MedicationReminderDispatch
++from apps.care.notifications import notify_patient
++
++logger = logging.getLogger(__name__)
++
++
++def parse_hhmm(value):
++    """« 08:30 » -> time(8, 30) ; None si le format est invalide (les horaires sont saisis librement côté patient)."""
++    try:
++        hour, minute = str(value).split(":")
++        parsed = time(int(hour), int(minute))
++    except (ValueError, TypeError):
++        return None
++    return parsed
++
++
++class Command(BaseCommand):
++    help = "Envoie les rappels de prise dus (idempotent ; à planifier toutes les 5 minutes)."
++
++    def add_arguments(self, parser):
++        parser.add_argument("--dry-run", action="store_true", help="Compte les rappels dus sans rien écrire ni envoyer.")
++        parser.add_argument("--now", help="Instant de référence ISO 8601 avec fuseau (tests, rejeu d'un créneau).")
++
++    def handle(self, *args, **options):
++        tz = ZoneInfo(settings.ECARNET_REMINDER_TIMEZONE)
++        now = timezone.now()
++        if options.get("now"):
++            parsed = parse_datetime(options["now"])
++            if parsed is None or timezone.is_naive(parsed):
++                raise CommandError("--now doit être un instant ISO 8601 avec fuseau, ex. 2026-10-28T08:00:00+00:00")
++            now = parsed
++        dry_run = options["dry_run"]
++
++        catchup = timedelta(minutes=settings.ECARNET_REMINDER_CATCHUP_MINUTES)
++        window_start, window_end = now - catchup, now + timedelta(minutes=1)
++        local_dates = {window_start.astimezone(tz).date(), window_end.astimezone(tz).date()}
++
++        reminders = (
++            MedicationReminder.objects.filter(active=True, patient__user__isnull=False)
++            .exclude(stock_remaining=0)
++            .select_related("patient")
++        )
++        sent = skipped = failed = 0
++        for reminder in reminders.iterator(chunk_size=500):
++            for local_date in sorted(local_dates):
++                if reminder.starts_on > local_date or (reminder.ends_on and reminder.ends_on < local_date):
++                    continue
++                for raw in reminder.times or []:
++                    at = parse_hhmm(raw)
++                    if at is None:
++                        continue
++                    slot = datetime.combine(local_date, at, tzinfo=tz).astimezone(dt_timezone.utc)
++                    if not (window_start <= slot <= window_end):
++                        continue
++                    if dry_run:
++                        sent += 1
++                        continue
++                    try:
++                        if self._dispatch_slot(reminder, slot):
++                            sent += 1
++                        else:
++                            skipped += 1
++                    except Exception:  # noqa: BLE001 - une ligne en défaut ne doit pas bloquer le lot
++                        failed += 1
++                        logger.exception("rappel: échec rappel=%s", reminder.pk)
++
++        if not dry_run:
++            MedicationReminderDispatch.objects.filter(scheduled_for__lt=now - timedelta(days=14)).delete()
++        # Aucune donnée de santé dans les journaux : uniquement des compteurs.
++        self.stdout.write(f"rappels: {sent} {'dus' if dry_run else 'envoyés'}, {skipped} déjà traités, {failed} en échec")
++
++    @staticmethod
++    def _dispatch_slot(reminder, slot):
++        """Crée la notification du créneau. Renvoie False si le créneau est déjà traité ou déjà confirmé."""
++        with transaction.atomic():
++            _, created = MedicationReminderDispatch.objects.get_or_create(reminder=reminder, scheduled_for=slot)
++            if not created:
++                return False
++            if MedicationIntake.objects.filter(reminder=reminder, scheduled_for=slot).exists():
++                return False  # le patient a déjà confirmé ce créneau
++            label = f"{reminder.name} — {reminder.dosage}" if reminder.dosage else reminder.name
++            notify_patient(
++                reminder.patient,
++                "medication.reminder",
++                "Rappel de prise",
++                label,
++                metadata={"reminder_id": str(reminder.pk), "scheduled_for": slot.isoformat()},
++            )
++        return True
+diff -ruN -x __pycache__ -x '*.pyc' -x README-CORRECTIONS.md a/apps/api/apps/care/migrations/0021_pushsubscription_medicationreminderdispatch.py b/apps/api/apps/care/migrations/0021_pushsubscription_medicationreminderdispatch.py
+--- a/apps/api/apps/care/migrations/0021_pushsubscription_medicationreminderdispatch.py	1970-01-01 00:00:00.000000000 +0000
++++ b/apps/api/apps/care/migrations/0021_pushsubscription_medicationreminderdispatch.py	2026-10-28 02:32:22.637050733 +0000
+@@ -0,0 +1,46 @@
++import uuid
++
++import django.db.models.deletion
++from django.conf import settings
++from django.db import migrations, models
++
++
++class Migration(migrations.Migration):
++
++    dependencies = [
++        ("care", "0020_accessgrant_source_establishments"),
++        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
++    ]
++
++    operations = [
++        migrations.CreateModel(
++            name="PushSubscription",
++            fields=[
++                ("id", models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
++                ("endpoint", models.URLField(max_length=600, unique=True)),
++                ("p256dh", models.CharField(max_length=200)),
++                ("auth", models.CharField(max_length=100)),
++                ("user_agent", models.CharField(blank=True, max_length=300)),
++                ("active", models.BooleanField(default=True)),
++                ("created_at", models.DateTimeField(auto_now_add=True)),
++                ("updated_at", models.DateTimeField(auto_now=True)),
++                ("user", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="push_subscriptions", to=settings.AUTH_USER_MODEL)),
++            ],
++            options={
++                "indexes": [models.Index(fields=["user", "active"], name="care_push_user_active_idx")],
++            },
++        ),
++        migrations.CreateModel(
++            name="MedicationReminderDispatch",
++            fields=[
++                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
++                ("scheduled_for", models.DateTimeField()),
++                ("created_at", models.DateTimeField(auto_now_add=True)),
++                ("reminder", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="dispatches", to="care.medicationreminder")),
++            ],
++            options={
++                "indexes": [models.Index(fields=["scheduled_for"], name="care_dispatch_slot_idx")],
++                "constraints": [models.UniqueConstraint(fields=("reminder", "scheduled_for"), name="unique_medication_dispatch_slot")],
++            },
++        ),
++    ]
+diff -ruN -x __pycache__ -x '*.pyc' -x README-CORRECTIONS.md a/apps/api/apps/care/models.py b/apps/api/apps/care/models.py
+--- a/apps/api/apps/care/models.py	2026-10-26 14:45:04.000000000 +0000
++++ b/apps/api/apps/care/models.py	2026-10-28 02:32:22.636799312 +0000
+@@ -2,6 +2,7 @@
+ import hashlib
+ from datetime import timedelta
+ 
++from django.conf import settings
+ from django.db import models, transaction
+ from django.utils import timezone
+ from apps.patients.models import PatientProfile
+@@ -387,3 +388,36 @@
+     class Meta:
+         ordering = ("-active", "name")
+         constraints = [models.UniqueConstraint(fields=("establishment", "name"), name="unique_preconsultation_template_name")]
++
++
++class PushSubscription(models.Model):
++    """Abonnement Web Push d'un navigateur ou d'un appareil (plusieurs possibles par utilisateur).
++
++    Les clés ``p256dh`` / ``auth`` servent uniquement à chiffrer la charge utile : elles ne sont jamais exposées par l'API.
++    """
++    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
++    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="push_subscriptions")
++    endpoint = models.URLField(max_length=600, unique=True)
++    p256dh = models.CharField(max_length=200)
++    auth = models.CharField(max_length=100)
++    user_agent = models.CharField(max_length=300, blank=True)
++    active = models.BooleanField(default=True)
++    created_at = models.DateTimeField(auto_now_add=True)
++    updated_at = models.DateTimeField(auto_now=True)
++
++    class Meta:
++        indexes = [models.Index(fields=("user", "active"), name="care_push_user_active_idx")]
++
++
++class MedicationReminderDispatch(models.Model):
++    """Trace d'un créneau de rappel déjà traité : rend ``send_due_reminders`` rejouable sans doublon.
++
++    Séparée de ``MedicationIntake`` pour ne pas fausser l'observance : une ligne ici ne dit rien sur la prise.
++    """
++    reminder = models.ForeignKey(MedicationReminder, on_delete=models.CASCADE, related_name="dispatches")
++    scheduled_for = models.DateTimeField()
++    created_at = models.DateTimeField(auto_now_add=True)
++
++    class Meta:
++        constraints = [models.UniqueConstraint(fields=("reminder", "scheduled_for"), name="unique_medication_dispatch_slot")]
++        indexes = [models.Index(fields=("scheduled_for",), name="care_dispatch_slot_idx")]
+diff -ruN -x __pycache__ -x '*.pyc' -x README-CORRECTIONS.md a/apps/api/apps/care/notifications.py b/apps/api/apps/care/notifications.py
+--- a/apps/api/apps/care/notifications.py	2026-10-26 08:45:18.000000000 +0000
++++ b/apps/api/apps/care/notifications.py	2026-10-28 02:32:47.945930394 +0000
+@@ -26,13 +26,15 @@
+ 
+     payload = dict(metadata or {})
+     if coalesce_key is None:
+-        return PatientNotification.objects.create(
++        notification = PatientNotification.objects.create(
+             patient=patient,
+             kind=kind,
+             title=title,
+             body=body,
+             metadata=payload,
+         )
++        _push_after_commit(patient, notification)
++        return notification
+ 
+     now = timezone.now()
+     with transaction.atomic():
+@@ -57,7 +59,7 @@
+             return existing
+ 
+         payload["count"] = 1
+-        return PatientNotification.objects.create(
++        notification = PatientNotification.objects.create(
+             patient=patient,
+             kind=kind,
+             title=title,
+@@ -65,3 +67,30 @@
+             metadata=payload,
+             coalesce_key=str(coalesce_key),
+         )
++        # Pas de push sur un événement regroupé (``existing`` plus haut) : un seul coup de sonnette par groupe.
++        _push_after_commit(patient, notification)
++        return notification
++
++
++def _push_after_commit(patient, notification):
++    """Prévient les appareils abonnés une fois la transaction validée. Ne lève jamais d'exception.
++
++    Un patient sans compte (``user`` vide) n'a personne à prévenir.
++    """
++    user_id = getattr(patient, "user_id", None)
++    if not user_id:
++        return
++    from .push import push_enabled, send_push_to_user
++
++    if not push_enabled():
++        return
++    transaction.on_commit(
++        lambda: send_push_to_user(
++            user_id,
++            kind=notification.kind,
++            title=notification.title,
++            body=notification.body,
++            url="/patient",
++            data={"notification_id": str(notification.pk)},
++        )
++    )
+diff -ruN -x __pycache__ -x '*.pyc' -x README-CORRECTIONS.md a/apps/api/apps/care/push.py b/apps/api/apps/care/push.py
+--- a/apps/api/apps/care/push.py	1970-01-01 00:00:00.000000000 +0000
++++ b/apps/api/apps/care/push.py	2026-10-28 02:35:09.396117490 +0000
+@@ -0,0 +1,139 @@
++"""Web Push (VAPID) : envoi de notifications aux navigateurs/appareils abonnés.
++
++Principes :
++- la notification dans l'application reste la source de vérité ; le push n'est qu'un « coup de sonnette » ;
++- par défaut le texte poussé est neutre (aucun nom de médicament sur l'écran verrouillé) ;
++- aucune donnée de santé dans les journaux ;
++- sans clés VAPID ou sans pywebpush, tout est silencieusement désactivé.
++"""
++import json
++import logging
++from concurrent.futures import ThreadPoolExecutor
++from urllib.parse import urlparse
++
++from django.conf import settings
++from django.db import connections
++
++try:  # pywebpush absent (pas encore verrouillé dans requirements.txt) : l'API démarre quand même, push désactivé.
++    from pywebpush import WebPushException, webpush
++except ImportError:  # pragma: no cover - dépend de l'environnement
++    webpush = None
++
++    class WebPushException(Exception):
++        def __init__(self, message, response=None):
++            super().__init__(message)
++            self.response = response
++
++logger = logging.getLogger(__name__)
++
++# Envoi sans bloquer la requête HTTP. Suffisant pour un pilote ; au-delà, voir phase2-celery/.
++_POOL = ThreadPoolExecutor(max_workers=4, thread_name_prefix="webpush")
++
++
++def vapid_public_key() -> str:
++    return getattr(settings, "ECARNET_VAPID_PUBLIC_KEY", "")
++
++
++def push_enabled() -> bool:
++    return bool(
++        webpush is not None
++        and getattr(settings, "ECARNET_VAPID_PUBLIC_KEY", "")
++        and getattr(settings, "ECARNET_VAPID_PRIVATE_KEY", "")
++        and getattr(settings, "ECARNET_VAPID_SUBJECT", "")
++    )
++
++
++def is_allowed_endpoint(endpoint: str) -> bool:
++    """Anti-SSRF : https, port standard, pas d'identifiants, et seulement les services de push connus."""
++    try:
++        parsed = urlparse(endpoint)
++        host = (parsed.hostname or "").lower()
++        port = parsed.port
++    except ValueError:
++        return False
++    if parsed.scheme != "https" or not host or parsed.username or parsed.password or port not in (None, 443):
++        return False
++    return any(host == allowed or host.endswith("." + allowed) for allowed in getattr(settings, "ECARNET_PUSH_ALLOWED_HOSTS", ()))
++
++
++def build_payload(kind: str, title: str, body: str, url: str = "/patient", data: dict | None = None) -> dict:
++    """Charge utile envoyée au service worker. Texte neutre sauf ECARNET_PUSH_SHOW_DETAILS."""
++    if not getattr(settings, "ECARNET_PUSH_SHOW_DETAILS", False):
++        if kind.startswith("medication"):
++            title, body = "Rappel de prise", "Ouvrez Mon E‑Carnet pour voir votre rappel."
++        else:
++            title, body = "Mon E‑Carnet", "Vous avez une nouvelle notification."
++    return {"title": title, "body": body, "url": url, "data": {**(data or {}), "kind": kind}}
++
++
++def _urgency(kind: str) -> str:
++    return "high" if kind.startswith("medication") else "normal"
++
++
++def deliver(user_id, payload: dict, only=None) -> list:
++    """Envoie la charge utile aux abonnements actifs de l'utilisateur.
++
++    Désactive les abonnements morts (404/410). Renvoie les identifiants (texte) des abonnements en échec transitoire :
++    ``only`` permet de ne réessayer que ceux-là, sans doubler la notification sur les appareils déjà servis.
++    """
++    from .models import PushSubscription
++
++    if not push_enabled():
++        return []
++    body = json.dumps(payload, ensure_ascii=False)
++    urgency = _urgency(payload.get("data", {}).get("kind", ""))
++    transient = []
++    subscriptions = PushSubscription.objects.filter(user_id=user_id, active=True)
++    if only is not None:
++        subscriptions = subscriptions.filter(pk__in=list(only))
++    for sub in subscriptions:
++        try:
++            webpush(
++                subscription_info={"endpoint": sub.endpoint, "keys": {"p256dh": sub.p256dh, "auth": sub.auth}},
++                data=body,
++                vapid_private_key=settings.ECARNET_VAPID_PRIVATE_KEY,
++                # Nouveau dictionnaire à chaque appel : pywebpush y écrit « aud » et « exp » et les réutiliserait
++                # pour un service de push différent (rejet 403).
++                vapid_claims={"sub": settings.ECARNET_VAPID_SUBJECT},
++                ttl=settings.ECARNET_PUSH_TTL_SECONDS,
++                headers={"Urgency": urgency},
++                timeout=10,
++            )
++        except WebPushException as exc:
++            status = getattr(getattr(exc, "response", None), "status_code", None)
++            if status in (404, 410):
++                PushSubscription.objects.filter(pk=sub.pk).update(active=False)
++            else:
++                transient.append(str(sub.pk))
++                logger.warning("push: échec transitoire abonnement=%s statut=%s", sub.pk, status)
++        except Exception:  # noqa: BLE001 - un abonnement défaillant ne doit jamais bloquer les autres
++            transient.append(str(sub.pk))
++            logger.warning("push: erreur inattendue abonnement=%s", sub.pk, exc_info=False)
++    return transient
++
++
++def _run_in_pool(user_id, payload: dict) -> None:
++    try:
++        deliver(user_id, payload)
++    finally:
++        # Un thread du pool ouvre sa propre connexion SQL, jamais refermée par le cycle requête/réponse.
++        connections.close_all()
++
++
++def _dispatch(user_id, payload: dict) -> None:
++    if getattr(settings, "ECARNET_PUSH_USE_CELERY", False):
++        from .tasks import send_webpush_task  # phase 2 : voir phase2-celery/
++
++        send_webpush_task.delay(str(user_id), payload)
++        return
++    _POOL.submit(_run_in_pool, user_id, payload)
++
++
++def send_push_to_user(user_id, kind: str, title: str, body: str, url: str = "/patient", data: dict | None = None) -> None:
++    """Point d'entrée sûr : ne lève jamais d'exception vers l'appelant."""
++    try:
++        if not push_enabled():
++            return
++        _dispatch(user_id, build_payload(kind, title, body, url, data))
++    except Exception:  # noqa: BLE001
++        logger.warning("push: envoi non planifié", exc_info=False)
+diff -ruN -x __pycache__ -x '*.pyc' -x README-CORRECTIONS.md a/apps/api/apps/care/test_push.py b/apps/api/apps/care/test_push.py
+--- a/apps/api/apps/care/test_push.py	1970-01-01 00:00:00.000000000 +0000
++++ b/apps/api/apps/care/test_push.py	2026-10-28 02:35:09.397202323 +0000
+@@ -0,0 +1,207 @@
++import json
++from unittest import mock
++
++from django.contrib.auth import get_user_model
++from django.test import TestCase, override_settings
++from rest_framework.test import APIClient
++
++from apps.patients.models import PatientProfile
++from . import push
++from .models import PushSubscription
++from .notifications import notify_patient
++
++User = get_user_model()
++SUBS_URL = "/api/v1/patient/care/push/subscriptions/"
++KEY_URL = "/api/v1/patient/care/push/vapid-key/"
++ENDPOINT = "https://fcm.googleapis.com/fcm/send/abc123"
++
++VAPID = override_settings(
++    ECARNET_VAPID_PUBLIC_KEY="BPubKey",
++    ECARNET_VAPID_PRIVATE_KEY="PrivKey",
++    ECARNET_VAPID_SUBJECT="mailto:ops@example.test",
++)
++
++
++def payload(endpoint=ENDPOINT):
++    return {"subscription": {"endpoint": endpoint, "keys": {"p256dh": "BP256", "auth": "authsecret"}}}
++
++
++class PushSubscriptionApiTests(TestCase):
++    def setUp(self):
++        self.user = User.objects.create_user(username="push-user", password="local-test-password")
++        self.client = APIClient()
++        self.client.force_authenticate(self.user)
++
++    def test_register_requires_auth(self):
++        response = APIClient().post(SUBS_URL, payload(), format="json")
++        self.assertEqual(response.status_code, 403)
++
++    def test_register_and_reactivate(self):
++        self.assertEqual(self.client.post(SUBS_URL, payload(), format="json").status_code, 200)
++        sub = PushSubscription.objects.get(user=self.user)
++        PushSubscription.objects.filter(pk=sub.pk).update(active=False)
++        self.client.post(SUBS_URL, payload(), format="json")
++        sub.refresh_from_db()
++        self.assertTrue(sub.active)
++
++    def test_rejects_endpoints_outside_known_push_services(self):
++        for bad in (
++            "http://fcm.googleapis.com/fcm/send/abc",          # pas https
++            "https://127.0.0.1/hook",                           # SSRF vers la machine
++            "https://169.254.169.254/latest/meta-data",         # SSRF métadonnées cloud
++            "https://evil.example/fcm.googleapis.com",          # domaine étranger
++            "https://fcm.googleapis.com.evil.example/x",        # faux sous-domaine
++            "https://user:pass@fcm.googleapis.com/x",           # identifiants dans l'URL
++            "https://fcm.googleapis.com:8443/x",                # port non standard
++        ):
++            with self.subTest(endpoint=bad):
++                response = self.client.post(SUBS_URL, payload(bad), format="json")
++                self.assertEqual(response.status_code, 400)
++        self.assertEqual(PushSubscription.objects.count(), 0)
++
++    def test_rejects_malformed_payloads(self):
++        for bad in ({}, {"subscription": "x"}, {"subscription": {"endpoint": ENDPOINT}}, {"subscription": {"endpoint": ENDPOINT, "keys": "x"}}):
++            with self.subTest(body=bad):
++                self.assertEqual(self.client.post(SUBS_URL, bad, format="json").status_code, 400)
++
++    def test_endpoint_moves_to_the_logged_in_user(self):
++        other = User.objects.create_user(username="push-other", password="local-test-password")
++        PushSubscription.objects.create(user=other, endpoint=ENDPOINT, p256dh="old", auth="old")
++        self.client.post(SUBS_URL, payload(), format="json")
++        self.assertEqual(PushSubscription.objects.filter(endpoint=ENDPOINT).count(), 1)
++        self.assertEqual(PushSubscription.objects.get(endpoint=ENDPOINT).user, self.user)
++
++    def test_unregister_deletes_only_own_subscription(self):
++        self.client.post(SUBS_URL, payload(), format="json")
++        other = User.objects.create_user(username="push-other2", password="local-test-password")
++        PushSubscription.objects.create(user=other, endpoint="https://fcm.googleapis.com/fcm/send/zzz", p256dh="k", auth="a")
++        self.assertEqual(self.client.delete(SUBS_URL, {"endpoint": ENDPOINT}, format="json").status_code, 200)
++        self.assertFalse(PushSubscription.objects.filter(endpoint=ENDPOINT).exists())
++        self.assertEqual(self.client.delete(SUBS_URL, {"endpoint": "https://fcm.googleapis.com/fcm/send/zzz"}, format="json").status_code, 200)
++        self.assertTrue(PushSubscription.objects.filter(user=other).exists())
++
++    def test_subscriptions_are_capped_per_user(self):
++        for index in range(12):
++            self.client.post(SUBS_URL, payload(f"https://fcm.googleapis.com/fcm/send/{index}"), format="json")
++        self.assertEqual(PushSubscription.objects.filter(user=self.user).count(), 10)
++
++    def test_vapid_key_requires_auth_and_reports_disabled_without_keys(self):
++        self.assertEqual(APIClient().get(KEY_URL).status_code, 403)
++        data = self.client.get(KEY_URL).json()["data"]
++        self.assertFalse(data["enabled"])
++        self.assertEqual(data["public_key"], "")
++
++    @VAPID
++    @mock.patch("apps.care.push.webpush", new=mock.Mock())
++    def test_vapid_key_returned_when_enabled(self):
++        data = self.client.get(KEY_URL).json()["data"]
++        self.assertTrue(data["enabled"])
++        self.assertEqual(data["public_key"], "BPubKey")
++
++
++class BuildPayloadTests(TestCase):
++    def test_medication_push_text_is_neutral_by_default(self):
++        built = push.build_payload("medication.reminder", "Rappel de prise", "Doliprane — 1 g", data={"notification_id": "n1"})
++        self.assertNotIn("Doliprane", json.dumps(built, ensure_ascii=False))
++        self.assertEqual(built["title"], "Rappel de prise")
++        self.assertEqual(built["data"], {"notification_id": "n1", "kind": "medication.reminder"})
++
++    def test_other_kinds_are_neutral_too(self):
++        built = push.build_payload("establishment_record.opened", "Votre dossier a été consulté", "Clinique X · motif : urgence")
++        self.assertNotIn("Clinique", json.dumps(built, ensure_ascii=False))
++
++    @override_settings(ECARNET_PUSH_SHOW_DETAILS=True)
++    def test_details_only_when_explicitly_enabled(self):
++        built = push.build_payload("medication.reminder", "Rappel de prise", "Doliprane — 1 g")
++        self.assertEqual(built["body"], "Doliprane — 1 g")
++
++
++@VAPID
++class DeliverTests(TestCase):
++    def setUp(self):
++        self.user = User.objects.create_user(username="push-send", password="local-test-password")
++
++    def _sub(self, endpoint=ENDPOINT):
++        return PushSubscription.objects.create(user=self.user, endpoint=endpoint, p256dh="BP256", auth="authsecret")
++
++    @mock.patch("apps.care.push.webpush")
++    def test_sends_with_ttl_urgency_and_fresh_claims_per_subscription(self, mock_webpush):
++        self._sub(); self._sub("https://updates.push.services.mozilla.com/wpush/v2/xyz")
++        built = push.build_payload("medication.reminder", "T", "B")
++        self.assertEqual(push.deliver(self.user.pk, built), [])
++        first, second = mock_webpush.call_args_list
++        self.assertIsNot(first.kwargs["vapid_claims"], second.kwargs["vapid_claims"])
++        self.assertEqual(first.kwargs["vapid_claims"], {"sub": "mailto:ops@example.test"})
++        self.assertEqual(first.kwargs["headers"], {"Urgency": "high"})
++        self.assertEqual(first.kwargs["ttl"], 3600)
++
++    @mock.patch("apps.care.push.webpush")
++    def test_dead_subscription_is_deactivated(self, mock_webpush):
++        mock_webpush.side_effect = push.WebPushException("gone", response=mock.Mock(status_code=410))
++        self._sub()
++        self.assertEqual(push.deliver(self.user.pk, push.build_payload("x", "T", "B")), [])
++        self.assertFalse(PushSubscription.objects.get().active)
++
++    @mock.patch("apps.care.push.webpush")
++    def test_transient_error_keeps_subscription_and_is_counted(self, mock_webpush):
++        mock_webpush.side_effect = push.WebPushException("timeout")
++        sub = self._sub()
++        self.assertEqual(push.deliver(self.user.pk, push.build_payload("x", "T", "B")), [str(sub.pk)])
++        self.assertTrue(PushSubscription.objects.get().active)
++
++    @mock.patch("apps.care.push.webpush")
++    def test_retry_only_targets_the_failed_subscriptions(self, mock_webpush):
++        ok, failed = self._sub(), self._sub("https://updates.push.services.mozilla.com/wpush/v2/xyz")
++        push.deliver(self.user.pk, push.build_payload("x", "T", "B"), only=[str(failed.pk)])
++        self.assertEqual(mock_webpush.call_count, 1)
++        self.assertEqual(mock_webpush.call_args.kwargs["subscription_info"]["endpoint"], failed.endpoint)
++
++    @override_settings(ECARNET_VAPID_PRIVATE_KEY="")
++    @mock.patch("apps.care.push.webpush")
++    def test_nothing_is_sent_without_vapid_keys(self, mock_webpush):
++        self._sub()
++        push.deliver(self.user.pk, push.build_payload("x", "T", "B"))
++        mock_webpush.assert_not_called()
++
++
++@VAPID
++@mock.patch("apps.care.push.webpush", new=mock.Mock())
++class NotifyPatientPushTests(TestCase):
++    def setUp(self):
++        self.user = User.objects.create_user(username="push-patient", password="local-test-password")
++        self.profile = PatientProfile.objects.create(user=self.user)
++
++    @mock.patch("apps.care.push._dispatch")
++    def test_push_is_sent_after_commit_with_neutral_text(self, dispatch):
++        with self.captureOnCommitCallbacks(execute=True):
++            notify_patient(self.profile, "medication.reminder", "Rappel de prise", "Doliprane — 1 g")
++        dispatch.assert_called_once()
++        user_id, sent = dispatch.call_args.args
++        self.assertEqual(user_id, self.user.pk)
++        self.assertNotIn("Doliprane", json.dumps(sent, ensure_ascii=False))
++        self.assertIn("notification_id", sent["data"])
++
++    @mock.patch("apps.care.push._dispatch")
++    def test_no_push_before_commit(self, dispatch):
++        with self.captureOnCommitCallbacks(execute=False):
++            notify_patient(self.profile, "notice", "Info", "Texte")
++        dispatch.assert_not_called()
++
++    @mock.patch("apps.care.push._dispatch")
++    def test_coalesced_event_does_not_push_twice(self, dispatch):
++        with self.captureOnCommitCallbacks(execute=True):
++            notify_patient(self.profile, "notice", "Info", "Texte", coalesce_key="same")
++            notify_patient(self.profile, "notice", "Info", "Texte", coalesce_key="same")
++        self.assertEqual(dispatch.call_count, 1)
++
++    @mock.patch("apps.care.push._dispatch")
++    def test_patient_without_account_is_skipped(self, dispatch):
++        with self.captureOnCommitCallbacks(execute=True):
++            notify_patient(PatientProfile.objects.create(), "notice", "Info", "Texte")
++        dispatch.assert_not_called()
++
++    @mock.patch("apps.care.push._dispatch", side_effect=RuntimeError("boom"))
++    def test_push_failure_never_breaks_the_notification(self, _dispatch):
++        with self.captureOnCommitCallbacks(execute=True):
++            notification = notify_patient(self.profile, "notice", "Info", "Texte")
++        self.assertIsNotNone(notification.pk)
+diff -ruN -x __pycache__ -x '*.pyc' -x README-CORRECTIONS.md a/apps/api/apps/care/test_reminders.py b/apps/api/apps/care/test_reminders.py
+--- a/apps/api/apps/care/test_reminders.py	1970-01-01 00:00:00.000000000 +0000
++++ b/apps/api/apps/care/test_reminders.py	2026-10-28 02:33:59.640145346 +0000
+@@ -0,0 +1,92 @@
++from datetime import date
++from io import StringIO
++
++from django.contrib.auth import get_user_model
++from django.core.management import call_command
++from django.test import TestCase, override_settings
++
++from apps.patients.models import PatientProfile
++from .models import MedicationIntake, MedicationReminder, MedicationReminderDispatch, PatientNotification
++
++User = get_user_model()
++NOW = "2026-10-28T08:00:00+00:00"  # Africa/Abidjan = UTC+0 : 08:00 local
++
++
++class SendDueRemindersTests(TestCase):
++    def setUp(self):
++        self.user = User.objects.create_user(username="rappel-patient", password="local-test-password")
++        self.profile = PatientProfile.objects.create(user=self.user)
++
++    def reminder(self, **kwargs):
++        defaults = {"patient": self.profile, "name": "Doliprane", "dosage": "1 g", "times": ["08:00"], "starts_on": date(2026, 10, 1)}
++        return MedicationReminder.objects.create(**{**defaults, **kwargs})
++
++    def run_command(self, now=NOW):
++        call_command("send_due_reminders", now=now, stdout=StringIO())
++
++    def test_due_reminder_creates_one_in_app_notification_and_never_an_intake(self):
++        self.reminder()
++        self.run_command()
++        notification = PatientNotification.objects.get()
++        self.assertEqual(notification.kind, "medication.reminder")
++        self.assertIn("Doliprane", notification.body)  # le détail reste dans l'application (authentifiée)
++        self.assertEqual(MedicationIntake.objects.count(), 0)  # l'observance n'est pas polluée
++
++    def test_rerun_is_idempotent(self):
++        self.reminder()
++        self.run_command(); self.run_command(); self.run_command("2026-10-28T08:03:00+00:00")
++        self.assertEqual(PatientNotification.objects.count(), 1)
++        self.assertEqual(MedicationReminderDispatch.objects.count(), 1)
++
++    def test_catch_up_window(self):
++        self.reminder()
++        self.run_command("2026-10-28T08:07:00+00:00")   # exécution en retard de 7 min : rattrapée
++        self.assertEqual(PatientNotification.objects.count(), 1)
++        other = self.reminder(name="Autre", times=["07:30"])
++        self.run_command()                                # 30 min de retard : trop tard, on n'envoie pas
++        self.assertFalse(PatientNotification.objects.filter(metadata__reminder_id=str(other.pk)).exists())
++
++    def test_not_due_yet_or_outside_dates_or_inactive_or_out_of_stock(self):
++        self.reminder(times=["09:00"])
++        self.reminder(name="Futur", starts_on=date(2026, 11, 1))
++        self.reminder(name="Fini", ends_on=date(2026, 10, 27))
++        self.reminder(name="Inactif", active=False)
++        self.reminder(name="Épuisé", stock_remaining=0)
++        self.run_command()
++        self.assertEqual(PatientNotification.objects.count(), 0)
++
++    def test_timezone_is_configurable_and_global_time_zone_untouched(self):
++        self.reminder()
++        with override_settings(ECARNET_REMINDER_TIMEZONE="Europe/Paris"):
++            self.run_command()                            # 08:00 UTC = 09:00 Paris : pas dû
++            self.assertEqual(PatientNotification.objects.count(), 0)
++            self.run_command("2026-10-28T07:00:00+00:00") # 08:00 Paris (hiver, UTC+1) : dû
++            self.assertEqual(PatientNotification.objects.count(), 1)
++        from django.conf import settings
++        self.assertEqual(settings.TIME_ZONE, "UTC")
++
++    def test_slot_crossing_midnight(self):
++        self.reminder(times=["23:58"])
++        self.run_command("2026-10-29T00:03:00+00:00")     # le créneau de la veille est rattrapé
++        self.assertEqual(PatientNotification.objects.count(), 1)
++
++    def test_already_confirmed_slot_is_not_notified(self):
++        reminder = self.reminder()
++        from django.utils.dateparse import parse_datetime
++        MedicationIntake.objects.create(reminder=reminder, scheduled_for=parse_datetime(NOW), status="taken")
++        self.run_command()
++        self.assertEqual(PatientNotification.objects.count(), 0)
++
++    def test_invalid_time_strings_and_patients_without_account_are_ignored(self):
++        self.reminder(times=["ab:cd", "99:99", "08:00"])
++        orphan = PatientProfile.objects.create()
++        MedicationReminder.objects.create(patient=orphan, name="Sans compte", times=["08:00"], starts_on=date(2026, 10, 1))
++        self.run_command()
++        self.assertEqual(PatientNotification.objects.count(), 1)
++
++    def test_dry_run_writes_nothing(self):
++        self.reminder()
++        call_command("send_due_reminders", now=NOW, dry_run=True, stdout=StringIO())
++        self.assertEqual(PatientNotification.objects.count(), 0)
++        self.assertEqual(MedicationReminderDispatch.objects.count(), 0)
++
+diff -ruN -x __pycache__ -x '*.pyc' -x README-CORRECTIONS.md a/apps/api/apps/care/urls.py b/apps/api/apps/care/urls.py
+--- a/apps/api/apps/care/urls.py	2026-10-26 14:47:30.000000000 +0000
++++ b/apps/api/apps/care/urls.py	2026-10-28 02:32:47.947661718 +0000
+@@ -21,6 +21,8 @@
+     PatientMedicationReminderListCreateView,
+     PatientNotificationInboxView,
+     PatientNotificationListView,
++    PushSubscriptionView,
++    VapidPublicKeyView,
+     PatientPrescriptionDownloadView,
+     PatientVaccinationListCreateView,
+     ProfessionalAccessGrantListCreateView,
+@@ -55,6 +57,8 @@
+     path("medication-reminders/<uuid:reminder_id>/intakes/", PatientMedicationIntakeCreateView.as_view()),
+     path("notifications/", PatientNotificationListView.as_view()),
+     path("notifications/inbox/", PatientNotificationInboxView.as_view()),
++    path("push/vapid-key/", VapidPublicKeyView.as_view(), name="push-vapid-key"),
++    path("push/subscriptions/", PushSubscriptionView.as_view(), name="push-subscriptions"),
+     path("notifications/<uuid:pk>/read/", PatientNotificationListView.as_view()),
+     path("appointments/", PatientAppointmentListCreateView.as_view()),
+     path("appointments/<uuid:pk>/", PatientAppointmentDetailView.as_view()),
+diff -ruN -x __pycache__ -x '*.pyc' -x README-CORRECTIONS.md a/apps/api/apps/care/views.py b/apps/api/apps/care/views.py
+--- a/apps/api/apps/care/views.py	2026-10-26 21:13:02.000000000 +0000
++++ b/apps/api/apps/care/views.py	2026-10-28 02:32:47.947220067 +0000
+@@ -21,11 +21,12 @@
+ from apps.audit.models import AuditEvent
+ from apps.audit.services import record_event
+ from apps.cloudinary_storage import CLOUDINARY_CONFIGURED, destroy as cloudinary_destroy, extension_from_name, signed_download, upload as cloudinary_upload
+-from .models import AccessGrant, Appointment, CareEncounter, Consultation, ExamRequest, FollowUpPlan, FollowUpPlanItem, HealthMeasurement, MedicalDocument, MedicationIntake, MedicationReminder, PatientNotification, PreconsultationTemplate, Vaccination
++from .models import AccessGrant, Appointment, CareEncounter, Consultation, ExamRequest, FollowUpPlan, FollowUpPlanItem, HealthMeasurement, MedicalDocument, MedicationIntake, MedicationReminder, PatientNotification, PreconsultationTemplate, PushSubscription, Vaccination
+ from .pdf_compression import compress_pdf_lossless
+ from .serializers import AccessGrantSerializer, AppointmentSerializer, CareEncounterSerializer, ConsultationSerializer, FollowUpPlanSerializer, HealthMeasurementSerializer, MedicalDocumentSerializer, MedicationIntakeSerializer, MedicationReminderSerializer, PatientNotificationSerializer, PreconsultationTemplateSerializer, ProfessionalAccessGrantSerializer, ProfessionalConsultationCreateSerializer, VaccinationSerializer
+ from .services import QR_TOKEN_TTL_SECONDS, SelfAccessRefused, create_patient_qr_token, create_professional_grant, is_own_patient_file, require_scope
+ from .notifications import notify_patient
++from .push import is_allowed_endpoint, push_enabled, vapid_public_key
+ from .consultation_services import validate_consultation
+ 
+ 
+@@ -1066,3 +1067,54 @@
+             metadata={"vaccination_id": str(item.id)},
+         )
+         return Response({"success": True, "data": VaccinationSerializer(item).data})
++
++
++class VapidPublicKeyView(APIView):
++    """Clé publique VAPID dont le navigateur a besoin pour s'abonner. ``enabled`` est faux tant que le push n'est pas configuré."""
++    permission_classes = [IsAuthenticated]
++
++    def get(self, request):
++        return Response({"success": True, "data": {"enabled": push_enabled(), "public_key": vapid_public_key() if push_enabled() else ""}})
++
++
++class PushSubscriptionView(APIView):
++    """Enregistre ou retire l'abonnement Web Push de l'appareil courant."""
++    permission_classes = [IsAuthenticated]
++    throttle_classes = [WriteScopedThrottle]
++    throttle_scope = "push_subscription"
++    MAX_PER_USER = 10
++
++    def post(self, request):
++        sub = request.data.get("subscription") if hasattr(request.data, "get") else None
++        keys = sub.get("keys") if isinstance(sub, dict) else None
++        endpoint = sub.get("endpoint") if isinstance(sub, dict) else None
++        p256dh = keys.get("p256dh") if isinstance(keys, dict) else None
++        auth = keys.get("auth") if isinstance(keys, dict) else None
++        values = (endpoint, p256dh, auth)
++        if not all(isinstance(value, str) and value for value in values) or len(endpoint) > 600 or len(p256dh) > 200 or len(auth) > 100:
++            return Response({"success": False, "message": "Abonnement invalide."}, status=status.HTTP_400_BAD_REQUEST)
++        if not is_allowed_endpoint(endpoint):
++            return Response({"success": False, "message": "Ce service de notification n’est pas pris en charge."}, status=status.HTTP_400_BAD_REQUEST)
++        with transaction.atomic():
++            # Un appareil partagé qui change de compte : l'abonnement passe au compte connecté.
++            PushSubscription.objects.filter(endpoint=endpoint).exclude(user=request.user).delete()
++            PushSubscription.objects.update_or_create(
++                endpoint=endpoint,
++                defaults={
++                    "user": request.user,
++                    "p256dh": p256dh,
++                    "auth": auth,
++                    "user_agent": request.META.get("HTTP_USER_AGENT", "")[:300],
++                    "active": True,
++                },
++            )
++            # Plafond par utilisateur : on garde les plus récents.
++            stale = PushSubscription.objects.filter(user=request.user).order_by("-updated_at").values_list("pk", flat=True)[self.MAX_PER_USER:]
++            PushSubscription.objects.filter(pk__in=list(stale)).delete()
++        return Response({"success": True})
++
++    def delete(self, request):
++        endpoint = request.data.get("endpoint") if hasattr(request.data, "get") else None
++        if isinstance(endpoint, str) and endpoint:
++            PushSubscription.objects.filter(user=request.user, endpoint=endpoint).delete()
++        return Response({"success": True})
+diff -ruN -x __pycache__ -x '*.pyc' -x README-CORRECTIONS.md a/apps/api/config/settings.py b/apps/api/config/settings.py
+--- a/apps/api/config/settings.py	2026-10-27 05:30:30.000000000 +0000
++++ b/apps/api/config/settings.py	2026-10-28 02:32:22.638029446 +0000
+@@ -76,6 +76,7 @@
+         "contact": os.environ.get("ECARNET_RATE_CONTACT", "5/hour"),
+         "documents_upload": os.environ.get("ECARNET_RATE_DOCUMENTS_UPLOAD", "20/hour"),
+         "establishment_record_open": os.environ.get("ECARNET_RATE_ESTABLISHMENT_RECORD_OPEN", "30/hour"),
++        "push_subscription": os.environ.get("ECARNET_RATE_PUSH_SUBSCRIPTION", "30/hour"),
+     },
+     # Nombre de proxys de confiance devant l'API (Render, Vercel rewrite…). Mal réglé, l'IP client est falsifiable.
+     "NUM_PROXIES": int(os.environ["DRF_NUM_PROXIES"]) if os.environ.get("DRF_NUM_PROXIES", "").isdigit() else (None if DEBUG else 1),
+@@ -96,6 +97,31 @@
+     if email.strip()
+ )
+ ECARNET_MONITOR_WEBHOOK_SECRET = os.environ.get("ECARNET_MONITOR_WEBHOOK_SECRET", "")
++
++# --- Web Push (VAPID) ---------------------------------------------------------------------------------------------
++# Sans clés, le push est simplement désactivé : les notifications dans l'application restent la source de vérité.
++# Générer une paire : voir docs/WEB-PUSH.md. La clé privée ne doit jamais quitter le serveur.
++ECARNET_VAPID_PUBLIC_KEY = os.environ.get("ECARNET_VAPID_PUBLIC_KEY", "")
++ECARNET_VAPID_PRIVATE_KEY = os.environ.get("ECARNET_VAPID_PRIVATE_KEY", "")
++ECARNET_VAPID_SUBJECT = os.environ.get("ECARNET_VAPID_SUBJECT", "")  # ex. mailto:contact@votre-domaine
++# Santé : par défaut, la notification affichée sur l'écran verrouillé ne contient ni nom de médicament ni dose.
++ECARNET_PUSH_SHOW_DETAILS = os.environ.get("ECARNET_PUSH_SHOW_DETAILS", "").lower() in {"1", "true", "yes"}
++# Durée pendant laquelle le service de push garde un message si l'appareil est éteint ou hors ligne (secondes).
++ECARNET_PUSH_TTL_SECONDS = int(os.environ["ECARNET_PUSH_TTL_SECONDS"]) if os.environ.get("ECARNET_PUSH_TTL_SECONDS", "").isdigit() else 3600
++# Anti-SSRF : le serveur n'appelle que les services de push connus (le navigateur fournit l'adresse, pas nous).
++ECARNET_PUSH_ALLOWED_HOSTS = tuple(
++    host.strip().lower()
++    for host in os.environ.get(
++        "ECARNET_PUSH_ALLOWED_HOSTS",
++        "fcm.googleapis.com,android.googleapis.com,updates.push.services.mozilla.com,push.services.mozilla.com,web.push.apple.com,push.apple.com,notify.windows.com",
++    ).split(",")
++    if host.strip()
++)
++# Rappels de prise : fuseau dans lequel les horaires « HH:MM » saisis par les patients sont interprétés.
++# TIME_ZONE reste UTC : seul send_due_reminders lit ce réglage.
++ECARNET_REMINDER_TIMEZONE = os.environ.get("ECARNET_REMINDER_TIMEZONE", "Africa/Abidjan")
++# Rattrapage : si une exécution du planificateur est manquée, les rappels dus depuis moins de N minutes partent encore.
++ECARNET_REMINDER_CATCHUP_MINUTES = int(os.environ["ECARNET_REMINDER_CATCHUP_MINUTES"]) if os.environ.get("ECARNET_REMINDER_CATCHUP_MINUTES", "").isdigit() else 10
+ CORS_ALLOWED_ORIGINS = [origin.strip() for origin in os.environ.get("CORS_ALLOWED_ORIGINS", WEB_ORIGIN).split(",") if origin.strip()]
+ CORS_ALLOW_CREDENTIALS = True
+ CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in os.environ.get("CSRF_TRUSTED_ORIGINS", ",".join(CORS_ALLOWED_ORIGINS)).split(",") if origin.strip()]
+diff -ruN -x __pycache__ -x '*.pyc' -x README-CORRECTIONS.md a/apps/api/requirements.in b/apps/api/requirements.in
+--- a/apps/api/requirements.in	2026-10-24 20:56:40.000000000 +0000
++++ b/apps/api/requirements.in	2026-10-28 02:32:22.637413860 +0000
+@@ -13,3 +13,4 @@
+ reportlab>=4.2,<5
+ cloudinary>=1.44,<2
+ cryptography>=42,<48
++pywebpush>=2.0,<3
+diff -ruN -x __pycache__ -x '*.pyc' -x README-CORRECTIONS.md a/apps/api/scripts/generate-vapid-keys.py b/apps/api/scripts/generate-vapid-keys.py
+--- a/apps/api/scripts/generate-vapid-keys.py	1970-01-01 00:00:00.000000000 +0000
++++ b/apps/api/scripts/generate-vapid-keys.py	2026-10-28 02:35:17.107951666 +0000
+@@ -0,0 +1,24 @@
++"""Génère une paire de clés VAPID pour le Web Push (aucune dépendance en plus de « cryptography »).
++
++    python apps/api/scripts/generate-vapid-keys.py
++
++À faire UNE fois par environnement. La clé privée va dans ECARNET_VAPID_PRIVATE_KEY (secret, jamais dans le dépôt) ;
++la clé publique dans ECARNET_VAPID_PUBLIC_KEY. Changer la paire plus tard désabonne tous les appareils.
++"""
++import base64
++
++from cryptography.hazmat.primitives import serialization
++from cryptography.hazmat.primitives.asymmetric import ec
++
++
++def b64url(raw: bytes) -> str:
++    return base64.urlsafe_b64encode(raw).rstrip(b"=").decode()
++
++
++key = ec.generate_private_key(ec.SECP256R1())
++private_raw = key.private_numbers().private_value.to_bytes(32, "big")
++public_raw = key.public_key().public_bytes(serialization.Encoding.X962, serialization.PublicFormat.UncompressedPoint)
++
++print(f"ECARNET_VAPID_PUBLIC_KEY={b64url(public_raw)}")
++print(f"ECARNET_VAPID_PRIVATE_KEY={b64url(private_raw)}")
++print("ECARNET_VAPID_SUBJECT=mailto:contact@votre-domaine")
+diff -ruN -x __pycache__ -x '*.pyc' -x README-CORRECTIONS.md a/apps/web/public/sw.js b/apps/web/public/sw.js
+--- a/apps/web/public/sw.js	2026-10-24 20:56:40.000000000 +0000
++++ b/apps/web/public/sw.js	2026-10-28 02:33:59.719819673 +0000
+@@ -17,3 +17,34 @@
+   if (request.method !== "GET" || url.origin !== self.location.origin || url.pathname.startsWith("/api/") || url.pathname.startsWith("/patient") || url.pathname.startsWith("/professionnel") || url.pathname.startsWith("/onboarding") || url.pathname.startsWith("/connexion") || url.pathname.startsWith("/inscription")) return;
+   event.respondWith(fetch(request).catch(() => caches.match(request).then((cached) => cached || caches.match("/"))));
+ });
++
++/* ---------- Web Push ----------
++   Le texte affiché vient du serveur et reste neutre (aucun nom de médicament sur l’écran verrouillé).
++   Le détail est dans l’application, derrière la connexion. */
++self.addEventListener("push", (event) => {
++  let payload = {};
++  try { payload = event.data ? event.data.json() : {}; } catch { payload = {}; }
++  const data = payload.data || {};
++  const url = typeof payload.url === "string" && payload.url.startsWith("/") && !payload.url.startsWith("//") ? payload.url : "/patient";
++  event.waitUntil(self.registration.showNotification(payload.title || "Mon E‑Carnet", {
++    body: payload.body || "Vous avez une nouvelle notification.",
++    icon: "/favicon.ico",
++    // Un tag par notification : deux rappels à la même heure restent deux notifications (un tag par « kind » les écraserait).
++    tag: data.notification_id || `ecarnet-${Date.now()}`,
++    data: { url },
++  }));
++});
++
++self.addEventListener("notificationclick", (event) => {
++  event.notification.close();
++  const url = (event.notification.data && event.notification.data.url) || "/patient";
++  event.waitUntil((async () => {
++    const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
++    for (const client of windows) {
++      if (new URL(client.url).origin === self.location.origin && "focus" in client) {
++        try { await client.focus(); if ("navigate" in client) await client.navigate(url); return; } catch { /* repli : nouvelle fenêtre */ }
++      }
++    }
++    await self.clients.openWindow(url);
++  })());
++});
+diff -ruN -x __pycache__ -x '*.pyc' -x README-CORRECTIONS.md a/apps/web/src/components/AccountSettingsClient.tsx b/apps/web/src/components/AccountSettingsClient.tsx
+--- a/apps/web/src/components/AccountSettingsClient.tsx	2026-10-26 13:59:50.000000000 +0000
++++ b/apps/web/src/components/AccountSettingsClient.tsx	2026-10-28 02:34:21.445978334 +0000
+@@ -16,6 +16,7 @@
+ import { PatientRepresentationsSettingsClient } from "./PatientRepresentationsSettingsClient";
+ import { TrustedContactDelegationClient } from "./TrustedContactDelegationClient";
+ import { PatientNotifications } from "./PatientNotifications";
++import { PushNotificationToggle } from "./PushNotificationToggle";
+ import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
+ 
+ const API = "";
+@@ -145,7 +146,7 @@
+         <PatientHealthSettingsClient />
+       </div></SettingsModal>}
+ 
+-      {activeSection === "notifications" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><PatientNotifications /></div></SettingsModal>}
++      {activeSection === "notifications" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><PushNotificationToggle /><div className="settings-modal-section"><PatientNotifications /></div></SettingsModal>}
+ 
+       {activeSection === "proches" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section">
+         <span className="eyebrow">Représentation explicite</span>
+diff -ruN -x __pycache__ -x '*.pyc' -x README-CORRECTIONS.md a/apps/web/src/components/PushNotificationToggle.tsx b/apps/web/src/components/PushNotificationToggle.tsx
+--- a/apps/web/src/components/PushNotificationToggle.tsx	1970-01-01 00:00:00.000000000 +0000
++++ b/apps/web/src/components/PushNotificationToggle.tsx	2026-10-28 02:34:21.445395067 +0000
+@@ -0,0 +1,61 @@
++"use client";
++
++import { useEffect, useState } from "react";
++import { currentPushSubscription, pushSupport, subscribeToPush, unsubscribeFromPush } from "../lib/push";
++
++type State = "loading" | "off" | "on" | "denied" | "unsupported" | "ios-install" | "unavailable" | "error";
++
++const MESSAGES: Partial<Record<State, string>> = {
++  denied: "Les notifications sont bloquées pour ce site. Autorisez-les dans les réglages de votre navigateur, puis réessayez.",
++  "ios-install": "Sur iPhone et iPad, ajoutez d’abord Mon E‑Carnet à l’écran d’accueil (Partager, puis « Sur l’écran d’accueil »), puis rouvrez l’application depuis cette icône pour activer les notifications.",
++  unsupported: "Ce navigateur ne permet pas les notifications. Vos rappels restent visibles dans l’application.",
++  unavailable: "Les notifications sur l’appareil ne sont pas encore disponibles. Vos rappels restent visibles dans l’application.",
++  error: "Activation impossible pour le moment. Réessayez dans un instant.",
++};
++
++export function PushNotificationToggle() {
++  const [state, setState] = useState<State>("loading");
++
++  useEffect(() => {
++    let active = true;
++    (async () => {
++      const support = pushSupport();
++      if (support !== "ok") return active && setState(support === "ios-install" ? "ios-install" : "unsupported");
++      if (Notification.permission === "denied") return active && setState("denied");
++      const subscription = await currentPushSubscription().catch(() => null);
++      if (active) setState(subscription && Notification.permission === "granted" ? "on" : "off");
++    })();
++    return () => { active = false; };
++  }, []);
++
++  async function toggle() {
++    if (state === "on") {
++      setState("loading");
++      await unsubscribeFromPush();
++      setState("off");
++      return;
++    }
++    setState("loading");
++    const result = await subscribeToPush(); // directement dans le clic : exigé par iOS
++    setState(result === "subscribed" ? "on" : result === "denied" ? "denied" : result === "unavailable" ? "unavailable" : "error");
++  }
++
++  const canToggle = state === "off" || state === "on" || state === "error" || state === "loading";
++  return (
++    <div className="settings-modal-section">
++      <span className="eyebrow">Sur cet appareil</span>
++      {canToggle && (
++        <div className="actions">
++          <button type="button" className={state === "on" ? "button ghost" : "button primary"} disabled={state === "loading"} aria-pressed={state === "on"} onClick={toggle}>
++            {state === "loading" ? "Un instant…" : state === "on" ? "Désactiver les notifications" : "Activer les notifications"}
++          </button>
++        </div>
++      )}
++      <p className="muted" role="status">
++        {MESSAGES[state] ?? (state === "on"
++          ? "Activées sur cet appareil. Par confidentialité, la notification n’affiche jamais le nom du médicament : le détail est dans l’application."
++          : "Recevez un signal sur cet appareil quand un rappel arrive, même si l’application est fermée.")}
++      </p>
++    </div>
++  );
++}
+diff -ruN -x __pycache__ -x '*.pyc' -x README-CORRECTIONS.md a/apps/web/src/lib/push.ts b/apps/web/src/lib/push.ts
+--- a/apps/web/src/lib/push.ts	1970-01-01 00:00:00.000000000 +0000
++++ b/apps/web/src/lib/push.ts	2026-10-28 02:34:21.445140386 +0000
+@@ -0,0 +1,79 @@
++import { API_URL, primeCsrf, readCsrfToken } from "../infrastructure/api/client";
++
++const BASE = `${API_URL}/api/v1/patient/care/push`;
++
++export type PushSupport = "ok" | "ios-install" | "unsupported";
++export type PushResult = "subscribed" | "denied" | "unavailable" | "error";
++
++function isIos(): boolean {
++  return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
++}
++
++function isStandalone(): boolean {
++  return window.matchMedia("(display-mode: standalone)").matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
++}
++
++/** Sur iPhone/iPad, le Web Push n’existe que si l’application est ajoutée à l’écran d’accueil (iOS 16.4 minimum). */
++export function pushSupport(): PushSupport {
++  if (typeof window === "undefined") return "unsupported";
++  if (isIos() && !isStandalone()) return "ios-install";
++  if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) return "unsupported";
++  return "ok";
++}
++
++/** La clé VAPID est en base64 « URL-safe » : atob() seul la rejette (caractères - et _). */
++export function urlBase64ToUint8Array(value: string): Uint8Array<ArrayBuffer> {
++  const padded = value + "=".repeat((4 - (value.length % 4)) % 4);
++  const raw = atob(padded.replace(/-/g, "+").replace(/_/g, "/"));
++  const bytes = new Uint8Array(new ArrayBuffer(raw.length));
++  for (let i = 0; i < raw.length; i += 1) bytes[i] = raw.charCodeAt(i);
++  return bytes;
++}
++
++async function activeRegistration(): Promise<ServiceWorkerRegistration> {
++  await navigator.serviceWorker.register("/sw.js", { scope: "/" });
++  return navigator.serviceWorker.ready; // pushManager.subscribe exige un service worker actif
++}
++
++export async function currentPushSubscription(): Promise<PushSubscription | null> {
++  const registration = await navigator.serviceWorker.getRegistration();
++  return (await registration?.pushManager.getSubscription()) ?? null;
++}
++
++async function sendToServer(method: "POST" | "DELETE", body: unknown): Promise<boolean> {
++  const csrf = await primeCsrf();
++  if (!csrf.ok) return false;
++  const response = await fetch(`${BASE}/subscriptions/`, {
++    method,
++    headers: { "Content-Type": "application/json", "X-CSRFToken": readCsrfToken() },
++    credentials: "include",
++    body: JSON.stringify(body),
++  });
++  return response.ok;
++}
++
++/** À appeler directement depuis un clic : iOS exige que la demande de permission soit dans le geste de l’utilisateur. */
++export async function subscribeToPush(): Promise<PushResult> {
++  try {
++    const permission = await Notification.requestPermission();
++    if (permission !== "granted") return "denied";
++    const keyResponse = await fetch(`${BASE}/vapid-key/`, { credentials: "include", cache: "no-store" });
++    const key = (await keyResponse.json().catch(() => null))?.data as { enabled?: boolean; public_key?: string } | undefined;
++    if (!keyResponse.ok || !key?.enabled || !key.public_key) return "unavailable";
++    const registration = await activeRegistration();
++    const subscription = (await registration.pushManager.getSubscription())
++      ?? (await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(key.public_key) }));
++    if (await sendToServer("POST", { subscription: subscription.toJSON() })) return "subscribed";
++    await subscription.unsubscribe(); // le serveur a refusé : on ne garde pas un abonnement orphelin
++    return "error";
++  } catch {
++    return "error";
++  }
++}
++
++export async function unsubscribeFromPush(): Promise<void> {
++  const subscription = await currentPushSubscription();
++  if (!subscription) return;
++  await sendToServer("DELETE", { endpoint: subscription.endpoint }).catch(() => false);
++  await subscription.unsubscribe();
++}
+diff -ruN -x __pycache__ -x '*.pyc' -x README-CORRECTIONS.md a/docs/WEB-PUSH.md b/docs/WEB-PUSH.md
+--- a/docs/WEB-PUSH.md	1970-01-01 00:00:00.000000000 +0000
++++ b/docs/WEB-PUSH.md	2026-10-28 02:36:39.135563230 +0000
+@@ -0,0 +1,40 @@
++# Web Push — exploitation
++
++Le Web Push permet d'afficher un rappel sur l'appareil du patient même quand l'application est fermée. La notification
++**dans l'application** reste la source de vérité : le push n'est qu'un signal. Sans clés VAPID, tout est désactivé et
++l'API fonctionne normalement.
++
++## Activer (une fois par environnement)
++
++1. `make lock` (ajoute `pywebpush` au `requirements.txt` verrouillé), puis `python manage.py migrate` (migration `0021`).
++2. `python apps/api/scripts/generate-vapid-keys.py` → renseigner `ECARNET_VAPID_PUBLIC_KEY`, `ECARNET_VAPID_PRIVATE_KEY`
++   (secret) et `ECARNET_VAPID_SUBJECT` (`mailto:` d'un contact réel). Ne jamais changer la paire ensuite : tous les appareils
++   seraient désabonnés.
++3. Planifier toutes les 5 minutes : `python manage.py send_due_reminders` (voir « Planification »).
++4. Dans l'application : Paramètres → Notifications → « Activer les notifications ».
++
++## Planification
++
++| Hébergement | Comment |
++|---|---|
++| Hodi (cPanel) | Tâche cron : `*/5 * * * * cd /home/UTILISATEUR/ecarnet/apps/api && /home/UTILISATEUR/venv/bin/python manage.py send_due_reminders >> /home/UTILISATEUR/logs/reminders.log 2>&1` — **à confirmer par écrit avec Hodi** (Python + cron autorisés sur l'offre). |
++| Render Free | **Impossible** : cron et workers ne sont pas gratuits, et le service s'endort après 15 min. Les rappels in-app fonctionnent, pas les rappels planifiés. |
++| Render payant | Service « Cron Job » toutes les 5 minutes avec la même commande. |
++
++La commande est **rejouable** : un créneau n'est traité qu'une fois, un retard de moins de 10 minutes est rattrapé
++(`ECARNET_REMINDER_CATCHUP_MINUTES`), et elle n'écrit jamais dans `MedicationIntake`. Test à blanc :
++`python manage.py send_due_reminders --dry-run`.
++
++## Décisions de confidentialité (santé)
++
++- Le texte poussé est **neutre** : « Rappel de prise — Ouvrez Mon E‑Carnet pour voir votre rappel ». Aucun nom de médicament
++  ni dose sur l'écran verrouillé (`ECARNET_PUSH_SHOW_DETAILS=false` par défaut ; ne l'activez qu'après validation juridique).
++- Aucune donnée de santé dans les journaux (identifiants techniques et compteurs seulement).
++- Le serveur n'appelle que les services de push connus (Google, Mozilla, Apple, Microsoft) : adresse fournie par le
++  navigateur filtrée contre le SSRF (`ECARNET_PUSH_ALLOWED_HOSTS`).
++
++## Limites connues
++
++- **iPhone / iPad** : Web Push seulement si l'application est ajoutée à l'écran d'accueil (iOS 16.4+). L'interface l'explique.
++- Un appareil partagé continue de recevoir les rappels du dernier compte abonné tant qu'il n'est pas désabonné.
++- Si l'appareil est éteint plus d'une heure (`ECARNET_PUSH_TTL_SECONDS`), le message expire : le rappel reste dans l'application.
+diff -ruN -x __pycache__ -x '*.pyc' -x README-CORRECTIONS.md a/ops/loadtest/k6-ecarnet.js b/ops/loadtest/k6-ecarnet.js
+--- a/ops/loadtest/k6-ecarnet.js	1970-01-01 00:00:00.000000000 +0000
++++ b/ops/loadtest/k6-ecarnet.js	2026-10-28 02:35:34.590589934 +0000
+@@ -0,0 +1,112 @@
++// Mon E-Carnet — test de charge k6 (STAGING uniquement, comptes SYNTHÉTIQUES, jamais de données réelles).
++//
++// Ce que fait ce script : se connecte UNE fois par utilisateur virtuel (session Django + CSRF), puis lit en boucle les
++// écrans patient les plus chauds. Il échoue bruyamment si la connexion échoue : un test qui ne se connecte pas ne mesure
++// que /health et ne prouve rien.
++//
++// Prérequis sur le staging (sinon vous mesurez les limiteurs, pas l'application) :
++//   - ECARNET_RATE_LOGIN=100000/hour et ECARNET_RATE_LOGIN_EMAIL=100000/hour
++//   - au moins autant de comptes synthétiques que d'utilisateurs virtuels
++//   - jamais contre Render Free (0,1 CPU, mise en veille) : les chiffres n'auraient aucun rapport avec Hodi
++//
++// Usage :
++//   k6 run -e BASE_URL=https://staging-api.example.com -e WEB_ORIGIN=https://staging.example.com \
++//          -e PROFILE=A -e TEST_USERS='[{"email":"p1@test.invalid","password":"..."}]' ops/loadtest/k6-ecarnet.js
++//
++// Profils : A = 100 utilisateurs, B = 300 utilisateurs (lecture patient uniquement : les parcours professionnel et
++// établissement ne sont PAS encore scriptés). E (QR à usage unique en double) n'est volontairement pas scripté : voir README.
++
++import http from 'k6/http';
++import { check, sleep } from 'k6';
++import { Counter, Rate } from 'k6/metrics';
++
++const BASE = (__ENV.BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
++const ORIGIN = (__ENV.WEB_ORIGIN || BASE).replace(/\/$/, '');
++const PROFILE = __ENV.PROFILE || 'A';
++const USERS = JSON.parse(__ENV.TEST_USERS || '[]');
++
++const VUS = { A: 100, B: 300 };
++if (PROFILE === 'E') throw new Error("Profil E non implémenté : testez la concurrence du QR en TransactionTestCase sur PostgreSQL (voir README-CORRECTIONS.md).");
++if (!VUS[PROFILE]) throw new Error(`PROFILE inconnu : ${PROFILE} (A ou B)`);
++if (!USERS.length) throw new Error('TEST_USERS est vide : sans comptes, le test ne mesurerait que /health/.');
++if (USERS.length < VUS[PROFILE]) console.warn(`Seulement ${USERS.length} comptes pour ${VUS[PROFILE]} utilisateurs virtuels : des comptes seront partagés (limiteur par adresse e-mail).`);
++
++const serverErrors = new Rate('ecarnet_server_errors');   // 5xx
++const loginFailures = new Rate('ecarnet_login_failures');
++const throttled = new Counter('ecarnet_throttled_429');   // un 429 = limiteur mal réglé pour le test, à traiter
++
++export const options = {
++  scenarios: {
++    patients: {
++      executor: 'ramping-vus',
++      stages: [
++        { duration: '2m', target: VUS[PROFILE] },   // montée progressive : pas de ruée simultanée sur la connexion
++        { duration: '6m', target: VUS[PROFILE] },
++        { duration: '1m', target: 0 },
++      ],
++    },
++  },
++  thresholds: {
++    'http_req_duration{kind:read}': ['p(95)<500'],            // lecture < 500 ms
++    ecarnet_server_errors: ['rate<0.005'],                    // 5xx < 0,5 %
++    ecarnet_login_failures: [{ threshold: 'rate==0', abortOnFail: true, delayAbortEval: '15s' }],
++    ecarnet_throttled_429: ['count==0'],
++    checks: ['rate>0.99'],
++  },
++};
++
++const READS = [
++  '/api/v1/patient/profile/',
++  '/api/v1/patient/care/notifications/inbox/',
++  '/api/v1/patient/emergency-card/',
++  '/api/v1/patient/care/medication-reminders/',
++  '/api/v1/patient/care/consultations/',
++];
++
++let loggedIn = false; // état par utilisateur virtuel (la jarre de cookies de k6 l'est aussi)
++
++function login() {
++  const user = USERS[(__VU - 1) % USERS.length];
++  const csrf = http.get(`${BASE}/api/v1/csrf/`, { tags: { kind: 'auth' } });
++  let token = '';
++  try { token = csrf.json('csrfToken'); } catch (e) { token = ''; }
++  const res = http.post(
++    `${BASE}/api/v1/identity/login/`,
++    JSON.stringify({ email: user.email, password: user.password }),
++    { headers: { 'Content-Type': 'application/json', 'X-CSRFToken': token, Origin: ORIGIN, Referer: `${ORIGIN}/` }, tags: { kind: 'auth' } },
++  );
++  const ok = check(res, { 'connexion 200': (r) => r.status === 200 });
++  loginFailures.add(!ok);
++  serverErrors.add(res.status >= 500);
++  if (res.status === 429) throttled.add(1);
++  return ok;
++}
++
++export default function () {
++  if (!loggedIn) {
++    loggedIn = login();
++    if (!loggedIn) { sleep(5); return; }
++  }
++  const count = 2 + Math.floor(Math.random() * 2);
++  for (let i = 0; i < count; i += 1) {
++    const path = READS[Math.floor(Math.random() * READS.length)];
++    const res = http.get(`${BASE}${path}`, { tags: { kind: 'read' } });
++    check(res, { [`GET ${path} 200`]: (r) => r.status === 200 });
++    serverErrors.add(res.status >= 500);
++    if (res.status === 429) throttled.add(1);
++    if (res.status === 401 || res.status === 403) loggedIn = false; // session expirée : reconnexion à la prochaine itération
++    sleep(Math.random() * 3 + 1);
++  }
++  sleep(Math.random() * 5 + 3); // environ une requête API toutes les 8 s par utilisateur actif
++}
++
++export function handleSummary(data) {
++  const m = (name, key) => (data.metrics[name] && data.metrics[name].values[key] !== undefined ? data.metrics[name].values[key] : NaN);
++  return {
++    'loadtest-report.json': JSON.stringify(data, null, 2),
++    stdout:
++      `Profil ${PROFILE} (lecture patient) — p95 lecture : ${m('http_req_duration{kind:read}', 'p(95)').toFixed(0)} ms, ` +
++      `5xx : ${(m('ecarnet_server_errors', 'rate') * 100).toFixed(2)} %, échecs de connexion : ${(m('ecarnet_login_failures', 'rate') * 100).toFixed(1)} %, ` +
++      `429 : ${m('ecarnet_throttled_429', 'count')}\n`,
++  };
++}
+diff -ruN -x __pycache__ -x '*.pyc' -x README-CORRECTIONS.md a/phase2-celery/README.md b/phase2-celery/README.md
+--- a/phase2-celery/README.md	1970-01-01 00:00:00.000000000 +0000
++++ b/phase2-celery/README.md	2026-10-28 02:35:50.851602090 +0000
+@@ -0,0 +1,13 @@
++# Phase 2 — Celery + Redis (à activer plus tard, NON testé)
++
++Ne l'activez pas pour le pilote. Le thread pool de `push.py` suffit largement tant que vous envoyez quelques centaines de
++notifications par jour. Passez à la phase 2 quand **au moins un** de ces signaux apparaît :
++
++- des notifications push perdues lors des redémarrages/déploiements (le thread pool vit dans le processus web) ;
++- plus de ~1 000 abonnés actifs, ou des envois qui ralentissent les réponses HTTP ;
++- vous avez un hébergement qui autorise des processus persistants et Redis (VPS, ou offre payante), **pas** un mutualisé.
++
++Étapes : copier `tasks.py` dans `apps/api/apps/care/`, `celery.py` dans `apps/api/config/`, ajouter `celery[redis]` à
++`requirements.in` puis `make lock`, importer l'application Celery dans `config/__init__.py`
++(`from .celery import app as celery_app`), définir `CELERY_BROKER_URL` et `ECARNET_PUSH_USE_CELERY=true`, puis lancer
++`celery -A config worker -l info --concurrency 2`. Sur Render, un worker est un service **payant**.
+diff -ruN -x __pycache__ -x '*.pyc' -x README-CORRECTIONS.md a/phase2-celery/celery.py b/phase2-celery/celery.py
+--- a/phase2-celery/celery.py	1970-01-01 00:00:00.000000000 +0000
++++ b/phase2-celery/celery.py	2026-10-28 02:35:50.855599742 +0000
+@@ -0,0 +1,10 @@
++"""Application Celery (phase 2). À copier dans apps/api/config/celery.py — voir README.md."""
++import os
++
++from celery import Celery
++
++os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
++
++app = Celery("ecarnet")
++app.config_from_object("django.conf:settings", namespace="CELERY")
++app.autodiscover_tasks()
+diff -ruN -x __pycache__ -x '*.pyc' -x README-CORRECTIONS.md a/phase2-celery/tasks.py b/phase2-celery/tasks.py
+--- a/phase2-celery/tasks.py	1970-01-01 00:00:00.000000000 +0000
++++ b/phase2-celery/tasks.py	2026-10-28 02:35:50.853727716 +0000
+@@ -0,0 +1,22 @@
++"""Envoi Web Push via Celery (phase 2). À copier dans apps/api/apps/care/tasks.py — voir README.md."""
++import logging
++
++from celery import shared_task
++from celery.exceptions import MaxRetriesExceededError
++
++from .push import deliver
++
++logger = logging.getLogger(__name__)
++
++
++@shared_task(bind=True, max_retries=5, ignore_result=True)
++def send_webpush_task(self, user_id, payload, only=None):
++    """Réessaie uniquement les abonnements en échec transitoire (pas de doublon sur les appareils déjà servis)."""
++    failed = deliver(user_id, payload, only=only)
++    if not failed:
++        return
++    try:
++        raise self.retry(args=(user_id, payload, failed), countdown=min(30 * 2 ** self.request.retries, 900))
++    except MaxRetriesExceededError:
++        # Aucune donnée de santé dans les journaux : ni titre ni corps.
++        logger.error("push: abandon après %s tentatives, %s abonnement(s) non joint(s)", self.max_retries, len(failed))
+diff -ruN -x __pycache__ -x '*.pyc' -x README-CORRECTIONS.md a/render.yaml b/render.yaml
+--- a/render.yaml	2026-10-24 20:56:40.000000000 +0000
++++ b/render.yaml	2026-10-28 02:35:50.840293082 +0000
+@@ -40,6 +40,13 @@
+         value: https://e-carnetci.vercel.app
+       - key: ECARNET_INVITATION_BASE_URL
+         value: https://e-carnetci.vercel.app/etablissement/activation
++      # Web Push (facultatif : sans ces trois valeurs, le push est désactivé et l'API tourne normalement).
++      - key: ECARNET_VAPID_PUBLIC_KEY
++        sync: false
++      - key: ECARNET_VAPID_PRIVATE_KEY
++        sync: false
++      - key: ECARNET_VAPID_SUBJECT
++        sync: false
+       - key: GOOGLE_CLIENT_ID
+         sync: false
+       - key: GOOGLE_CLIENT_SECRET

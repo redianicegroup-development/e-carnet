@@ -7,8 +7,8 @@
 .admin-recovery__card { display: grid; gap: 2px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
 .admin-recovery__card strong { font-size: 1.6rem; line-height: 1.1; }
 .admin-recovery__card span { font-size: .78rem; color: var(--text-muted); }
-.admin-recovery__card.is-warn { border-color: #d9a441; background: color-mix(in srgb, #d9a441 12%, var(--surface)); }
-.admin-recovery__card.is-danger { border-color: #c4493d; background: color-mix(in srgb, #c4493d 12%, var(--surface)); }
+.admin-recovery__card.is-warn { border-color: var(--status-declared-fg); background: color-mix(in srgb, var(--status-declared-fg) 12%, var(--surface)); }
+.admin-recovery__card.is-danger { border-color: var(--status-contested-fg); background: color-mix(in srgb, var(--status-contested-fg) 12%, var(--surface)); }
 .admin-recovery__list { display: grid; gap: 8px; margin-top: 10px; }
 .admin-recovery__list .record { align-items: center; gap: 12px; flex-wrap: wrap; }
 .admin-recovery__list .record > div { min-width: 0; overflow-wrap: anywhere; }
@@ -17,10 +17,10 @@
 .admin-recovery__help .field { min-width: 150px; }
 .admin-recovery__when { display: flex; align-items: center; gap: 8px; font-size: .82rem; color: var(--text-muted); white-space: nowrap; }
 .admin-recovery__dot { width: 10px; height: 10px; border-radius: 50%; background: var(--text-muted); }
-.admin-recovery__dot.is-ok { background: #2f8f5b; }
-.admin-recovery__dot.is-warn { background: #d9a441; }
-.admin-recovery__dot.is-danger { background: #c4493d; }
-.admin-recovery__dot.is-info { background: #3b78c4; }
+.admin-recovery__dot.is-ok { background: var(--status-verified-fg); }
+.admin-recovery__dot.is-warn { background: var(--status-declared-fg); }
+.admin-recovery__dot.is-danger { background: var(--status-contested-fg); }
+.admin-recovery__dot.is-info { background: var(--status-measured-fg); }
 @media (max-width: 560px) {
   .admin-recovery__when { white-space: normal; }
 }

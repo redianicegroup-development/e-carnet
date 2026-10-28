@@ -10,8 +10,10 @@ from .models import AccessGrant, PatientAccessQrToken
 
 # Décision A9 V1 : QR opaque, usage unique, valable cinq minutes.
 QR_TOKEN_TTL_SECONDS = int(getattr(settings, "ECARNET_QR_TTL_SECONDS", 300))
-ALLOWED_SCOPES = {"preconsultation", "declarations", "consultations", "documents"}
+ALLOWED_SCOPES = {"preconsultation", "declarations", "consultations", "documents", "care_history"}
 DEFAULT_SCOPES = ["preconsultation", "declarations"]
+# Le QR professionnel propose toujours les documents en lecture seule ; le patient voit ce périmètre et doit encore l'accepter.
+REQUIRED_SCOPES = ("documents",)
 PENDING_GRANT_TTL = timedelta(days=7)
 REFUSED_GRANT_COOLDOWN = timedelta(days=30)
 # Les jetons expirés ou utilisés ne servent plus à rien : ils sont purgés après ce délai (commande `cleanup_access_qr_tokens`).
@@ -97,7 +99,7 @@ def consume_qr_token(token):
 
 
 @transaction.atomic
-def create_professional_grant(*, professional, qr_token=None, scope=None):
+def create_professional_grant(*, professional, qr_token=None, scope=None, source_establishments=None):
     """Ouvre une demande d’accès. Le QR du patient est exigé à chaque demande : aucun identifiant de patient n’est accepté."""
     access_error = professional_clinical_access_error(professional)
     if access_error:
@@ -110,9 +112,20 @@ def create_professional_grant(*, professional, qr_token=None, scope=None):
     if is_own_patient_file(professional, patient):
         # Un professionnel ne s'ouvre jamais son propre dossier : le jeton n'est pas consommé, il reste utilisable côté patient.
         raise SelfAccessRefused(SELF_ACCESS_MESSAGE)
-    requested_scope = list(dict.fromkeys(scope or DEFAULT_SCOPES))
+    requested_scope = list(dict.fromkeys([*(scope or DEFAULT_SCOPES), *REQUIRED_SCOPES]))
     if not requested_scope or any(item not in ALLOWED_SCOPES for item in requested_scope):
         raise ValidationError("Le périmètre demandé contient une valeur non autorisée en V1.")
+    selected_sources = [str(item) for item in (source_establishments or [])]
+    if "care_history" in requested_scope and not selected_sources:
+        raise ValidationError("Sélectionnez au moins une structure source pour l’historique de soins.")
+    if selected_sources:
+        from .models import Consultation, HealthMeasurement, MedicalDocument, Vaccination
+        available_sources = set(Consultation.objects.filter(patient=patient, establishment__isnull=False).values_list("establishment_id", flat=True))
+        available_sources.update(HealthMeasurement.objects.filter(patient=patient, establishment__isnull=False, validated_at__isnull=False).values_list("establishment_id", flat=True))
+        available_sources.update(MedicalDocument.objects.filter(patient=patient, establishment__isnull=False, validated_at__isnull=False, verified=True).values_list("establishment_id", flat=True))
+        available_sources.update(Vaccination.objects.filter(patient=patient, establishment__isnull=False, status="confirmed").values_list("establishment_id", flat=True))
+        if not set(selected_sources).issubset({str(item) for item in available_sources}):
+            raise ValidationError("Une structure source ne possède aucun soin validé partageable pour ce patient.")
     stale_pending = AccessGrant.objects.select_for_update().filter(
         patient=patient,
         professional=professional,
@@ -143,6 +156,7 @@ def create_professional_grant(*, professional, qr_token=None, scope=None):
                 professional_name=f"{professional.user.first_name} {professional.user.last_name}".strip() or professional.professional_title,
                 facility_label=establishment.name,
                 scope=requested_scope,
+                source_establishments=selected_sources,
                 expires_at=timezone.now() + PENDING_GRANT_TTL,
             )
     except IntegrityError:

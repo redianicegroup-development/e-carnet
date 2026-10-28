@@ -5,3 +5,17 @@
 .join-codes__meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; font-size: .85rem; }
 .team-member { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .team-member > div { min-width: 0; overflow-wrap: anywhere; }
+
+/* Équipe : une photo par médecin, la fiche s'ouvre au clic. */
+.team-grid { display: flex; flex-wrap: wrap; gap: 14px; margin: 0; padding: 0; list-style: none; }
+.team-photo { padding: 0; border: 0; border-radius: 50%; background: none; line-height: 0; cursor: pointer; transition: transform .15s ease; }
+.team-photo .avatar { box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px color-mix(in srgb, var(--primary) 55%, var(--surface)); }
+.team-photo:hover { transform: translateY(-2px); }
+.team-photo:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+.team-detail { gap: 14px; }
+.team-detail h2 { margin: 0; font-size: 1.25rem; overflow-wrap: anywhere; }
+.team-detail__list { display: grid; gap: 8px; width: 100%; margin: 0; text-align: left; }
+.team-detail__list > div { display: grid; gap: 1px; min-width: 0; padding: 8px 12px; border-radius: 12px; background: var(--surface-tint); }
+.team-detail__list dt { color: var(--text-muted); font-size: .76rem; font-weight: 700; letter-spacing: .02em; }
+.team-detail__list dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
+@media (prefers-reduced-motion: reduce) { .team-photo { transition: none; } .team-photo:hover { transform: none; } }
