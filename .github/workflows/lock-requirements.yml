@@ -1,0 +1,40 @@
+# Verrouille apps/api/requirements.txt (versions exactes + empreintes sha256) à partir de apps/api/requirements.in.
+# À lancer à la main : GitHub → onglet « Actions » → « Verrouiller requirements.txt » → « Run workflow ».
+# Équivaut à `make lock`, mais sans rien installer sur votre ordinateur : le runner a Python 3.12 (celui de l'image Docker) et le réseau.
+# pip-compile conserve les versions déjà épinglées : seule la ligne de pywebpush et ses dépendances sont ajoutées.
+name: Verrouiller requirements.txt
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  lock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Régénérer le fichier verrouillé (versions exactes + empreintes)
+        run: make lock
+      - name: Vérifier que pywebpush est bien verrouillé
+        run: grep -q "^pywebpush==" apps/api/requirements.txt
+      - name: Conserver le résultat en téléchargement (au cas où la branche est protégée)
+        uses: actions/upload-artifact@v4
+        with:
+          name: requirements.txt
+          path: apps/api/requirements.txt
+      - name: Enregistrer le résultat dans la branche
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/api/requirements.txt
+          if git diff --cached --quiet; then
+            echo "Rien à changer : le fichier est déjà à jour."
+          else
+            git commit -m "chore(api): verrouille pywebpush (make lock)"
+            git push
+          fi

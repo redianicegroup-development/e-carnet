@@ -31,3 +31,9 @@ Détail et usage : docs/prototypes/CHARTE-GRAPHIQUE.md (aperçu : docs/prototype
 ## Web Push (ecarnet-webpush-corrige.zip)
 
 Fusionné par-dessus ce projet : aucun fichier en commun avec les modifications ci-dessus (23 fichiers de l'overlay, dont 2 lignes dans `AccountSettingsClient.tsx`). Tests web inchangés (199 réussis, mêmes 6 échecs). Python compilé sans erreur ; la migration 0021 dépend bien de la 0020 existante. Non exécutés ici : tests Django, `makemigrations --check`, build Next, k6, test sur un vrai appareil. `pywebpush` n'est pas encore dans `apps/api/requirements.txt` : lancer `make lock`. Sans clés VAPID, le push reste désactivé.
+
+## v1.2 (28/10/2026) — fusion du lot du 28/10 dans la v1.1
+
+Base : `e-carnet_v1_1.zip`. Appliqué par-dessus : `e-carnet-fichiers-modifies-2026-10-28.zip` (carte d'urgence hors connexion, plans de suivi PRO-12 / PAT-15 : 19 fichiers, dont les migrations `0022` et `0023`). Les 12 fichiers existants du lot étaient identiques à ceux de la v1.1 avant le lot : aucun conflit, aucune fusion manuelle. Vérifié : chaîne de migrations linéaire `0021 → 0022 → 0023`, Web Push conservé (modèles, vues, URLs, `sw.js`, bouton, commande `send_due_reminders`), Python compilé, syntaxe TS/TSX, tests web identiques avant et après (199 réussis, mêmes 6 échecs déjà présents). Non exécutés ici : tests Django, `makemigrations --check`, build Next.
+
+Ajouts de la fusion : `docs/WEB-PUSH-CLES-VAPID.md` (mode d'emploi des clés), `.github/workflows/lock-requirements.yml` (verrouillage de `pywebpush` en un clic), transmission des variables VAPID dans `docker-compose.yml`, renvois dans `docs/WEB-PUSH.md` et `.env.example`. `pywebpush` reste à verrouiller : ce fichier à empreintes ne se génère qu'avec accès internet.

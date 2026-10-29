@@ -288,12 +288,16 @@ class HealthMeasurement(models.Model):
 
 
 class FollowUpPlan(models.Model):
+    STATUS_CHOICES = (("active", "Actif"), ("paused", "En pause"), ("completed", "Terminé"), ("cancelled", "Annulé"))
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name="follow_up_plans")
+    access_grant = models.ForeignKey(AccessGrant, null=True, blank=True, on_delete=models.PROTECT, related_name="follow_up_plans")
     professional = models.ForeignKey("professionals.ProfessionalProfile", null=True, blank=True, on_delete=models.PROTECT, related_name="follow_up_plans")
     establishment = models.ForeignKey("establishments.Establishment", null=True, blank=True, on_delete=models.PROTECT, related_name="follow_up_plans")
     title = models.CharField(max_length=180)
+    objective = models.CharField(max_length=500, blank=True)
     instructions = models.TextField(blank=True, max_length=2000)
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="active")
     active = models.BooleanField(default=True)
     starts_on = models.DateField(null=True, blank=True)
     ends_on = models.DateField(null=True, blank=True)
@@ -310,6 +314,19 @@ class FollowUpPlanItem(models.Model):
     frequency = models.CharField(max_length=120)
     target = models.CharField(max_length=160, blank=True)
     notes = models.CharField(max_length=300, blank=True)
+
+
+class FollowUpPlanRevision(models.Model):
+    """Historique append-only des changements d’un plan de suivi."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    plan = models.ForeignKey(FollowUpPlan, on_delete=models.PROTECT, related_name="revisions")
+    changed_by = models.ForeignKey("professionals.ProfessionalProfile", on_delete=models.PROTECT, related_name="follow_up_plan_revisions")
+    action = models.CharField(max_length=24)
+    snapshot = models.JSONField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("-created_at",)
 
 
 class MedicationReminder(models.Model):

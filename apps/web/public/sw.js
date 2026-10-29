@@ -14,6 +14,19 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const request = event.request;
   const url = new URL(request.url);
+  if (request.mode === "navigate" && url.origin === self.location.origin && url.pathname.startsWith("/urgence/")) {
+    event.respondWith((async () => {
+      const cache = await caches.open(CACHE_NAME);
+      try {
+        const response = await fetch(request);
+        if (response.ok) await cache.put(request, response.clone());
+        return response;
+      } catch {
+        return (await cache.match(request)) || new Response("Carte d’urgence non disponible hors connexion.", { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } });
+      }
+    })());
+    return;
+  }
   if (request.method !== "GET" || url.origin !== self.location.origin || url.pathname.startsWith("/api/") || url.pathname.startsWith("/patient") || url.pathname.startsWith("/professionnel") || url.pathname.startsWith("/onboarding") || url.pathname.startsWith("/connexion") || url.pathname.startsWith("/inscription")) return;
   event.respondWith(fetch(request).catch(() => caches.match(request).then((cached) => cached || caches.match("/"))));
 });

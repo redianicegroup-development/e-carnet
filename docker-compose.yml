@@ -35,6 +35,10 @@ services:
       WEB_ORIGIN: http://localhost:3000
       CORS_ALLOWED_ORIGINS: http://localhost:3000
       DJANGO_LOG_LEVEL: ${DJANGO_LOG_LEVEL:-INFO}
+      # Web Push (facultatif) : valeurs lues dans le fichier .env à la racine, voir docs/WEB-PUSH-CLES-VAPID.md
+      ECARNET_VAPID_PUBLIC_KEY: ${ECARNET_VAPID_PUBLIC_KEY:-}
+      ECARNET_VAPID_PRIVATE_KEY: ${ECARNET_VAPID_PRIVATE_KEY:-}
+      ECARNET_VAPID_SUBJECT: ${ECARNET_VAPID_SUBJECT:-}
     command: sh -c "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"
     ports:
       - "127.0.0.1:8000:8000"

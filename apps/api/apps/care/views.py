@@ -21,7 +21,7 @@ from apps.professionals.models import ProfessionalProfile
 from apps.audit.models import AuditEvent
 from apps.audit.services import record_event
 from apps.cloudinary_storage import CLOUDINARY_CONFIGURED, destroy as cloudinary_destroy, extension_from_name, signed_download, upload as cloudinary_upload
-from .models import AccessGrant, Appointment, CareEncounter, Consultation, ExamRequest, FollowUpPlan, FollowUpPlanItem, HealthMeasurement, MedicalDocument, MedicationIntake, MedicationReminder, PatientNotification, PreconsultationTemplate, PushSubscription, Vaccination
+from .models import AccessGrant, Appointment, CareEncounter, Consultation, ExamRequest, FollowUpPlan, FollowUpPlanItem, FollowUpPlanRevision, HealthMeasurement, MedicalDocument, MedicationIntake, MedicationReminder, PatientNotification, PreconsultationTemplate, PushSubscription, Vaccination
 from .pdf_compression import compress_pdf_lossless
 from .serializers import AccessGrantSerializer, AppointmentSerializer, CareEncounterSerializer, ConsultationSerializer, FollowUpPlanSerializer, HealthMeasurementSerializer, MedicalDocumentSerializer, MedicationIntakeSerializer, MedicationReminderSerializer, PatientNotificationSerializer, PreconsultationTemplateSerializer, ProfessionalAccessGrantSerializer, ProfessionalConsultationCreateSerializer, VaccinationSerializer
 from .services import QR_TOKEN_TTL_SECONDS, SelfAccessRefused, create_patient_qr_token, create_professional_grant, is_own_patient_file, require_scope
@@ -350,12 +350,20 @@ class PatientFollowUpPlanListView(APIView):
 
     def get(self, request):
         patient = profile_for(request.user, request)
-        items = FollowUpPlan.objects.filter(patient=patient).prefetch_related("items")
+        items = FollowUpPlan.objects.filter(patient=patient).prefetch_related("items", "revisions")
         return Response({"success": True, "data": FollowUpPlanSerializer(items, many=True).data})
 
 
 class ProfessionalFollowUpPlanCreateView(APIView):
     permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        profile = ProfessionalProfile.objects.filter(user=request.user).first()
+        error = professional_clinical_access_error(profile)
+        if error:
+            return Response({"success": False, "message": error}, status=403)
+        plans = FollowUpPlan.objects.filter(professional=profile).select_related("establishment", "professional__user").prefetch_related("items", "revisions")
+        return Response({"success": True, "data": FollowUpPlanSerializer(plans, many=True).data})
 
     def post(self, request):
         profile = ProfessionalProfile.objects.filter(user=request.user).first()
@@ -374,17 +382,58 @@ class ProfessionalFollowUpPlanCreateView(APIView):
             require_scope(grant, "consultations")
         except PermissionDenied:
             return missing_consent
-        title = str(request.data.get("title", "")).strip()
-        if not title:
-            raise ValidationError({"title": "Indiquez le titre du plan de suivi."})
-        plan = FollowUpPlan.objects.create(patient=grant.patient, professional=profile, establishment=profile.active_establishment, title=title[:180], instructions=str(request.data.get("instructions", ""))[:2000], starts_on=request.data.get("starts_on") or None, ends_on=request.data.get("ends_on") or None)
+        objective = str(request.data.get("objective", request.data.get("title", ""))).strip()
+        if not objective:
+            raise ValidationError({"objective": "Indiquez l’objectif du plan de suivi."})
+        status_value = str(request.data.get("status", "active"))
+        if status_value not in dict(FollowUpPlan.STATUS_CHOICES):
+            raise ValidationError({"status": "Statut de plan invalide."})
         items = request.data.get("items") or []
         if not isinstance(items, list) or len(items) > 12:
             raise ValidationError({"items": "Un plan peut contenir au maximum 12 mesures."})
         for item in items:
+            if not isinstance(item, dict) or item.get("measurement_kind") not in dict(HealthMeasurement.KIND_CHOICES) or not str(item.get("frequency", "")).strip():
+                raise ValidationError({"items": "Chaque mesure doit préciser un type et une fréquence."})
+        plan = FollowUpPlan.objects.create(patient=grant.patient, access_grant=grant, professional=profile, establishment=profile.active_establishment, title=objective[:180], objective=objective[:500], status=status_value, active=status_value == "active", instructions=str(request.data.get("instructions", ""))[:2000], starts_on=request.data.get("starts_on") or None, ends_on=request.data.get("ends_on") or None)
+        for item in items:
             FollowUpPlanItem.objects.create(plan=plan, measurement_kind=item.get("measurement_kind"), frequency=str(item.get("frequency", ""))[:120], target=str(item.get("target", ""))[:160], notes=str(item.get("notes", ""))[:300])
+        FollowUpPlanRevision.objects.create(plan=plan, changed_by=profile, action="created", snapshot={"objective": plan.objective, "status": plan.status, "items": items})
         record_event(event_type="follow_up_plan.created", actor=request.user, actor_role="professional", patient=plan.patient, establishment=plan.establishment, access_grant=grant, metadata={"action": "created", "plan_id": str(plan.id)})
         return Response({"success": True, "data": FollowUpPlanSerializer(plan).data}, status=201)
+
+
+class ProfessionalFollowUpPlanDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, pk):
+        profile = ProfessionalProfile.objects.filter(user=request.user).first()
+        error = professional_clinical_access_error(profile)
+        if error:
+            return Response({"success": False, "message": error}, status=403)
+        plan = FollowUpPlan.objects.filter(pk=pk, professional=profile).select_related("access_grant").first()
+        if not plan:
+            return Response({"success": False, "message": "Plan de suivi introuvable."}, status=404)
+        try:
+            grant = AccessGrant.objects.filter(pk=plan.access_grant_id, professional=profile, establishment=profile.active_establishment, patient=plan.patient).first()
+        except (ValueError, TypeError, DjangoValidationError):
+            grant = None
+        if not grant:
+            return Response({"success": False, "message": "Un consentement actif est requis pour modifier ce plan."}, status=403)
+        require_scope(grant, "consultations")
+        objective = str(request.data.get("objective", plan.objective or plan.title)).strip()
+        status_value = str(request.data.get("status", plan.status))
+        if not objective:
+            raise ValidationError({"objective": "Indiquez l’objectif du plan de suivi."})
+        if status_value not in dict(FollowUpPlan.STATUS_CHOICES):
+            raise ValidationError({"status": "Statut de plan invalide."})
+        plan.objective, plan.title, plan.status, plan.active = objective[:500], objective[:180], status_value, status_value == "active"
+        if "instructions" in request.data:
+            plan.instructions = str(request.data.get("instructions", ""))[:2000]
+        plan.save(update_fields=("objective", "title", "status", "active", "instructions", "updated_at"))
+        FollowUpPlanRevision.objects.create(plan=plan, changed_by=profile, action="updated", snapshot={"objective": plan.objective, "status": plan.status, "instructions": plan.instructions})
+        record_event(event_type="follow_up_plan.updated", actor=request.user, actor_role="professional", patient=plan.patient, establishment=plan.establishment, access_grant=grant, metadata={"action": "updated", "plan_id": str(plan.id), "status": plan.status})
+        plan = FollowUpPlan.objects.prefetch_related("items", "revisions").get(pk=plan.pk)
+        return Response({"success": True, "data": FollowUpPlanSerializer(plan).data})
 
 
 class PatientMedicationReminderListCreateView(APIView):

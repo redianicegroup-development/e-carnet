@@ -152,7 +152,9 @@ class PatientOwnedDataTests(TestCase):
         self.assertEqual(public.data["data"]["contact_name"], "Contact fictif")
         self.assertEqual(public.data["data"]["contact_phone"], "+225 00 00 00 00")
         self.assertEqual(public.data["data"]["city"], "Abidjan")
-        self.assertEqual(set(public.data["data"]), {"first_name", "last_name", "city", "blood_group", "height_cm", "weight_kg", "allergies", "treatments", "contact_name", "contact_phone", "updated_at"})
+        self.assertEqual(public.data["data"]["declarations_provenance"]["allergy"]["code"], "patient_declared")
+        self.assertIn("non confirmé", public.data["data"]["declarations_provenance"]["allergy"]["label"])
+        self.assertEqual(set(public.data["data"]), {"first_name", "last_name", "city", "blood_group", "height_cm", "weight_kg", "allergies", "treatments", "contact_name", "contact_phone", "declarations_provenance", "updated_at"})
         # Jamais de date de naissance, d’adresse, de téléphone du patient ni d’identifiant interne sur la carte publique.
         for forbidden in ("birth_date", "address", "phone", "email", "id", "patient_id", "qr_token"):
             self.assertNotIn(forbidden, public.data["data"])

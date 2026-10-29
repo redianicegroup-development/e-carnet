@@ -514,6 +514,13 @@ def emergency_card_data(card, *, public=False):
     """Ce que la carte montre, lu en direct dans le carnet : aucune copie, donc aucune mise à jour à pousser."""
     declarations = ClinicalDeclaration.objects.filter(patient=card.patient, status="declared")
     latest = lambda kind: declarations.filter(kind=kind).order_by("-updated_at").first()
+    provenance = {
+        item.kind: {
+            "code": "patient_declared",
+            "label": "Déclaré par le patient — non confirmé par un professionnel",
+        }
+        for item in declarations
+    }
     blood, city, contact = latest("blood_group"), latest("city"), latest("emergency_contact")
     height, weight = latest("height"), latest("weight")
     display_height = f"{height.label} cm" if height else ""
@@ -530,6 +537,7 @@ def emergency_card_data(card, *, public=False):
         "treatments": list(declarations.filter(kind="treatment").values("label", "details")),
         "contact_name": contact.label if contact else "",
         "contact_phone": contact.details if contact else "",
+        "declarations_provenance": provenance,
         "updated_at": max(
             card.updated_at,
             card.patient.updated_at,

@@ -205,12 +205,16 @@ class FollowUpPlanItemSerializer(serializers.ModelSerializer):
 
 class FollowUpPlanSerializer(serializers.ModelSerializer):
     items = FollowUpPlanItemSerializer(many=True, read_only=True)
+    history = serializers.SerializerMethodField()
     professional_name = serializers.CharField(source="professional.user.get_full_name", read_only=True, allow_null=True)
     establishment_name = serializers.CharField(source="establishment.name", read_only=True, allow_null=True)
     class Meta:
         model = FollowUpPlan
-        fields = ("id", "title", "instructions", "active", "starts_on", "ends_on", "professional_name", "establishment_name", "items", "created_at", "updated_at")
+        fields = ("id", "title", "objective", "instructions", "status", "active", "starts_on", "ends_on", "professional_name", "establishment_name", "access_grant", "items", "history", "created_at", "updated_at")
         read_only_fields = fields
+
+    def get_history(self, obj):
+        return [{"action": item.action, "snapshot": item.snapshot, "created_at": item.created_at} for item in obj.revisions.all()]
 
 
 class MedicationReminderSerializer(serializers.ModelSerializer):

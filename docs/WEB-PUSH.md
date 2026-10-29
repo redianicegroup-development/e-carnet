@@ -6,8 +6,8 @@ l'API fonctionne normalement.
 
 ## Activer (une fois par environnement)
 
-1. `make lock` (ajoute `pywebpush` au `requirements.txt` verrouillé), puis `python manage.py migrate` (migration `0021`).
-2. `python apps/api/scripts/generate-vapid-keys.py` → renseigner `ECARNET_VAPID_PUBLIC_KEY`, `ECARNET_VAPID_PRIVATE_KEY`
+1. Verrouiller `pywebpush` : GitHub → Actions → « Verrouiller requirements.txt » → Run workflow (ou `make lock`), redéployer, puis `python manage.py migrate` (migrations `0021` à `0023`).
+2. `python apps/api/scripts/generate-vapid-keys.py` (pas à pas : `docs/WEB-PUSH-CLES-VAPID.md`) → renseigner `ECARNET_VAPID_PUBLIC_KEY`, `ECARNET_VAPID_PRIVATE_KEY`
    (secret) et `ECARNET_VAPID_SUBJECT` (`mailto:` d'un contact réel). Ne jamais changer la paire ensuite : tous les appareils
    seraient désabonnés.
 3. Planifier toutes les 5 minutes : `python manage.py send_due_reminders` (voir « Planification »).

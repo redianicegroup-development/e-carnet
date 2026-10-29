@@ -30,6 +30,7 @@ from .views import (
     ProfessionalAuthorizedEncounterListView,
     ProfessionalConsultationListCreateView,
     ProfessionalFollowUpPlanCreateView,
+    ProfessionalFollowUpPlanDetailView,
     ProfessionalHealthMeasurementCreateView,
     ProfessionalMedicalDocumentDownloadView,
     ProfessionalMedicalDocumentListView,
@@ -74,4 +75,5 @@ urlpatterns = [
     path("professional/access-grants/<uuid:grant_id>/vaccinations/", ProfessionalVaccinationListView.as_view()),
     path("professional/access-grants/<uuid:grant_id>/vaccinations/<uuid:pk>/confirm/", ProfessionalVaccinationConfirmView.as_view()),
     path("professional/follow-up-plans/", ProfessionalFollowUpPlanCreateView.as_view()),
+    path("professional/follow-up-plans/<uuid:pk>/", ProfessionalFollowUpPlanDetailView.as_view()),
 ]

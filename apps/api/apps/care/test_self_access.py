@@ -86,7 +86,20 @@ class FollowUpPlanGrantTests(TestCase):
 
     def test_active_grant_with_scope_creates_the_plan(self):
         grant = make_grant(self.patient, self.profile, self.establishment, ["consultations"])
-        self.assertEqual(self.create(grant.id).status_code, 201)
+        response = self.client.post(self.URL, {"access_grant_id": str(grant.id), "objective": "Suivre la tension", "status": "active", "items": [{"measurement_kind": "blood_pressure", "frequency": "Chaque semaine"}]}, format="json")
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["data"]["objective"], "Suivre la tension")
+        self.assertEqual(response.data["data"]["history"][0]["action"], "created")
+
+    def test_status_change_is_visible_in_append_only_history(self):
+        grant = make_grant(self.patient, self.profile, self.establishment, ["consultations"])
+        created = self.client.post(self.URL, {"access_grant_id": str(grant.id), "objective": "Suivre le poids", "items": [{"measurement_kind": "weight", "frequency": "Chaque mois"}]}, format="json")
+        self.assertEqual(created.status_code, 201)
+        plan_id = created.data["data"]["id"]
+        updated = self.client.patch(f"{self.URL}{plan_id}/", {"access_grant_id": str(grant.id), "status": "paused"}, format="json")
+        self.assertEqual(updated.status_code, 200)
+        self.assertEqual(updated.data["data"]["status"], "paused")
+        self.assertEqual([item["action"] for item in updated.data["data"]["history"]], ["updated", "created"])
 
     def test_expired_grant_still_flagged_active_is_refused(self):
         from datetime import timedelta

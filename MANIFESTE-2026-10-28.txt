@@ -1,0 +1,31 @@
+Archive complète des fichiers ajoutés ou modifiés le 2026-10-28
+Projet : Mon E-Carnet v1.2 (fusion du lot du 28/10 dans la v1.1)
+
+PWA carte d’urgence hors connexion :
+apps/api/apps/patients/views.py
+apps/api/apps/patients/tests.py
+apps/web/public/sw.js
+apps/web/src/lib/emergency-card-offline.ts
+apps/web/src/components/PublicEmergencyCard.tsx
+apps/web/src/components/emergency-card/EmergencyCardVisual.tsx
+apps/web/src/components/emergency-card/emergency-card.css
+docs/PWA-HORS-CONNEXION.md
+
+Plans de suivi PRO-12 / PAT-15 :
+apps/api/apps/care/models.py
+apps/api/apps/care/serializers.py
+apps/api/apps/care/views.py
+apps/api/apps/care/urls.py
+apps/api/apps/care/migrations/0022_followupplan_status_history.py
+apps/api/apps/care/migrations/0023_followupplan_access_grant.py
+apps/api/apps/care/test_self_access.py
+apps/web/src/app/professionnel/consultations/page.tsx
+apps/web/src/components/ProfessionalFollowUpPlans.tsx
+apps/web/src/components/FollowUpPlans.tsx
+docs/PLANS-SUIVI-PRO-12-PAT-15.md
+
+Ajouts de la fusion v1.2 :
+docs/WEB-PUSH-CLES-VAPID.md
+.github/workflows/lock-requirements.yml
+docker-compose.yml (variables VAPID transmises à l API locale)
+docs/WEB-PUSH.md, .env.example (renvois vers le guide)

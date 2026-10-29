@@ -16,6 +16,7 @@ export type EmergencyCardView = {
   treatments: EmergencyCardItem[];
   contact_name: string;
   contact_phone: string;
+  declarations_provenance?: Record<string, { code: "patient_declared" | "professional_confirmed"; label: string }>;
   /** Métier déclaré, seulement sur la carte d'un professionnel affichée dans l'application ou téléchargée par lui. Jamais envoyé par le serveur : la page publique du QR ne le montre pas. */
   profession?: EmergencyCardProfession | null;
 };
@@ -48,6 +49,7 @@ export function EmergencyCardVisual({ card, qrUrl = "", showQr = true, photo }: 
   const name = emergencyCardFullName(card);
   const hasContact = Boolean(card.contact_name || card.contact_phone);
   const role = emergencyCardProfessionLabel(card.profession);
+  const hasPatientDeclarations = Object.values(card.declarations_provenance ?? {}).some((item) => item.code === "patient_declared");
   return (
     <div className="ecard-wrap">
       <article className={`ecard${showQr || photo ? "" : " ecard--solo"}`} aria-label="Carte d’urgence">
@@ -99,7 +101,10 @@ export function EmergencyCardVisual({ card, qrUrl = "", showQr = true, photo }: 
             </div>
           )}
         </div>
-        <footer className="ecard__foot">{EMERGENCY_CARD_FOOTNOTE}</footer>
+        <footer className="ecard__foot">
+          {hasPatientDeclarations && <span className="ecard__provenance">Déclarations du patient · non confirmées par un professionnel</span>}
+          {EMERGENCY_CARD_FOOTNOTE}
+        </footer>
       </article>
     </div>
   );
