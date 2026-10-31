@@ -32,7 +32,7 @@ test("chaque espace a sa visite : accueil centré, onglets réels, menu du compt
 
 test("onglets choisis par espace", () => {
   const targets = (space) => tour.tourSteps(space).map((step) => step.target).filter(Boolean);
-  assert.deepEqual(targets("patient"), ["nav-home", "nav-carnet", "nav-consultations", "nav-acces", "notifications", "account"]);
+  assert.deepEqual(targets("patient"), ["nav-home", "nav-carnet", "nav-consultations", "nav-historique", "notifications", "account"]);
   assert.deepEqual(targets("professional"), ["nav-home", "nav-acces", "nav-patients", "nav-consultations", "account"]);
   assert.deepEqual(targets("establishment"), ["nav-home", "nav-equipe", "nav-demandes", "nav-parametres", "account"]);
 });

@@ -12,7 +12,7 @@ const navigation: Record<Workspace, { label: string; href: string; icon: IconNam
     { label: "Accueil", href: "/patient", icon: "home" },
     { label: "Carnet", href: "/patient#carnet", icon: "document" },
     { label: "Consult.", href: "/patient/consultations", icon: "stethoscope" },
-    { label: "Accès", href: "/patient/acces", icon: "share" },
+    { label: "Historique", href: "/patient/historique", icon: "clock" },
     { label: "Moi", href: "/patient/parametres", icon: "user" },
   ],
   professional: [

@@ -3,7 +3,7 @@ import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
-import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
+import { apiGet, primeCsrf, readCsrfToken } from "../infrastructure/api/client";
 import { safeOAuthNext } from "../lib/auth";
 import { ModalIllustration } from "./modal/ModalIllustration";
 import { useDialogBehavior } from "./modal/useDialogBehavior";
@@ -36,9 +36,19 @@ function EyeIcon({ off }: { off: boolean }) {
   return <svg aria-hidden="true" viewBox="0 0 24 24" className="ax-eye__icon"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z" /><circle cx="12" cy="12" r="3" />{off && <path className="ax-eye__slash" d="M4 4l16 16" />}</svg>;
 }
 
+/* Seuls les fournisseurs réellement configurés sur le serveur sont proposés (aujourd'hui Google ; Facebook et Apple apparaissent dès que leurs identifiants sont renseignés).
+   Google est affiché d'emblée pour éviter tout saut de mise en page ; la liste exacte vient de /oauth/providers/. */
 function Socials({ labeled, oauthNext }: { labeled: boolean; oauthNext: string }) {
+  const [available, setAvailable] = useState<Record<string, boolean>>({ google: true });
+  useEffect(() => {
+    let alive = true;
+    apiGet<Record<string, boolean>>("/api/v1/identity/oauth/providers/").then((data) => { if (alive) setAvailable(data); }).catch(() => undefined);
+    return () => { alive = false; };
+  }, []);
+  const shown = PROVIDERS.filter((provider) => available[provider]);
+  if (!shown.length) return null;
   return <div className={`ax-socials${labeled ? " ax-socials--labeled" : ""}`} role="group" aria-label="Méthodes de connexion">
-    {PROVIDERS.map((provider) => <a className={`button ax-social ax-social--${provider}`} key={provider} data-ax-item href={`${API}/api/v1/identity/oauth/${provider}/start/${oauthNext}`} aria-label={`Continuer avec ${PROVIDER_LABEL[provider]}`}><ProviderIcon provider={provider} />{labeled && <span>Continuer avec {PROVIDER_LABEL[provider]}</span>}</a>)}
+    {shown.map((provider) => <a className={`button ax-social ax-social--${provider}`} key={provider} data-ax-item href={`${API}/api/v1/identity/oauth/${provider}/start/${oauthNext}`} aria-label={`Continuer avec ${PROVIDER_LABEL[provider]}`}><ProviderIcon provider={provider} />{labeled && <span>Continuer avec {PROVIDER_LABEL[provider]}</span>}</a>)}
   </div>;
 }
 

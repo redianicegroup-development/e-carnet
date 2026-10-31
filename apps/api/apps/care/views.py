@@ -543,9 +543,13 @@ class PatientAppointmentDetailView(APIView):
 
 
 class PatientCarnetExportView(APIView):
+    """Export volontaire du carnet. PDF par défaut ; ?format=xlsx&from=AAAA-MM-JJ&to=AAAA-MM-JJ donne un classeur Excel sur la période choisie (PAT-09)."""
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        if request.query_params.get("format") == "xlsx":
+            from .export_xlsx import carnet_xlsx_response
+            return carnet_xlsx_response(request)
         from io import BytesIO
         from reportlab.lib.pagesizes import A4
         from reportlab.pdfgen import canvas

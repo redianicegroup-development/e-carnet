@@ -60,12 +60,12 @@ export function ProfessionalStep3() {
   return <form className="card auth-form" onSubmit={submit}>
     <span className="eyebrow">Étape 3 · votre profil</span>
     <h1>Complétez votre profil.</h1>
-    <p className="muted">Un seul compte, deux espaces. Seuls le nom, les prénoms, la ville et la spécialité sont obligatoires.</p>
+    <p className="muted">Un seul compte, deux espaces. Seules la ville et la spécialité sont obligatoires ; votre nom et vos prénoms viennent de l’étape 1.</p>
     <p className="notice" role="note">Utilisez des informations exactes et gardez votre compte personnel.</p>
 
     <fieldset className="onboarding-part">
       <legend>Dans votre espace patient</legend>
-      <PatientIdentityFields form={form} update={update} issuedAt={issuedAt} />
+      <PatientIdentityFields form={form} update={update} issuedAt={issuedAt} showProfession={false} />
     </fieldset>
 
     <fieldset className="onboarding-part">

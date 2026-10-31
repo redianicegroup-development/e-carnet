@@ -3,12 +3,10 @@ import { useEffect, useState } from "react";
 import { ApiError, apiGet, apiPatch, apiPost } from "../infrastructure/api/client";
 import { ageLabel } from "../lib/age";
 
-/* Couverture du carnet papier : nom, prénoms, ville, adresse (BP), profession, « délivré le ».
-   Obligatoires : nom, prénoms, ville. Le reste est facultatif. Aucune donnée d'origine ethnique : sensible et sans utilité clinique ici.
+/* Couverture du carnet papier : ville, adresse (BP), profession, « délivré le ». Le nom et les prénoms sont saisis à l'étape 1 (identité) : ils ne sont pas redemandés ici.
+   Obligatoire : la ville. Le reste est facultatif. Aucune donnée d'origine ethnique : sensible et sans utilité clinique ici.
    Ces champs servent à l'étape 3 d'un patient et, dans le même bloc, à l'étape 3 d'un professionnel (son carnet patient). */
 export type PatientForm = {
-  first_name: string;
-  last_name: string;
   city: string;
   address: string;
   profession: string;
@@ -19,11 +17,10 @@ export type PatientForm = {
   coverage_number: string;
   coverage_expiry: string;
 };
-type Account = { first_name?: string; last_name?: string };
 type PatientProfile = { created_at?: string; phone?: string; birth_date?: string | null; gender?: string; address?: string; profession?: string; coverage_provider?: string; coverage_number?: string; coverage_expiry?: string | null };
 type Declaration = { kind: string; label: string };
 
-export const EMPTY_PATIENT_FORM: PatientForm = { first_name: "", last_name: "", city: "", address: "", profession: "", phone: "", birth_date: "", gender: "", coverage_provider: "", coverage_number: "", coverage_expiry: "" };
+export const EMPTY_PATIENT_FORM: PatientForm = { city: "", address: "", profession: "", phone: "", birth_date: "", gender: "", coverage_provider: "", coverage_number: "", coverage_expiry: "" };
 const GENDER_OPTIONS = [{ value: "female", label: "Femme" }, { value: "male", label: "Homme" }, { value: "other", label: "Autre" }, { value: "prefer_not_to_say", label: "Je préfère ne pas préciser" }];
 const DELIVERY_DATE = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 
@@ -36,15 +33,12 @@ export function usePatientIdentityForm() {
   useEffect(() => {
     let active = true;
     Promise.allSettled([
-      apiGet<Account>("/api/v1/identity/me/"),
       apiGet<PatientProfile>("/api/v1/patient/profile/"),
       apiGet<Declaration[]>("/api/v1/patient/declarations/"),
-    ]).then(([account, profile, declarations]) => {
+    ]).then(([profile, declarations]) => {
       if (!active) return;
       setForm((current) => ({
         ...current,
-        first_name: account.status === "fulfilled" ? account.value.first_name ?? "" : current.first_name,
-        last_name: account.status === "fulfilled" ? account.value.last_name ?? "" : current.last_name,
         city: declarations.status === "fulfilled" ? declarations.value.find((item) => item.kind === "city")?.label ?? "" : current.city,
         phone: profile.status === "fulfilled" ? profile.value.phone ?? "" : current.phone,
         birth_date: profile.status === "fulfilled" ? profile.value.birth_date ?? "" : current.birth_date,
@@ -64,14 +58,13 @@ export function usePatientIdentityForm() {
   return { form, update, issuedAt };
 }
 
-/** Message à afficher si le nom, les prénoms ou la ville manquent ; chaîne vide si le carnet peut être enregistré. */
+/** Message à afficher si la ville manque ; chaîne vide si le carnet peut être enregistré. */
 export function patientFormProblem(form: PatientForm): string {
-  return form.last_name.trim() && form.first_name.trim() && form.city.trim() ? "" : "Le nom, les prénoms et la ville sont obligatoires.";
+  return form.city.trim() ? "" : "La ville est obligatoire.";
 }
 
 /** Enregistre le carnet patient (espace patient). Chaque appel est répétable sans risque : en cas d'échec au milieu, un nouvel essai reprend sans doublon. */
 export async function savePatientIdentity(form: PatientForm) {
-  await apiPatch("/api/v1/identity/me/profile/", { first_name: form.first_name.trim(), last_name: form.last_name.trim() });
   await apiPost("/api/v1/patient/declarations/", { kind: "city", label: form.city.trim() });
   await apiPatch("/api/v1/identity/onboarding/patient/", {
     phone: form.phone.trim(),
@@ -92,19 +85,16 @@ export function onboardingErrorMessage(error: unknown): string {
 }
 
 /** Les champs du carnet patient (couverture du carnet papier, identité, âge et genre, couverture santé). À mettre dans un <form>. */
-export function PatientIdentityFields({ form, update, issuedAt }: { form: PatientForm; update: (field: keyof PatientForm, value: string) => void; issuedAt: Date }) {
+/** `showProfession` : faux pour un professionnel, dont la profession est déjà dans son bloc « espace professionnel ». */
+export function PatientIdentityFields({ form, update, issuedAt, showProfession = true }: { form: PatientForm; update: (field: keyof PatientForm, value: string) => void; issuedAt: Date; showProfession?: boolean }) {
   return <>
     <div className="titulaire-cover" aria-label="Couverture du carnet">
       <strong>Carnet individuel de santé</strong>
       <span>Délivré le <time dateTime={issuedAt.toISOString()}>{DELIVERY_DATE.format(issuedAt)}</time></span>
     </div>
-    <div className="auth-name-grid">
-      <label className="field"><span>Nom</span><input required autoComplete="family-name" maxLength={80} value={form.last_name} onChange={event => update("last_name", event.target.value)} /></label>
-      <label className="field"><span>Prénoms</span><input required autoComplete="given-name" maxLength={80} value={form.first_name} onChange={event => update("first_name", event.target.value)} /></label>
-    </div>
     <label className="field"><span>Ville</span><input required autoComplete="address-level2" maxLength={120} value={form.city} onChange={event => update("city", event.target.value)} /></label>
     <label className="field"><span>Adresse ou BP (facultatif)</span><input autoComplete="street-address" maxLength={240} value={form.address} onChange={event => update("address", event.target.value)} /></label>
-    <label className="field"><span>Profession (facultatif)</span><input maxLength={120} value={form.profession} onChange={event => update("profession", event.target.value)} /></label>
+    {showProfession && <label className="field"><span>Profession (facultatif)</span><input maxLength={120} value={form.profession} onChange={event => update("profession", event.target.value)} /></label>}
     <label className="field"><span>Téléphone (facultatif)</span><input autoComplete="tel" value={form.phone} onChange={event => update("phone", event.target.value)} /></label>
     <fieldset className="onboarding-age-gender">
       <legend>Âge et genre (facultatifs)</legend>

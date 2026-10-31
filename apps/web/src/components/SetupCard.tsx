@@ -5,7 +5,7 @@ import { Icon } from "./ui/Icon";
 
 export type SetupStep = { key: string; title: string; text?: string; done: boolean; href: string };
 
-/* « Mise en route », identique pour le patient et le médecin : une liste d'étapes, une barre de progression et un seul bouton
+/* « Mise en route », identique pour le patient et le médecin : une liste d'étapes et un seul bouton
    qui mène à la prochaine étape. Quand tout est fait, la carte disparaît : elle ne sert que tant qu'il reste quelque chose à configurer. */
 export function SetupCard({ title, text, steps, actionLabel = "Continuer" }: { title: string; text?: string; steps: SetupStep[]; actionLabel?: string }) {
   const done = steps.filter((step) => step.done).length;
@@ -15,7 +15,6 @@ export function SetupCard({ title, text, steps, actionLabel = "Continuer" }: { t
     <section className="card progress-card setup-card" aria-labelledby="setup-title" aria-live="polite">
       <div className="section-heading"><div><span className="eyebrow">Mise en route</span><h2 id="setup-title">{title}</h2></div></div>
       {text && <p className="muted">{text}</p>}
-      <div className="progress-card__line" role="progressbar" aria-label="Avancement de la mise en route" aria-valuemin={0} aria-valuemax={steps.length} aria-valuenow={done}><span style={{ width: `${(done / steps.length) * 100}%` }} /></div>
       <ol className="checklist setup-card__steps" aria-label="Étapes de mise en route">
         {steps.map((step, index) => {
           const state = step.done ? "done" : step === next ? "current" : "todo";

@@ -73,3 +73,47 @@ class V2TrackingTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response["Content-Type"], "application/pdf")
         self.assertTrue(response.content.startswith(b"%PDF"))
+
+class CarnetExcelExportTests(TestCase):
+    """PAT-09 : export Excel du carnet, sur la période choisie, journalisé, réservé au titulaire."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username="export-patient", password="password", first_name="Awa", last_name="Test")
+        self.profile = PatientProfile.objects.create(user=self.user)
+        self.client = APIClient(); self.client.force_authenticate(self.user)
+
+    def test_excel_export_is_a_private_workbook_and_is_audited(self):
+        from apps.audit.models import AuditEvent
+        response = self.client.get("/api/v1/patient/care/export/?format=xlsx")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        self.assertIn("no-store", response["Cache-Control"])
+        self.assertTrue(response.content.startswith(b"PK"))
+        event = AuditEvent.objects.filter(event_type="patient.carnet.exported").latest("created_at")
+        self.assertEqual(event.metadata["resource_type"], "patient_carnet_xlsx")
+
+    def test_period_filters_the_measurements(self):
+        import io, zipfile
+        HealthMeasurement.objects.create(patient=self.profile, kind="weight", value="68.4", unit="kg", source="measured", measured_at="2026-01-10T08:00:00Z")
+        HealthMeasurement.objects.create(patient=self.profile, kind="weight", value="70.1", unit="kg", source="measured", measured_at="2026-09-10T08:00:00Z")
+        response = self.client.get("/api/v1/patient/care/export/?format=xlsx&from=2026-09-01&to=2026-09-30")
+        self.assertEqual(response.status_code, 200)
+        sheet = zipfile.ZipFile(io.BytesIO(response.content)).read("xl/worksheets/sheet4.xml").decode("utf-8")
+        self.assertIn("70.1", sheet)
+        self.assertNotIn("68.4", sheet)
+
+    def test_invalid_or_reversed_period_is_refused(self):
+        self.assertEqual(self.client.get("/api/v1/patient/care/export/?format=xlsx&from=pas-une-date").status_code, 400)
+        self.assertEqual(self.client.get("/api/v1/patient/care/export/?format=xlsx&from=2026-10-01&to=2026-09-01").status_code, 400)
+
+    def test_export_requires_authentication(self):
+        anonymous = APIClient()
+        self.assertIn(anonymous.get("/api/v1/patient/care/export/?format=xlsx").status_code, (401, 403))
+
+    def test_spreadsheet_cells_cannot_be_read_as_formulas(self):
+        from .export_xlsx import build_xlsx
+        import io, zipfile
+        data = build_xlsx([("Test", ["A"], [["=2+2"], ["@cmd"]])])
+        xml = zipfile.ZipFile(io.BytesIO(data)).read("xl/worksheets/sheet1.xml").decode("utf-8")
+        self.assertIn(">'=2+2<", xml)
+        self.assertIn(">'@cmd<", xml)

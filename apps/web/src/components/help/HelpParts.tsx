@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Icon } from "../ui/Icon";
 import { HELP_FAQ, HELP_GLOSSARY, HELP_TROUBLESHOOTING, type HelpProfile, type HelpProfileId } from "./helpContent";
 
@@ -28,6 +29,7 @@ export function HelpFaq({ profile, groupTitles = true }: { profile?: HelpProfile
             <details className="card help__q" key={item.q}>
               <summary><strong>{item.q}</strong></summary>
               <p className="muted">{item.a}</p>
+                    {item.href && <p><Link href={item.href}>{item.linkLabel ?? "En savoir plus"}</Link></p>}
             </details>
           ))}
         </div>

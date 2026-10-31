@@ -336,6 +336,8 @@ class MedicationReminder(models.Model):
     dosage = models.CharField(max_length=120, blank=True)
     instructions = models.CharField(max_length=300, blank=True)
     times = models.JSONField(default=list)
+    # Jours de prise : 0 = lundi … 6 = dimanche. Liste vide = tous les jours (PAT-14).
+    days_of_week = models.JSONField(default=list, blank=True)
     starts_on = models.DateField()
     ends_on = models.DateField(null=True, blank=True)
     stock_remaining = models.PositiveIntegerField(null=True, blank=True)

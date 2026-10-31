@@ -109,10 +109,10 @@ test("tous les plier/déplier de l’espace patient suivent le geste de « Ma ca
   assert.match(css, /carnet-accordion__toggle\[aria-expanded="true"\] \.icon \{ transform: rotate\(90deg\)/);
 });
 
-test("les pré-consultations n’ont plus de pli : affichées directement dans le carnet et dans les consultations", () => {
-  assert.doesNotMatch(read("src/components/PatientCarnet.tsx"), /CollapsibleSection title="Mes pré-consultations"/);
+test("les pré-consultations n’ont plus de pli : affichées directement dans les consultations (étape 1)", () => {
+  assert.doesNotMatch(read("src/components/PatientCarnet.tsx"), /CollapsibleSection title="Mes pré-consultations"|PatientPreconsultations/);
   assert.doesNotMatch(read("src/app/patient/consultations/page.tsx"), /CollapsibleSection title="Mes pré-consultations"/);
-  assert.match(read("src/app/patient/consultations/page.tsx"), /<PatientPreconsultations \/>/);
+  assert.match(read("src/components/PatientConsultationFlow.tsx"), /<PatientPreconsultations onDraftChange=\{setHasDraft\} \/>/);
 });
 
 test("l’âge et le genre se renseignent à l’étape 3 de l’onboarding patient", () => {
@@ -177,7 +177,7 @@ test("UX-02 : l’accueil regroupe les alertes en « À faire » et ne répète 
   assert.match(home, /id="home-todo-title"[^>]*>À faire</);
   assert.doesNotMatch(home, /stat-grid|PatientDashboardChart|progress-card|alert-card"[^>]*aria-live/);
   assert.equal((home.match(/apiGet</g) ?? []).length, 5, "cinq appels au lieu de huit");
-  assert.match(home, /className="button primary" href="\/patient\/consultations#preparer"/);
+  assert.match(home, /key: "prepare", href: "\/patient\/consultations#preparer"/);
   assert.match(home, /<PatientHomeIdentity account=\{account\} \/>/);
 });
 
@@ -187,10 +187,10 @@ test("UX-04 : deux QR, deux noms — carte virtuelle (secours) et accès tempora
   const home = read("src/components/PatientHome.tsx");
   assert.match(identity, /voit votre carte virtuelle, sans se connecter/);
   assert.match(identity, /autre QR, valable 5 minutes/);
-  assert.match(identity, /href="\/patient\/acces#qr"/);
+  assert.match(identity, /href="\/patient\/consultations#preparer"/);
   assert.match(grants, /Accès temporaire pour un professionnel/);
   assert.match(grants, /Ce n’est pas le QR de votre carte virtuelle/);
-  assert.match(home, /Accès temporaire pour un professionnel/);
+  assert.match(read("src/components/PatientConsultationFlow.tsx"), /Accès temporaire pour le professionnel/);
   for (const text of [identity, grants, home]) assert.doesNotMatch(text, /QR d’accès|QR d'accès|QR public/);
 });
 

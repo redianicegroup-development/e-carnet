@@ -20,7 +20,7 @@ function formFrom(item: Encounter | null): FormState {
   return { reason: item.reason, selected: symptoms.selected, other: symptoms.other, vitals: vitalsToForm(item.vitals), recorded_with_help: item.recorded_with_help ?? "" };
 }
 
-export function PatientPreconsultations() {
+export function PatientPreconsultations({ onDraftChange }: { onDraftChange?: (hasDraft: boolean) => void }) {
   const [items, setItems] = useState<Encounter[] | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [editing, setEditing] = useState(false);
@@ -38,6 +38,9 @@ export function PatientPreconsultations() {
   const draft = (items ?? []).find((item) => item.status === "draft") ?? null;
   const closed = (items ?? []).filter((item) => item.status === "closed");
   const showWizard = items !== null && (!draft || editing);
+  const hasDraft = Boolean(draft);
+  // La pré-consultation est « faite » dès qu'un brouillon est enregistré : l'écran des consultations en tire l'étape 2 (accès temporaire).
+  useEffect(() => { if (items !== null) onDraftChange?.(hasDraft); }, [items, hasDraft, onDraftChange]);
 
   async function save(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();

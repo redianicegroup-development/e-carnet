@@ -28,7 +28,10 @@ logger = logging.getLogger(__name__)
 
 
 VIEW_EVENT_TYPES = ("clinical_data.read", "establishment_record.opened")
-RECORD_OPENING_TTL = timedelta(minutes=30)
+def record_opening_expiry(now):
+    """Fin de validité d'une ouverture : aucune limite par défaut (décision ETA-09), ou now + ECARNET_RECORD_OPENING_TTL_MINUTES si elle est réglée."""
+    minutes = getattr(settings, "ECARNET_RECORD_OPENING_TTL_MINUTES", 0)
+    return now + timedelta(minutes=minutes) if minutes > 0 else None
 BULK_ACCESS_WINDOW = timedelta(hours=1)
 BULK_ACCESS_THRESHOLD = 15
 DEFAULT_PAGE_SIZE = 25
@@ -282,7 +285,7 @@ class EstablishmentRecordOpeningCreateView(APIView):
             reason_category=category,
             reason_note=serializer.validated_data.get("reason_note", ""),
             opened_at=now,
-            expires_at=now + RECORD_OPENING_TTL,
+            expires_at=record_opening_expiry(now),
         )
         record_event(
             event_type="establishment_record.opened",
@@ -346,7 +349,7 @@ class EstablishmentRecordView(APIView):
             return Response({"success": False, "message": "Ouverture introuvable."}, status=404)
         if opening.opened_by_id != request.user.pk:
             return Response({"success": False, "message": "Cette ouverture appartient à un autre administrateur."}, status=403)
-        if opening.expires_at <= timezone.now():
+        if opening.expires_at and opening.expires_at <= timezone.now():
             return Response({"success": False, "message": "Cette ouverture a expiré. Demandez un nouvel accès avec un motif."}, status=403)
         if not active_administrator(request.user, establishment_id):
             return Response({"success": False, "message": "Votre habilitation établissement n’est plus active."}, status=403)

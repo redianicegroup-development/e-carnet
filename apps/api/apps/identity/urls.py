@@ -6,6 +6,7 @@ from .views import CurrentAccountThemeView
 from .visitor_views import AnonymousClickView, AnonymousVisitView, ProductActionSurveyTriggerView, ProductExperienceSurveySubmitView, ProductSurveySubmitView, ProductSurveySummaryView, PublicFeedbackView
 from .admin_views import AdminContactMessageStatusView, AdminDashboardView, AdminFeedbackStatusView, AdminRecoveryView
 from .admin_operations import AdminOperationsIncidentView, AdminOperationsSummaryView
+from .admin_audit import AdminAuditExportView, AdminAuditJournalView
 from .monitoring_webhook import MonitoringWebhookView
 from .account_action_views import AdminAccountActionRequestStatusView, AdminAccountActionRequestsView, AdminDeleteRequestedAccountView, CurrentAccountActionRequestsView
 urlpatterns = [
@@ -22,6 +23,8 @@ urlpatterns = [
     path("admin/feedback/<uuid:feedback_id>/", AdminFeedbackStatusView.as_view(), name="admin-feedback-status"),
     path("admin/recovery/", AdminRecoveryView.as_view(), name="admin-recovery"),
     path("admin/operations/summary/", AdminOperationsSummaryView.as_view(), name="admin-operations-summary"),
+    path("admin/audit/", AdminAuditJournalView.as_view(), name="admin-audit-journal"),
+    path("admin/audit/export/", AdminAuditExportView.as_view(), name="admin-audit-export"),
     path("admin/operations/incidents/<uuid:incident_id>/", AdminOperationsIncidentView.as_view(), name="admin-operations-incident"),
     path("monitoring/webhook/", MonitoringWebhookView.as_view(), name="monitoring-webhook"),
     path("admin/contact-messages/<uuid:message_id>/", AdminContactMessageStatusView.as_view(), name="admin-contact-message-status"),

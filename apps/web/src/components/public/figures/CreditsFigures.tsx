@@ -4,6 +4,8 @@ import { Figure, Line, Node, Packet, Svg, wrapText } from "./parts";
 /* Schémas de la page Crédits. Les rôles et les structures viennent de lib/credits.ts : aucun nom de personne n'est dessiné (seuls les rôles sont confirmés). */
 
 /** Organigramme : Redianice porte le projet ; quatre rôles ; le développeur de l'équipe est le fondateur d'AKATech Studio. */
+import { PROJECT_LOGO_WEBP } from "../../../lib/brand";
+
 export function CreditsTeamFigure() {
   const redianice = CREDITS_ORIGINS.find((entry) => entry.id === "redianice");
   const akatech = CREDITS_ORIGINS.find((entry) => entry.id === "akatech");
@@ -51,14 +53,12 @@ export function CreditsStackFigure() {
 }
 
 /** Le signe de la marque (un carnet relié et un interrupteur), tracé comme dans BrandLogo ; le bouton glisse d'un bout à l'autre. */
-export function BrandSwitchFigure() {
+/** Le logo actuel du projet (stéthoscope dont la boucle forme un cadenas). Remplace l'ancien dessin du carnet relié à interrupteur, devenu obsolète. */
+export function BrandLogoFigure() {
   return (
-    <figure className="fig brand-switch" data-figure>
-      <svg className="fig__svg" viewBox="8 6 80 84" role="img" aria-label="Le signe de Mon E‑Carnet : un carnet relié dont la reliure est un interrupteur" focusable="false">
-        <path className="fg-pop" d="M25 10.04 A12 12 0 0 0 14 22 V74 A12 12 0 0 0 25 85.96 Z" fill="var(--brand-spine, #2C3A33)" />
-        <path className="fg-pop" d="M31 10 H74 A12 12 0 0 1 86 22 V74 A12 12 0 0 1 74 86 H31 A3 3 0 0 1 28 83 V13 A3 3 0 0 1 31 10 Z M48.0 37 H66.0 A11.0 11.0 0 0 1 66.0 59 H48.0 A11.0 11.0 0 0 1 48.0 37 Z" fill="var(--brand-cover, #597C66)" fillRule="evenodd" />
-        <circle className="fg-switch-knob" cx="66" cy="48" r="7" fill="var(--brand-cover, #597C66)" data-from="48" />
-      </svg>
+    <figure className="fig brand-logo-fig" data-figure>
+      {/* eslint-disable-next-line @next/next/no-img-element -- logo WebP versionné et servi depuis Cloudinary */}
+      <img src={PROJECT_LOGO_WEBP} alt="Le logo de Mon E‑Carnet : un stéthoscope dont la boucle forme un cadenas" width={132} draggable={false} referrerPolicy="no-referrer" />
     </figure>
   );
 }

@@ -1,6 +1,6 @@
 # Mon E-Carnet — Reste à faire réel et feuille de route V1 à V6
 
-**Document de référence : 26 octobre 2026**  
+**Document de référence : 29 octobre 2026**  
 **Source principale :** code du dépôt `apps/api` et `apps/web`, migrations, tests et documentation technique.  
 **Statut global :** V1 fonctionnelle en local, mais non validée pour des données de santé réelles.
 
@@ -115,10 +115,10 @@
 - Mettre en place une surveillance sans contenu médical : erreurs frontend/backend, disponibilité, échec SMTP et tâches de nettoyage.
 - Auditer les dépendances actuelles et traiter les alertes ; migrer `authlib.jose` vers `joserfc` ou documenter la décision.
 - Vérifier rate limiting, cookies, CSRF, domaines réels, headers, cache et absence de secrets dans le navigateur.
-- Audit WCAG 2.2 AA : clavier, lecteur d’écran, focus, contraste, zoom 200 %, erreurs et annonces d’état.
-- Tester cinq profils utilisateurs sur mobile et 4G, dont personne âgée, professionnel pressé et utilisateur peu à l’aise avec l’écrit.
-- Mesurer les performances et établir une matrice Android/iOS/navigateurs.
-- Réduire les avertissements `<img>` non optimisés lorsqu’ils concernent des parcours critiques.
+- Audit WCAG 2.2 AA manuel restant : clavier, lecteur d’écran, focus, zoom 200 %, reflow 320 px, erreurs et annonces d’état ; l’audit axe automatisé passe à 0 violation sur 10 routes locales.
+- Tester cinq profils utilisateurs sur mobile et 4G, dont personne âgée, professionnel pressé et utilisateur peu à l’aise avec l’écrit ; protocole préparé, sessions réelles encore à organiser.
+- Exécuter la matrice Android/iOS/navigateurs et consigner les résultats ; matrice préparée dans `docs/P2-RECETTE-MOBILE-WCAG-CHARGE.md`.
+- Vérifier après déploiement les images critiques et le LCP ; les deux images hero WebP ont été recompressées localement.
 
 ## V1.4 — Décisions juridiques et médicales
 
@@ -140,7 +140,7 @@
 
 ## V2.1 — Compléter les fonctions déjà amorcées
 
-- Finaliser l’interface professionnelle des plans de suivi, avec objectifs, fréquence, statut et historique.
+- Finaliser la recette staging de l’interface professionnelle des plans de suivi, avec objectifs, fréquence, statut et historique ; l’interface et l’API sont livrées localement.
 - Améliorer les graphiques de mesures : tendances, périodes, provenance, unités et absence de fausse alerte.
 - Compléter les rappels de médicaments : récurrence, stock, renouvellement, notifications et reprise hors connexion sans données non chiffrées.
 - Compléter les rendez-vous : côté professionnel/établissement, confirmation, déplacement, annulation, rappels et états cohérents.
@@ -288,7 +288,7 @@ Le plan détaillé est dans [`docs/AKATECH-PLAN-OPTIMISATION-CHARGE-HODI.md`](AK
 
 - **P0 :** image frontend de production (`next build`/`next start`), séparation des migrations et du démarrage, stockage privé persistant, réponses Hodi écrites, staging séparé et CI avec scans.
 - **P1 :** Redis partagé pour le cache et les limitations distribuées, vérification des index PostgreSQL, pagination et payloads bornés, tests de concurrence QR/grants, quotas d’upload et `request_id` sans données médicales.
-- **P2 :** métriques RED/USE, tests de charge staging à 100 puis 300 utilisateurs actifs, nettoyage quotidien, restauration mesurée et décision Site Pro/Cyber+ selon les résultats.
-- **P3 :** tests à 1 000 utilisateurs actifs puis étude multi-instance uniquement si l’API est le goulot. Le load balancer n’est pas automatique à 4 000 patients : il exige une application sans état local, cache partagé, stockage partagé, health checks et confirmation Hodi.
+- **P2 :** scénario k6 A/B/C prêt pour 100, 300 puis 1 000 utilisateurs virtuels ; exécution staging, métriques RED/USE, nettoyage quotidien, restauration mesurée et décision Site Pro/Cyber+ restent à produire avec l’environnement cible. Audit axe automatisé et protocole mobile sont disponibles.
+- **P3 :** étude multi-instance uniquement si l’API est le goulot après les profils de charge. Le load balancer n’est pas automatique à 4 000 patients : il exige une application sans état local, cache partagé, stockage partagé, health checks et confirmation Hodi.
 
 **Décision actuelle :** pas de Kubernetes ni de load balancer ajouté au dépôt à ce stade. L’offre Site Pro est destinée au pilote fictif ; Cyber+ est à examiner pour la continuité de service ; Archipel ou serveur dédié seulement si le stockage, le temps de réponse ou la capacité mesurée l’exigent. Les données de santé réelles restent interdites jusqu’au Go/No-Go formel.

@@ -1,0 +1,18 @@
+/* Bouton principal de l'espace : surélevé au centre de la barre basse (mobile), en tête de la sidebar (grand écran).
+   Même teinte miel que les orbes des tuiles ; aucune nouvelle couleur. */
+.sb__row--action { display: flex; justify-content: center; align-items: flex-start; min-width: 0; margin: 0; }
+.sb__action { position: relative; display: grid; justify-items: center; gap: 2px; margin-top: -30px; color: var(--text); text-decoration: none; -webkit-tap-highlight-color: transparent; }
+.sb__action-orb { display: grid; place-items: center; width: 58px; height: 58px; border-radius: 50%; background: var(--orb-honey, var(--primary)); color: var(--text); box-shadow: 0 0 0 5px var(--bg), 0 12px 20px -8px color-mix(in srgb, var(--text) 45%, transparent); transition: transform .15s ease; }
+.sb__action:active .sb__action-orb { transform: scale(.94); }
+.sb__action:focus-visible { outline: 3px solid var(--primary); outline-offset: 4px; border-radius: 999px; }
+.sb__action-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+@media (min-width: 920px) {
+  .sb__row--action { order: -1; display: block; margin: 4px 0 8px; }
+  .sb__action { display: flex; align-items: center; justify-items: stretch; gap: 10px; width: 100%; min-height: 40px; margin-top: 0; padding: 0 10px 0 6px; border-radius: 12px; background: var(--orb-honey, var(--primary)); font-weight: 700; }
+  .sb__action-orb { width: 28px; height: 28px; background: transparent; box-shadow: none; }
+  .sb__action-orb .icon { width: 20px; height: 20px; }
+  .sb__action-label { position: static; width: auto; height: auto; overflow: visible; clip-path: none; }
+  .sb.is-collapsed .sb__action { justify-content: center; padding: 0; }
+  .sb.is-collapsed .sb__action-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+}
+@media (prefers-reduced-motion: reduce) { .sb__action-orb { transition: none; } }

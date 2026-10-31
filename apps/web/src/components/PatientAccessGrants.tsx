@@ -110,7 +110,9 @@ async function getData<T>(path: string): Promise<T> {
   return payload.data as T;
 }
 
-export function PatientAccessGrants() {
+/* `part` : « all » = l'écran complet d'avant ; « qr » = le seul QR temporaire (étape 2 des consultations) ;
+   « log » = les demandes à décider et l'historique des accès (page Historique). */
+export function PatientAccessGrants({ part = "all" }: { part?: "all" | "qr" | "log" }) {
   const [items, setItems] = useState<Grant[]>([]);
   const [events, setEvents] = useState<AccessEvent[]>([]);
   const [message, setMessage] = useState("Chargement des demandes…");
@@ -196,22 +198,24 @@ export function PatientAccessGrants() {
   }
 
   return (
-    <section className="hero-page">
-      <span className="eyebrow">Mon carnet · consentement</span>
-      <h1>Qui peut accéder à mon carnet ?</h1>
-      <p className="muted">Rien n’est ouvert sans votre accord. Chaque demande indique qui, quoi et pour combien de temps.</p>
+    <section className={part === "all" ? "hero-page" : "stack"}>
+      {part === "all" && <>
+        <span className="eyebrow">Mon carnet · consentement</span>
+        <h1>Qui peut accéder à mon carnet ?</h1>
+        <p className="muted">Rien n’est ouvert sans votre accord. Chaque demande indique qui, quoi et pour combien de temps.</p>
+      </>}
       <p className="notice" role="status" aria-live="polite">{message}</p>
 
-      <section id="qr" className="card" aria-labelledby="qr-heading">
+      {part !== "log" && <section id="qr" className="card" aria-labelledby="qr-heading">
         <span className="eyebrow">Accès temporaire</span>
         <h2 id="qr-heading">Accès temporaire pour un professionnel</h2>
         <p className="muted">Ce n’est pas le QR de votre carte virtuelle : celui-ci expire au bout de 5 minutes. Le professionnel qui le scanne demande à voir vos informations et vos documents (lecture seule) ; c’est vous qui décidez ensuite.</p>
         {!qr
           ? <button type="button" className="button primary" onClick={() => void createQr()} disabled={qrBusy}>{qrBusy ? "Génération…" : "Générer un QR temporaire"}</button>
           : <ActiveAccessQr token={qr.token} expiresAt={qr.expiresAt} busy={qrBusy} onRenew={() => void createQr()} />}
-      </section>
+      </section>}
 
-      <section aria-labelledby="active-access-heading">
+      {part !== "qr" && <section aria-labelledby="active-access-heading">
         <h2 id="active-access-heading">Demandes et autorisations</h2>
         {items.length === 0 ? (
           <div className="card empty">Aucune demande d’accès pour le moment.</div>
@@ -240,9 +244,9 @@ export function PatientAccessGrants() {
             ))}
           </div>
         )}
-      </section>
+      </section>}
 
-      <section aria-labelledby="access-history-heading" className="card" style={{ marginTop: 28 }}>
+      {part !== "qr" && <section aria-labelledby="access-history-heading" className="card">
         <h2 id="access-history-heading">Historique des accès</h2>
         {events.length === 0 ? <p className="empty">Les décisions et changements d’accès apparaîtront ici.</p> : (
           <ol className="stack">
@@ -254,7 +258,7 @@ export function PatientAccessGrants() {
             ))}
           </ol>
         )}
-      </section>
+      </section>}
     </section>
   );
 }

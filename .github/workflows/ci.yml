@@ -48,6 +48,8 @@ jobs:
         run: bash -n ops/monitoring-check.sh
       - name: Tester la sonde de surveillance (OK et panne)
         run: python ops/test-monitoring-check.py
+      - name: Tester l’envoi d’un événement de monitoring signé
+        run: python ops/test-monitoring-event.py
 
   web:
     runs-on: ubuntu-latest

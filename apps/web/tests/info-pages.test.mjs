@@ -49,11 +49,14 @@ test("les schémas n'utilisent que les variables du thème (pas de couleur codé
   const stripped = css.replace(/url\("data:[^"]*"\)/g, "");
   assert.doesNotMatch(stripped, /#[0-9a-fA-F]{3,8}\b/, "couleur hexadécimale dans info-pages.css");
   assert.doesNotMatch(stripped, /\brgba?\(/i, "rgb() dans info-pages.css");
-  for (const file of figureFiles.filter((name) => name !== "CreditsFigures.tsx")) {
+  for (const file of figureFiles) {
     assert.doesNotMatch(readFileSync(new URL(`../src/components/public/figures/${file}`, import.meta.url), "utf8"), /#[0-9a-fA-F]{3,8}\b|fill="(?!none|currentColor|var\()/, `${file} : couleur en dur`);
   }
-  // seule exception : le signe de la marque, qui reprend les couleurs de BrandLogo avec les mêmes variables de repli
-  assert.match(src("components/public/figures/CreditsFigures.tsx"), /var\(--brand-spine, #2C3A33\)/);
+  // l'ancien dessin du signe (carnet relié à interrupteur, couleurs de repli codées) est remplacé par le logo actuel du projet
+  const credits = src("components/public/figures/CreditsFigures.tsx");
+  assert.doesNotMatch(credits, /BrandSwitchFigure|--brand-spine/);
+  assert.match(credits, /export function BrandLogoFigure/);
+  assert.match(credits, /src=\{PROJECT_LOGO_WEBP\}/);
 });
 
 test("chaque schéma est annoncé par un résumé accessible et sa légende reste lisible", () => {

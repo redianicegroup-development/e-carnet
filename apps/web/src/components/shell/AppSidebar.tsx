@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { Fragment, useCallback, useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { BrandMark } from "../ui/BrandMark";
 import { Icon, type IconName } from "../ui/Icon";
 import "./sidebar.css";
+import "./sidebar-action.css";
 
 /* Sidebar unique des quatre espaces (patient, professionnel, établissement, administration).
    Même structure et même rendu partout, façon Claude : en-tête logo + bouton de repli, navigation en lignes arrondies,
@@ -36,6 +37,9 @@ export type SidebarItem = {
   controls?: string;
 };
 
+/** Bouton principal de l'espace (Préparer ma consultation, Scanner un QR) : surélevé au centre de la barre basse mobile, en tête de la sidebar sur grand écran. */
+export type SidebarAction = { id: string; label: string; long: string; icon: IconName; href: string };
+
 export type SidebarMenuItem = {
   id: string;
   label: string;
@@ -53,6 +57,7 @@ export type AppSidebarProps = {
   ariaLabel: string;
   brand: { href: string; title: string; subtitle: string };
   items: SidebarItem[];
+  action?: SidebarAction;
   /** "tablist" : les entrées pilotent des panneaux d’une même page (flèches, Début, Fin). */
   listRole?: "tablist";
   listLabel?: string;
@@ -159,6 +164,17 @@ function onTabsKeyDown(event: KeyboardEvent<HTMLUListElement>) {
   tabs[next].click();
 }
 
+function ActionRow({ action }: { action: SidebarAction }) {
+  return (
+    <li className="sb__row sb__row--action">
+      <Link className="sb__action" href={action.href} aria-label={action.long} data-tip={action.long} data-tour="nav-action">
+        <span className="sb__action-orb" aria-hidden="true"><Icon name={action.icon} size={24} /></span>
+        <span className="sb__action-label">{action.label}</span>
+      </Link>
+    </li>
+  );
+}
+
 export function MenuEntry({ entry, onDone }: { entry: SidebarMenuItem; onDone: () => void }) {
   const className = `sb__menu-item${entry.tone === "danger" ? " sb__menu-item--danger" : ""}`;
   const body = <><Icon name={entry.icon} size={18} /><span>{entry.label}</span></>;
@@ -257,7 +273,7 @@ function AccountMenu({ account, menu, notice, collapsed }: { account: SidebarAcc
   );
 }
 
-export function AppSidebar({ ariaLabel, brand, items, listRole, listLabel, account, accountHref, menu, notice, tools, collapsed, onToggle, bare = false }: AppSidebarProps) {
+export function AppSidebar({ ariaLabel, brand, items, action, listRole, listLabel, account, accountHref, menu, notice, tools, collapsed, onToggle, bare = false }: AppSidebarProps) {
   const tabs = listRole === "tablist";
   const rail = collapsed && !bare;
   const scroll = useGooeyIndicator(items.find((item) => item.active)?.id, items.length);
@@ -277,11 +293,14 @@ export function AppSidebar({ ariaLabel, brand, items, listRole, listLabel, accou
         <div className="sb__scroll" ref={scroll}>
           <span className="sb__goo" aria-hidden="true"><i className="sb__blob sb__blob--lead" /><i className="sb__blob sb__blob--trail" /></span>
           <ul className="sb__list" role={tabs ? "tablist" : undefined} aria-label={tabs ? listLabel : undefined} onKeyDown={tabs ? onTabsKeyDown : undefined}>
-            {items.map((item) => (
-              <li key={item.id} className="sb__row" role={tabs ? "presentation" : undefined}>
-                {item.heading && <span className="sb__heading" aria-hidden="true">{item.heading}</span>}
-                <NavItem item={item} tabs={tabs} />
-              </li>
+            {items.map((item, index) => (
+              <Fragment key={item.id}>
+                {action && !tabs && index === Math.floor(items.length / 2) && <ActionRow action={action} />}
+                <li className="sb__row" role={tabs ? "presentation" : undefined}>
+                  {item.heading && <span className="sb__heading" aria-hidden="true">{item.heading}</span>}
+                  <NavItem item={item} tabs={tabs} />
+                </li>
+              </Fragment>
             ))}
           </ul>
         </div>

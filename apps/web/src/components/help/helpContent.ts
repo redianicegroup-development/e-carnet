@@ -29,7 +29,7 @@ export const HELP_PROFILES: HelpProfile[] = [
       { icon: "document", title: "Préparez une consultation", text: "Notez le motif et vos observations dans une pré-consultation, seul ou avec un infirmier qui remplit sur votre téléphone. Le médecin la lit grâce à votre QR, avec votre accord, puis la clôture en signant la consultation." },
       { icon: "qr", title: "Autorisez, ou refusez", text: "Présentez votre QR code à un professionnel : il est valable 5 minutes. Le professionnel fait alors une demande. Vous voyez qui demande, depuis quel établissement et pour quel contenu, puis vous autorisez ou refusez. Aucun accès n’est ouvert avant votre choix." },
       { icon: "clock", title: "Suivez et arrêtez un accès", text: "Un accès autorisé dure 2 heures, avec au plus deux prolongations d’une heure. Vous pouvez le révoquer depuis votre espace et retrouver la liste de vos accès, en cours ou passés." },
-      { icon: "users", title: "Ajoutez un proche de confiance", text: "Depuis Paramètres → Proches de confiance, générez un mot de rattachement temporaire et remettez-le à votre proche. Il le saisit dans son propre compte. Le lien est séparé de votre mot de passe, limité à la lecture de la fiche d’urgence et révocable." },
+      { icon: "users", title: "Proches et enfants", text: "Un proche de confiance lit votre fiche d’urgence, un profil enfant a son propre dossier. Une page dédiée explique les deux pas à pas." },
       { icon: "building", title: "Validez un adressage", text: "Lorsqu’un professionnel propose de partager certains éléments avec un autre établissement, vous choisissez précisément les éléments et la durée. L’établissement destinataire ne voit rien avant votre décision." },
     ],
   },
@@ -57,7 +57,7 @@ export const HELP_PROFILES: HelpProfile[] = [
   },
 ];
 
-export type HelpFaqItem = { q: string; a: string; profiles?: HelpProfileId[] };
+export type HelpFaqItem = { q: string; a: string; profiles?: HelpProfileId[]; href?: string; linkLabel?: string };
 export type HelpFaqGroup = { id: string; title: string; items: HelpFaqItem[] };
 
 export const HELP_FAQ: HelpFaqGroup[] = [
@@ -92,8 +92,7 @@ export const HELP_FAQ: HelpFaqGroup[] = [
       { q: "Comment un médecin rejoint-il un établissement ?", a: "L’administrateur de l’établissement lui remet un code à usage unique, valable 48 h. Le médecin le saisit dans son espace : sa demande est envoyée à l’établissement. Tant que le rattachement n’est pas confirmé, il ne peut demander l’accès à aucun carnet.", profiles: ["professional", "establishment"] },
       { q: "Que se passe-t-il si l’invitation ou le code expire ?", a: "L’invitation d’un administrateur et le code d’un médecin sont valables 48 heures et ne s’utilisent qu’une fois. Demandez-en un nouveau : l’ancien ne fonctionnera plus.", profiles: ["professional", "establishment"] },
       { q: "Un médecin peut-il lire tous les carnets de l’établissement ?", a: "Non. Un rattachement ne donne accès à aucun dossier : chaque patient autorise ou refuse, demande par demande.", profiles: ["establishment", "professional"] },
-      { q: "Qu’est-ce qu’un proche de confiance ?", a: "C’est une personne qui possède son propre compte et à qui le patient remet un mot de rattachement à usage unique. Elle peut consulter uniquement la fiche d’urgence autorisée, en lecture seule. Ce lien n’est ni un partage de mot de passe ni une représentation légale.", profiles: ["patient"] },
-      { q: "Un proche de confiance peut-il consulter tout mon carnet ?", a: "Non. Le proche ne peut lire que la fiche d’urgence dans le périmètre prévu. Il ne peut pas modifier votre carnet, générer votre QR ou changer vos réglages. Vous pouvez retirer le lien depuis vos paramètres.", profiles: ["patient"] },
+      { q: "Proche de confiance ou profil enfant : comment ça marche ?", a: "Le proche de confiance est un adulte qui lit votre fiche d’urgence, en lecture seule, avec un mot de rattachement temporaire. Le profil enfant est un dossier séparé pour un mineur sans compte, ouvert par son représentant légal. La page dédiée explique les deux pas à pas.", profiles: ["patient"], href: "/proches-et-enfants", linkLabel: "Lire la page Proches et enfants" },
       { q: "Qu’est-ce qu’un adressage vers un autre établissement ?", a: "Un professionnel peut proposer un partage ciblé vers un établissement destinataire. Le patient reçoit la demande, choisit les éléments et la durée, puis peut refuser ou retirer l’accès. L’établissement destinataire ne peut pas rechercher librement des patients.", profiles: ["patient", "professional", "establishment"] },
       { q: "Un infirmier possède-t-il un compte ?", a: "Non. L’infirmier n’a pas de compte propre. Avec l’accord du patient, il peut l’aider à saisir la pré-consultation depuis l’espace du patient.", profiles: ["patient", "establishment"] },
       { q: "Un proche peut-il m’aider à remplir mon carnet ?", a: "La pré-consultation permet d’indiquer la personne qui vous a aidé. Cette personne n’a ni compte, ni droit d’accès propre.", profiles: ["patient"] },

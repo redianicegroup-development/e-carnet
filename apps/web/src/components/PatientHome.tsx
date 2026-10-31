@@ -5,14 +5,13 @@ import { useCallback, useEffect, useState } from "react";
 import { apiGet } from "../infrastructure/api/client";
 import { AvatarBadge, displayName, useSpaceAccount } from "./shell/SpaceShell";
 import { Icon, type IconName } from "./ui/Icon";
-import { TileGrid, type TileItem } from "./ui/TileGrid";
 import { PatientHomeIdentity } from "./PatientHomeIdentity";
 import { SetupCard, type SetupStep } from "./SetupCard";
 
 /* Accueil patient : peu de blocs, dans l'ordre où on en a besoin.
    1. dire bonjour · 2. « Mise en route » (tant que le carnet essentiel n'est pas commencé, puis elle disparaît) ·
-   3. ce qui attend une réponse (un seul bloc « À faire ») · 4. préparer la prochaine consultation ·
-   5. mon dossier patient et ma carte virtuelle · 6. trois raccourcis.
+   3. ce qui attend une réponse (un seul bloc « À faire », qui propose aussi de préparer la prochaine consultation) ·
+   5. mon dossier patient (tuiles pliables) et ma carte virtuelle. Les rubriques du carnet, les consultations et l'historique sont dans la barre de navigation.
    Les compteurs et le graphique d'avant doublonnaient les onglets : ils n'aident pas à agir. */
 
 /** Chaque information est indépendante : `null` = n'a pas pu être chargée (on n'invente pas un zéro). */
@@ -41,15 +40,6 @@ async function loadSummary(): Promise<Summary> {
   };
 }
 
-const SHORTCUTS: TileItem[] = [
-  { href: "/patient/carnet", icon: "folder", title: "Mon carnet", text: "Allergies, documents, vaccins, traitements" },
-  { href: "/patient/consultations", icon: "stethoscope", title: "Mes visites", text: "Pré-consultations et consultations validées" },
-  { href: "/patient/acces#qr", icon: "qr", title: "Partage QR", text: "Accès temporaire pour un professionnel : un QR valable 5 minutes, à lui présenter en consultation" },
-  { href: "/patient/proches", icon: "users", title: "Proches de confiance", text: "Donner un accès en lecture seule à un proche" },
-  { href: "/patient/adressages", icon: "share", title: "Adressages", text: "Les orientations vers un autre professionnel" },
-  { href: "/patient/parametres", icon: "sliders", title: "Réglages", text: "Mon compte, l’apparence et les notifications" },
-];
-
 type Todo = { key: string; href: string; icon: IconName; title: string; text: string; urgent?: boolean };
 
 export function PatientHome() {
@@ -66,8 +56,8 @@ export function PatientHome() {
     return () => { active = false; };
   }, [attempt]);
 
-  const todos: Todo[] = [];
-  if (summary && summary.pending > 0) todos.push({ key: "grants", href: "/patient/acces", icon: "share", urgent: true, title: `${summary.pending} demande${summary.pending > 1 ? "s" : ""} d’accès en attente`, text: "Un professionnel attend votre décision. Rien n’est partagé tant que vous n’avez pas accepté." });
+  const todos: Todo[] = [{ key: "prepare", href: "/patient/consultations#preparer", icon: "pencil", title: "Préparez votre prochaine consultation", text: "Avant votre rendez-vous : le motif et ce que vous ressentez. Le professionnel le lit seulement si vous l’autorisez." }];
+  if (summary && summary.pending > 0) todos.unshift({ key: "grants", href: "/patient/historique#acces", icon: "share", urgent: true, title: `${summary.pending} demande${summary.pending > 1 ? "s" : ""} d’accès en attente`, text: "Un professionnel attend votre décision. Rien n’est partagé tant que vous n’avez pas accepté." });
   if (account && !account.patient_profile.completed) todos.push({ key: "profile", href: "/onboarding/patient", icon: "user", title: "Terminer mon profil", text: "Téléphone, naissance, couverture : utile pour préparer vos consultations." });
   if (summary && summary.unread > 0) todos.push({ key: "notifications", href: "/patient/parametres?section=notifications", icon: "bell", title: `${summary.unread} notification${summary.unread > 1 ? "s" : ""} à lire`, text: "Une action concernant votre carnet attend votre attention." });
   // « Mise en route » : une rubrique inconnue (non chargée) n'est jamais comptée comme vide ; la carte n'apparaît que si une rubrique est vraiment vide.
@@ -103,19 +93,12 @@ export function PatientHome() {
         </section>
       )}
 
-      <section className="card cta-card">
-        <span className="eyebrow">Avant votre rendez-vous</span>
-        <h2>Préparez votre prochaine consultation</h2>
-        <p className="muted">Décrivez votre motif et ce que vous ressentez. Le professionnel le lira uniquement si vous l’autorisez.</p>
-        <div className="actions"><Link className="button primary" href="/patient/consultations#preparer"><Icon name="pencil" size={18} />Préparer ma consultation</Link></div>
-      </section>
 
       {account && <PatientHomeIdentity account={account} />}
 
       {summary?.partial && <p className="notice" role="status">Certaines informations de cette page n’ont pas pu être chargées. <button className="text-link" type="button" onClick={retry}>Réessayer</button></p>}
       {!summary && !error && <div className="skeleton" role="status"><span className="sr-only">Chargement de votre carnet…</span><i /></div>}
 
-      <TileGrid label="Raccourcis" items={SHORTCUTS} />
     </div>
   );
 }

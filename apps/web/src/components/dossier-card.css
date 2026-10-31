@@ -14,3 +14,6 @@
 .dossier__group h3 { margin: 0; font-size: 1rem; }
 .dossier__note { margin: 0; font-size: .85rem; }
 @media (min-width: 720px) { .dossier__list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Bloc d'en-tête du dossier puis grille de tuiles pliables carrées (comme Mon carnet). */
+.dossier-group { display: grid; gap: 14px; min-width: 0; }

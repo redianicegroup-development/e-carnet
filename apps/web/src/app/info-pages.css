@@ -123,7 +123,8 @@
 .fg-doc-line { fill: none; stroke: var(--border-strong); stroke-width: 4; stroke-linecap: round; }
 .fg-badge { fill: var(--primary); }
 .fg-float { transform-box: fill-box; transform-origin: center; }
-.brand-switch { width: 132px; }
+.brand-logo-fig { width: 132px; }
+.brand-logo-fig img { display: block; width: 100%; height: auto; border-radius: 28px; }
 
 /* ---------- En-tête commun des pages informatives ---------- */
 .info-page { display: grid; gap: clamp(28px, 5vw, 52px); max-width: 1040px; margin-inline: auto; }
@@ -164,7 +165,7 @@
 .trail__body p { max-width: 56ch; margin: 0; color: var(--text-muted); line-height: 1.55; }
 .trail__body { transition: opacity .3s ease; }
 .pm-ready .trail__item:not(.is-on) .trail__badge { border-color: var(--border-strong); background: var(--surface); color: var(--text-muted); }
-.pm-ready .trail__item:not(.is-on) .trail__body { opacity: .55; }
+.pm-ready .trail__item:not(.is-on) .trail__body { opacity: 1; }
 
 /* ---------- À propos ---------- */
 .about__pulse { width: 100%; max-width: 640px; height: 56px; margin-top: 6px; }

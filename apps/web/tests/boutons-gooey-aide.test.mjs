@@ -73,7 +73,7 @@ test("la carte « Préparez votre prochaine consultation » est lisible : texte 
   const skin = strip(read("src/app/soft-skin.css"));
   assert.match(skin, /body \.cta-card \{[^}]*background: var\(--bg\)[^}]*color: var\(--text\)/);
   assert.match(skin, /body \.cta-card \.muted \{ color: var\(--text-muted\); \}/);
-  assert.match(read("src/components/PatientHome.tsx"), /className="button primary" href="\/patient\/consultations#preparer"/);
+  assert.match(read("src/components/PatientHome.tsx"), /key: "prepare", href: "\/patient\/consultations#preparer"/, "la préparation de la consultation est une ligne du bloc « À faire »");
   // aucune carte ne garde un texte blanc sur le fond du thème : le seul texte clair restant d'une .card est celui de .cta-card, corrigé ci-dessus
   assert.doesNotMatch(skin, /body \.cta-card[^{]*\{[^}]*color: (#fff|white|var\(--on-primary\))/);
 });

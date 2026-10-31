@@ -10,6 +10,7 @@ import { AdminRecoveryClient } from "../../components/AdminRecoveryClient";
 import { AdminEstablishmentsClient } from "../../components/AdminEstablishmentsClient";
 import { AdminSettingsClient } from "../../components/AdminSettingsClient";
 import { AdminOperationsClient } from "../../components/AdminOperationsClient";
+import { AdminAuditJournal } from "../../components/AdminAuditJournal";
 import { useConfirm } from "../../components/modal/ConfirmProvider";
 import { BrandMark } from "../../components/ui/BrandMark";
 import { Icon, type IconName } from "../../components/ui/Icon";
@@ -46,11 +47,12 @@ type Dashboard = {
   visitors: Visitor[]; feedback: Feedback[]; survey_responses: SurveyResponse[];
 };
 type AdminProfile = { email: string; first_name: string; last_name: string; avatar_url?: string };
-type AdminTab = "overview" | "operations" | "activity" | "feedback" | "survey" | "establishments" | "account-requests" | "recovery" | "representation-transfers" | "settings";
+type AdminTab = "overview" | "operations" | "audit" | "activity" | "feedback" | "survey" | "establishments" | "account-requests" | "recovery" | "representation-transfers" | "settings";
 
 const tabs: { id: AdminTab; label: string; short: string; icon: IconName }[] = [
   { id: "overview", label: "Vue d’ensemble", short: "Accueil", icon: "home" },
   { id: "operations", label: "Surveillance technique", short: "Surveillance", icon: "shield" },
+  { id: "audit", label: "Journal d’audit", short: "Audit", icon: "document" },
   { id: "activity", label: "Visites & clics", short: "Activité", icon: "chart" },
   { id: "feedback", label: "Feedback", short: "Feedback", icon: "pencil" },
   { id: "survey", label: "Enquête UX", short: "Enquête", icon: "document" },
@@ -316,6 +318,7 @@ export default function AdminPage() {
       <AdminEstablishmentsClient aside={<article className="card"><span className="eyebrow">Limites du rôle</span><h2>Contrôle administratif, pas clinique</h2><p className="muted">Le staff Mon E‑Carnet ne vérifie pas les justificatifs personnels du médecin dans ce parcours. L’établissement vérifie ses médecins, émet un code temporaire et décide des demandes de rattachement. L’espace établissement n’accède jamais aux dossiers médicaux.</p></article>} />
     </section>}
     {activeTab === "account-requests" && <section id="admin-panel-account-requests" role="tabpanel" aria-labelledby="admin-tab-account-requests"><AdminAccountActionRequestsClient /></section>}
+    {activeTab === "audit" && <section id="admin-panel-audit" role="tabpanel" aria-labelledby="admin-tab-audit"><AdminAuditJournal /></section>}
     {activeTab === "recovery" && <section id="admin-panel-recovery" role="tabpanel" aria-labelledby="admin-tab-recovery"><AdminRecoveryClient /></section>}
     {activeTab === "representation-transfers" && <section id="admin-panel-representation-transfers" role="tabpanel" aria-labelledby="admin-tab-representation-transfers"><AdminRepresentationTransfersClient /></section>}
     {activeTab === "settings" && <section id="admin-panel-settings" role="tabpanel" aria-labelledby="admin-tab-settings"><AdminSettingsClient onLogout={() => void askSignOut()} /></section>}

@@ -64,6 +64,8 @@ class Command(BaseCommand):
             for local_date in sorted(local_dates):
                 if reminder.starts_on > local_date or (reminder.ends_on and reminder.ends_on < local_date):
                     continue
+                if reminder.days_of_week and local_date.weekday() not in reminder.days_of_week:
+                    continue  # prise limitée à certains jours de la semaine
                 for raw in reminder.times or []:
                     at = parse_hhmm(raw)
                     if at is None:
@@ -83,10 +85,47 @@ class Command(BaseCommand):
                         failed += 1
                         logger.exception("rappel: échec rappel=%s", reminder.pk)
 
+        renewals = self._send_renewal_notices(now, tz, settings.ECARNET_REMINDER_RENEWAL_DAYS, dry_run)
         if not dry_run:
             MedicationReminderDispatch.objects.filter(scheduled_for__lt=now - timedelta(days=14)).delete()
         # Aucune donnée de santé dans les journaux : uniquement des compteurs.
         self.stdout.write(f"rappels: {sent} {'dus' if dry_run else 'envoyés'}, {skipped} déjà traités, {failed} en échec")
+        if settings.ECARNET_REMINDER_RENEWAL_DAYS > 0:
+            self.stdout.write(f"renouvellements: {renewals} {'dus' if dry_run else 'envoyés'}")
+
+    @staticmethod
+    def _send_renewal_notices(now, tz, days, dry_run):
+        """Prévient le patient quand un traitement (date de fin renseignée) se termine dans les ``days`` jours : pensez au renouvellement.
+
+        Une seule fois par traitement et par date de fin : la trace est un MedicationReminderDispatch posé à 00:00:01 le jour de la fin,
+        heure qu'aucun horaire de prise (HH:MM) ne peut atteindre. Texte neutre : aucun nom de médicament sur l'écran verrouillé.
+        """
+        if days <= 0:
+            return 0
+        today = now.astimezone(tz).date()
+        due = MedicationReminder.objects.filter(active=True, patient__user__isnull=False, ends_on__gte=today, ends_on__lte=today + timedelta(days=days)).select_related("patient")
+        sent = 0
+        for reminder in due.iterator(chunk_size=500):
+            if dry_run:
+                sent += 1
+                continue
+            marker = datetime.combine(reminder.ends_on, time(0, 0, 1), tzinfo=tz).astimezone(dt_timezone.utc)
+            try:
+                with transaction.atomic():
+                    _, created = MedicationReminderDispatch.objects.get_or_create(reminder=reminder, scheduled_for=marker)
+                    if not created:
+                        continue
+                    notify_patient(
+                        reminder.patient,
+                        "medication.renewal",
+                        "Fin de traitement proche",
+                        "Un de vos traitements se termine bientôt. Pensez à demander son renouvellement.",
+                        metadata={"reminder_id": str(reminder.pk), "ends_on": reminder.ends_on.isoformat()},
+                    )
+                    sent += 1
+            except Exception:  # noqa: BLE001 - une ligne en défaut ne doit pas bloquer le lot
+                logger.exception("renouvellement: échec rappel=%s", reminder.pk)
+        return sent
 
     @staticmethod
     def _dispatch_slot(reminder, slot):

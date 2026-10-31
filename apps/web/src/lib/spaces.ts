@@ -2,22 +2,25 @@ import type { IconName } from "../components/ui/Icon";
 
 export type SpaceId = "patient" | "professional" | "establishment";
 export type Tab = { id: string; label: string; long: string; href: string; icon: IconName; match: (path: string) => boolean };
+/** Bouton principal de l'espace, posé plus haut au centre de la barre de navigation (comme sur les maquettes). */
+export type SpaceAction = { id: string; label: string; long: string; href: string; icon: IconName; match: (path: string) => boolean };
 
 const exact = (href: string) => (path: string) => path === href;
 const section = (...hrefs: string[]) => (path: string) => hrefs.some((href) => path === href || path.startsWith(`${href}/`));
 
 /* Navigation courte : cinq entrées maximum par espace. Les fonctions secondaires vivent dans l'écran de leur domaine,
    plutôt que de créer un onglet séparé pour chaque action. */
-export const SPACES: Record<SpaceId, { label: string; role: string; home: string; tabs: Tab[]; bare: string[] }> = {
+export const SPACES: Record<SpaceId, { label: string; role: string; home: string; tabs: Tab[]; bare: string[]; action?: SpaceAction }> = {
   patient: {
     label: "Espace patient", role: "patient", home: "/patient", bare: [],
     tabs: [
       { id: "home", label: "Accueil", long: "Accueil", href: "/patient", icon: "home", match: exact("/patient") },
       { id: "carnet", label: "Mon carnet", long: "Mon carnet · documents · vaccins · traitements", href: "/patient/carnet", icon: "folder", match: section("/patient/carnet") },
-      { id: "consultations", label: "Visites", long: "Visites · consultations · rendez-vous", href: "/patient/consultations", icon: "stethoscope", match: section("/patient/consultations") },
-      { id: "acces", label: "Partage", long: "Partage · accès · carte d’urgence", href: "/patient/acces", icon: "share", match: section("/patient/acces") },
+      { id: "consultations", label: "Consultations", long: "Pré-consultation et accès temporaire", href: "/patient/consultations", icon: "stethoscope", match: section("/patient/consultations") },
+      { id: "historique", label: "Historique", long: "Historique · consultations · vaccins · accès", href: "/patient/historique", icon: "clock", match: section("/patient/historique", "/patient/acces") },
       { id: "moi", label: "Moi", long: "Mon compte et paramètres", href: "/patient/parametres", icon: "user", match: section("/patient/parametres") },
     ],
+    action: { id: "preconsult", label: "Préparer", long: "Préparer ma consultation", href: "/patient/consultations#preparer", icon: "pencil", match: () => false },
   },
   professional: {
     label: "Espace professionnel", role: "professional", home: "/professionnel", bare: ["/professionnel/onboarding"],
@@ -28,6 +31,7 @@ export const SPACES: Record<SpaceId, { label: string; role: string; home: string
       { id: "acces", label: "Rattachement", long: "Mon rattachement et mes établissements", href: "/professionnel/acces", icon: "building", match: section("/professionnel/acces", "/professionnel/etablissements") },
       { id: "moi", label: "Moi", long: "Mon profil et paramètres", href: "/professionnel/parametres", icon: "user", match: section("/professionnel/parametres") },
     ],
+    action: { id: "scan", label: "Scanner", long: "Scanner le QR d’un patient", href: "/professionnel/patients#scanner", icon: "qr", match: () => false },
   },
   establishment: {
     label: "Espace établissement", role: "establishment", home: "/etablissement", bare: ["/etablissement/activation", "/etablissement/fiche"],

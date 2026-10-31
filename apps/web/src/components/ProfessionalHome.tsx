@@ -13,12 +13,13 @@ import { useEmergencyCard } from "./emergency-card/useEmergencyCard";
 import type { ProfessionalProfile } from "./ClinicalGate";
 import type { SpaceAccount } from "./shell/SpaceShell";
 import { SetupCard, type SetupStep } from "./SetupCard";
+import { CollapsibleSection } from "./ui/CollapsibleSection";
 
 /* Carte virtuelle du médecin : son identité de patient et son métier déclaré, même carte et même image PNG que dans l'espace patient. */
 function ProfessionalVirtualCard({ account, profile }: { account: SpaceAccount; profile: ProfessionalProfile }) {
   const { card, loading, error } = useEmergencyCard();
   const profession = { title: profile.professional_title, specialty: profile.specialty || undefined };
-  return <section className="card professional-card" aria-label="Ma carte virtuelle"><VirtualCardPanel account={account} card={card} profession={profession} loading={loading} error={error} /></section>;
+  return <div className="section-grid"><CollapsibleSection title="Ma carte virtuelle" icon="idcard" hint="Carte et QR"><VirtualCardPanel account={account} card={card} profession={profession} loading={loading} error={error} /></CollapsibleSection></div>;
 }
 
 /* Accueil médecin, dans l'ordre où on en a besoin : bonjour · « Mise en route » (comme chez le patient : elle disparaît une fois tout configuré) ·

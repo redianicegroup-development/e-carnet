@@ -1,6 +1,6 @@
 # Mon E-Carnet — Plan AKATECH d’optimisation, capacité et montée en charge Hodi
 
-**Version :** 27 octobre 2026  
+**Version :** 29 octobre 2026  
 **Statut :** plan d’exécution basé sur le code réel et le CDC v11  
 **Hébergeur cible :** Hodi, offre Site Pro au démarrage, sous réserve des confirmations écrites du CDC  
 **Périmètre :** backend Django/DRF, frontend Next.js, PostgreSQL, Redis, stockage privé, supervision, tests de charge et évolution vers plusieurs instances.
@@ -90,6 +90,8 @@ Cette phase exige : sessions partagées, cache/rate limit partagé, même `DJANG
 6. Ajouter un `request_id` propagé dans les logs, sans données médicales. Journaliser durée, code HTTP, endpoint, taille de réponse et identifiant technique, jamais le contenu clinique.
 
 ### P2 — de 800 à 2 000 patients inscrits, selon la charge réelle
+
+**État d’implantation au 29 octobre 2026 :** le scénario k6 paramétrable A/B/C est présent dans `ops/loadtest/k6-ecarnet.js` pour 100, 300 et 1 000 utilisateurs virtuels. Les profils doivent encore être exécutés sur un staging HTTPS avec comptes synthétiques ; aucun résultat de capacité ne doit être inventé depuis l’environnement local. Un audit automatisé WCAG 2.2 AA est disponible via `npm run audit:wcag`, et la recette mobile/4G est documentée dans `docs/P2-RECETTE-MOBILE-WCAG-CHARGE.md`. Les essais avec cinq utilisateurs réels restent à organiser humainement.
 
 1. Activer les métriques RED par route : taux, erreurs, latence p50/p95/p99. Ajouter les métriques USE : CPU, RAM, disque, connexions PostgreSQL, cache et files éventuelles.
 2. Optimiser les requêtes identifiées par les mesures, pas par intuition. Priorité aux listes professionnelles, historiques, exports et téléchargements contrôlés.

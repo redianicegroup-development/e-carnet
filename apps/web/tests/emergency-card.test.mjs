@@ -82,7 +82,7 @@ test("le QR temporaire de visite reste dans Partage et le compte ne porte aucun 
   assert.match(grants, /id="qr"/);
   assert.match(grants, /vos documents \(lecture seule\)/);
   assert.doesNotMatch(settings, /ActiveAccessQr|usePatientAccessQr|access-qr\/|visit-qr/);
-  assert.match(home, /href: "\/patient\/acces#qr"/);
+  assert.match(home, /href: "\/patient\/consultations#preparer"/);
   assert.doesNotMatch(styles, /settings-account-summary__visit-qr|settings-visit-qr-modal/);
   assert.doesNotMatch(styles, /\.patient-active-qr \{[^}]*position: sticky/);
 });

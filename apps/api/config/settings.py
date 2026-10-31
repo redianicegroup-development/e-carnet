@@ -1,5 +1,6 @@
 import os
 import sys
+import tempfile
 from pathlib import Path
 from django.core.exceptions import ImproperlyConfigured
 import dj_database_url
@@ -65,6 +66,7 @@ REST_FRAMEWORK = {
         "trusted_contact_accept": os.environ.get("ECARNET_RATE_TRUSTED_CONTACT_ACCEPT", "5/minute"),
         "referral_changes": os.environ.get("ECARNET_RATE_REFERRAL_CHANGES", "30/hour"),
         "referral_reads": os.environ.get("ECARNET_RATE_REFERRAL_READS", "60/hour"),
+        "monitoring_webhook": os.environ.get("ECARNET_RATE_MONITOR_WEBHOOK", "600/hour"),
         "code_redeem": os.environ.get("ECARNET_RATE_CODE", "10/hour"),
         "grant_request": os.environ.get("ECARNET_RATE_GRANT", "60/hour"),
         "qr_create": os.environ.get("ECARNET_RATE_QR_CREATE", "30/hour"),
@@ -91,6 +93,8 @@ ECARNET_REPRESENTATION_LEGAL_AGE = (
 ECARNET_TRUSTED_CONTACTS_ENABLED = os.environ.get("ECARNET_TRUSTED_CONTACTS_ENABLED", "false").lower() == "true"
 ECARNET_REFERRALS_ENABLED = os.environ.get("ECARNET_REFERRALS_ENABLED", "false").lower() == "true"
 ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ = os.environ.get("ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ", "true").lower() == "true"
+# Durée d'une ouverture de dossier par un administrateur d'établissement, en minutes. 0 = aucune limite tant que le motif est enregistré (ETA-09).
+ECARNET_RECORD_OPENING_TTL_MINUTES = max(0, int(os.environ.get("ECARNET_RECORD_OPENING_TTL_MINUTES", "0") or 0))
 ECARNET_OPERATIONS_ADMIN_EMAILS = tuple(
     email.strip().lower()
     for email in os.environ.get("ECARNET_OPERATIONS_ADMIN_EMAILS", "").split(",")
@@ -122,6 +126,12 @@ ECARNET_PUSH_ALLOWED_HOSTS = tuple(
 ECARNET_REMINDER_TIMEZONE = os.environ.get("ECARNET_REMINDER_TIMEZONE", "Africa/Abidjan")
 # Rattrapage : si une exécution du planificateur est manquée, les rappels dus depuis moins de N minutes partent encore.
 ECARNET_REMINDER_CATCHUP_MINUTES = int(os.environ["ECARNET_REMINDER_CATCHUP_MINUTES"]) if os.environ.get("ECARNET_REMINDER_CATCHUP_MINUTES", "").isdigit() else 10
+# Rappel de renouvellement : nombre de jours avant la fin d'un traitement (date de fin renseignée). 0 = désactivé (PAT-14).
+ECARNET_REMINDER_RENEWAL_DAYS = int(os.environ["ECARNET_REMINDER_RENEWAL_DAYS"]) if os.environ.get("ECARNET_REMINDER_RENEWAL_DAYS", "").isdigit() else 3
+# Écart maximal toléré entre l'horodatage signé d'un événement de monitoring et l'heure du serveur (anti-rejeu).
+ECARNET_MONITOR_WEBHOOK_TOLERANCE_SECONDS = int(os.environ.get("ECARNET_MONITOR_WEBHOOK_TOLERANCE_SECONDS", "300"))
+# Étiquette affichée dans la surveillance technique : local, staging, production… (vide : « debug » en local, « production » sinon).
+ECARNET_ENVIRONMENT = os.environ.get("ECARNET_ENVIRONMENT", "").strip().lower()[:20]
 CORS_ALLOWED_ORIGINS = [origin.strip() for origin in os.environ.get("CORS_ALLOWED_ORIGINS", WEB_ORIGIN).split(",") if origin.strip()]
 CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in os.environ.get("CSRF_TRUSTED_ORIGINS", ",".join(CORS_ALLOWED_ORIGINS)).split(",") if origin.strip()]
@@ -170,6 +180,8 @@ if not DEBUG:
 # Compteurs de limitation partagés entre workers : table de cache en base (créée par post_migrate).
 RUNNING_TESTS = "test" in sys.argv
 if RUNNING_TESTS:
+    # Les tests téléversent de vrais fichiers : jamais dans private-media du dépôt, toujours dans un dossier temporaire.
+    MEDIA_ROOT = Path(tempfile.gettempdir()) / "ecarnet-test-media"
     CACHES = {"default": {"BACKEND": "django.core.cache.backends.dummy.DummyCache"}}
 elif DEBUG:
     CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache", "LOCATION": "ecarnet-local"}}

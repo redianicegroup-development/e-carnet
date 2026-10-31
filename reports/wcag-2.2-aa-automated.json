@@ -1,0 +1,2167 @@
+{
+  "generatedAt": "2026-10-29T04:46:30.213Z",
+  "base": "http://127.0.0.1:3000",
+  "standard": "WCAG 2.2 AA automated subset",
+  "routes": [
+    {
+      "route": "/",
+      "status": 200,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "tags": [
+            "cat.color",
+            "wcag2aa",
+            "wcag143",
+            "TTv5",
+            "TT13.c",
+            "EN-301-549",
+            "EN-9.1.4.3",
+            "ACT",
+            "RGAAv4",
+            "RGAA-3.2.1"
+          ],
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=axeAPI",
+          "nodes": [
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "8.3pt (11px)",
+                    "fontWeight": "normal",
+                    "messageKey": "bgOverlap",
+                    "expectedContrastRatio": "4.5:1"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined because it is overlapped by another element"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<span class=\"eyebrow\" data-hero-item=\"true\" style=\"translate: none; rotate: none; scale: none; transform: translate(0px, 0px); opacity: 1; visibility: inherit;\">Carnet de santé numérique</span>",
+              "target": [
+                ".eyebrow"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "24.0pt (32px)",
+                    "fontWeight": "bold",
+                    "messageKey": "bgOverlap",
+                    "expectedContrastRatio": "3:1"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined because it is overlapped by another element"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<div aria-hidden=\"true\" style=\"position: relative; display: block; text-align: start; translate: none; rotate: none; scale: none; transform: translate(0px, 0px);\">Votre carnet de santé, </div>",
+              "target": [
+                "#hero-title > div[aria-hidden=\"true\"]:nth-child(1) > div[aria-hidden=\"true\"]"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "24.0pt (32px)",
+                    "fontWeight": "bold",
+                    "messageKey": "bgOverlap",
+                    "expectedContrastRatio": "3:1"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined because it is overlapped by another element"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<div aria-hidden=\"true\" style=\"position: relative; display: block; text-align: start; translate: none; rotate: none; scale: none; transform: translate(0px, 0px);\">sous votre contrôle.</div>",
+              "target": [
+                "#hero-title > div[aria-hidden=\"true\"]:nth-child(2) > div[aria-hidden=\"true\"]"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "12.0pt (16px)",
+                    "fontWeight": "normal",
+                    "messageKey": "bgOverlap",
+                    "expectedContrastRatio": "4.5:1"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined because it is overlapped by another element"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<p class=\"lead\" data-hero-item=\"true\" style=\"translate: none; rotate: none; scale: none; transform: translate(0px, 0px); opacity: 1; visibility: inherit;\">Organisez vos informations, préparez vos consultations et choisissez qui peut consulter votre carnet.</p>",
+              "target": [
+                ".lead[data-hero-item=\"true\"]"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "11.4pt (15.2px)",
+                    "fontWeight": "bold",
+                    "messageKey": "bgOverlap",
+                    "expectedContrastRatio": "4.5:1"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined because it is overlapped by another element"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<a class=\"button primary\" href=\"/connexion?mode=register\">",
+              "target": [
+                ".actions[data-hero-item=\"true\"] > .primary.button[href=\"/connexion?mode=register\"]"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "11.4pt (15.2px)",
+                    "fontWeight": "bold",
+                    "messageKey": "bgOverlap",
+                    "expectedContrastRatio": "4.5:1"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined because it is overlapped by another element"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<a class=\"button\" href=\"/connexion?mode=register&amp;profil=professionnel\">Je suis professionnel</a>",
+              "target": [
+                ".actions[data-hero-item=\"true\"] > .button:nth-child(2)"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "19.2pt (25.6px)",
+                    "fontWeight": "bold",
+                    "messageKey": "bgOverlap",
+                    "expectedContrastRatio": "3:1"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined because it is overlapped by another element"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<div aria-hidden=\"true\" style=\"position: relative; display: block; text-align: start; translate: none; rotate: none; scale: none; transform: translate(0%, 115%);\">Tout pour tenir votre </div>",
+              "target": [
+                "#features-title > div[aria-hidden=\"true\"]:nth-child(1) > div[aria-hidden=\"true\"]"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "12.6pt (16.8px)",
+                    "fontWeight": "normal",
+                    "messageKey": "bgOverlap",
+                    "expectedContrastRatio": "4.5:1"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined because it is overlapped by another element"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<p class=\"lead\">Quatre outils simples, pensés pour que le patient reste celui qui décide.</p>",
+              "target": [
+                ".lp-split-head > .lead"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "12.6pt (16.8px)",
+                    "fontWeight": "normal",
+                    "messageKey": "bgOverlap",
+                    "expectedContrastRatio": "4.5:1"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined because it is overlapped by another element"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<p class=\"lead\">Trois moments simples, et le patient décide à chaque instant.</p>",
+              "target": [
+                ".lp-flow__intro > .lead"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "16.2pt (21.6px)",
+                    "fontWeight": "bold",
+                    "messageKey": "bgOverlap",
+                    "expectedContrastRatio": "3:1"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined because it is overlapped by another element"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<div aria-hidden=\"true\" style=\"position: relative; display: block; text-align: start; translate: none; rotate: none; scale: none; transform: translate(0%, 115%);\">Vous gardez la </div>",
+              "target": [
+                "#trust-title > div[aria-hidden=\"true\"]:nth-child(1) > div[aria-hidden=\"true\"]"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "20.4pt (27.2px)",
+                    "fontWeight": "bold",
+                    "messageKey": "bgGradient",
+                    "expectedContrastRatio": "3:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<section class=\"pub-footer__card pub-footer__card--brand\" aria-label=\"Mon E‑Carnet\">",
+                      "target": [
+                        ".pub-footer__card--brand"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a background gradient"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<span>Mon E‑Carnet</span>",
+              "target": [
+                ".pub-footer__logo > span:nth-child(2)"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "17.4pt (23.2px)",
+                    "fontWeight": "bold",
+                    "messageKey": "bgGradient",
+                    "expectedContrastRatio": "3:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<section class=\"pub-footer__card pub-footer__card--brand\" aria-label=\"Mon E‑Carnet\">",
+                      "target": [
+                        ".pub-footer__card--brand"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a background gradient"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<p class=\"pub-footer__slogan\">Gardez le fil avec Mon E‑Carnet.</p>",
+              "target": [
+                ".pub-footer__slogan"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "13.8pt (18.4px)",
+                    "fontWeight": "normal",
+                    "messageKey": "bgGradient",
+                    "expectedContrastRatio": "4.5:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<section class=\"pub-footer__card pub-footer__card--brand\" aria-label=\"Mon E‑Carnet\">",
+                      "target": [
+                        ".pub-footer__card--brand"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a background gradient"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<p class=\"pub-footer__tagline\">Un carnet de santé personnel, <span>organisé selon vos choix.</span></p>",
+              "target": [
+                ".pub-footer__tagline"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "13.8pt (18.4px)",
+                    "fontWeight": "normal",
+                    "messageKey": "bgGradient",
+                    "expectedContrastRatio": "4.5:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<section class=\"pub-footer__card pub-footer__card--brand\" aria-label=\"Mon E‑Carnet\">",
+                      "target": [
+                        ".pub-footer__card--brand"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a background gradient"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<span>organisé selon vos choix.</span>",
+              "target": [
+                ".pub-footer__tagline > span"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "18.0pt (24px)",
+                    "fontWeight": "normal",
+                    "messageKey": "bgGradient",
+                    "expectedContrastRatio": "3:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<section class=\"pub-footer__card pub-footer__card--brand\" aria-label=\"Mon E‑Carnet\">",
+                      "target": [
+                        ".pub-footer__card--brand"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a background gradient"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<span class=\"pub-footer__script\">Restons en contact !</span>",
+              "target": [
+                ".pub-footer__touch > .pub-footer__script"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            }
+          ]
+        }
+      ],
+      "passes": 25,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+      ]
+    },
+    {
+      "route": "/a-propos",
+      "status": 200,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "tags": [
+            "cat.color",
+            "wcag2aa",
+            "wcag143",
+            "TTv5",
+            "TT13.c",
+            "EN-301-549",
+            "EN-9.1.4.3",
+            "ACT",
+            "RGAAv4",
+            "RGAA-3.2.1"
+          ],
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=axeAPI",
+          "nodes": [
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "nonBmp"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element content contains only non-text characters"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<span aria-hidden=\"true\">←</span>",
+              "target": [
+                ".back-link > span"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "20.4pt (27.2px)",
+                    "fontWeight": "bold",
+                    "messageKey": "bgGradient",
+                    "expectedContrastRatio": "3:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<section class=\"pub-footer__card pub-footer__card--brand\" aria-label=\"Mon E‑Carnet\">",
+                      "target": [
+                        ".pub-footer__card--brand"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a background gradient"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<span>Mon E‑Carnet</span>",
+              "target": [
+                ".pub-footer__logo > span:nth-child(2)"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "17.4pt (23.2px)",
+                    "fontWeight": "bold",
+                    "messageKey": "bgGradient",
+                    "expectedContrastRatio": "3:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<section class=\"pub-footer__card pub-footer__card--brand\" aria-label=\"Mon E‑Carnet\">",
+                      "target": [
+                        ".pub-footer__card--brand"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a background gradient"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<p class=\"pub-footer__slogan\">Gardez le fil avec Mon E‑Carnet.</p>",
+              "target": [
+                ".pub-footer__slogan"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "13.8pt (18.4px)",
+                    "fontWeight": "normal",
+                    "messageKey": "bgGradient",
+                    "expectedContrastRatio": "4.5:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<section class=\"pub-footer__card pub-footer__card--brand\" aria-label=\"Mon E‑Carnet\">",
+                      "target": [
+                        ".pub-footer__card--brand"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a background gradient"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<p class=\"pub-footer__tagline\">Un carnet de santé personnel, <span>organisé selon vos choix.</span></p>",
+              "target": [
+                ".pub-footer__tagline"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "13.8pt (18.4px)",
+                    "fontWeight": "normal",
+                    "messageKey": "bgGradient",
+                    "expectedContrastRatio": "4.5:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<section class=\"pub-footer__card pub-footer__card--brand\" aria-label=\"Mon E‑Carnet\">",
+                      "target": [
+                        ".pub-footer__card--brand"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a background gradient"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<span>organisé selon vos choix.</span>",
+              "target": [
+                ".pub-footer__tagline > span"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "18.0pt (24px)",
+                    "fontWeight": "normal",
+                    "messageKey": "bgGradient",
+                    "expectedContrastRatio": "3:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<section class=\"pub-footer__card pub-footer__card--brand\" aria-label=\"Mon E‑Carnet\">",
+                      "target": [
+                        ".pub-footer__card--brand"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a background gradient"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<span class=\"pub-footer__script\">Restons en contact !</span>",
+              "target": [
+                ".pub-footer__touch > .pub-footer__script"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            }
+          ]
+        }
+      ],
+      "passes": 27,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+      ]
+    },
+    {
+      "route": "/aide",
+      "status": 200,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "tags": [
+            "cat.color",
+            "wcag2aa",
+            "wcag143",
+            "TTv5",
+            "TT13.c",
+            "EN-301-549",
+            "EN-9.1.4.3",
+            "ACT",
+            "RGAAv4",
+            "RGAA-3.2.1"
+          ],
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=axeAPI",
+          "nodes": [
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "nonBmp"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element content contains only non-text characters"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<span aria-hidden=\"true\">←</span>",
+              "target": [
+                ".back-link > span[aria-hidden=\"true\"]"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "20.4pt (27.2px)",
+                    "fontWeight": "bold",
+                    "messageKey": "bgGradient",
+                    "expectedContrastRatio": "3:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<section class=\"pub-footer__card pub-footer__card--brand\" aria-label=\"Mon E‑Carnet\">",
+                      "target": [
+                        ".pub-footer__card--brand"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a background gradient"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<span>Mon E‑Carnet</span>",
+              "target": [
+                ".pub-footer__logo > span:nth-child(2)"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "17.4pt (23.2px)",
+                    "fontWeight": "bold",
+                    "messageKey": "bgGradient",
+                    "expectedContrastRatio": "3:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<section class=\"pub-footer__card pub-footer__card--brand\" aria-label=\"Mon E‑Carnet\">",
+                      "target": [
+                        ".pub-footer__card--brand"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a background gradient"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<p class=\"pub-footer__slogan\">Gardez le fil avec Mon E‑Carnet.</p>",
+              "target": [
+                ".pub-footer__slogan"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "13.8pt (18.4px)",
+                    "fontWeight": "normal",
+                    "messageKey": "bgGradient",
+                    "expectedContrastRatio": "4.5:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<section class=\"pub-footer__card pub-footer__card--brand\" aria-label=\"Mon E‑Carnet\">",
+                      "target": [
+                        ".pub-footer__card--brand"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a background gradient"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<p class=\"pub-footer__tagline\">Un carnet de santé personnel, <span>organisé selon vos choix.</span></p>",
+              "target": [
+                ".pub-footer__tagline"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "13.8pt (18.4px)",
+                    "fontWeight": "normal",
+                    "messageKey": "bgGradient",
+                    "expectedContrastRatio": "4.5:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<section class=\"pub-footer__card pub-footer__card--brand\" aria-label=\"Mon E‑Carnet\">",
+                      "target": [
+                        ".pub-footer__card--brand"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a background gradient"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<span>organisé selon vos choix.</span>",
+              "target": [
+                ".pub-footer__tagline > span"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "18.0pt (24px)",
+                    "fontWeight": "normal",
+                    "messageKey": "bgGradient",
+                    "expectedContrastRatio": "3:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<section class=\"pub-footer__card pub-footer__card--brand\" aria-label=\"Mon E‑Carnet\">",
+                      "target": [
+                        ".pub-footer__card--brand"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a background gradient"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<span class=\"pub-footer__script\">Restons en contact !</span>",
+              "target": [
+                ".pub-footer__touch > .pub-footer__script"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "9.1pt (12.16px)",
+                    "fontWeight": "normal",
+                    "messageKey": "elmPartiallyObscuring",
+                    "expectedContrastRatio": "4.5:1"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined because it partially overlaps other elements"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<p id=\"_R_dbH1_\">Les cookies nécessaires assurent le fonctionnement du carnet. Avec votre accord, un cookie interne facultatif nous aide à mesurer l’audience, sans publicité ni suivi tiers.</p>",
+              "target": [
+                "#_R_dbH1_"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ],
+      "passes": 30,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+      ]
+    },
+    {
+      "route": "/faq",
+      "status": 200,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "tags": [
+            "cat.color",
+            "wcag2aa",
+            "wcag143",
+            "TTv5",
+            "TT13.c",
+            "EN-301-549",
+            "EN-9.1.4.3",
+            "ACT",
+            "RGAAv4",
+            "RGAA-3.2.1"
+          ],
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=axeAPI",
+          "nodes": [
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "nonBmp"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element content contains only non-text characters"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<span aria-hidden=\"true\">←</span>",
+              "target": [
+                ".back-link > span[aria-hidden=\"true\"]"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "20.4pt (27.2px)",
+                    "fontWeight": "bold",
+                    "messageKey": "bgGradient",
+                    "expectedContrastRatio": "3:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<section class=\"pub-footer__card pub-footer__card--brand\" aria-label=\"Mon E‑Carnet\">",
+                      "target": [
+                        ".pub-footer__card--brand"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a background gradient"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<span>Mon E‑Carnet</span>",
+              "target": [
+                ".pub-footer__logo > span:nth-child(2)"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "17.4pt (23.2px)",
+                    "fontWeight": "bold",
+                    "messageKey": "bgGradient",
+                    "expectedContrastRatio": "3:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<section class=\"pub-footer__card pub-footer__card--brand\" aria-label=\"Mon E‑Carnet\">",
+                      "target": [
+                        ".pub-footer__card--brand"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a background gradient"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<p class=\"pub-footer__slogan\">Gardez le fil avec Mon E‑Carnet.</p>",
+              "target": [
+                ".pub-footer__slogan"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "13.8pt (18.4px)",
+                    "fontWeight": "normal",
+                    "messageKey": "bgGradient",
+                    "expectedContrastRatio": "4.5:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<section class=\"pub-footer__card pub-footer__card--brand\" aria-label=\"Mon E‑Carnet\">",
+                      "target": [
+                        ".pub-footer__card--brand"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a background gradient"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<p class=\"pub-footer__tagline\">Un carnet de santé personnel, <span>organisé selon vos choix.</span></p>",
+              "target": [
+                ".pub-footer__tagline"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "13.8pt (18.4px)",
+                    "fontWeight": "normal",
+                    "messageKey": "bgGradient",
+                    "expectedContrastRatio": "4.5:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<section class=\"pub-footer__card pub-footer__card--brand\" aria-label=\"Mon E‑Carnet\">",
+                      "target": [
+                        ".pub-footer__card--brand"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a background gradient"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<span>organisé selon vos choix.</span>",
+              "target": [
+                ".pub-footer__tagline > span"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "18.0pt (24px)",
+                    "fontWeight": "normal",
+                    "messageKey": "bgGradient",
+                    "expectedContrastRatio": "3:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<section class=\"pub-footer__card pub-footer__card--brand\" aria-label=\"Mon E‑Carnet\">",
+                      "target": [
+                        ".pub-footer__card--brand"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a background gradient"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<span class=\"pub-footer__script\">Restons en contact !</span>",
+              "target": [
+                ".pub-footer__touch > .pub-footer__script"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "9.1pt (12.16px)",
+                    "fontWeight": "normal",
+                    "messageKey": "elmPartiallyObscuring",
+                    "expectedContrastRatio": "4.5:1"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined because it partially overlaps other elements"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<p id=\"_R_dbH1_\">Les cookies nécessaires assurent le fonctionnement du carnet. Avec votre accord, un cookie interne facultatif nous aide à mesurer l’audience, sans publicité ni suivi tiers.</p>",
+              "target": [
+                "#_R_dbH1_"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ],
+      "passes": 30,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+      ]
+    },
+    {
+      "route": "/connexion",
+      "status": 200,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "tags": [
+            "cat.color",
+            "wcag2aa",
+            "wcag143",
+            "TTv5",
+            "TT13.c",
+            "EN-301-549",
+            "EN-9.1.4.3",
+            "ACT",
+            "RGAAv4",
+            "RGAA-3.2.1"
+          ],
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=axeAPI",
+          "nodes": [
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "9.1pt (12.16px)",
+                    "fontWeight": "normal",
+                    "messageKey": "elmPartiallyObscuring",
+                    "expectedContrastRatio": "4.5:1"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined because it partially overlaps other elements"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<p id=\"_R_dbH1_\">Les cookies nécessaires assurent le fonctionnement du carnet. Avec votre accord, un cookie interne facultatif nous aide à mesurer l’audience, sans publicité ni suivi tiers.</p>",
+              "target": [
+                "#_R_dbH1_"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ],
+      "passes": 22,
+      "consoleErrors": []
+    },
+    {
+      "route": "/inscription",
+      "status": 200,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "tags": [
+            "cat.color",
+            "wcag2aa",
+            "wcag143",
+            "TTv5",
+            "TT13.c",
+            "EN-301-549",
+            "EN-9.1.4.3",
+            "ACT",
+            "RGAAv4",
+            "RGAA-3.2.1"
+          ],
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=axeAPI",
+          "nodes": [
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "11.9pt (15.84px)",
+                    "fontWeight": "bold",
+                    "messageKey": "elmPartiallyObscuring",
+                    "expectedContrastRatio": "4.5:1"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined because it partially overlaps other elements"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<h2 id=\"_R_db_\">Un petit cookie, à votre convenance.</h2>",
+              "target": [
+                "#_R_db_"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "9.1pt (12.16px)",
+                    "fontWeight": "normal",
+                    "messageKey": "elmPartiallyObscuring",
+                    "expectedContrastRatio": "4.5:1"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined because it partially overlaps other elements"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<p id=\"_R_dbH1_\">Les cookies nécessaires assurent le fonctionnement du carnet. Avec votre accord, un cookie interne facultatif nous aide à mesurer l’audience, sans publicité ni suivi tiers.</p>",
+              "target": [
+                "#_R_dbH1_"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ],
+      "passes": 25,
+      "consoleErrors": []
+    },
+    {
+      "route": "/mentions-legales",
+      "status": 200,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "tags": [
+            "cat.color",
+            "wcag2aa",
+            "wcag143",
+            "TTv5",
+            "TT13.c",
+            "EN-301-549",
+            "EN-9.1.4.3",
+            "ACT",
+            "RGAAv4",
+            "RGAA-3.2.1"
+          ],
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=axeAPI",
+          "nodes": [
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "nonBmp"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element content contains only non-text characters"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<span aria-hidden=\"true\">←</span>",
+              "target": [
+                ".back-link > span[aria-hidden=\"true\"]"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "20.4pt (27.2px)",
+                    "fontWeight": "bold",
+                    "messageKey": "bgGradient",
+                    "expectedContrastRatio": "3:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<section class=\"pub-footer__card pub-footer__card--brand\" aria-label=\"Mon E‑Carnet\">",
+                      "target": [
+                        ".pub-footer__card--brand"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a background gradient"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<span>Mon E‑Carnet</span>",
+              "target": [
+                ".pub-footer__logo > span:nth-child(2)"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "17.4pt (23.2px)",
+                    "fontWeight": "bold",
+                    "messageKey": "bgGradient",
+                    "expectedContrastRatio": "3:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<section class=\"pub-footer__card pub-footer__card--brand\" aria-label=\"Mon E‑Carnet\">",
+                      "target": [
+                        ".pub-footer__card--brand"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a background gradient"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<p class=\"pub-footer__slogan\">Gardez le fil avec Mon E‑Carnet.</p>",
+              "target": [
+                ".pub-footer__slogan"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "13.8pt (18.4px)",
+                    "fontWeight": "normal",
+                    "messageKey": "bgGradient",
+                    "expectedContrastRatio": "4.5:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<section class=\"pub-footer__card pub-footer__card--brand\" aria-label=\"Mon E‑Carnet\">",
+                      "target": [
+                        ".pub-footer__card--brand"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a background gradient"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<p class=\"pub-footer__tagline\">Un carnet de santé personnel, <span>organisé selon vos choix.</span></p>",
+              "target": [
+                ".pub-footer__tagline"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "13.8pt (18.4px)",
+                    "fontWeight": "normal",
+                    "messageKey": "bgGradient",
+                    "expectedContrastRatio": "4.5:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<section class=\"pub-footer__card pub-footer__card--brand\" aria-label=\"Mon E‑Carnet\">",
+                      "target": [
+                        ".pub-footer__card--brand"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a background gradient"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<span>organisé selon vos choix.</span>",
+              "target": [
+                ".pub-footer__tagline > span"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "18.0pt (24px)",
+                    "fontWeight": "normal",
+                    "messageKey": "bgGradient",
+                    "expectedContrastRatio": "3:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<section class=\"pub-footer__card pub-footer__card--brand\" aria-label=\"Mon E‑Carnet\">",
+                      "target": [
+                        ".pub-footer__card--brand"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a background gradient"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<span class=\"pub-footer__script\">Restons en contact !</span>",
+              "target": [
+                ".pub-footer__touch > .pub-footer__script"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "11.9pt (15.84px)",
+                    "fontWeight": "bold",
+                    "messageKey": "elmPartiallyObscuring",
+                    "expectedContrastRatio": "4.5:1"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined because it partially overlaps other elements"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<h2 id=\"_R_db_\">Un petit cookie, à votre convenance.</h2>",
+              "target": [
+                "#_R_db_"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "9.1pt (12.16px)",
+                    "fontWeight": "normal",
+                    "messageKey": "elmPartiallyObscuring",
+                    "expectedContrastRatio": "4.5:1"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined because it partially overlaps other elements"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<p id=\"_R_dbH1_\">Les cookies nécessaires assurent le fonctionnement du carnet. Avec votre accord, un cookie interne facultatif nous aide à mesurer l’audience, sans publicité ni suivi tiers.</p>",
+              "target": [
+                "#_R_dbH1_"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ],
+      "passes": 33,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+      ]
+    },
+    {
+      "route": "/confidentialite",
+      "status": 200,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "tags": [
+            "cat.color",
+            "wcag2aa",
+            "wcag143",
+            "TTv5",
+            "TT13.c",
+            "EN-301-549",
+            "EN-9.1.4.3",
+            "ACT",
+            "RGAAv4",
+            "RGAA-3.2.1"
+          ],
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=axeAPI",
+          "nodes": [
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "nonBmp"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element content contains only non-text characters"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<span aria-hidden=\"true\">←</span>",
+              "target": [
+                ".back-link > span[aria-hidden=\"true\"]"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "20.4pt (27.2px)",
+                    "fontWeight": "bold",
+                    "messageKey": "bgGradient",
+                    "expectedContrastRatio": "3:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<section class=\"pub-footer__card pub-footer__card--brand\" aria-label=\"Mon E‑Carnet\">",
+                      "target": [
+                        ".pub-footer__card--brand"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a background gradient"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<span>Mon E‑Carnet</span>",
+              "target": [
+                ".pub-footer__logo > span:nth-child(2)"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "17.4pt (23.2px)",
+                    "fontWeight": "bold",
+                    "messageKey": "bgGradient",
+                    "expectedContrastRatio": "3:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<section class=\"pub-footer__card pub-footer__card--brand\" aria-label=\"Mon E‑Carnet\">",
+                      "target": [
+                        ".pub-footer__card--brand"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a background gradient"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<p class=\"pub-footer__slogan\">Gardez le fil avec Mon E‑Carnet.</p>",
+              "target": [
+                ".pub-footer__slogan"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "13.8pt (18.4px)",
+                    "fontWeight": "normal",
+                    "messageKey": "bgGradient",
+                    "expectedContrastRatio": "4.5:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<section class=\"pub-footer__card pub-footer__card--brand\" aria-label=\"Mon E‑Carnet\">",
+                      "target": [
+                        ".pub-footer__card--brand"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a background gradient"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<p class=\"pub-footer__tagline\">Un carnet de santé personnel, <span>organisé selon vos choix.</span></p>",
+              "target": [
+                ".pub-footer__tagline"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "13.8pt (18.4px)",
+                    "fontWeight": "normal",
+                    "messageKey": "bgGradient",
+                    "expectedContrastRatio": "4.5:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<section class=\"pub-footer__card pub-footer__card--brand\" aria-label=\"Mon E‑Carnet\">",
+                      "target": [
+                        ".pub-footer__card--brand"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a background gradient"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<span>organisé selon vos choix.</span>",
+              "target": [
+                ".pub-footer__tagline > span"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "18.0pt (24px)",
+                    "fontWeight": "normal",
+                    "messageKey": "bgGradient",
+                    "expectedContrastRatio": "3:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<section class=\"pub-footer__card pub-footer__card--brand\" aria-label=\"Mon E‑Carnet\">",
+                      "target": [
+                        ".pub-footer__card--brand"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a background gradient"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<span class=\"pub-footer__script\">Restons en contact !</span>",
+              "target": [
+                ".pub-footer__touch > .pub-footer__script"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "11.9pt (15.84px)",
+                    "fontWeight": "bold",
+                    "messageKey": "elmPartiallyObscuring",
+                    "expectedContrastRatio": "4.5:1"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined because it partially overlaps other elements"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<h2 id=\"_R_db_\">Un petit cookie, à votre convenance.</h2>",
+              "target": [
+                "#_R_db_"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "9.1pt (12.16px)",
+                    "fontWeight": "normal",
+                    "messageKey": "elmPartiallyObscuring",
+                    "expectedContrastRatio": "4.5:1"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined because it partially overlaps other elements"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<p id=\"_R_dbH1_\">Les cookies nécessaires assurent le fonctionnement du carnet. Avec votre accord, un cookie interne facultatif nous aide à mesurer l’audience, sans publicité ni suivi tiers.</p>",
+              "target": [
+                "#_R_dbH1_"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ],
+      "passes": 31,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+      ]
+    },
+    {
+      "route": "/cgu",
+      "status": 200,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "tags": [
+            "cat.color",
+            "wcag2aa",
+            "wcag143",
+            "TTv5",
+            "TT13.c",
+            "EN-301-549",
+            "EN-9.1.4.3",
+            "ACT",
+            "RGAAv4",
+            "RGAA-3.2.1"
+          ],
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=axeAPI",
+          "nodes": [
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "nonBmp"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element content contains only non-text characters"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<span aria-hidden=\"true\">←</span>",
+              "target": [
+                ".back-link > span[aria-hidden=\"true\"]"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element content contains only non-text characters"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fontSize": "12.0pt (16px)",
+                    "fontWeight": "bold",
+                    "messageKey": "pseudoContent",
+                    "expectedContrastRatio": "4.5:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<ol class=\"trail\" data-trail=\"true\" style=\"--rail: 0;\">",
+                      "target": [
+                        ".trail"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a pseudo element"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<h3>Le patient présente un QR code</h3>",
+              "target": [
+                ".trail__item:nth-child(1) > .trail__body > h3"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fontSize": "12.0pt (16px)",
+                    "fontWeight": "bold",
+                    "messageKey": "pseudoContent",
+                    "expectedContrastRatio": "4.5:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<ol class=\"trail\" data-trail=\"true\" style=\"--rail: 0;\">",
+                      "target": [
+                        ".trail"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a pseudo element"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<h3>Le patient décide</h3>",
+              "target": [
+                ".trail__item:nth-child(3) > .trail__body > h3"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fontSize": "12.0pt (16px)",
+                    "fontWeight": "bold",
+                    "messageKey": "pseudoContent",
+                    "expectedContrastRatio": "4.5:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<ol class=\"trail\" data-trail=\"true\" style=\"--rail: 0;\">",
+                      "target": [
+                        ".trail"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a pseudo element"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<h3>L’autorisation prend fin</h3>",
+              "target": [
+                ".trail__item:nth-child(4) > .trail__body > h3"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "20.4pt (27.2px)",
+                    "fontWeight": "bold",
+                    "messageKey": "bgGradient",
+                    "expectedContrastRatio": "3:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<section class=\"pub-footer__card pub-footer__card--brand\" aria-label=\"Mon E‑Carnet\">",
+                      "target": [
+                        ".pub-footer__card--brand"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a background gradient"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<span>Mon E‑Carnet</span>",
+              "target": [
+                ".pub-footer__logo > span:nth-child(2)"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "17.4pt (23.2px)",
+                    "fontWeight": "bold",
+                    "messageKey": "bgGradient",
+                    "expectedContrastRatio": "3:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<section class=\"pub-footer__card pub-footer__card--brand\" aria-label=\"Mon E‑Carnet\">",
+                      "target": [
+                        ".pub-footer__card--brand"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a background gradient"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<p class=\"pub-footer__slogan\">Gardez le fil avec Mon E‑Carnet.</p>",
+              "target": [
+                ".pub-footer__slogan"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "13.8pt (18.4px)",
+                    "fontWeight": "normal",
+                    "messageKey": "bgGradient",
+                    "expectedContrastRatio": "4.5:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<section class=\"pub-footer__card pub-footer__card--brand\" aria-label=\"Mon E‑Carnet\">",
+                      "target": [
+                        ".pub-footer__card--brand"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a background gradient"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<p class=\"pub-footer__tagline\">Un carnet de santé personnel, <span>organisé selon vos choix.</span></p>",
+              "target": [
+                ".pub-footer__tagline"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "13.8pt (18.4px)",
+                    "fontWeight": "normal",
+                    "messageKey": "bgGradient",
+                    "expectedContrastRatio": "4.5:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<section class=\"pub-footer__card pub-footer__card--brand\" aria-label=\"Mon E‑Carnet\">",
+                      "target": [
+                        ".pub-footer__card--brand"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a background gradient"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<span>organisé selon vos choix.</span>",
+              "target": [
+                ".pub-footer__tagline > span"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "18.0pt (24px)",
+                    "fontWeight": "normal",
+                    "messageKey": "bgGradient",
+                    "expectedContrastRatio": "3:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<section class=\"pub-footer__card pub-footer__card--brand\" aria-label=\"Mon E‑Carnet\">",
+                      "target": [
+                        ".pub-footer__card--brand"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a background gradient"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<span class=\"pub-footer__script\">Restons en contact !</span>",
+              "target": [
+                ".pub-footer__touch > .pub-footer__script"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "11.9pt (15.84px)",
+                    "fontWeight": "bold",
+                    "messageKey": "elmPartiallyObscuring",
+                    "expectedContrastRatio": "4.5:1"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined because it partially overlaps other elements"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<h2 id=\"_R_db_\">Un petit cookie, à votre convenance.</h2>",
+              "target": [
+                "#_R_db_"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "contrastRatio": 0,
+                    "fontSize": "9.1pt (12.16px)",
+                    "fontWeight": "normal",
+                    "messageKey": "elmPartiallyObscuring",
+                    "expectedContrastRatio": "4.5:1"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined because it partially overlaps other elements"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<p id=\"_R_dbH1_\">Les cookies nécessaires assurent le fonctionnement du carnet. Avec votre accord, un cookie interne facultatif nous aide à mesurer l’audience, sans publicité ni suivi tiers.</p>",
+              "target": [
+                "#_R_dbH1_"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
+            }
+          ]
+        }
+      ],
+      "passes": 29,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+      ]
+    },
+    {
+      "route": "/urgence/demo",
+      "status": 200,
+      "violations": [],
+      "incomplete": [],
+      "passes": 22,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    }
+  ],
+  "violationCount": 0,
+  "violations": []
+}

@@ -73,7 +73,7 @@ class AdminOperationsSummaryView(APIView):
         incidents = [self._incident_payload(item) for item in OperationalIncident.objects.filter(status__in=("open", "acknowledged"))[:100]]
         return Response({"success": True, "data": {
             "generated_at": now.isoformat(), "status": status,
-            "environment": "debug" if settings.DEBUG else "production",
+            "environment": getattr(settings, "ECARNET_ENVIRONMENT", "") or ("debug" if settings.DEBUG else "production"),
             "version": os.environ.get("ECARNET_RELEASE_VERSION", "non définie"),
             "components": components, "incidents": incidents,
             "configuration": {
@@ -96,6 +96,10 @@ class AdminOperationsIncidentView(APIView):
     def patch(self, request, incident_id):
         incident = get_object_or_404(OperationalIncident, pk=incident_id)
         action = request.data.get("action")
+        if incident.status == "resolved" and action in {"acknowledge", "resolve"}:
+            return Response({"success": False, "message": "Cet incident est déjà résolu."}, status=409)
+        if action == "acknowledge" and incident.status == "acknowledged":
+            return Response({"success": True, "data": AdminOperationsSummaryView._incident_payload(incident)})
         if action == "acknowledge":
             incident.status = "acknowledged"
             incident.acknowledged_at = timezone.now()

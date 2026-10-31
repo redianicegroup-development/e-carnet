@@ -35,9 +35,9 @@ class IsSuperuserOnly(BasePermission):
 class IsOperationsAdmin(IsSuperuserOnly):
     """Superadmin autorisé par e-mail pour la surveillance technique.
 
-    En local, une liste vide conserve la compatibilité avec les superadmins de test.
-    En staging/production, renseigner ECARNET_OPERATIONS_ADMIN_EMAILS pour réduire
-    le périmètre aux comptes d'exploitation explicitement autorisés.
+    Fermé par défaut : si ECARNET_OPERATIONS_ADMIN_EMAILS est vide, personne n'y accède,
+    sauf en développement local (DEBUG) où les superadmins de test restent acceptés.
+    En staging/production, la liste est donc obligatoire.
     """
 
     message = "Accès réservé aux e-mails d’exploitation configurés."
@@ -46,7 +46,9 @@ class IsOperationsAdmin(IsSuperuserOnly):
         if not super().has_permission(request, view):
             return False
         allowed = getattr(settings, "ECARNET_OPERATIONS_ADMIN_EMAILS", ())
-        return not allowed or request.user.email.strip().lower() in allowed
+        if not allowed:
+            return bool(settings.DEBUG)
+        return request.user.email.strip().lower() in allowed
 
 
 class AdminDashboardView(APIView):

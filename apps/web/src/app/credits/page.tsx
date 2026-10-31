@@ -3,7 +3,7 @@ import Link from "next/link";
 import { BackLink } from "../../components/public/BackLink";
 import { ContactLine } from "../../components/public/ContactLine";
 import { InfoPageMotion } from "../../components/motion/InfoPageMotion";
-import { BrandSwitchFigure, CreditsStackFigure, CreditsTeamFigure } from "../../components/public/figures/CreditsFigures";
+import { BrandLogoFigure, CreditsStackFigure, CreditsTeamFigure } from "../../components/public/figures/CreditsFigures";
 import { DocHero } from "../../components/public/figures/DocHero";
 import { PublicShell } from "../../components/public/PublicShell";
 import { BrandLogo } from "../../components/ui/BrandLogo";
@@ -76,7 +76,7 @@ export default function CreditsPage() {
         <section className="stack" aria-labelledby="identite">
           <h2 id="identite">Identité visuelle</h2>
           <div className="credits__identity">
-            <BrandSwitchFigure />
+            <BrandLogoFigure />
             <p>Le logo et l’identité visuelle sont l’œuvre de l’équipe. Le stéthoscope en forme de cadenas relie la santé à la confidentialité et au contrôle des accès ; il accompagne désormais l’application, de la page d’accueil aux paramètres.</p>
           </div>
         </section>

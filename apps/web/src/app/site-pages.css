@@ -195,7 +195,7 @@ body .public-scroll-top { position: fixed; }
 .pub-footer__pill > span { color: var(--text-muted); font-size: .9rem; }
 .pub-footer__go { display: inline-flex; align-items: center; min-height: 44px; padding: 0 20px; border-radius: 999px; background: var(--text); color: var(--surface); font-size: .9rem; font-weight: 700; white-space: nowrap; text-decoration: none; box-shadow: 0 8px 18px -10px rgba(0, 0, 0, .6); transition: transform .2s ease, background-color .2s ease; }
 .pub-footer__go:hover { background: var(--primary-text); transform: translateY(-1px); }
-.pub-footer__watermark { position: relative; z-index: 0; width: min(100%, 1280px); height: .64em; margin: -.12em auto 0; overflow: hidden; color: color-mix(in srgb, var(--text) 7%, transparent); font-size: clamp(2.6rem, 12vw, 10rem); font-weight: 850; letter-spacing: -.07em; line-height: .86; text-align: center; white-space: nowrap; -webkit-mask-image: linear-gradient(#000 45%, transparent); mask-image: linear-gradient(#000 45%, transparent); user-select: none; }
+.pub-footer__watermark { position: relative; z-index: 0; width: min(100%, 1280px); height: .64em; margin: -.12em auto 0; overflow: hidden; color: var(--text-muted); font-size: clamp(2.6rem, 12vw, 10rem); font-weight: 850; letter-spacing: -.07em; line-height: .86; text-align: center; white-space: nowrap; -webkit-mask-image: linear-gradient(#000 45%, transparent); mask-image: linear-gradient(#000 45%, transparent); user-select: none; }
 @media (min-width: 721px) {
   .pub-footer__lower { grid-template-columns: 1fr auto; align-items: end; }
 }

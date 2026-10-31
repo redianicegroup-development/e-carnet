@@ -127,8 +127,7 @@ class EstablishmentPatientRecordsTests(TestCase):
         self.assertEqual(opening.opened_by_id, self.admin.id)
         self.assertEqual(opening.opened_by_role, "establishment_admin")
         self.assertEqual(opening.reason_note, "Contrôle interne autorisé")
-        self.assertGreaterEqual((opening.expires_at - before).total_seconds(), 1799)
-        self.assertLessEqual((opening.expires_at - before).total_seconds(), 1801)
+        self.assertIsNone(opening.expires_at)  # ETA-09 : aucune limite de durée tant que le motif est enregistré
         self.assertEqual(response.data["data"]["opening_id"], str(opening.id))
         opened_events = AuditEvent.objects.filter(event_type="establishment_record.opened", patient=patient)
         self.assertEqual(opened_events.count(), 1)
@@ -146,6 +145,30 @@ class EstablishmentPatientRecordsTests(TestCase):
             opening.save()
         with self.assertRaises(TypeError):
             EstablishmentRecordOpening.objects.filter(pk=opening.pk).update(reason_note="modifié")
+
+    def test_urgence_is_a_valid_reason_without_free_text(self):
+        patient = self.patient("patient-urgence")
+        self.encounter(patient, self.establishment)
+        response = self.open(patient, category="urgence")
+        self.assertEqual(response.status_code, 201, response.data)
+        opening = EstablishmentRecordOpening.objects.get()
+        self.assertEqual(opening.reason_category, "urgence")
+        self.assertEqual(opening.reason_note, "")
+        self.assertIsNone(response.data["data"]["expires_at"])
+        self.assertEqual(self.open(patient, category="urgence", note="texte libre").status_code, 400)
+        event = AuditEvent.objects.filter(event_type="establishment_record.opened", patient=patient).latest("created_at")
+        self.assertEqual(event.metadata.get("reason_category"), "urgence")
+
+    @override_settings(ECARNET_RECORD_OPENING_TTL_MINUTES=30)
+    def test_a_configured_duration_restores_an_automatic_expiry(self):
+        patient = self.patient("patient-duree")
+        self.encounter(patient, self.establishment)
+        before = timezone.now()
+        response = self.open(patient, category="soins_en_cours")
+        self.assertEqual(response.status_code, 201, response.data)
+        opening = EstablishmentRecordOpening.objects.get()
+        self.assertGreaterEqual((opening.expires_at - before).total_seconds(), 1799)
+        self.assertLessEqual((opening.expires_at - before).total_seconds(), 1801)
 
     def test_repeated_openings_coalesce_only_the_patient_notification(self):
         patient = self.patient("patient-coalesce")

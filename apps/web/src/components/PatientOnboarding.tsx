@@ -30,7 +30,7 @@ export function PatientOnboarding() {
   return <form className="card auth-form" onSubmit={submit}>
     <span className="eyebrow">Étape 3 · identité du titulaire</span>
     <h1>Ouvrir votre carnet.</h1>
-    <p className="muted">Comme sur la couverture du carnet papier. Seuls le nom, les prénoms et la ville sont obligatoires.</p>
+    <p className="muted">Comme sur la couverture du carnet papier. Seule la ville est obligatoire : votre nom et vos prénoms viennent de l’étape 1.</p>
     <p className="notice" role="note">Utilisez des informations exactes et gardez votre compte personnel.</p>
     <PatientIdentityFields form={form} update={update} issuedAt={issuedAt} />
     <OnboardingNav backHref="/onboarding?role=patient" busy={submitting} />

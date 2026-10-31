@@ -63,12 +63,12 @@ test("les quatre espaces partagent une seule sidebar responsive (logo, navigatio
   assert.doesNotMatch(styles, /space-nav|space-sidebar|admin-sidebar-|admin-nav-link|admin-nav-badge/, "les anciennes règles de sidebar ne doivent plus subsister dans globals.css");
   assert.doesNotMatch(sidebar, /localStorage|sessionStorage|indexedDB/, "l’état replié de la sidebar reste en mémoire (aucun stockage navigateur)");
 });
-test("la sidebar patient expose uniquement Accueil, Mon carnet, Visites et Partage dans cet ordre", () => {
+test("la sidebar patient expose Accueil, Mon carnet, Consultations et Historique dans cet ordre (Moi reste dans le menu du compte)", () => {
   const spaces = read("src/lib/spaces.ts");
   const shell = read("src/components/shell/SpaceShell.tsx");
   const patient = spaces.slice(spaces.indexOf("  patient:"), spaces.indexOf("  professional:"));
-  const labels = [...patient.matchAll(/\{ id: "(?:home|carnet|consultations|acces|moi)", label: "([^"]+)"/g)].map((match) => match[1]);
-  assert.deepEqual(labels, ["Accueil", "Mon carnet", "Visites", "Partage", "Moi"]);
+  const labels = [...patient.matchAll(/\{ id: "(?:home|carnet|consultations|historique|moi)", label: "([^"]+)"/g)].map((match) => match[1]);
+  assert.deepEqual(labels, ["Accueil", "Mon carnet", "Consultations", "Historique", "Moi"]);
   assert.match(shell, /visibleTabsFor\(space, clinicalReady === true\)/);
   assert.match(spaces, /if \(space === "patient"\) return tabs\.filter\(\(tab\) => tab\.id !== "moi"\)/);
   assert.doesNotMatch(shell, /items\.splice\(items\.length - 1, 0, \{ id: "admin"/);

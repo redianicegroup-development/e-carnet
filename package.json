@@ -16,6 +16,7 @@
     "build": "npm run build --workspace=@ecarnet/web",
     "start": "npm run start --workspace=@ecarnet/web",
     "lint": "npm run lint --workspace=@ecarnet/web",
+    "audit:wcag": "node ops/accessibility-wcag-audit.mjs",
     "test:api": "node scripts/django.cjs test",
     "check:api": "node scripts/django.cjs check",
     "migrate": "node scripts/django.cjs migrate",

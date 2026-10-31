@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { AvatarPicker } from "./AvatarPicker";
 import { LinkedProvidersSettingsClient } from "./LinkedProvidersSettingsClient";
 import { PatientHealthSettingsClient } from "./PatientHealthSettingsClient";
+import { ProfileSummary, CardBar, usePatientStats } from "./ProfileSummary";
 import { SettingsDirectory, type SettingsNavItem } from "./SettingsDirectory";
 import { SettingsModal } from "./SettingsModal";
 import { SettingsMoreSection } from "./SettingsMoreSection";
@@ -34,6 +35,19 @@ const sections: SettingsNavItem[] = [
 ];
 function titleFor(id: string) { return sections.find((section) => section.id === id)?.title ?? "Paramètres"; }
 function initials(account: Account) { return `${account.first_name?.[0] ?? ""}${account.last_name?.[0] ?? ""}`.toUpperCase() || "EC"; }
+
+function PatientSummary({ account, message }: { account: Account; message: string }) {
+  const stats = usePatientStats();
+  return (
+    <ProfileSummary
+      avatar={<div className="avatar avatar--large" aria-hidden="true">{account.avatar_url ? <img src={account.avatar_url} alt="" /> : initials(account)}</div>}
+      eyebrow="Compte patient" name={[account.first_name, account.last_name].filter(Boolean).join(" ") || "Mon compte"} stats={stats}
+      bar={<CardBar href="/patient" />}
+    >
+      <p className="notice" role="status" aria-live="polite">{message}</p>
+    </ProfileSummary>
+  );
+}
 
 export function AccountSettingsClient() {
   const router = useRouter();
@@ -116,15 +130,7 @@ export function AccountSettingsClient() {
   if (!account) return <section className="card"><p className="notice" role="status">{message}</p></section>;
   return (
     <div className="settings-page">
-      <section className="card account-summary settings-account-summary">
-        <div className="settings-account-summary__row">
-          <div className="profile-summary">
-            <div className="avatar avatar--large" aria-hidden="true">{account.avatar_url ? <img src={account.avatar_url} alt="" /> : initials(account)}</div>
-            <div className="settings-account-summary__copy"><span className="eyebrow">Compte patient</span><h2>{[account.first_name, account.last_name].filter(Boolean).join(" ") || "Mon compte"}</h2><p className="muted">{account.email}</p></div>
-          </div>
-        </div>
-        <p className="notice" role="status" aria-live="polite">{message}</p>
-      </section>
+      <PatientSummary account={account} message={message} />
 
       <PatientEmergencyCardSettingsClient />
 

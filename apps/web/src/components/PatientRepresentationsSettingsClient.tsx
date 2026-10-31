@@ -119,7 +119,7 @@ export function PatientRepresentationsSettingsClient() {
 
   return (
     <section className="settings-form">
-      <p className="muted">Créez un dossier distinct pour un enfant mineur sans compte. Un adulte doit autoriser lui-même une délégation; ce parcours n’est pas encore activé. Le lien ne crée pas un compte de connexion et n’accorde pas d’accès clinique à un professionnel.</p>
+      <p className="muted">Créez un dossier distinct pour un enfant mineur sans compte. Un adulte doit autoriser lui-même une délégation; ce parcours n’est pas encore activé. <Link href="/proches-et-enfants">Comment ça marche ?</Link> Le lien ne crée pas un compte de connexion et n’accorde pas d’accès clinique à un professionnel.</p>
       <form className="settings-form" onSubmit={(event) => void create(event)}>
         <div className="auth-name-grid">
           <label className="field"><span>Prénom</span><input required maxLength={80} value={firstName} onChange={(event) => setFirstName(event.target.value)} disabled={busy} /></label>

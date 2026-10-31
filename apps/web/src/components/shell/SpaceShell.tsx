@@ -233,6 +233,10 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
 
   const visibleTabs = visibleTabsFor(space, clinicalReady === true);
   const items: SidebarItem[] = visibleTabs.map((tab) => ({ id: tab.id, label: tab.label, long: tab.long, icon: tab.icon, href: tab.href, active: tab.match(pathname), account: tab === moi }));
+  // Bouton principal au centre de la barre : pré-consultation (patient) ou scanner un QR (médecin rattaché). Pas d'action dans l'espace établissement.
+  const navAction = !bare && config.action && (space !== "professional" || clinicalReady === true)
+    ? { id: config.action.id, label: config.action.label, long: config.action.long, icon: config.action.icon, href: config.action.href }
+    : undefined;
   const menu: SidebarMenuItem[] = [
     { id: "settings", label: "Profil et paramètres", icon: "sliders", href: moi.href },
     ...(switchTarget ? [{ id: "switch-space", label: switching ? "Changement d’espace…" : `Changer d’espace : ${switchTarget.label.toLowerCase()}`, icon: "refresh" as const, disabled: switching, onSelect: () => void switchSpace() }] : []),
@@ -248,6 +252,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
         ariaLabel={`Navigation de l’${config.label.toLowerCase()}`}
         brand={{ href: bare || state.status !== "ready" ? "/" : config.home, title: "Mon E-Carnet", subtitle: config.label }}
         items={items}
+        action={navAction}
         account={state.status === "ready" ? { name: displayName(state.account), email: state.account.email, initials: initials(state.account), avatarUrl: state.account.avatar_url || undefined } : null}
         accountHref={moi.href}
         menu={menu}

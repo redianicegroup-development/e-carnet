@@ -17,6 +17,18 @@ export function ProfessionalAccessGrants() {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("Chargement de vos demandes…");
 
+  // Le bouton principal de la barre de navigation (« Scanner ») arrive ici avec #scanner : la caméra démarre et le formulaire passe au premier plan.
+  useEffect(() => {
+    const start = () => {
+      if (window.location.hash !== "#scanner") return;
+      setScanning(true);
+      document.getElementById("nouvelle-demande")?.scrollIntoView({ block: "start" });
+    };
+    start();
+    window.addEventListener("hashchange", start);
+    return () => window.removeEventListener("hashchange", start);
+  }, []);
+
   useEffect(() => {
     let active = true;
     listProfessionalGrants().then((loaded) => {

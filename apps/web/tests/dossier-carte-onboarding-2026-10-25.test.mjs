@@ -29,14 +29,15 @@ test("la page publique du QR ne montre jamais le métier", () => {
   assert.doesNotMatch(pub, /profession/);
 });
 
-test("dossier patient et dossier médecin : une seule présentation commune (DossierCard), les champs du patient restent ceux d'origine", () => {
+test("dossier patient et dossier médecin : une seule présentation commune (DossierCard, tuiles pliables), les champs du patient restent ceux d'origine", () => {
   const card = read("src/components/DossierCard.tsx");
   const home = read("src/components/PatientHomeIdentity.tsx");
   const doctor = read("src/components/ProfessionalDossier.tsx");
-  // même composant, même CSS : photo, nom en titre, lignes d'informations
+  // même composant, même CSS : photo, nom en titre, puis tout ce qui est déclaré en tuiles carrées pliables
   assert.match(card, /<AvatarBadge /);
   assert.match(card, /dossier__head/);
-  assert.match(card, /<DossierRows /);
+  assert.match(card, /<CollapsibleSection key=\{tile\.key\}/);
+  assert.match(card, /className="section-grid"/);
   assert.match(home, /<DossierCard/);
   assert.match(doctor, /<DossierCard/);
   assert.match(home, /eyebrow="Dossier patient"/);
@@ -44,11 +45,23 @@ test("dossier patient et dossier médecin : une seule présentation commune (Dos
   assert.equal((card.match(/<section /g) ?? []).length, 1);
   assert.doesNotMatch(read("src/components/professional-dossier.css"), /professional-dossier__(head|list)/, "la présentation commune n'est plus dupliquée");
   // les champs du patient ne changent pas : ni profession ni e-mail ajoutés, couverture santé en trois lignes, déclarations avec leur provenance
-  for (const label of ["Âge", "Genre déclaré", "Ville", "Téléphone", "Adresse", "Couverture santé · organisme", "Couverture santé · numéro", "Couverture santé · expiration"]) assert.match(home, new RegExp(`label: "${label}"`), label);
+  for (const label of ["Âge", "Genre déclaré", "Ville", "Téléphone", "Adresse", "Organisme", "Numéro", "Expiration"]) assert.match(home, new RegExp(`label: "${label}"`), label);
+  for (const title of ["Identité et contact", "Couverture santé", "Mes autres déclarations"]) assert.match(home, new RegExp(`title: "${title}"`), title);
   assert.doesNotMatch(home, /label: "(Profession|E-mail de connexion)"/);
-  assert.match(home, /Mes autres déclarations/);
   assert.match(home, /item\.provenance\?\.label \?\? "Déclaré par vous"/);
   assert.match(home, /Mon E‑Carnet ne les certifie pas/);
+  for (const title of ["Profil professionnel", "Établissement actif", "Cachet et signature"]) assert.match(doctor, new RegExp(`title: "${title}"`), title);
+});
+
+test("la carte virtuelle et son QR sont un bloc à part : une tuile pliable, sur les deux accueils", () => {
+  const home = read("src/components/PatientHomeIdentity.tsx");
+  const pro = read("src/components/ProfessionalHome.tsx");
+  for (const [name, source] of [["patient", home], ["professionnel", pro]]) {
+    assert.match(source, /<CollapsibleSection title="Ma carte virtuelle" icon="idcard"/, name);
+    assert.match(source, /<VirtualCardPanel /, name);
+  }
+  assert.doesNotMatch(read("src/components/DossierCard.tsx"), /VirtualCardPanel/, "la carte n'est plus dans le bloc du dossier");
+  assert.match(home, /patient-dossier__qr/);
 });
 
 test("le métier d'un professionnel s'affiche sous son nom sur les deux accueils et sur sa carte", () => {

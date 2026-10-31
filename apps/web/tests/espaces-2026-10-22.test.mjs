@@ -67,7 +67,7 @@ test("la pré-consultation est un seul bloc à sections, sans étapes", () => {
 test("« Mise en route » passe avant le dossier patient et disparaît une fois le carnet commencé", () => {
   const home = read("src/components/PatientHome.tsx");
   assert.ok(home.indexOf("<SetupCard") > -1 && home.indexOf("<SetupCard") < home.indexOf("<PatientHomeIdentity"), "la mise en route est avant le dossier patient");
-  assert.ok(home.indexOf("<SetupCard") < home.indexOf("<section className=\"card cta-card\">"));
+  assert.doesNotMatch(home, /cta-card|TileGrid/, "l'accueil est une vitrine : plus de carte d'action ni de raccourcis dupliquant la barre de navigation");
   const card = read("src/components/SetupCard.tsx");
   assert.match(card, /done === steps\.length\) return null/);
   assert.match(card, /Mise en route/);

@@ -1,0 +1,12 @@
+/* En-tête de « Moi » : photo, nom, trois repères, barre d'état. */
+.profile-card { display: grid; gap: 14px; }
+.profile-card__head { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.profile-card__id { display: grid; gap: 6px; min-width: 0; }
+.profile-card__id h2 { margin: 0; font-size: clamp(1.4rem, 5vw, 1.9rem); line-height: 1.1; overflow-wrap: anywhere; }
+.profile-card__stats { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 2px 0 0; }
+.profile-card__stats > div { display: grid; gap: 1px; min-width: 0; }
+.profile-card__stats dd { margin: 0; font-weight: 800; overflow-wrap: anywhere; }
+.profile-card__stats dt { color: var(--text-muted); font-size: .66rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.profile-card__bar { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 999px; background: color-mix(in srgb, var(--primary) 18%, var(--surface)); color: var(--text); font-weight: 700; font-size: .9rem; }
+.profile-card__bar > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.profile-card__bar a { margin-left: auto; font-weight: 800; }

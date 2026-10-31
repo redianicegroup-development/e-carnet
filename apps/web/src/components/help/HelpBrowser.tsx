@@ -85,6 +85,7 @@ export function HelpBrowser() {
                   <details className="card help__q" key={`${item.q}-${searching ? "open" : "closed"}`} open={searching}>
                     <summary><strong>{item.q}</strong></summary>
                     <p className="muted">{item.a}</p>
+                    {item.href && <p><Link href={item.href}>{item.linkLabel ?? "En savoir plus"}</Link></p>}
                   </details>
                 ))}
               </div>

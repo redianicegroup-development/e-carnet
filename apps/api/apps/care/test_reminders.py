@@ -90,3 +90,43 @@ class SendDueRemindersTests(TestCase):
         self.assertEqual(PatientNotification.objects.count(), 0)
         self.assertEqual(MedicationReminderDispatch.objects.count(), 0)
 
+    def test_weekdays_limit_the_days_a_reminder_is_sent(self):
+        wednesday = date(2026, 10, 28).weekday()
+        self.reminder(name="Autre jour", days_of_week=[(wednesday + 1) % 7])
+        self.run_command()
+        self.assertEqual(PatientNotification.objects.count(), 0)
+        self.reminder(name="Bon jour", days_of_week=[wednesday, (wednesday + 3) % 7])
+        self.run_command()
+        self.assertEqual(PatientNotification.objects.filter(kind="medication.reminder").count(), 1)
+
+    def test_empty_weekdays_means_every_day(self):
+        self.reminder(days_of_week=[])
+        self.run_command()
+        self.assertEqual(PatientNotification.objects.filter(kind="medication.reminder").count(), 1)
+
+    def test_renewal_notice_is_sent_once_before_the_end_date_without_medicine_name(self):
+        self.reminder(name="Amoxicilline", times=["09:00"], ends_on=date(2026, 10, 30))
+        self.reminder(name="Loin", times=["09:00"], ends_on=date(2026, 11, 20))
+        self.reminder(name="Inactif", times=["09:00"], ends_on=date(2026, 10, 30), active=False)
+        self.run_command(); self.run_command(); self.run_command("2026-10-29T08:00:00+00:00")
+        notices = PatientNotification.objects.filter(kind="medication.renewal")
+        self.assertEqual(notices.count(), 1)
+        self.assertNotIn("Amoxicilline", notices.get().title + notices.get().body)
+
+    @override_settings(ECARNET_REMINDER_RENEWAL_DAYS=0)
+    def test_renewal_notice_can_be_disabled(self):
+        self.reminder(times=["09:00"], ends_on=date(2026, 10, 30))
+        self.run_command()
+        self.assertFalse(PatientNotification.objects.filter(kind="medication.renewal").exists())
+
+    def test_api_accepts_weekdays_and_refuses_invalid_ones(self):
+        from rest_framework.test import APIClient
+        client = APIClient(); client.force_authenticate(self.user)
+        url = "/api/v1/patient/care/medication-reminders/"
+        base = {"name": "Vitamine", "times": ["08:00"], "starts_on": "2026-10-01"}
+        created = client.post(url, {**base, "days_of_week": [2, 0]}, format="json")
+        self.assertEqual(created.status_code, 201, created.data)
+        self.assertEqual(created.data["data"]["days_of_week"] if "data" in created.data else created.data["days_of_week"], [0, 2])
+        self.assertEqual(client.post(url, {**base, "days_of_week": [7]}, format="json").status_code, 400)
+        self.assertEqual(client.post(url, {**base, "days_of_week": ["lundi"]}, format="json").status_code, 400)
+

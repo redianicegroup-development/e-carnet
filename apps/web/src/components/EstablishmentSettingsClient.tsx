@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LinkedProvidersSettingsClient } from "./LinkedProvidersSettingsClient";
+import { ProfileSummary } from "./ProfileSummary";
 import { SettingsDirectory, type SettingsNavItem } from "./SettingsDirectory";
 import { SettingsModal } from "./SettingsModal";
 import { SettingsMoreSection } from "./SettingsMoreSection";
@@ -95,16 +96,14 @@ export function EstablishmentSettingsClient() {
 
   return (
     <div className="establishment-settings settings-page">
-      <section className="card establishment-settings__profile account-summary settings-account-summary">
-        <div className="settings-account-summary__row">
-          <div className="profile-summary">
-            <div className="avatar avatar--large avatar--logo" aria-hidden="true">{selected?.logo ? <img src={selected.logo} alt="" /> : selected ? establishmentInitials(selected.name) : "ET"}</div>
-            <div className="settings-account-summary__copy"><span className="eyebrow">Espace établissement</span><h2>{selected?.name ?? "Compte établissement"}</h2><p className="muted">{selected ? `${[selected.city, statusLabel(selected.status)].filter(Boolean).join(" · ")}` : account?.email ?? "Aucun établissement associé"}</p></div>
-          </div>
-        </div>
+      <ProfileSummary
+        avatar={<div className="avatar avatar--large avatar--logo" aria-hidden="true">{selected?.logo ? <img src={selected.logo} alt="" /> : selected ? establishmentInitials(selected.name) : "ET"}</div>}
+        eyebrow="Espace établissement" name={selected?.name ?? "Compte établissement"}
+        stats={selected ? [{ label: "Ville", value: selected.city }, { label: "Type", value: selected.establishment_type }, { label: "Statut", value: statusLabel(selected.status) }] : []}
+      >
         {establishments.length > 1 && <label className="field"><span>Établissement concerné</span><select value={selected?.id ?? ""} onChange={(event) => setSelectedId(event.target.value)}>{establishments.map((item) => <option key={item.id} value={item.id}>{item.name} · {statusLabel(item.status)}</option>)}</select></label>}
         <p className="notice" role="status" aria-live="polite">{loading ? "Chargement…" : message}</p>
-      </section>
+      </ProfileSummary>
       <SettingsDirectory items={navItems} activeId={activeSection} onSelect={setActiveSection} onLogout={() => void logout()} logoutDisabled={signingOut || loading} />
 
       {activeSection === "administratif" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Identité de la structure</span>

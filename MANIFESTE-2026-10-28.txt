@@ -1,31 +1,72 @@
-Archive complète des fichiers ajoutés ou modifiés le 2026-10-28
-Projet : Mon E-Carnet v1.2 (fusion du lot du 28/10 dans la v1.1)
+MANIFESTE 2026-10-28 — interface et reprise des corrections sur e-carnet_v1_1.zip
 
-PWA carte d’urgence hors connexion :
-apps/api/apps/patients/views.py
-apps/api/apps/patients/tests.py
-apps/web/public/sw.js
-apps/web/src/lib/emergency-card-offline.ts
-apps/web/src/components/PublicEmergencyCard.tsx
-apps/web/src/components/emergency-card/EmergencyCardVisual.tsx
-apps/web/src/components/emergency-card/emergency-card.css
-docs/PWA-HORS-CONNEXION.md
+Modifiés :
+  .github/workflows/ci.yml
+  apps/api/.env.production.example
+  apps/api/apps/audit/services.py
+  apps/api/apps/identity/admin_operations.py
+  apps/api/apps/identity/admin_views.py
+  apps/api/apps/identity/monitoring_webhook.py
+  apps/api/apps/identity/test_admin_operations.py
+  apps/api/config/settings.py
+  apps/web/package.json
+  apps/web/public/sitemap.xml
+  apps/web/src/app/credits/page.tsx
+  apps/web/src/app/info-pages.css
+  apps/web/src/app/patient/acces/page.tsx
+  apps/web/src/app/patient/consultations/page.tsx
+  apps/web/src/components/AccountSettingsClient.tsx
+  apps/web/src/components/DossierCard.tsx
+  apps/web/src/components/EstablishmentSettingsClient.tsx
+  apps/web/src/components/PatientAccessGrants.tsx
+  apps/web/src/components/PatientCarnet.tsx
+  apps/web/src/components/PatientHome.tsx
+  apps/web/src/components/PatientHomeIdentity.tsx
+  apps/web/src/components/PatientIdentityFields.tsx
+  apps/web/src/components/PatientOnboarding.tsx
+  apps/web/src/components/PatientPreconsultations.tsx
+  apps/web/src/components/PatientRepresentationsSettingsClient.tsx
+  apps/web/src/components/ProfessionalAccess.tsx
+  apps/web/src/components/ProfessionalAccessGrants.tsx
+  apps/web/src/components/ProfessionalDossier.tsx
+  apps/web/src/components/ProfessionalHome.tsx
+  apps/web/src/components/ProfessionalSettingsClient.tsx
+  apps/web/src/components/ProfessionalStep3.tsx
+  apps/web/src/components/SetupCard.tsx
+  apps/web/src/components/WorkspaceNav.tsx
+  apps/web/src/components/dossier-card.css
+  apps/web/src/components/help/HelpBrowser.tsx
+  apps/web/src/components/help/HelpParts.tsx
+  apps/web/src/components/help/helpContent.ts
+  apps/web/src/components/notifications/NotificationBell.tsx
+  apps/web/src/components/public/figures/CreditsFigures.tsx
+  apps/web/src/components/shell/AppSidebar.tsx
+  apps/web/src/components/shell/SpaceShell.tsx
+  apps/web/src/lib/spaces.ts
+  apps/web/src/lib/tour.ts
+  apps/web/tests/boutons-gooey-aide.test.mjs
+  apps/web/tests/dossier-carte-onboarding-2026-10-25.test.mjs
+  apps/web/tests/emergency-card.test.mjs
+  apps/web/tests/espaces-2026-10-22.test.mjs
+  apps/web/tests/grille-gooey-2026-10-23.test.mjs
+  apps/web/tests/info-pages.test.mjs
+  apps/web/tests/site.test.mjs
+  apps/web/tests/ux-flows.test.mjs
+  apps/web/tests/visite-guidee-2026-10-24.test.mjs
+  docs/.cdc/e-carnet-cdc-v12-actualise-27-10-2026.docx
+  docs/DEPLOYMENT.md
+  docs/MONITORING-WEBHOOK.md
+  scripts/make-archive.sh
 
-Plans de suivi PRO-12 / PAT-15 :
-apps/api/apps/care/models.py
-apps/api/apps/care/serializers.py
-apps/api/apps/care/views.py
-apps/api/apps/care/urls.py
-apps/api/apps/care/migrations/0022_followupplan_status_history.py
-apps/api/apps/care/migrations/0023_followupplan_access_grant.py
-apps/api/apps/care/test_self_access.py
-apps/web/src/app/professionnel/consultations/page.tsx
-apps/web/src/components/ProfessionalFollowUpPlans.tsx
-apps/web/src/components/FollowUpPlans.tsx
-docs/PLANS-SUIVI-PRO-12-PAT-15.md
-
-Ajouts de la fusion v1.2 :
-docs/WEB-PUSH-CLES-VAPID.md
-.github/workflows/lock-requirements.yml
-docker-compose.yml (variables VAPID transmises à l API locale)
-docs/WEB-PUSH.md, .env.example (renvois vers le guide)
+Nouveaux :
+  MODIFICATIONS-2026-10-28-interface-et-fusion.md
+  apps/web/src/app/patient/historique/page.tsx
+  apps/web/src/app/proches-et-enfants/page.tsx
+  apps/web/src/components/PatientConsultationFlow.tsx
+  apps/web/src/components/PatientHistory.tsx
+  apps/web/src/components/ProfileSummary.tsx
+  apps/web/src/components/consultation-flow.css
+  apps/web/src/components/profile-summary.css
+  apps/web/src/components/shell/sidebar-action.css
+  apps/web/tests/interface-2026-10-28.test.mjs
+  MANIFESTE-2026-10-28.txt

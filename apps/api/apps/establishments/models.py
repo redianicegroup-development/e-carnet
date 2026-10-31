@@ -193,6 +193,7 @@ class EstablishmentRecordOpeningQuerySet(models.QuerySet):
 
 class EstablishmentRecordOpening(models.Model):
     REASON_CHOICES = (
+        ("urgence", "Urgence"),
         ("soins_en_cours", "Soins en cours"),
         ("continuite_soins", "Continuité des soins"),
         ("demande_patient", "Demande du patient"),
@@ -209,7 +210,9 @@ class EstablishmentRecordOpening(models.Model):
     reason_category = models.CharField(max_length=32, choices=REASON_CHOICES)
     reason_note = models.CharField(max_length=140, blank=True, default="")
     opened_at = models.DateTimeField(default=timezone.now)
-    expires_at = models.DateTimeField()
+    # Vide = aucune limite de durée : l'ouverture reste valable tant que le motif est enregistré (décision ETA-09).
+    # ECARNET_RECORD_OPENING_TTL_MINUTES > 0 rétablit une expiration automatique.
+    expires_at = models.DateTimeField(null=True, blank=True)
 
     objects = EstablishmentRecordOpeningQuerySet.as_manager()
 
@@ -221,7 +224,7 @@ class EstablishmentRecordOpening(models.Model):
         ]
         constraints = [
             models.CheckConstraint(
-                condition=models.Q(reason_category__in=("soins_en_cours", "continuite_soins", "demande_patient", "facturation_assurance", "qualite_audit", "reclamation", "autre")),
+                condition=models.Q(reason_category__in=("urgence", "soins_en_cours", "continuite_soins", "demande_patient", "facturation_assurance", "qualite_audit", "reclamation", "autre")),
                 name="est_rec_reason_category_ck",
             ),
             models.CheckConstraint(

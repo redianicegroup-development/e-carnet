@@ -31,10 +31,10 @@ const ACCOUNT_STEP: TourStep = {
 const STEPS: Record<TourSpace, TourStep[]> = {
   patient: [
     { id: "welcome", icon: "sparkle", tag: "Bienvenue", title: "Faisons le tour de votre carnet", text: "En quelques étapes, découvrez à quoi sert chaque onglet. Vous pouvez quitter quand vous voulez : rien n’est modifié." },
-    { id: "home", target: "nav-home", icon: "home", tag: "Accueil", title: "Votre point de départ", text: "Votre carte d’urgence, les prochaines étapes pour compléter votre carnet et vos rappels. C’est ici que vous revenez à chaque connexion." },
+    { id: "home", target: "nav-home", icon: "home", tag: "Accueil", title: "Votre point de départ", text: "Votre dossier patient, votre carte virtuelle et ce qu’il reste à faire pour compléter votre carnet. C’est ici que vous revenez à chaque connexion." },
     { id: "carnet", target: "nav-carnet", icon: "folder", tag: "Mon carnet", title: "Tout votre dossier de santé", text: "Allergies, antécédents, traitements, vaccins et documents (ordonnances, résultats). Vous le remplissez à votre rythme : seul ce que vous ajoutez y figure." },
-    { id: "visits", target: "nav-consultations", icon: "stethoscope", tag: "Visites", title: "Vos consultations", text: "Retrouvez l’historique de vos visites et préparez la prochaine : notez ce que vous ressentez, le professionnel le verra." },
-    { id: "share", target: "nav-acces", icon: "share", tag: "Partage", title: "Vous décidez qui voit quoi", text: "Présentez un QR valable 5 minutes à un professionnel pour l’autoriser, choisissez ce qu’il peut consulter et retirez l’accès quand vous voulez. Votre carte d’urgence est aussi ici." },
+    { id: "visits", target: "nav-consultations", icon: "stethoscope", tag: "Consultations", title: "Préparer, puis ouvrir l’accès", text: "Étape 1 : notez ce que vous ressentez. Étape 2 : une fois la pré-consultation enregistrée, présentez au professionnel un QR valable 5 minutes. Le bouton surélevé au centre vous y mène directement." },
+    { id: "share", target: "nav-historique", icon: "clock", tag: "Historique", title: "Tout ce qui s’est passé", text: "Vos consultations, vos vaccins, vos mesures, et surtout qui a eu accès à vos données. Les demandes d’accès qui attendent votre réponse sont ici : vous autorisez ou vous refusez, et vous retirez l’accès quand vous voulez." },
     { id: "notifications", target: "notifications", icon: "bell", tag: "Notifications", title: "Restez informé", text: "Visites, accès, vaccins et traitements : les alertes s’affichent ici, avec une sonnerie que vous pouvez couper.", needsTarget: true },
     ACCOUNT_STEP,
   ],

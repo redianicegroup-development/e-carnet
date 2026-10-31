@@ -220,8 +220,13 @@ class FollowUpPlanSerializer(serializers.ModelSerializer):
 class MedicationReminderSerializer(serializers.ModelSerializer):
     class Meta:
         model = MedicationReminder
-        fields = ("id", "name", "dosage", "instructions", "times", "starts_on", "ends_on", "stock_remaining", "refill_threshold", "active", "created_at", "updated_at")
+        fields = ("id", "name", "dosage", "instructions", "times", "days_of_week", "starts_on", "ends_on", "stock_remaining", "refill_threshold", "active", "created_at", "updated_at")
         read_only_fields = ("id", "created_at", "updated_at")
+
+    def validate_days_of_week(self, value):
+        if not isinstance(value, list) or len(value) > 7 or any(isinstance(day, bool) or not isinstance(day, int) or day < 0 or day > 6 for day in value):
+            raise serializers.ValidationError("Indiquez des jours entre lundi et dimanche, ou aucun pour tous les jours.")
+        return sorted(set(value))
 
     def validate_times(self, value):
         if not isinstance(value, list) or not value or len(value) > 12 or any(not isinstance(item, str) or len(item) != 5 or item[2] != ":" for item in value):
