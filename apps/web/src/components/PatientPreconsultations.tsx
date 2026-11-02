@@ -36,7 +36,6 @@ export function PatientPreconsultations({ onDraftChange }: { onDraftChange?: (ha
   }, []);
 
   const draft = (items ?? []).find((item) => item.status === "draft") ?? null;
-  const closed = (items ?? []).filter((item) => item.status === "closed");
   const showWizard = items !== null && (!draft || editing);
   const hasDraft = Boolean(draft);
   // La pré-consultation est « faite » dès qu'un brouillon est enregistré : l'écran des consultations en tire l'étape 2 (accès temporaire).
@@ -130,10 +129,5 @@ export function PatientPreconsultations({ onDraftChange }: { onDraftChange?: (ha
       <div className="actions"><button type="button" className="button" onClick={startEditing}>Modifier le brouillon</button><Link className="button primary" href="/patient/acces">Ouvrir mon QR d’accès</Link></div>
       <p className="status" role="status" aria-live="polite">{message}</p>
     </section>}
-
-    <section className="card" aria-label="Pré-consultations clôturées">
-      <div className="section-heading"><div><span className="eyebrow">Clôturées par un médecin</span><h2>Mes pré-consultations</h2></div><span className="count-badge">{items ? closed.length : "…"}</span></div>
-      {items === null ? <div className="skeleton" role="status"><span className="sr-only">Chargement…</span><i /></div> : closed.length === 0 ? <p className="empty">Aucune pré-consultation clôturée pour le moment. Le médecin la clôture lorsqu’il signe votre consultation.</p> : <div className="stack">{closed.map((item) => <article className="record" key={item.id}><div><strong>{item.reason}</strong><p className="muted">{item.facility_label || "Établissement du médecin"}{item.closed_at ? ` · clôturée le ${new Date(item.closed_at).toLocaleDateString("fr-FR")}` : ""}</p></div><span className="badge measured">Clôturée</span></article>)}</div>}
-    </section>
   </div>;
 }

@@ -1,0 +1,16 @@
+/* « Aujourd'hui » et agenda : lignes heure · pastille · texte, regroupées par jour. Teintes dérivées de la palette du thème. */
+.agenda-list { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.agenda-row { display: grid; grid-template-columns: 54px auto minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 52px; padding: 6px 2px; }
+.agenda-time { font-family: var(--font-heading); font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); }
+.agenda-body { display: grid; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+.agenda-day + .agenda-day { margin-top: 20px; }
+.agenda-day__title { margin: 0 0 6px; font-size: 1.05rem; text-transform: capitalize; }
+.today-card { display: grid; gap: 8px; }
+.today-card .section-heading a { display: inline-flex; align-items: center; min-height: 44px; text-decoration: underline; color: var(--text-muted); }
+.next-consultation { display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 22px; background: var(--tone-honey-1); color: var(--text); text-decoration: none; box-shadow: var(--raise-sm); }
+.next-consultation__date { display: grid; place-items: center; width: 56px; height: 62px; flex: none; border-radius: 14px; background: var(--surface, #fff); line-height: 1.1; text-align: center; }
+.next-consultation__date strong { font-family: var(--font-heading); font-size: 1.35rem; }
+.next-consultation__date small { color: var(--text-muted); }
+.next-consultation__body { display: grid; gap: 2px; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.home-hero { display: grid; gap: 14px; }
+.home-hero > p { margin: 0; }

@@ -128,7 +128,7 @@ test("l’âge et le genre se renseignent à l’étape 3 de l’onboarding pati
 test("le dossier patient et le QR de la carte virtuelle forment une seule section d’accueil", () => {
   const home = read("src/components/PatientHomeIdentity.tsx");
   assert.equal((home.match(/<section /g) ?? []).length, 0, "la section vient du composant commun DossierCard");
-  assert.equal((read("src/components/DossierCard.tsx").match(/<section /g) ?? []).length, 1, "une seule section");
+  assert.equal((read("src/components/DossierCard.tsx").match(/<section /g) ?? []).length, 2, "la carte du dossier et le gabarit d'une rubrique ouverte");
   assert.match(home, /<DossierCard/);
   assert.match(home, /className="patient-dossier"/);
   assert.match(home, /patient-dossier__qr/);
@@ -177,7 +177,7 @@ test("UX-02 : l’accueil regroupe les alertes en « À faire » et ne répète 
   assert.match(home, /id="home-todo-title"[^>]*>À faire</);
   assert.doesNotMatch(home, /stat-grid|PatientDashboardChart|progress-card|alert-card"[^>]*aria-live/);
   assert.equal((home.match(/apiGet</g) ?? []).length, 5, "cinq appels au lieu de huit");
-  assert.match(home, /key: "prepare", href: "\/patient\/consultations#preparer"/);
+  assert.doesNotMatch(home, /key: "prepare"/, "préparer la consultation n'est pas le rôle du patient");
   assert.match(home, /<PatientHomeIdentity account=\{account\} \/>/);
 });
 

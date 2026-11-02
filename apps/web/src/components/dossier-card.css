@@ -17,3 +17,11 @@
 
 /* Bloc d'en-tête du dossier puis grille de tuiles pliables carrées (comme Mon carnet). */
 .dossier-group { display: grid; gap: 14px; min-width: 0; }
+
+/* Rubriques du dossier toujours ouvertes (Dossier patient, Dossier médecin) : lisibles d'un coup d'œil, sans rien déplier. */
+.dossier-sections { display: grid; gap: 14px; }
+.dossier-section { display: grid; gap: 12px; padding: 16px; }
+.dossier-section__head { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 18px; background: color-mix(in srgb, var(--primary) 12%, var(--bg)); }
+.dossier-section__head h3 { margin: 0; font-size: 1.05rem; }
+.dossier-section__head small { display: block; }
+.dossier-section__body { min-width: 0; }

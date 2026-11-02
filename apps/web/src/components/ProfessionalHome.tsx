@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AvatarBadge, displayName, useSpaceAccount } from "./shell/SpaceShell";
+import Link from "next/link";
+import { displayName, useSpaceAccount } from "./shell/SpaceShell";
 import { useProfessionalProfile } from "./ClinicalGate";
-import { type IconName } from "./ui/Icon";
-import { TileGrid } from "./ui/TileGrid";
+import { Icon } from "./ui/Icon";
+import { ProfessionalToday } from "./ProfessionalToday";
 import { listProfessionalConsultations, listProfessionalGrants } from "../application/professional-access-grants";
 import { ProfessionalDashboardChart } from "./RoleDashboards";
 import { ProfessionalDossier } from "./ProfessionalDossier";
@@ -23,7 +24,7 @@ function ProfessionalVirtualCard({ account, profile }: { account: SpaceAccount; 
 }
 
 /* Accueil médecin, dans l'ordre où on en a besoin : bonjour · « Mise en route » (comme chez le patient : elle disparaît une fois tout configuré) ·
-   dossier médecin (tout ce qui a été déclaré) · carte virtuelle · raccourcis · activité. Tant que le rattachement n'est pas validé, seul le rattachement est proposé. */
+   « Aujourd'hui » (consultations du jour) · dossier médecin, toujours ouvert · carte virtuelle · activité. Pas de grille de raccourcis. Tant que le rattachement n'est pas validé, seul le rattachement est proposé. */
 export function ProfessionalHome() {
   const account = useSpaceAccount();
   const state = useProfessionalProfile();
@@ -48,21 +49,23 @@ export function ProfessionalHome() {
   ];
   const actionLabel = !hasProfile ? "Compléter mon profil" : !attached ? (pending ? "Voir ma demande" : "Saisir mon code") : "Choisir mon établissement";
 
-  const shortcuts: { href: string; icon: IconName; title: string; text: string; locked: boolean }[] = [
-    { href: "/professionnel/patients", icon: "qr", title: "Scanner un QR / demander un accès", text: "Le patient reste maître de l’autorisation.", locked: !ready },
-    { href: "/professionnel/consultations", icon: "stethoscope", title: "Consultations", text: "Pré-consultations et consultations validées.", locked: !ready },
-    { href: "/professionnel/acces", icon: "building", title: "Mon rattachement", text: "Code médecin, établissements, établissement actif.", locked: false },
-  ];
-
   return (
     <div className="stack-lg">
-      {account && <div className="greeting"><AvatarBadge account={account} size={52} /><div className="greeting__text"><small>{profile?.professional_title ?? "Professionnel"}</small><h1>{displayName(account)}</h1></div></div>}
+      {account && (
+        <header className="home-hero">
+          <p className="muted">Bonjour, {profile?.professional_title ? `${profile.professional_title} ` : ""}{displayName(account)}</p>
+          <h1 className="hero-title">Votre journée,<em>en un coup d’œil</em></h1>
+          <div className="button-row">
+            {ready ? <><Link className="button" href="/professionnel/patients"><Icon name="search" size={18} /> Un patient</Link><Link className="button dark" href="/professionnel/patients#scanner"><Icon name="qr" size={18} /> Scanner un QR</Link></> : <Link className="button dark" href="/professionnel/acces"><Icon name="building" size={18} /> Mon rattachement</Link>}
+          </div>
+        </header>
+      )}
       {state.status === "loading" && <div className="skeleton" role="status"><span className="sr-only">Chargement…</span><i /><i /></div>}
       {state.status === "error" && <p className="notice" role="alert">{state.message}</p>}
       {state.status !== "loading" && state.status !== "error" && <SetupCard title="Quelques étapes avant d’ouvrir un carnet" steps={steps} actionLabel={actionLabel} />}
+      {ready && <ProfessionalToday />}
       {account && hasProfile && <ProfessionalDossier account={account} profile={profile} />}
       {account && profile && <ProfessionalVirtualCard account={account} profile={profile} />}
-      {state.status !== "loading" && <TileGrid label="Raccourcis" items={shortcuts.filter((item) => !item.locked)} />}
       {activity && ready && <div className="role-dashboard-grid"><ProfessionalDashboardChart metrics={[{ label: "Demandes", value: activity.grants }, { label: "Accès actifs", value: activity.activeGrants }, { label: "Consultations", value: activity.consultations }]} /></div>}
     </div>
   );

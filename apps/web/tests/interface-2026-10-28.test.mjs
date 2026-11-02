@@ -1,26 +1,17 @@
 // Interface du 28/10 : navigation à bouton principal surélevé, Historique, consultations en deux étapes, dossiers en tuiles pliables,
 // onboarding sans nom redemandé, en-tête de « Moi », page Proches et enfants, logo actuel dans les crédits.
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
 const read = (rel) => readFileSync(new URL(`../${rel}`, import.meta.url), "utf8");
 
-test("la barre de navigation porte un bouton principal surélevé : pré-consultation (patient), scanner un QR (médecin rattaché)", () => {
-  const spaces = read("src/lib/spaces.ts");
-  assert.match(spaces, /action: \{ id: "preconsult", label: "Préparer", long: "Préparer ma consultation", href: "\/patient\/consultations#preparer"/);
-  assert.match(spaces, /action: \{ id: "scan", label: "Scanner", long: "Scanner le QR d’un patient", href: "\/professionnel\/patients#scanner"/);
-  const shell = read("src/components/shell/SpaceShell.tsx");
-  assert.match(shell, /space !== "professional" \|\| clinicalReady === true/, "le médecin voit le scanner une fois rattaché");
-  assert.match(shell, /action=\{navAction\}/);
-  const sidebar = read("src/components/shell/AppSidebar.tsx");
-  assert.match(sidebar, /index === Math\.floor\(items\.length \/ 2\)/, "le bouton est posé au centre de la barre");
-  assert.match(sidebar, /sb__action-orb/);
-  const css = read("src/components/shell/sidebar-action.css");
-  assert.match(css, /margin-top: -30px/, "surélevé sur mobile");
-  assert.match(css, /@media \(min-width: 920px\)[\s\S]*order: -1/, "en tête de la sidebar sur grand écran");
-  assert.match(css, /prefers-reduced-motion/);
-  assert.match(read("src/components/ProfessionalAccessGrants.tsx"), /window\.location\.hash !== "#scanner"[\s\S]*setScanning\(true\)/, "la caméra démarre depuis le bouton Scanner");
+test("la barre de navigation n'a plus de bouton jaune central, sur mobile comme sur PC", () => {
+  assert.doesNotMatch(read("src/lib/spaces.ts"), /action: \{/);
+  assert.doesNotMatch(read("src/components/shell/SpaceShell.tsx"), /navAction/);
+  assert.doesNotMatch(read("src/components/shell/AppSidebar.tsx"), /sb__action|ActionRow/);
+  assert.equal(existsSync(new URL("../src/components/shell/sidebar-action.css", import.meta.url)), false);
+  assert.match(read("src/components/ProfessionalAccessGrants.tsx"), /window\.location\.hash !== "#scanner"[\s\S]*setScanning\(true\)/, "la caméra démarre depuis le bouton « Scanner un QR » de l'accueil médecin");
 });
 
 test("le 4e onglet du patient est l'Historique ; l'ancienne page Partage redirige vers les accès", () => {
@@ -51,7 +42,9 @@ test("consultations en deux étapes : l'accès temporaire n'apparaît qu'une foi
 test("l'accueil patient est une vitrine : plus de raccourcis ni de carte d'action, la mise en route n'a plus de barre de progression", () => {
   const home = read("src/components/PatientHome.tsx");
   assert.doesNotMatch(home, /SHORTCUTS|TileGrid|cta-card/);
-  assert.match(home, /key: "prepare"/);
+  assert.doesNotMatch(home, /key: "prepare"/, "plus de préparation de consultation à l'accueil");
+  assert.match(home, /<h1 className="hero-title">/);
+  assert.match(home, /<PatientToday \/>/);
   assert.doesNotMatch(read("src/components/SetupCard.tsx"), /progress-card__line|role="progressbar"|<progress/);
   assert.match(read("src/components/SetupCard.tsx"), /\{done\}\/\{steps\.length\} étape/, "le compteur 1/3 reste");
 });

@@ -98,13 +98,13 @@ export function PatientHomeIdentity({ account }: { account: SpaceAccount }) {
 
   return <>
     <DossierCard
-      account={account} eyebrow="Dossier patient" titleId="home-profile-title" role={role || undefined} tiles={tiles} className="patient-dossier"
+      account={account} eyebrow="Dossier patient" titleId="home-profile-title" role={role || undefined} sections={tiles} className="patient-dossier"
       note="Informations déclarées par vous : Mon E‑Carnet ne les certifie pas."
       actions={<><Link className="button" href="/patient/parametres">Modifier mon profil</Link><Link className="button" href="/patient/carnet">Gérer mes déclarations</Link></>}
     >
       {profileMessage && <p className="notice" role="status">{profileMessage}</p>}
     </DossierCard>
-    {/* Carte virtuelle et son QR : un bloc à part, tuile pliable comme celles du carnet. */}
+    {/* Carte virtuelle et son QR : un bloc à part, tuile carrée pliable. */}
     <div className="section-grid">
       <CollapsibleSection title="Ma carte virtuelle" icon="idcard" hint="Carte et QR">
         <VirtualCardPanel account={account} card={card} profession={profession} loading={cardLoading} error={cardError}>

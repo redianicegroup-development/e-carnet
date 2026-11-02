@@ -44,9 +44,10 @@
 .ax-pill { width: 100%; }
 .ax-divider { display: flex; align-items: center; gap: 12px; color: var(--text-muted); font-size: .8rem; }
 .ax-divider::before, .ax-divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
-.ax-socials { display: grid; gap: 10px; }
+/* Les boutons de connexion sociale se partagent la largeur : Google seul occupe toute la ligne ; avec Facebook et Apple, les trois restent sur la même ligne. */
+.ax-socials { display: flex; gap: 10px; }
 .ax-socials--labeled .ax-social { min-height: 52px; gap: 12px; font-size: .92rem; }
-.ax-social { min-height: 48px; }
+.ax-social { flex: 1 1 0; min-width: 0; justify-content: center; min-height: 48px; }
 .ax-social:focus-visible, .ax-switch button:focus-visible, .ax-back:focus-visible, .ax-eye:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
 .ax-social .provider-icon { width: 22px; height: 22px; flex: none; transition: transform .3s cubic-bezier(.3, 1.6, .5, 1); }
 .ax-social:hover .provider-icon { transform: scale(1.18) rotate(-6deg); }

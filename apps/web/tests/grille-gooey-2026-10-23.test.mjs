@@ -16,7 +16,8 @@ test("les tuiles n'ont aucune couleur propre : elles suivent la palette choisie"
 test("les rubriques pliables des espaces sont posées dans une grille de tuiles", () => {
   assert.match(read("src/components/PatientCarnet.tsx"), /<div className="section-grid">[\s\S]*Exporter mon carnet[\s\S]*<\/div>/);
   assert.doesNotMatch(read("src/components/PatientCarnet.tsx"), /PatientPreconsultations/, "la pré-consultation est dans l'onglet Consultations");
-  assert.match(read("src/app/patient/consultations/page.tsx"), /className="section-grid"/);
+  assert.doesNotMatch(read("src/app/patient/consultations/page.tsx"), /<PatientConsultations \/>/, "l'historique des consultations est dans l'onglet Historique");
+  assert.match(read("src/components/PatientHistory.tsx"), /<PatientConsultations \/>/);
   assert.match(read("src/app/professionnel/consultations/page.tsx"), /className="section-grid"/);
   assert.match(read("src/components/ProfessionalAccess.tsx"), /className="section-grid"/);
   assert.match(read("src/components/ProfessionalConsultations.tsx"), /className="section-grid"/);

@@ -41,7 +41,7 @@ export function ProfessionalDossier({ account, profile }: { account: SpaceAccoun
     </div> },
   ];
   return <DossierCard
-    account={account} eyebrow="Dossier médecin" titleId="dossier-title" role={role} tiles={tiles} className="professional-dossier"
+    account={account} eyebrow="Dossier médecin" titleId="dossier-title" role={role} sections={tiles} className="professional-dossier"
     note="Informations déclarées par vous : Mon E‑Carnet ne les certifie pas, la vérification relève de l’établissement."
     actions={<Link className="button" href="/professionnel/parametres">Modifier dans mes paramètres</Link>}
   />;

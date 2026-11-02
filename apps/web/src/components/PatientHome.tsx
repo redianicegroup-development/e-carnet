@@ -3,16 +3,17 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { apiGet } from "../infrastructure/api/client";
-import { AvatarBadge, displayName, useSpaceAccount } from "./shell/SpaceShell";
+import { displayName, useSpaceAccount } from "./shell/SpaceShell";
 import { Icon, type IconName } from "./ui/Icon";
 import { PatientHomeIdentity } from "./PatientHomeIdentity";
+import { PatientToday } from "./PatientToday";
 import { SetupCard, type SetupStep } from "./SetupCard";
 
-/* Accueil patient : peu de blocs, dans l'ordre où on en a besoin.
-   1. dire bonjour · 2. « Mise en route » (tant que le carnet essentiel n'est pas commencé, puis elle disparaît) ·
-   3. ce qui attend une réponse (un seul bloc « À faire », qui propose aussi de préparer la prochaine consultation) ·
-   5. mon dossier patient (tuiles pliables) et ma carte virtuelle. Les rubriques du carnet, les consultations et l'historique sont dans la barre de navigation.
-   Les compteurs et le graphique d'avant doublonnaient les onglets : ils n'aident pas à agir. */
+/* Accueil patient (maquette) : peu de blocs, dans l'ordre où on en a besoin.
+   1. le titre et deux boutons (Mon carnet, Partager en QR) · 2. la prochaine consultation, et « Aujourd'hui » quand quelque chose est prévu ·
+   3. « Mise en route » (tant que le carnet essentiel n'est pas commencé) · 4. ce qui attend une réponse (un seul bloc « À faire ») ·
+   5. mon dossier patient, toujours ouvert, et ma carte virtuelle (tuile carrée). Les rubriques du carnet, les consultations et l'historique sont dans la barre de navigation.
+   Pas de grille de raccourcis ni de « préparer la consultation » : décrire ce qui ne va pas est le travail du médecin ou de l'infirmier, pas celui du patient. */
 
 /** Chaque information est indépendante : `null` = n'a pas pu être chargée (on n'invente pas un zéro). */
 type Summary = { declarations: number | null; documents: number | null; vaccinations: number | null; pending: number; unread: number; partial: boolean };
@@ -56,7 +57,7 @@ export function PatientHome() {
     return () => { active = false; };
   }, [attempt]);
 
-  const todos: Todo[] = [{ key: "prepare", href: "/patient/consultations#preparer", icon: "pencil", title: "Préparez votre prochaine consultation", text: "Avant votre rendez-vous : le motif et ce que vous ressentez. Le professionnel le lit seulement si vous l’autorisez." }];
+  const todos: Todo[] = [];
   if (summary && summary.pending > 0) todos.unshift({ key: "grants", href: "/patient/historique#acces", icon: "share", urgent: true, title: `${summary.pending} demande${summary.pending > 1 ? "s" : ""} d’accès en attente`, text: "Un professionnel attend votre décision. Rien n’est partagé tant que vous n’avez pas accepté." });
   if (account && !account.patient_profile.completed) todos.push({ key: "profile", href: "/onboarding/patient", icon: "user", title: "Terminer mon profil", text: "Téléphone, naissance, couverture : utile pour préparer vos consultations." });
   if (summary && summary.unread > 0) todos.push({ key: "notifications", href: "/patient/parametres?section=notifications", icon: "bell", title: `${summary.unread} notification${summary.unread > 1 ? "s" : ""} à lire`, text: "Une action concernant votre carnet attend votre attention." });
@@ -70,13 +71,19 @@ export function PatientHome() {
   return (
     <div className="stack-lg">
       {account && (
-        <div className="greeting">
-          <AvatarBadge account={account} size={52} />
-          <div className="greeting__text"><small>Bonjour</small><h1>{account.first_name || displayName(account)}</h1></div>
-        </div>
+        <header className="home-hero">
+          <p className="muted">Bonjour, {account.first_name || displayName(account)}</p>
+          <h1 className="hero-title">Votre carnet,<em>toujours avec vous</em></h1>
+          <div className="button-row">
+            <Link className="button" href="/patient/carnet"><Icon name="document" size={18} /> Mon carnet</Link>
+            <Link className="button dark" href="/patient/acces#qr"><Icon name="qr" size={18} /> Partager en QR</Link>
+          </div>
+        </header>
       )}
 
       {error && <div className="card alert-card" role="alert"><p>{error}</p><div className="actions"><button className="button" type="button" onClick={retry}>Réessayer</button></div></div>}
+
+      <PatientToday />
 
       <SetupCard title="Construire mon carnet essentiel" text="Commencez par les informations utiles au quotidien. Vous pourrez modifier chaque élément plus tard." steps={setupSteps} />
 

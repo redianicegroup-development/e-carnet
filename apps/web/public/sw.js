@@ -1,5 +1,8 @@
-const CACHE_NAME = "ecarnet-public-v2";
-const PUBLIC_ASSETS = ["/", "/aide", "/a-propos", "/securite", "/manifest.webmanifest"];
+const CACHE_NAME = "ecarnet-public-v3";
+const OFFLINE_URL = "/hors-connexion.html";
+const PUBLIC_ASSETS = ["/", "/aide", "/a-propos", "/securite", "/manifest.webmanifest", OFFLINE_URL, "/brand/app-icon.svg"];
+/* Pages privées : jamais mises en cache. Hors connexion, on affiche seulement la page d'explication (aucune donnée de santé n'est gardée sur l'appareil). */
+const PRIVATE_PAGES = ["/patient", "/professionnel", "/etablissement", "/onboarding", "/connexion", "/inscription"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(PUBLIC_ASSETS)));
@@ -25,6 +28,10 @@ self.addEventListener("fetch", (event) => {
         return (await cache.match(request)) || new Response("Carte d’urgence non disponible hors connexion.", { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } });
       }
     })());
+    return;
+  }
+  if (request.mode === "navigate" && url.origin === self.location.origin && PRIVATE_PAGES.some((prefix) => url.pathname.startsWith(prefix))) {
+    event.respondWith(fetch(request).catch(async () => (await caches.match(OFFLINE_URL)) || new Response("Vous êtes hors connexion.", { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } })));
     return;
   }
   if (request.method !== "GET" || url.origin !== self.location.origin || url.pathname.startsWith("/api/") || url.pathname.startsWith("/patient") || url.pathname.startsWith("/professionnel") || url.pathname.startsWith("/onboarding") || url.pathname.startsWith("/connexion") || url.pathname.startsWith("/inscription")) return;

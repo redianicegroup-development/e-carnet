@@ -74,10 +74,7 @@ body .section-grid > .card.carnet-accordion[data-open="true"] .carnet-accordion_
 body .section-grid > .card.carnet-accordion[data-open="true"] .carnet-accordion__label { align-self: center; }
 body .section-grid > .card.carnet-accordion[data-open="true"] .carnet-accordion__panel { padding: 8px 14px 18px; }
 
-/* une rubrique seule dans sa grille : une tuile en ligne, pas une demi-largeur vide */
-body .section-grid > .card.carnet-accordion:only-child { grid-column: 1 / -1; min-height: 0; }
-body .section-grid > .card.carnet-accordion:only-child:not([data-open="true"]) .carnet-accordion__toggle { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "badge label arrow"; align-items: center; min-height: 76px; }
-body .section-grid > .card.carnet-accordion:only-child:not([data-open="true"]) .carnet-accordion__label { align-self: center; }
+/* une rubrique seule dans sa grille reste une tuile carrée (ex. « Ma carte virtuelle ») : seule sa version ouverte prend toute la largeur */
 
 @media (min-width: 820px) {
   body .section-grid { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 16px; }

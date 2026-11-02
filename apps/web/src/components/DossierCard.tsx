@@ -15,9 +15,9 @@ export function DossierRows({ rows }: { rows: DossierRow[] }) {
 }
 
 /** « Dossier médecin » et « Dossier patient » : même présentation. Un bloc d'en-tête (photo, nom en titre, métier si c'est un professionnel),
-    puis tout ce qui a été déclaré en tuiles carrées pliables, comme dans Mon carnet : on ouvre une tuile pour voir son contenu.
+    puis tout ce qui a été déclaré, sous forme de rubriques toujours ouvertes (`sections`) ; `tiles` reste disponible pour des tuiles carrées pliables.
     `rows` : lignes d'information laissées visibles sous le nom ; `tiles` : les tuiles ; `children` : blocs sous les lignes de l'en-tête. */
-export function DossierCard({ account, eyebrow, titleId, role, rows, tiles, note, actions, className = "", children }: {
+export function DossierCard({ account, eyebrow, titleId, role, rows, tiles, sections, note, actions, className = "", children }: {
   account: Pick<SpaceAccount, "first_name" | "last_name" | "email" | "avatar_url">;
   eyebrow: string;
   titleId: string;
@@ -25,6 +25,8 @@ export function DossierCard({ account, eyebrow, titleId, role, rows, tiles, note
   role?: string;
   rows?: DossierRow[];
   tiles?: DossierTile[];
+  /** Rubriques toujours ouvertes, l'une sous l'autre : le dossier se lit d'un coup d'œil, sans rien déplier. */
+  sections?: DossierTile[];
   note?: string;
   actions?: ReactNode;
   className?: string;
@@ -45,6 +47,19 @@ export function DossierCard({ account, eyebrow, titleId, role, rows, tiles, note
       {note && <p className="muted dossier__note">{note}</p>}
       {actions && <div className="actions">{actions}</div>}
     </section>
+    {sections && sections.length > 0 && (
+      <div className="dossier-sections">
+        {sections.map((section) => (
+          <section className="card dossier-section" key={section.key} aria-labelledby={`${titleId}-${section.key}`}>
+            <div className="dossier-section__head">
+              <span className="orb orb--sm" aria-hidden="true"><Icon name={section.icon} size={18} /></span>
+              <div><h3 id={`${titleId}-${section.key}`}>{section.title}</h3>{section.hint && <small className="muted">{section.hint}</small>}</div>
+            </div>
+            <div className="dossier-section__body">{section.content}</div>
+          </section>
+        ))}
+      </div>
+    )}
     {tiles && tiles.length > 0 && (
       <div className="section-grid">
         {tiles.map((tile) => <CollapsibleSection key={tile.key} title={tile.title} icon={tile.icon} hint={tile.hint}>{tile.content}</CollapsibleSection>)}

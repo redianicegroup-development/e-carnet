@@ -29,7 +29,7 @@ test("la page publique du QR ne montre jamais le métier", () => {
   assert.doesNotMatch(pub, /profession/);
 });
 
-test("dossier patient et dossier médecin : une seule présentation commune (DossierCard, tuiles pliables), les champs du patient restent ceux d'origine", () => {
+test("dossier patient et dossier médecin : une seule présentation commune (DossierCard, rubriques ouvertes), les champs du patient restent ceux d'origine", () => {
   const card = read("src/components/DossierCard.tsx");
   const home = read("src/components/PatientHomeIdentity.tsx");
   const doctor = read("src/components/ProfessionalDossier.tsx");
@@ -42,7 +42,12 @@ test("dossier patient et dossier médecin : une seule présentation commune (Dos
   assert.match(doctor, /<DossierCard/);
   assert.match(home, /eyebrow="Dossier patient"/);
   assert.match(doctor, /eyebrow="Dossier médecin"/);
-  assert.equal((card.match(/<section /g) ?? []).length, 1);
+  assert.match(card, /dossier-sections/, "les rubriques du dossier sont toujours ouvertes, l'une sous l'autre");
+  assert.match(home, /sections=\{tiles\}/);
+  assert.match(doctor, /sections=\{tiles\}/);
+  assert.doesNotMatch(home, /tiles=\{tiles\}/, "plus de tuiles pliables dans le dossier patient");
+  assert.doesNotMatch(doctor, /tiles=\{tiles\}/, "plus de tuiles pliables dans le dossier médecin");
+  assert.equal((card.match(/<section /g) ?? []).length, 2, "la carte du dossier et le gabarit d'une rubrique ouverte");
   assert.doesNotMatch(read("src/components/professional-dossier.css"), /professional-dossier__(head|list)/, "la présentation commune n'est plus dupliquée");
   // les champs du patient ne changent pas : ni profession ni e-mail ajoutés, couverture santé en trois lignes, déclarations avec leur provenance
   for (const label of ["Âge", "Genre déclaré", "Ville", "Téléphone", "Adresse", "Organisme", "Numéro", "Expiration"]) assert.match(home, new RegExp(`label: "${label}"`), label);

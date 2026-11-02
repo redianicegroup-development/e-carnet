@@ -22,7 +22,7 @@ export function PatientHistory() {
       <PageHeader eyebrow="Historique" title="Tout ce qui s’est passé" lead="Vos consultations, vos vaccins, vos mesures et les accès donnés à vos données. Pour ajouter ou corriger, ouvrez Mon carnet." />
       <div className="section-grid" id="acces">
         <CollapsibleSection key={openAccess ? "acces-ouvert" : "acces-ferme"} title="Accès à mes données" solo icon="eye" hint="Qui, quand, combien de temps" initiallyOpen={openAccess}><PatientAccessGrants part="log" /></CollapsibleSection>
-        <CollapsibleSection title="Mes consultations" icon="stethoscope" hint="Validées par un professionnel"><PatientConsultations /></CollapsibleSection>
+        <CollapsibleSection title="Mes consultations" solo icon="stethoscope" hint="À venir, passées, pré-consultations"><PatientConsultations /></CollapsibleSection>
         <CollapsibleSection title="Mes vaccins" solo icon="drop" hint="Déclarés et confirmés"><Vaccinations /></CollapsibleSection>
         <CollapsibleSection title="Mes mesures de santé" icon="chart" hint="Évolution dans le temps"><HealthMeasurements /></CollapsibleSection>
       </div>
