@@ -16,6 +16,9 @@ import { TOUR_RESTART_EVENT } from "../../lib/tour";
 import { GooeyAccountMenu } from "./GooeyAccountMenu";
 import { AppSidebar, type SidebarItem, type SidebarMenuItem } from "./AppSidebar";
 import { TrustedDelegationBanner } from "../TrustedDelegationBanner";
+import { OfflineSnapshotSync } from "../OfflineSnapshotSync";
+import { cleanUpBeforeLogout } from "../../lib/logout";
+import { purgeOfflineSnapshot } from "../../lib/offline-snapshot";
 
 export type SpaceAccount = {
   id: string;
@@ -112,6 +115,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
     setSigningOut(true);
     setLogoutMessage("");
     try {
+      await cleanUpBeforeLogout(); // push + copie locale des déclarations : avant la fin de la session, qui sert à les retirer
       await apiPost("/api/v1/identity/logout/");
       router.replace("/connexion");
       router.refresh();
@@ -184,7 +188,12 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
         } catch (error) {
           if (!active) return;
           if (checkingIdentity && isSessionMissing(error)) {
+            void purgeOfflineSnapshot(); // le serveur a répondu : session absente. Ne pas garder de santé sur un appareil déconnecté.
             setState({ status: "anonymous" });
+            return;
+          }
+          if (space === "patient" && navigator.onLine === false && navigator.serviceWorker?.controller) {
+            window.location.reload(); // le service worker répond alors par la page hors connexion (déclarations en lecture seule)
             return;
           }
           if (!isTransientConnectionError(error)) {
@@ -198,7 +207,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
     }
     void load();
     return () => { active = false; controller.abort(); };
-  }, [loadAttempt]);
+  }, [loadAttempt, space]);
 
   useEffect(() => {
     if (state.status !== "anonymous" || bare) return;
@@ -282,6 +291,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
           <AccountContext.Provider value={state.status === "ready" ? state.account : null}>
             <PatientAccessQrContext.Provider value={{ qr: patientAccessQr, setQr: setPatientAccessQr }}>
               {space === "patient" && state.status === "ready" && !bare && <TrustedDelegationBanner />}
+              {space === "patient" && state.status === "ready" && !bare && <OfflineSnapshotSync account={state.account} />}
               {children}
             </PatientAccessQrContext.Provider>
           </AccountContext.Provider>

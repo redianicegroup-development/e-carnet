@@ -1,3 +1,13 @@
+## 2026-11-02 — Hors connexion : déclarations en lecture seule, copies qui expirent vraiment, push retiré à la déconnexion
+
+- **Déclarations hors connexion** (espace patient, lecture seule) : copie locale IndexedDB `ecarnet-offline-v1` des déclarations du profil actif et des profils enfants déjà ouverts en ligne ; la page `/hors-connexion.html` (script `hors-connexion.js`) permet de changer de profil et de naviguer entre les onglets sans réseau. Ni historique, ni consultations, ni documents, ni agenda. 7 jours ; effacée à la déconnexion, sur « session absente », à la demande ; réglage *Paramètres › Hors connexion*.
+- **Carte d'urgence** : une copie de plus de 24 h est supprimée (elle n'était qu'ignorée) ; un 404/410 supprime la copie et ne la montre plus, même en ligne ; la copie n'est affichée qu'en l'absence de réponse du serveur.
+- **Service worker (v4)** : coquille `/urgence/<jeton>` et fichiers `/_next/static/` gardés pour que la page se recharge sans réseau ; plus de repli sur l'accueil pour un script ou une image ; `/etablissement` traité comme page privée.
+- **Push** : désabonnement du navigateur et du serveur à chaque déconnexion (cinq écrans), avant la fin de session.
+- **Textes d'information** : politique de confidentialité (copie des déclarations, carte d'urgence, service worker, notifications), Aide et page d'accueil (« aucune donnée médicale conservée » n'était plus vrai).
+- **Constat** : la carte imprimable hors ligne (ACS-10) a été retirée du code le 16/10 (endpoint `/emergency-card/offline/` en 404) ; `SECURITY.md` la décrivait encore, corrigé.
+- Tests : `hors-connexion-2026-11-02.test.mjs` (32), `service-worker-2026-11-02.test.mjs` (8) ; `legal.test.mjs` liste désormais chaque usage du stockage navigateur et vérifie qu'il est déclaré dans la politique.
+
 ## 2026-10-18 — Boutons en trois types, gooey, centre d'aide unique, landing en six sections (lot v16 fusionné dans v2)
 
 - **Boutons** : trois types (principal `.button.primary`, secondaire `.button`, discret `.button.ghost`), `danger` = couleur, `small`/`block` = tailles ; connexion, récupération de compte (y compris « Valider ma réponse »), installation, avis flottant, bannière cookies et confirmations passent par `.button`. La confirmation destructive est le bouton principal en rouge.

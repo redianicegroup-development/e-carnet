@@ -71,7 +71,9 @@ export async function subscribeToPush(): Promise<PushResult> {
   }
 }
 
+/** Retire l'abonnement de cet appareil (navigateur) puis du serveur. Sans effet si le navigateur n'a pas de service worker. */
 export async function unsubscribeFromPush(): Promise<void> {
+  if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return;
   const subscription = await currentPushSubscription();
   if (!subscription) return;
   await sendToServer("DELETE", { endpoint: subscription.endpoint }).catch(() => false);

@@ -24,3 +24,33 @@
 @media (max-width: 560px) {
   .admin-recovery__when { white-space: normal; }
 }
+
+/* ---------- Aider une personne : retrouver le compte, lever le blocage, remettre un mot de passe temporaire ---------- */
+.admin-recovery__assist { display: grid; gap: 12px; }
+.admin-recovery__assist h3, .admin-recovery__assist p { margin: 0; }
+.admin-recovery__search { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; }
+.admin-recovery__search .field { flex: 1 1 220px; min-width: 0; }
+.admin-recovery__account { display: grid; gap: 12px; padding: 14px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); min-width: 0; }
+.admin-recovery__account-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px 12px; min-width: 0; }
+.admin-recovery__account-head > div { min-width: 0; overflow-wrap: anywhere; }
+.admin-recovery__account-head p { margin: 2px 0 0; }
+.admin-recovery__facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 10px 16px; margin: 0; }
+.admin-recovery__facts > div { display: grid; gap: 2px; min-width: 0; }
+.admin-recovery__facts dt { color: var(--text-muted); font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.admin-recovery__facts dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.admin-recovery__tip { font-size: .86rem; }
+.admin-recovery__temp { display: grid; gap: 10px; padding-top: 12px; border-top: 1px solid var(--border); }
+.admin-recovery__check { display: flex; align-items: flex-start; gap: 10px; font-weight: 600; }
+.admin-recovery__check input { flex: 0 0 auto; width: 20px; height: 20px; margin-top: 2px; }
+.admin-recovery__issued { display: grid; gap: 10px; padding: 14px; border: 1px solid var(--status-verified-fg); border-radius: 16px; background: color-mix(in srgb, var(--status-verified-fg) 10%, var(--surface)); min-width: 0; }
+.admin-recovery__issued p { margin: 0; }
+.admin-recovery__secret { padding: 12px; border-radius: 12px; background: var(--surface); text-align: center; }
+.admin-recovery__secret code { display: block; font-family: var(--font-mono); font-size: clamp(1.05rem, 5vw, 1.35rem); font-weight: 700; letter-spacing: .04em; overflow-wrap: anywhere; user-select: all; }
+.admin-recovery__row-actions { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; min-width: 0; }
+.admin-recovery__list .record > .admin-recovery__row-actions { margin-left: auto; }
+.admin-recovery__assist .actions, .admin-recovery__issued .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+@media (max-width: 560px) {
+  .admin-recovery__search .button, .admin-recovery__temp .button { width: 100%; }
+  .admin-recovery__list .record > .admin-recovery__row-actions { margin-left: 0; width: 100%; }
+  .admin-recovery__row-actions .field { flex: 1 1 140px; }
+}

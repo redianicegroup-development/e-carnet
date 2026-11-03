@@ -5,6 +5,7 @@ from .contact_views import PublicContactView
 from .views import CurrentAccountThemeView
 from .visitor_views import AnonymousClickView, AnonymousVisitView, ProductActionSurveyTriggerView, ProductExperienceSurveySubmitView, ProductSurveySubmitView, ProductSurveySummaryView, PublicFeedbackView
 from .admin_views import AdminContactMessageStatusView, AdminDashboardView, AdminFeedbackStatusView, AdminRecoveryView
+from .admin_recovery_assist import AdminRecoveryAccountView, AdminRecoveryTemporaryPasswordView, AdminRecoveryUnlockView
 from .admin_operations import AdminOperationsIncidentView, AdminOperationsSummaryView
 from .admin_audit import AdminAuditExportView, AdminAuditJournalView
 from .monitoring_webhook import MonitoringWebhookView
@@ -22,6 +23,9 @@ urlpatterns = [
     path("admin/dashboard/", AdminDashboardView.as_view(), name="admin-dashboard"),
     path("admin/feedback/<uuid:feedback_id>/", AdminFeedbackStatusView.as_view(), name="admin-feedback-status"),
     path("admin/recovery/", AdminRecoveryView.as_view(), name="admin-recovery"),
+    path("admin/recovery/account/", AdminRecoveryAccountView.as_view(), name="admin-recovery-account"),
+    path("admin/recovery/accounts/<int:user_id>/unlock/", AdminRecoveryUnlockView.as_view(), name="admin-recovery-unlock"),
+    path("admin/recovery/accounts/<int:user_id>/temporary-password/", AdminRecoveryTemporaryPasswordView.as_view(), name="admin-recovery-temporary-password"),
     path("admin/operations/summary/", AdminOperationsSummaryView.as_view(), name="admin-operations-summary"),
     path("admin/audit/", AdminAuditJournalView.as_view(), name="admin-audit-journal"),
     path("admin/audit/export/", AdminAuditExportView.as_view(), name="admin-audit-export"),

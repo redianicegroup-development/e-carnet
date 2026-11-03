@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LinkedProvidersSettingsClient } from "./LinkedProvidersSettingsClient";
-import { ProfileSummary, CardBar } from "./ProfileSummary";
+import { ProfileSummary } from "./ProfileSummary";
 import { SettingsDirectory, type SettingsNavItem } from "./SettingsDirectory";
 import { SettingsModal } from "./SettingsModal";
 import { SettingsMoreSection } from "./SettingsMoreSection";
@@ -12,6 +12,7 @@ import { LandingFeedbackWidget } from "./LandingFeedbackWidget";
 import { ThemeSettingsClient } from "./ThemeSettingsClient";
 import { AccountActionRequestsSettingsClient } from "./AccountActionRequestsSettingsClient";
 import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
+import { cleanUpBeforeLogout } from "../lib/logout";
 import { ProfessionalCredentialsSettings } from "./ProfessionalCredentialsSettings";
 import "./establishment-settings.css";
 
@@ -59,6 +60,7 @@ export function ProfessionalSettingsClient() {
   async function logout() {
     setSigningOut(true);
     try {
+      await cleanUpBeforeLogout(); // push + copie locale des déclarations, tant que la session existe
       const csrf = await primeCsrf();
       if (!csrf.ok) throw new Error("Impossible d’établir une session sécurisée.");
       const response = await fetch(`${API}/api/v1/identity/logout/`, { method: "POST", credentials: "include", headers: { "X-CSRFToken": readCsrfToken() } });
@@ -87,7 +89,6 @@ export function ProfessionalSettingsClient() {
         avatar={<div className="avatar avatar--large" aria-hidden="true">{account?.avatar_url ? <img src={account.avatar_url} alt="" /> : initials(fullName)}</div>}
         eyebrow="Espace professionnel" name={fullName}
         stats={[{ label: "Profession", value: profile?.professional_title || "À renseigner" }, { label: "Spécialité", value: profile?.specialty || "À renseigner" }]}
-        bar={<CardBar href="/professionnel" />}
       >
         <p className="notice" role="status" aria-live="polite">{loading ? "Chargement…" : message}</p>
       </ProfileSummary>

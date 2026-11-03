@@ -135,3 +135,10 @@ test("l'aide et la confidentialité expliquent la visite", () => {
   assert.match(read("src/components/help/helpContent.ts"), /Comment revoir la visite guidée \?/);
   assert.match(read("src/app/confidentialite/page.tsx"), /visite guidée/);
 });
+
+test("visite guidée : la pré-consultation est faite par l'infirmier ou le médecin, pas notée par le patient", () => {
+  const visits = tour.tourSteps("patient").find((step) => step.id === "visits");
+  assert.match(visits.text, /infirmier ou le médecin/);
+  assert.doesNotMatch(visits.text, /notez ce que vous ressentez/i);
+  assert.match(visits.text, /QR valable 5 minutes/);
+});

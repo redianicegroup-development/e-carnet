@@ -74,7 +74,9 @@ test("« Moi » : en-tête photo, nom, trois repères et barre d'état pour le p
     assert.match(read(`src/components/${file}.tsx`), /<ProfileSummary|<PatientSummary/, file);
     assert.doesNotMatch(read(`src/components/${file}.tsx`), /settings-account-summary__row/, `${file} : ancien en-tête retiré`);
   }
-  assert.match(read("src/components/AccountSettingsClient.tsx"), /<CardBar href="\/patient" \/>/);
+  // La bande « Carte virtuelle · QR » est retirée des paramètres (patient et professionnel) : le QR public est sur l'accueil patient.
+  for (const file of ["AccountSettingsClient", "ProfessionalSettingsClient"]) assert.doesNotMatch(read(`src/components/${file}.tsx`), /CardBar/, file);
+  assert.doesNotMatch(summary, /CardBar|profile-card__bar/);
 });
 
 test("Proches de confiance et profil enfant : une page dédiée, l'Aide y renvoie", () => {

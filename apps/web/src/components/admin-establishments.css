@@ -27,4 +27,9 @@
   .admin-table--stack td[data-label]::before { content: attr(data-label); display: block; margin-bottom: 2px; color: var(--text-muted); font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
   .admin-table--stack td.admin-table__actions:empty { display: none; }
   .admin-table--stack .admin-inline-actions .button { flex: 1 1 100%; min-height: 44px; }
+  /* Une ligne devenue carte ne doit jamais dépasser de l'écran : les sous-lignes (date, catégorie, identifiant) passent à la ligne
+     au lieu de rester sur une seule ligne (white-space: nowrap du tableau) qui élargissait la carte et la faisait défiler de côté. */
+  .admin-table.admin-table--stack td small, .admin-table.admin-table--stack td code { white-space: normal; overflow-wrap: anywhere; }
+  .admin-table.admin-table--stack td { overflow-wrap: anywhere; }
+  .admin-table.admin-table--stack .admin-inline-actions .button { white-space: normal; }
 }

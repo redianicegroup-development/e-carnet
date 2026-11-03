@@ -67,7 +67,7 @@ export const HELP_FAQ: HelpFaqGroup[] = [
     items: [
       { q: "À quoi sert Mon E-Carnet ?", a: "Mon E‑Carnet aide à organiser des informations de santé, préparer les consultations et gérer les demandes d’accès au carnet. Le service ne remplace pas un avis médical ni les services d’urgence.", profiles: ["patient", "professional", "establishment"] },
       { q: "Comment créer un compte patient ou professionnel ?", a: "Ouvrez Connexion ou inscription, choisissez Nouveau compte, puis le rôle souhaité. Les moyens de connexion disponibles sont présentés dans le formulaire.", profiles: ["patient", "professional"] },
-      { q: "Puis-je l’utiliser sur mon téléphone ?", a: "Oui. Mon E‑Carnet s’ouvre dans le navigateur d’un téléphone ou d’un ordinateur, et peut s’installer comme une application lorsque votre navigateur le permet. Hors connexion, aucune donnée médicale n’est conservée.", profiles: ["patient", "professional", "establishment"] },
+      { q: "Puis-je l’utiliser sur mon téléphone ?", a: "Oui. Mon E‑Carnet s’ouvre dans le navigateur d’un téléphone ou d’un ordinateur, et peut s’installer comme une application lorsque votre navigateur le permet. Sans réseau, vous pouvez consulter vos déclarations en lecture seule ; le reste demande la connexion.", profiles: ["patient", "professional", "establishment"] },
     ],
   },
   {
@@ -114,7 +114,7 @@ export const HELP_FAQ: HelpFaqGroup[] = [
     title: "Données et sécurité",
     items: [
       { q: "Puis-je saisir mes vraies données de santé ?", a: "Oui. En production interne, de vraies informations de santé peuvent être saisies dans l’espace du patient. L’infirmier n’a pas de compte : la pré-consultation se fait dans cet espace. Le service n’est pas ouvert au grand public.", profiles: ["patient", "professional", "establishment"] },
-      { q: "Les données sont-elles disponibles hors connexion ?", a: "Les pages publiques peuvent offrir un repli limité. Aucune donnée médicale ni réponse de l’API n’est conservée hors connexion.", profiles: ["patient", "professional", "establishment"] },
+      { q: "Les données sont-elles disponibles hors connexion ?", a: "En partie, dans l’espace patient. Sans réseau, vous ouvrez l’application et consultez vos déclarations, et celles des profils enfants déjà ouverts en ligne, en lecture seule. L’historique, les consultations, les documents et l’agenda ne sont jamais conservés sur l’appareil. Cette copie est effacée à la déconnexion et après 7 jours, et se désactive dans Paramètres, rubrique Hors connexion. La carte d’urgence ouverte par QR reste lisible 24 heures sur l’appareil qui l’a ouverte.", profiles: ["patient", "professional", "establishment"] },
       { q: "Comment sont protégées mes informations ?", a: "Le service applique les mesures techniques décrites dans les pages Sécurité et Confidentialité.", profiles: ["patient", "professional", "establishment"] },
       { q: "Quelles données de fréquentation sont collectées ?", a: "Avec votre accord, un cookie aléatoire aide à compter les catégories de pages, certains clics publics et des événements de connexion. Le suivi ne conserve ni URL complète, ni adresse IP, ni texte de bouton.", profiles: ["patient", "professional", "establishment"] },
     ],

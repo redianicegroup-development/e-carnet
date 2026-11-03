@@ -3,6 +3,7 @@ import os
 import time as monotonic_time
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.db import connection
 from django.db.models import Avg, Count, Sum
@@ -213,7 +214,11 @@ RECOVERY_EVENT_LABELS = {
     "account.recovery_answer_verified": "Réponse secrète acceptée",
     "account.password_reset_by_recovery": "Mot de passe réinitialisé",
     "account.recovery_method_configured": "Question secrète enregistrée",
+    "account.recovery_unlocked_by_admin": "Blocage levé par l’équipe",
+    "account.temporary_password_issued_by_admin": "Mot de passe temporaire remis par l’équipe",
 }
+# Actions de l'équipe : l'acteur est l'administrateur, le compte aidé est dans `metadata["resource_id"]` (identifiant, jamais un secret).
+RECOVERY_TEAM_EVENTS = frozenset({"account.recovery_unlocked_by_admin", "account.temporary_password_issued_by_admin"})
 RECOVERY_HELP_MARK = "[Récupération de compte]"
 
 
@@ -232,16 +237,33 @@ class AdminRecoveryView(APIView):
         def count(event_type):
             return recent.filter(event_type=event_type).count()
 
-        events = [{
-            "id": str(event.id),
-            "event_type": event.event_type,
-            "label": RECOVERY_EVENT_LABELS[event.event_type],
-            "email": event.actor.email if event.actor else "",
-            "name": f"{event.actor.first_name} {event.actor.last_name}".strip() if event.actor else "",
-            "failures": event.metadata.get("extension_count"),
-            "created_at": event.created_at.isoformat(),
-        } for event in events_queryset.select_related("actor").order_by("-created_at")[:200]]
+        recent_events = list(events_queryset.select_related("actor").order_by("-created_at")[:200])
+        helped_ids = {int(event.metadata["resource_id"]) for event in recent_events if event.event_type in RECOVERY_TEAM_EVENTS and str(event.metadata.get("resource_id", "")).isdigit()}
+        helped = {user.pk: user for user in get_user_model().objects.filter(pk__in=helped_ids)}
+
+        def event_person(event):
+            """Le compte concerné : le titulaire, ou — pour une action de l'équipe — la personne aidée (et non l'administrateur)."""
+            if event.event_type in RECOVERY_TEAM_EVENTS:
+                resource = str(event.metadata.get("resource_id", ""))
+                return helped.get(int(resource)) if resource.isdigit() else None
+            return event.actor
+
+        def event_payload(event):
+            person = event_person(event)
+            return {
+                "id": str(event.id),
+                "event_type": event.event_type,
+                "label": RECOVERY_EVENT_LABELS[event.event_type],
+                "email": person.email if person else "",
+                "name": f"{person.first_name} {person.last_name}".strip() if person else "",
+                "failures": event.metadata.get("extension_count"),
+                "by_team": event.event_type in RECOVERY_TEAM_EVENTS,
+                "created_at": event.created_at.isoformat(),
+            }
+
+        events = [event_payload(event) for event in recent_events]
         locked = [{
+            "id": profile.user_id,
             "email": profile.user.email,
             "name": f"{profile.user.first_name} {profile.user.last_name}".strip(),
             "failures": profile.recovery_failures,

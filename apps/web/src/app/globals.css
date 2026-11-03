@@ -454,12 +454,17 @@ a.setting-item:hover, button.setting-item:hover { border-color: var(--primary); 
   .space--admin .admin-space-main [role="tabpanel"] .card { min-width: 0; max-width: 100%; }
   .space--admin .admin-space-main [role="tabpanel"] :is(a, p, small, code) { overflow-wrap: anywhere; }
   .space--admin .admin-table-wrap { width: 100%; max-width: 100%; overflow-x: auto; }
-  .space--admin .sb__scroll { max-width: 100%; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scrollbar-width: none; }
-  .space--admin .sb__scroll::-webkit-scrollbar { display: none; }
-  .space--admin .sb__list { display: flex; flex-wrap: nowrap; width: max-content; min-width: 100%; max-width: none; gap: 2px; }
-  .space--admin .sb__row { flex: 0 0 44px; }
-  .space--admin .sb__item { width: 44px; }
 }
+/* Navigation admin sur mobile : 11 sections, donc deux rangées superposées (6 puis 5, centrées) au lieu d'une longue barre qui défile.
+   Rien ne défile ni ne déborde : la goutte de l'onglet actif se place d'après la position réelle de l'icône. */
+@media (max-width: 919px) {
+  .space--admin .sb__scroll { width: min(100%, 420px); max-width: 100%; padding: 6px; border-radius: 30px; overflow: visible; }
+  .space--admin .sb__list { display: flex; flex-wrap: wrap; justify-content: center; align-content: center; gap: 4px 2px; width: 100%; min-width: 0; max-width: none; margin: 0; }
+  .space--admin .sb__row { flex: 0 0 calc((100% - 10px) / 6); display: grid; place-items: center; min-width: 0; }
+  .space--admin .sb__item { width: 46px; min-height: 46px; }
+  .space--admin .sb__item .icon { width: 21px; height: 21px; }
+}
+@media (max-width: 340px) { .space--admin .sb__item { width: 42px; min-height: 42px; } }
 .feedback-backdrop, .product-survey-backdrop { position: fixed; z-index: 1400; inset: 0; display: grid; place-items: center; padding: 16px; background: rgba(8, 19, 29, .6); }
 .product-survey-backdrop { z-index: 1500; }
 .feedback-dialog, .product-survey-dialog { width: min(100%, 680px); max-height: min(92vh, 860px); max-height: min(92dvh, 860px); overflow: auto; overscroll-behavior: contain; border: 1px solid var(--border); border-radius: 20px; background: var(--surface); color: var(--text); box-shadow: 0 24px 80px rgba(0, 0, 0, .28); }
@@ -549,7 +554,7 @@ a.setting-item:hover, button.setting-item:hover { border-color: var(--primary); 
   .admin-space-header { display: grid; grid-template-columns: 1fr; }
   .admin-space-header .admin-heading { display: grid; }
   .admin-space-header .admin-actions { justify-content: flex-start; }
-  .admin-space-main { padding-bottom: calc(var(--nav-h) + 34px + env(safe-area-inset-bottom)); }
+  .admin-space-main { padding-bottom: calc(150px + env(safe-area-inset-bottom)); }
   .admin-workspace__content > [role="tabpanel"] { width: 100%; }
   .admin-workspace__content .admin-management-grid { grid-template-columns: minmax(0, 1fr); }
   .admin-workspace__content .admin-management-grid .admin-table-wrap { width: 100%; }
@@ -581,7 +586,7 @@ a.setting-item:hover, button.setting-item:hover { border-color: var(--primary); 
 .admin-settings-session h2 { font-size: 1rem; }
 .admin-settings-session .button { flex: 0 0 auto; }
 @media (max-width: 919px) {
-  .space--admin .admin-space-main { width: 100%; padding: 22px 16px calc(100px + env(safe-area-inset-bottom)); }
+  .space--admin .admin-space-main { width: 100%; padding: 22px 16px calc(150px + env(safe-area-inset-bottom)); }
   .admin-page-heading { align-items: flex-start; }
   .admin-settings-session { align-items: flex-start; flex-direction: column; }
 }

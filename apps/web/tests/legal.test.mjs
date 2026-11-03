@@ -63,16 +63,21 @@ test("un traceur présent dans le code doit être déclaré dans la politique (c
   assert.match(page, /Mesure de fréquentation/, "la page de confidentialité doit décrire la mesure de fréquentation");
 });
 
-test("le seul stockage local applicatif est le cache de thème déclaré dans la politique", async () => {
+test("chaque usage du stockage navigateur est connu, et déclaré dans la politique (sauf l'indicateur de défilement, sans donnée personnelle)", async () => {
   const { readdirSync, statSync } = await import("node:fs");
   const walk = (dir) => readdirSync(dir).flatMap((name) => { const full = `${dir}/${name}`; return statSync(full).isDirectory() ? walk(full) : /\.(ts|tsx)$/.test(name) ? [full] : []; });
   const root = new URL("../src", import.meta.url).pathname;
-  const offenders = walk(root).filter((file) => /\b(localStorage|sessionStorage|indexedDB)\b/.test(readFileSync(file, "utf8")) && !file.includes("/confidentialite/") && !file.includes("/tests/"));
-  assert.deepEqual(offenders, [`${root}/lib/themeStorage.ts`], `seul themeStorage.ts doit utiliser le stockage local : ${offenders.join(", ")}`);
+  const offenders = walk(root).filter((file) => /\b(localStorage|sessionStorage|indexedDB)\b/.test(readFileSync(file, "utf8")) && !file.includes("/confidentialite/") && !file.includes("/tests/")).map((file) => file.slice(root.length + 1)).sort();
+  assert.deepEqual(offenders, ["components/public/PublicFooterScrollToTop.tsx", "lib/emergency-card-offline.ts", "lib/offline-snapshot.ts", "lib/themeStorage.ts"], `usage du stockage navigateur non déclaré : ${offenders.join(", ")}`);
   const privacy = read("confidentialite");
   assert.match(privacy, /copie du thème d’apparence choisi/i);
   assert.match(privacy, /se synchronise lorsque vous utilisez un autre appareil/i);
-  assert.doesNotMatch(readFileSync(offenders[0], "utf8"), /sessionStorage|indexedDB/i);
+  assert.match(privacy, /Copie hors connexion des déclarations \(IndexedDB\)/);
+  assert.match(privacy, /Carte d’urgence ouverte par QR \(IndexedDB\)/);
+  // Le thème (localStorage) ne touche pas aux autres mécanismes ; l'indicateur de défilement (sessionStorage) ne garde qu'un chemin et une date, effacés aussitôt.
+  assert.doesNotMatch(readFileSync(`${root}/lib/themeStorage.ts`, "utf8"), /sessionStorage|indexedDB/i);
+  const scroll = readFileSync(`${root}/components/public/PublicFooterScrollToTop.tsx`, "utf8");
+  assert.match(scroll, /JSON\.stringify\(\{ pathname: destination\.pathname, createdAt: Date\.now\(\) \}\)/);
 });
 
 test("la politique décrit la suppression immédiate et les seules traces protégées conservées", () => {

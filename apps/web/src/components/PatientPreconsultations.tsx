@@ -80,7 +80,7 @@ export function PatientPreconsultations({ onDraftChange }: { onDraftChange?: (ha
     {showWizard && <section className="card preconsult-wizard preconsult-form" aria-labelledby="preconsult-title">
       <div className="preconsult-wizard__top"><span className="eyebrow">{draft ? "Modifier le brouillon" : "Préparer ma consultation"}</span></div>
       <h2 id="preconsult-title">Préparer ma consultation</h2>
-      <p className="muted">Remplissez ce que vous savez : seul le motif est obligatoire. Un proche ou un infirmier peut vous aider.</p>
+      <p className="muted">L’infirmier ou le médecin remplit cette pré-consultation avec vous, sur votre téléphone : seul le motif est obligatoire.</p>
       <form onSubmit={save} noValidate>
         <fieldset className="preconsult-section">
           <legend><span className="preconsult-section__num">1</span>Quel est le motif de la consultation ?</legend>

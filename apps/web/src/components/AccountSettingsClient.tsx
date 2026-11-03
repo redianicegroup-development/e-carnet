@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { AvatarPicker } from "./AvatarPicker";
 import { LinkedProvidersSettingsClient } from "./LinkedProvidersSettingsClient";
 import { PatientHealthSettingsClient } from "./PatientHealthSettingsClient";
-import { ProfileSummary, CardBar, usePatientStats } from "./ProfileSummary";
+import { ProfileSummary, usePatientStats } from "./ProfileSummary";
 import { SettingsDirectory, type SettingsNavItem } from "./SettingsDirectory";
 import { SettingsModal } from "./SettingsModal";
 import { SettingsMoreSection } from "./SettingsMoreSection";
@@ -18,7 +18,9 @@ import { PatientRepresentationsSettingsClient } from "./PatientRepresentationsSe
 import { TrustedContactDelegationClient } from "./TrustedContactDelegationClient";
 import { PatientNotifications } from "./PatientNotifications";
 import { PushNotificationToggle } from "./PushNotificationToggle";
+import { OfflineDataToggle } from "./OfflineDataToggle";
 import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
+import { cleanUpBeforeLogout } from "../lib/logout";
 
 const API = "";
 type Account = { first_name: string; last_name: string; email: string; avatar_url: string; is_privileged: boolean };
@@ -26,6 +28,7 @@ const sections: SettingsNavItem[] = [
   { id: "personnel", title: "Mes informations personnelles", description: "Modifier mon nom et ma photo de profil.", icon: "idcard" },
   { id: "sante", title: "Informations de santé déclaratives", description: "Téléphone, adresse et couverture santé.", icon: "heart" },
   { id: "notifications", title: "Notifications", description: "Consulter les notifications de votre carnet et les marquer comme lues.", icon: "bell" },
+  { id: "hors-connexion", title: "Hors connexion", description: "Consulter vos déclarations sans réseau, en lecture seule.", icon: "download" },
   { id: "proches", title: "Proches et personnes représentées", description: "Gérer les dossiers distincts des enfants représentés.", icon: "users" },
   { id: "proches-de-confiance", title: "Proches de confiance", description: "Inviter ou retirer un accès limité à la fiche d’urgence.", icon: "users" },
   { id: "compte", title: "Paramètres du compte", description: "Personnaliser l’apparence de l’application.", icon: "sparkle" },
@@ -42,7 +45,6 @@ function PatientSummary({ account, message }: { account: Account; message: strin
     <ProfileSummary
       avatar={<div className="avatar avatar--large" aria-hidden="true">{account.avatar_url ? <img src={account.avatar_url} alt="" /> : initials(account)}</div>}
       eyebrow="Compte patient" name={[account.first_name, account.last_name].filter(Boolean).join(" ") || "Mon compte"} stats={stats}
-      bar={<CardBar href="/patient" />}
     >
       <p className="notice" role="status" aria-live="polite">{message}</p>
     </ProfileSummary>
@@ -115,6 +117,7 @@ export function AccountSettingsClient() {
   async function logout() {
     setSigningOut(true);
     try {
+      await cleanUpBeforeLogout(); // push + copie locale des déclarations, tant que la session existe
       const csrf = await primeCsrf();
       if (!csrf.ok) throw new Error("Impossible d’établir une session sécurisée.");
       const response = await fetch(`${API}/api/v1/identity/logout/`, { method: "POST", credentials: "include", headers: { "X-CSRFToken": readCsrfToken() } });
@@ -154,6 +157,7 @@ export function AccountSettingsClient() {
 
       {activeSection === "notifications" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><PushNotificationToggle /><div className="settings-modal-section"><PatientNotifications /></div></SettingsModal>}
 
+      {activeSection === "hors-connexion" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><OfflineDataToggle /></SettingsModal>}
       {activeSection === "proches" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section">
         <span className="eyebrow">Représentation explicite</span>
         <PatientRepresentationsSettingsClient />

@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ApiError, apiGet, apiPatch, apiPost } from "../../infrastructure/api/client";
+import { cleanUpBeforeLogout } from "../../lib/logout";
 import { AdminActivityCharts, type DailyActivityPoint } from "../../components/AdminActivityCharts";
 import { AdminAccountActionRequestsClient } from "../../components/AdminAccountActionRequestsClient";
 import { AdminRepresentationTransfersClient } from "../../components/AdminRepresentationTransfersClient";
@@ -52,14 +53,14 @@ type AdminTab = "overview" | "operations" | "audit" | "activity" | "feedback" | 
 const tabs: { id: AdminTab; label: string; short: string; icon: IconName }[] = [
   { id: "overview", label: "Vue d’ensemble", short: "Accueil", icon: "home" },
   { id: "operations", label: "Surveillance technique", short: "Surveillance", icon: "shield" },
-  { id: "audit", label: "Journal d’audit", short: "Audit", icon: "document" },
+  { id: "audit", label: "Journal d’audit", short: "Audit", icon: "clock" },
   { id: "activity", label: "Visites & clics", short: "Activité", icon: "chart" },
   { id: "feedback", label: "Feedback", short: "Feedback", icon: "pencil" },
   { id: "survey", label: "Enquête UX", short: "Enquête", icon: "document" },
   { id: "establishments", label: "Établissements", short: "Établ.", icon: "building" },
   { id: "account-requests", label: "Gestion des comptes", short: "Comptes", icon: "users" },
   { id: "recovery", label: "Récupérations de compte", short: "Récup.", icon: "lock" },
-  { id: "representation-transfers", label: "Transferts de dossiers", short: "Transferts", icon: "users" },
+  { id: "representation-transfers", label: "Transferts de dossiers", short: "Transferts", icon: "share" },
   { id: "settings", label: "Paramètres", short: "Moi", icon: "user" },
 ];
 const categoryLabel: Record<string, string> = {
@@ -153,7 +154,7 @@ export default function AdminPage() {
   }
 
   async function signOut() {
-    try { await apiPost("/api/v1/identity/logout/"); } catch { /* la session peut déjà être expirée */ }
+    try { await cleanUpBeforeLogout(); await apiPost("/api/v1/identity/logout/"); } catch { /* la session peut déjà être expirée */ }
     setDashboard(null); setAdminProfile(null); profileRequested.current = false; setMessage("Session administrateur fermée.");
   }
 

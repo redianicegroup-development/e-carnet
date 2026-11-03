@@ -17,7 +17,8 @@ test("le QR temporaire de visite reste dans Partage et le QR d’urgence vit dan
   assert.match(settings, /<QRCodeSVG value=\{emergencyPublicUrl\}/);
   assert.match(settings, /apiPatch<EmergencyCardQr>\("\/api\/v1\/patient\/emergency-card\//);
   assert.doesNotMatch(settings, /usePatientAccessQr|Mon QR de visite|access-qr\/|visit-qr/);
-  assert.match(home, /\/patient\/acces#qr/);
+  assert.match(home, /href="\/patient\/consultations"/);
+  assert.doesNotMatch(home, /\/patient\/acces#qr/);
   assert.doesNotMatch(css, /\.settings-account-summary__visit-qr|\.settings-visit-qr-modal/);
 });
 

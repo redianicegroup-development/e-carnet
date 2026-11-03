@@ -16,6 +16,7 @@ import { PrescriptionTemplateSettings } from "./PrescriptionTemplateSettings";
 import { EstablishmentProfileEditor, establishmentInitials, type EstablishmentProfile } from "./EstablishmentProfileEditor";
 import "./establishment-settings.css";
 import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
+import { cleanUpBeforeLogout } from "../lib/logout";
 
 type Account = { email: string; first_name: string; last_name: string; avatar_url?: string; is_privileged: boolean; contexts: { role: string; is_active: boolean }[] };
 type Establishment = { id: string; name: string; establishment_type: string; city: string; address: string; phone: string; email: string; responsible_name: string; logo: string; updated_at: string | null; status: "pending" | "active" | "rejected" | string; internal_code: string | null };
@@ -71,6 +72,7 @@ export function EstablishmentSettingsClient() {
   async function logout() {
     setSigningOut(true); setMessage("Déconnexion…");
     try {
+      await cleanUpBeforeLogout(); // push + copie locale des déclarations, tant que la session existe
       const csrf = await primeCsrf();
       if (!csrf.ok) throw new Error("Impossible de préparer la déconnexion sécurisée.");
       const response = await fetch(`${API}/api/v1/identity/logout/`, { method: "POST", credentials: "include", headers: { "X-CSRFToken": readCsrfToken() } });

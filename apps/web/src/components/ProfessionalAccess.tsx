@@ -54,7 +54,6 @@ export function ProfessionalAccess() {
       </section>
 
       <div className="section-grid">
-      <div className="section-grid">
       <CollapsibleSection title="Mes rattachements" initiallyOpen icon="building" hint="Établissements">
         {profile.memberships.length === 0 ? <p className="empty">Aucun rattachement pour le moment. Saisissez le code remis par votre établissement.</p> : (
           <div className="stack">
@@ -83,7 +82,6 @@ export function ProfessionalAccess() {
           </div>
         )}
       </CollapsibleSection>
-      </div>
       </div>
     </div>
   );
