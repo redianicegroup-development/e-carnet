@@ -1,0 +1,29 @@
+# ZIP différentiel — R1 ETA-09 + PAT-16 C2–C5
+
+## Baseline
+
+- Archive source : `e-carnetv1.4.3.zip`
+- Plan appliqué : `PLAN-IMPLEMENTATION-V2-RESTANT-2026-11-05-1.md`
+- Lots : R1 — ETA-09 et état réel PAT-16 C2–C5
+- Date : 2026-11-05
+
+## Contenu
+
+R1 implante la durée indéterminée ETA-09 jusqu’à clôture du motif. PAT-16 C2–C5 était déjà présent dans l’archive ; le plan est mis à jour en conséquence et les fichiers concernés sont inclus pour rendre le ZIP complet et directement exploitable.
+
+Voir `MANIFEST-PAT16-C2-C5.txt` pour le détail.
+
+## Tests réellement exécutés
+
+- Compilation Python R1 et PAT-16 — **OK** (`compileall`, `py_compile`).
+- Suite Django ETA-09 et tests PAT-16 — **NON EXÉCUTÉS : `ModuleNotFoundError: No module named 'django'`**.
+
+## Limites
+
+- PAT-16 est **Implanté, à vérifier**, pas Vérifié/Recetté.
+- La durée de validité d’une proposition et l’avertissement de chevauchement restent à trancher.
+- Validation PostgreSQL 16 et recette staging non exécutées.
+- Lecture clinique établissement toujours désactivée par défaut.
+
+[deleted_not_packaged]
+none

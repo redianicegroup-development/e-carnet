@@ -14,8 +14,8 @@ Le code est une condition nécessaire, pas suffisante : la plupart des portes du
 | Dépendances API à jour | Fait | `cryptography` **50.0.0** (empreintes vérifiées, `pip check` propre) |
 | Dépendance restante | **À traiter** | `npm audit` (production) : `zod` < 4.6.6, sévérité haute (mémoire épuisée sur collections surdimensionnées, GHSA-mrhx-c7xc-m3w5). Le projet utilise zod 3.25 ; la correction passe par zod 4 (changement majeur) |
 | Export Excel du carnet | Fait | `URL_FORMAT_OVERRIDE: None` ; les 4 tests d'export, en échec depuis v1.4-final, passent |
-| Ouverture de dossier par l'administrateur d'établissement | Fait côté API | Durée **30 min** par défaut, 4 h au plus, **jamais illimitée** ; les anciennes ouvertures sans échéance sont refusées ; lecture clinique **désactivée par défaut** (`ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ=true` pour l'activer) |
-| Écran d'ouverture de dossier | **Absent** | L'accès n'existe que par l'API ; à construire (motif, minuteur 30 min, historique) avant d'activer la lecture |
+| Ouverture de dossier par l'administrateur d'établissement | Fait côté API | Durée **indéterminée par défaut** : jusqu’à clôture du motif ; une expiration positive reste configurable, plafonnée à 4 h ; lecture clinique **désactivée par défaut** (`ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ=true` pour l'activer) |
+| Écran d'ouverture de dossier | **Absent** | L'accès n'existe que par l'API ; à construire (motif, état jusqu'à clôture, historique) avant d'activer la lecture |
 | Copie hors connexion des déclarations | **Non chiffrée, active par défaut** | `OFFLINE_DECLARATIONS_DEFAULT_ENABLED = true`, IndexedDB en clair. Acceptable avec des données fictives ; **bloquant** avec de vraies données. Un test refuse `REAL_HEALTH_DATA_ALLOWED = true` tant que ces deux conditions persistent |
 | Double authentification (équipe, professionnels) | Absente — **décision : pas pour le moment** | À reconsidérer avant les données réelles |
 | Documents médicaux | **Stockage tiers** | Les téléversements passent par Cloudinary (`apps/cloudinary_storage.py`, livraison privée) : « bloquant CDC avant données réelles » ; migrer vers un stockage privé ou obtenir une décision écrite |
@@ -35,4 +35,4 @@ Staging PostgreSQL 16 et restauration avec RPO/RTO approuvé ; hébergement ivoi
 | Variable | Défaut | Effet |
 |---|---|---|
 | `ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ` | `false` | `true` autorise l'ouverture et la lecture du contenu clinique par l'administrateur d'établissement |
-| `ECARNET_RECORD_OPENING_TTL_MINUTES` | `30` | Durée d'une ouverture ; `0` ou valeur illisible = 30 ; plafond 240 |
+| `ECARNET_RECORD_OPENING_TTL_MINUTES` | `0` | `0` = jusqu'à clôture du motif ; valeur positive = expiration optionnelle, plafond 240 |

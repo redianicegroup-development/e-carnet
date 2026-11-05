@@ -99,9 +99,9 @@ ECARNET_REFERRALS_ENABLED = os.environ.get("ECARNET_REFERRALS_ENABLED", "false")
 # Lecture du contenu clinique d'un dossier par l'administrateur d'établissement : DÉSACTIVÉE par défaut. À n'activer (=true) qu'après la base
 # légale (A8) et la mise en place de l'écran d'ouverture (motif, minuteur, historique) : aujourd'hui l'accès n'existe que par l'API.
 ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ = os.environ.get("ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ", "false").lower() == "true"
-# Durée d'une ouverture de dossier par un administrateur d'établissement, en minutes. 0 = aucune limite tant que le motif est enregistré (ETA-09).
-# Durée d'une ouverture de dossier, en minutes : 30 par défaut, jamais illimitée (0 ou valeur illisible = 30), plafonnée à 240.
-ECARNET_RECORD_OPENING_TTL_MINUTES = int(os.environ.get("ECARNET_RECORD_OPENING_TTL_MINUTES", "30") or 30)
+# Durée optionnelle d'une ouverture de dossier, en minutes. 0 = jusqu'à la clôture du motif (ETA-09).
+# Les valeurs positives peuvent imposer une expiration automatique; la logique métier plafonne à 240 minutes.
+ECARNET_RECORD_OPENING_TTL_MINUTES = int(os.environ.get("ECARNET_RECORD_OPENING_TTL_MINUTES", "0") or 0)
 ECARNET_OPERATIONS_ADMIN_EMAILS = tuple(
     email.strip().lower()
     for email in os.environ.get("ECARNET_OPERATIONS_ADMIN_EMAILS", "").split(",")

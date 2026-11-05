@@ -211,8 +211,8 @@ class EstablishmentRecordOpening(models.Model):
     reason_category = models.CharField(max_length=32, choices=REASON_CHOICES)
     reason_note = models.CharField(max_length=140, blank=True, default="")
     opened_at = models.DateTimeField(default=timezone.now)
-    # Toujours renseignée à la création (30 min par défaut, 4 h au plus : voir record_opening_expiry). Les ouvertures créées avant ce
-    # changement « sans limite » (champ vide) sont refusées à la lecture ; le champ reste nullable pour les conserver dans l'historique.
+    # Facultative : par défaut l'ouverture reste valable jusqu'à la clôture du motif (ETA-09).
+    # Une valeur positive peut imposer une expiration automatique; le champ reste nullable pour l'historique.
     expires_at = models.DateTimeField(null=True, blank=True)
 
     objects = EstablishmentRecordOpeningQuerySet.as_manager()

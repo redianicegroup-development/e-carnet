@@ -28,24 +28,24 @@ logger = logging.getLogger(__name__)
 
 
 VIEW_EVENT_TYPES = ("clinical_data.read", "establishment_record.opened")
-DEFAULT_RECORD_OPENING_TTL_MINUTES = 30
+DEFAULT_RECORD_OPENING_TTL_MINUTES = 0
 MAX_RECORD_OPENING_TTL_MINUTES = 240
 
 
 def record_opening_ttl_minutes():
-    """Durée d'une ouverture de dossier : 30 minutes par défaut, 4 heures au plus. Une ouverture n'est jamais sans limite :
-    0, une valeur négative ou illisible reviennent à la valeur par défaut (ADR-002 : accès local temporaire, motivé, audité, notifié)."""
+    """Retourne la durée optionnelle d'une ouverture; ``None`` signifie jusqu'à clôture du motif."""
     try:
         minutes = int(getattr(settings, "ECARNET_RECORD_OPENING_TTL_MINUTES", DEFAULT_RECORD_OPENING_TTL_MINUTES))
     except (TypeError, ValueError):
         minutes = DEFAULT_RECORD_OPENING_TTL_MINUTES
     if minutes <= 0:
-        minutes = DEFAULT_RECORD_OPENING_TTL_MINUTES
+        return None
     return min(minutes, MAX_RECORD_OPENING_TTL_MINUTES)
 
 
 def record_opening_expiry(now):
-    return now + timedelta(minutes=record_opening_ttl_minutes())
+    minutes = record_opening_ttl_minutes()
+    return now + timedelta(minutes=minutes) if minutes is not None else None
 
 
 BULK_ACCESS_WINDOW = timedelta(hours=1)
@@ -400,7 +400,7 @@ class EstablishmentRecordView(APIView):
             return Response({"success": False, "message": "Cette ouverture appartient à un autre administrateur."}, status=403)
         if EstablishmentRecordOpeningClosure.objects.filter(opening=opening).exists():
             return Response({"success": False, "code": "opening_closed", "message": "Cette ouverture est clôturée."}, status=403)
-        if not opening.expires_at or opening.expires_at <= timezone.now():  # sans échéance = ancienne ouverture « sans limite » : refusée
+        if opening.expires_at and opening.expires_at <= timezone.now():
             return Response({"success": False, "message": "Cette ouverture a expiré. Demandez un nouvel accès avec un motif."}, status=403)
         if not active_administrator(request.user, establishment_id):
             return Response({"success": False, "message": "Votre habilitation établissement n’est plus active."}, status=403)

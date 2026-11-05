@@ -22,14 +22,16 @@ Aucun chantier n’est « terminé » tant qu’il n’est pas **Vérifié**. L�
 |---|---|---|
 | PAT-13 graphiques de tendance | Implémenté | Test inclus dans `npm test` (C6) ; captures 320/411 px et axe à faire |
 | PRO-13 saisie de mesures par le médecin | Implémenté | Recette staging |
-| ETA-09 ouverture et clôture du dossier | Implémenté, **écart avec la décision** | Durée toujours à 30 minutes alors que la décision est « indéterminée » (R1) ; base légale A8 |
+| ETA-09 ouverture et clôture du dossier | **Implanté R1, à vérifier** | Durée jusqu’à clôture du motif par défaut ; base légale A8, recette et choix de qui peut clôturer |
 | ETA-11 modèles de pré-consultation | Implémenté (C1) | Suite Django et `makemigrations --check` à exécuter ; recette staging |
 | ETA-12 tableau de bord | Implémenté | Captures et axe |
 | ADM-09 anti-rejeu du webhook | Implémenté | OpenAPI et garde-fou C7 ajoutés ; vérifier par CI et recetter en staging |
-| PAT-16 rendez-vous | Partiel — C2 à C5 implémentés | Tests Django C2–C5 à exécuter ; durée de validité et avertissement de chevauchement à trancher |
+| PAT-16 rendez-vous | **Implanté C2–C5, à vérifier** | Tests Django C2–C5 à exécuter ; durée de validité et avertissement de chevauchement restent à trancher |
 | ADM-10 sondes | Livré, non recetté | Installation, secrets, recette staging |
 
 Les données réelles restent interdites tant que le Go/No-Go n’est pas signé.
+
+Le code PAT-16 C2–C5 est présent dans cette archive et couvert par `test_pat16_patient_identity.py`, `test_pat16_input_validation.py`, `test_pat16_appointment_transitions.py` et `test_pat16_proposal_audit.py`. Ces tests n’ont pas été exécutés dans le sandbox de livraison faute de Django installé ; le statut reste donc « implanté, à vérifier ».
 
 ---
 
@@ -56,7 +58,7 @@ Les données réelles restent interdites tant que le Go/No-Go n’est pas signé
 **Tests.** Désignation par l’administrateur (200) ; par un non-administrateur (403) ; autre établissement (refus) ; rattachement non actif ou professionnel non vérifié (refus) ; valeur non booléenne (400). Chaîne complète : brouillon → approbation par un référent → actif ; approbation par un non-référent (403). `test_preconsultation_templates.py` doit passer sans modification.
 **Sortie.** Un modèle passe de brouillon à actif par un référent désigné ; plus aucune `FieldError`.
 
-#### C2 — Identité du patient absente de l’agenda du médecin (PAT-16) — S
+#### C2 — Identité du patient absente de l’agenda du médecin (PAT-16) — **implanté, à vérifier**
 
 **Constat.** Le front type `patient_name` mais `AppointmentSerializer` ne le renvoie pas, et l’écran n’affiche que le motif et le statut.
 
@@ -70,7 +72,7 @@ Les données réelles restent interdites tant que le Go/No-Go n’est pas signé
 
 ### P1 — Bugs moyens
 
-#### C3 — Erreurs 500 sur entrées mal formées (PAT-16) — S
+#### C3 — Erreurs 500 sur entrées mal formées (PAT-16) — **implanté, à vérifier**
 
 **Constat.** Un `Appointment.objects.filter(...)` avec un texte invalide lève une `ValidationError` Django, que DRF ne convertit pas : 500 pour `?establishment_id=` (options), `?from=` et `?to=` (agenda médecin), et pour un `starts_at` invalide dans l’action `propose` (la chaîne est affectée telle quelle au modèle).
 
@@ -82,7 +84,7 @@ Les données réelles restent interdites tant que le Go/No-Go n’est pas signé
 
 **Tests.** Chaque entrée mal formée répond 400, jamais 500.
 
-#### C4 — Impossible de déplacer un rendez-vous confirmé (PAT-16) — M
+#### C4 — Déplacement et transitions des rendez-vous (PAT-16) — **implanté, à vérifier**
 
 **Constat.** `propose` exige le statut « demandé » ; un rendez-vous confirmé ne peut qu’être annulé. Et `confirm-proposal` n’accepte aussi que « demandé ».
 
@@ -94,7 +96,7 @@ Les données réelles restent interdites tant que le Go/No-Go n’est pas signé
 
 **Tests.** Matrice complète des transitions valides et refusées ; déplacement d’un rendez-vous confirmé, accepté puis refusé.
 
-#### C5 — Cohérence des propositions et audit (PAT-16) — S
+#### C5 — Cohérence des propositions et audit (PAT-16) — **implanté, à vérifier**
 
 **Constat.** Un médecin qui confirme alors qu’une proposition est en attente laisse `proposed_starts_at` et `proposed_ends_at` affichés. Le patient qui confirme un créneau proposé n’écrit aucun événement d’audit.
 
@@ -137,9 +139,9 @@ Les données réelles restent interdites tant que le Go/No-Go n’est pas signé
 
 ### À réappliquer (décisions et correctifs du 05/11, absents de l’archive v1.4.1)
 
-#### R1 — ETA-09 : durée indéterminée
+#### R1 — ETA-09 : durée indéterminée — appliqué
 
-Décision reconfirmée le 05/11/2026 : l’ouverture reste valable **jusqu’à la clôture du motif**. Le code de `v1.4.1` applique encore 30 minutes (4 h au plus), refuse les ouvertures sans échéance, et les documents se contredisent (« 30 minutes » ou « sans limite par défaut »). Réappliquer le lot du 05/11 : `clinical_views.py` (`record_opening_ttl_minutes()` renvoie `None` par défaut), `settings.py` (`ECARNET_RECORD_OPENING_TTL_MINUTES=0`), tests, ADR-004 et alignement des documents (ADR-002, roadmap, CDC v13, Reste à faire, DEPLOYMENT, DONNEES-REELLES-DECISION, README, CHANGELOG). La clôture et la commande de rappel déjà codées deviennent le contrôle de cette durée. `ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ` reste `false` jusqu’à la base légale A8, la recette et le choix de qui peut clôturer.
+Décision reconfirmée le 05/11/2026 : l’ouverture reste valable **jusqu’à la clôture du motif**. Le lot R1 applique désormais cette décision : `clinical_views.py` (`record_opening_ttl_minutes()` renvoie `None` par défaut), `settings.py` (`ECARNET_RECORD_OPENING_TTL_MINUTES=0`), tests, ADR-004 et alignement des documents disponibles (ADR-002, Reste à faire, DEPLOYMENT, DONNEES-REELLES-DECISION, README, CHANGELOG). Le CDC v13 n’est pas présent dans l’archive reçue. La clôture et la commande de rappel déjà codées deviennent le contrôle de cette durée. `ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ` reste `false` jusqu’à la base légale A8, la recette et le choix de qui peut clôturer.
 
 #### R2 — `.gitignore`
 
@@ -171,7 +173,7 @@ Validation de structure, unicité, édition, désactivation, statut brouillon/ac
 ### ADM-09 — Anti-rejeu du webhook — Implémenté
 `MonitoringWebhookEvent` (unicité, migration `identity.0020`), identifiant d’événement signé, validation avant enregistrement, rejeu en 200 `already_received`, commande de nettoyage. **Reste :** C7 (OpenAPI), recette staging.
 
-### PAT-16 — Rendez-vous — Partiel
+### PAT-16 — Rendez-vous — Implanté C2–C5, à vérifier
 Lot A (options, validation du rattachement, parcours en deux étapes), lot B (confirmer, annuler avec motif, proposer, terminer ; vue établissement limitée à date et statut), lot C (rappels neutres la veille et quelques heures avant, idempotents), migration `care.0027`. **Reste :** C2, C3, C4, C5.
 Décision codée : le patient demande un horaire, le professionnel confirme ou en propose un autre. Un catalogue de créneaux libres publiés par le professionnel serait un lot complémentaire (disponibilités, API, écran), absent du CDC exécuté.
 

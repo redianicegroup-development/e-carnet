@@ -1,0 +1,31 @@
+# PAT-16 — état réel C2 à C5
+
+## Constat
+
+Les éléments C2, C3, C4 et C5 étaient déjà présents dans l’archive de base `e-carnetv1.4.3.zip`. Ils ne sont donc pas réimplémentés artificiellement ; le plan d’implantation V2 a été corrigé pour refléter cet état réel.
+
+## Éléments présents
+
+- **C2** : `ProfessionalAppointmentSerializer` expose uniquement `patient_name` construit depuis le profil patient, y compris enfant ; les endpoints patient et établissement n’exposent pas cette identité. `ProfessionalAgenda.tsx` l’affiche.
+- **C3** : validation UUID des options, bornes `from`/`to` avec fuseau, fenêtre maximale de 92 jours, plafond de 500 lignes, sérialiseur strict pour `propose`, et conversion des `ValidationError` Django en 400.
+- **C4** : table `APPOINTMENT_TRANSITIONS`, proposition depuis `requested` et `confirmed`, conservation du créneau confirmé jusqu’à acceptation du patient, `confirm-proposal` et `decline-proposal`.
+- **C5** : refus de `confirm`/`complete` pendant une proposition, `withdraw-proposal`, nettoyage systématique de `proposed_*`, audits `proposal_confirmed`/`proposal_declined` et notifications.
+
+## Fichiers PAT-16 inclus dans ce ZIP
+
+- `apps/api/apps/care/serializers.py`
+- `apps/api/apps/care/views.py`
+- `apps/api/apps/care/test_pat16_patient_identity.py`
+- `apps/api/apps/care/test_pat16_input_validation.py`
+- `apps/api/apps/care/test_pat16_appointment_transitions.py`
+- `apps/api/apps/care/test_pat16_proposal_audit.py`
+- `apps/api/config/exception_handler.py`
+- `apps/web/src/components/ProfessionalAgenda.tsx`
+- `docs/api/openapi.yaml`
+- `apps/api/apps/care/migrations/0027_appointment_workflow.py`
+
+## État de validation
+
+Les tests dédiés sont présents mais n’ont pas été exécutés dans le sandbox de livraison : Django n’est pas installé (`ModuleNotFoundError: No module named 'django'`). Le statut correct est donc **Implanté, à vérifier**, et non « Vérifié » ou « Recetté ».
+
+La durée de validité d’une proposition et l’avertissement non bloquant en cas de chevauchement restent explicitement à trancher ; aucun comportement non décidé n’a été ajouté.

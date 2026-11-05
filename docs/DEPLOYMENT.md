@@ -90,7 +90,7 @@ Argon2id est déclaré dans `apps/api/requirements.txt` et est le premier hasher
 
 `ECARNET_REPRESENTATION_LEGAL_AGE` est volontairement vide par défaut. Ne la renseigner qu’après validation juridique du seuil applicable; tant qu’elle est vide, la création de profils représentés et les demandes de transfert sont bloquées. L’approbation d’un transfert exige une vérification manuelle de l’identité du demandeur et de son âge légal via la file dédiée de la console admin (superutilisateurs uniquement). Aucune pièce d’identité n’est collectée par l’application; définir et valider la procédure probante hors application avant la production.
 
-- `ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ` vaut `false` par défaut : l'ouverture et la lecture d'un dossier par l'administrateur d'établissement sont désactivées. Ne passer à `true` qu'après la validation juridique A8 et la mise en place de l'écran d'ouverture. `ECARNET_RECORD_OPENING_TTL_MINUTES` fixe la durée d'une ouverture (30 par défaut, jamais illimitée, 240 au plus).
+- `ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ` vaut `false` par défaut : l'ouverture et la lecture d'un dossier par l'administrateur d'établissement sont désactivées. Ne passer à `true` qu'après la validation juridique A8 et la mise en place de l'écran d'ouverture. `ECARNET_RECORD_OPENING_TTL_MINUTES` fixe une expiration optionnelle ; `0` par défaut signifie jusqu'à clôture du motif, une valeur positive est plafonnée à 240 minutes.
 
 ## Installation native
 

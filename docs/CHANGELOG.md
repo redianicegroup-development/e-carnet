@@ -81,7 +81,7 @@
 
 - **Dépendances** : Next.js 16.3.8 → **16.4.4** (avec `eslint-config-next`), `cryptography` 47.0.0 → **50.0.0** (`requirements.in` : `>=50,<51` ; empreintes de `requirements.txt` régénérées depuis PyPI). Restant : `zod` < 4.6.6 signalé par `npm audit` (voir `DONNEES-REELLES-DECISION.md`).
 - **Export Excel** : `?format=xlsx` répondait 404 (DRF réserve `?format=` à la négociation de contenu) ; `URL_FORMAT_OVERRIDE: None`. Les 4 tests d'export, en échec depuis v1.4-final, passent.
-- **Ouverture de dossier par l'administrateur d'établissement** : durée de 30 minutes par défaut (4 h au plus, jamais illimitée), anciennes ouvertures sans échéance refusées à la lecture, lecture clinique **désactivée par défaut**. Corrige l'écart n° 2 et n° 3 du CDC v13 ; l'écran d'ouverture reste à construire avant d'activer la lecture.
+- **Ouverture de dossier par l'administrateur d'établissement** : durée indéterminée par défaut, jusqu’à clôture du motif (expiration positive plafonnée à 4 h), lecture clinique **désactivée par défaut**. Corrige l'écart n° 2 et n° 3 du CDC v13 ; l'écran d'ouverture reste à construire avant d'activer la lecture.
 - **Données réelles** : FAQ de l'accueil, Aide, politique de confidentialité et `/v1` lisent un interrupteur unique (`lib/data-policy.ts`, `false`) et disent « phase de test, données fictives » ; nouveau `DONNEES-REELLES-DECISION.md`. Corrige l'écart n° 1 du CDC v13.
 - Tests : `donnees-reelles-2026-11-04.test.mjs` (7), `test_patient_records.py` (20, dont 4 nouveaux). Suite API : 492 réussis.
 

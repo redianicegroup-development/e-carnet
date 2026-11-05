@@ -128,8 +128,7 @@ class EstablishmentPatientRecordsTests(TestCase):
         self.assertEqual(opening.opened_by_id, self.admin.id)
         self.assertEqual(opening.opened_by_role, "establishment_admin")
         self.assertEqual(opening.reason_note, "Contrôle interne autorisé")
-        self.assertIsNotNone(opening.expires_at)  # jamais sans limite
-        self.assertAlmostEqual((opening.expires_at - before).total_seconds(), 1800, delta=5)
+        self.assertIsNone(opening.expires_at)  # valable jusqu'à clôture du motif
         self.assertEqual(response.data["data"]["opening_id"], str(opening.id))
         opened_events = AuditEvent.objects.filter(event_type="establishment_record.opened", patient=patient)
         self.assertEqual(opened_events.count(), 1)
@@ -156,40 +155,37 @@ class EstablishmentPatientRecordsTests(TestCase):
         opening = EstablishmentRecordOpening.objects.get()
         self.assertEqual(opening.reason_category, "urgence")
         self.assertEqual(opening.reason_note, "")
-        self.assertIsNotNone(response.data["data"]["expires_at"])
+        self.assertIsNone(response.data["data"]["expires_at"])
         self.assertEqual(self.open(patient, category="urgence", note="texte libre").status_code, 400)
         event = AuditEvent.objects.filter(event_type="establishment_record.opened", patient=patient).latest("created_at")
         self.assertEqual(event.metadata.get("reason_category"), "urgence")
 
-    def test_an_opening_expires_after_thirty_minutes_by_default(self):
+    def test_an_opening_remains_valid_until_explicitly_closed_by_default(self):
         patient = self.patient("patient-duree")
         self.encounter(patient, self.establishment)
-        before = timezone.now()
         response = self.open(patient, category="soins_en_cours")
         self.assertEqual(response.status_code, 201, response.data)
         opening = EstablishmentRecordOpening.objects.get()
-        self.assertAlmostEqual((opening.expires_at - before).total_seconds(), 1800, delta=5)
-        self.assertEqual(self.client.get(self.record_url(opening.id)).status_code, 200)
-        with patch("apps.establishments.clinical_views.timezone.now", return_value=timezone.now() + timedelta(minutes=31)):
-            self.assertEqual(self.client.get(self.record_url(opening.id)).status_code, 403)
+        self.assertIsNone(opening.expires_at)
+        with patch("apps.establishments.clinical_views.timezone.now", return_value=timezone.now() + timedelta(days=365)):
+            self.assertEqual(self.client.get(self.record_url(opening.id)).status_code, 200)
 
-    def test_a_configured_duration_is_honored_but_never_unlimited_and_capped_at_four_hours(self):
+    def test_a_configured_duration_is_honored_and_capped_at_four_hours(self):
         from apps.establishments.clinical_views import record_opening_ttl_minutes
 
-        cases = {45: 45, 1: 1, 100000: 240, 240: 240, 0: 30, -5: 30, "abc": 30, None: 30}
+        cases = {45: 45, 1: 1, 100000: 240, 240: 240, 0: None, -5: None, "abc": None, None: None}
         for configured, expected in cases.items():
             with override_settings(ECARNET_RECORD_OPENING_TTL_MINUTES=configured):
                 self.assertEqual(record_opening_ttl_minutes(), expected, f"réglage {configured!r}")
 
-    def test_a_legacy_opening_without_expiry_is_refused(self):
+    def test_an_opening_without_expiry_is_valid_until_closed(self):
         patient = self.patient("patient-ancienne-ouverture")
         self.encounter(patient, self.establishment)
         legacy = EstablishmentRecordOpening.objects.create(
             establishment=self.establishment, patient=patient, opened_by=self.admin, reason_category="soins_en_cours", expires_at=None,
         )
         response = self.client.get(self.record_url(legacy.id))
-        self.assertEqual(response.status_code, 403)
-        self.assertIn("expiré", response.data["message"])
+        self.assertEqual(response.status_code, 200)
 
     def test_repeated_openings_coalesce_only_the_patient_notification(self):
         patient = self.patient("patient-coalesce")
@@ -363,7 +359,7 @@ class EstablishmentRecordReadDisabledByDefaultTests(TestCase):
         from django.conf import settings as project_settings
 
         self.assertIs(project_settings.ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ, False)
-        self.assertEqual(project_settings.ECARNET_RECORD_OPENING_TTL_MINUTES, 30)
+        self.assertEqual(project_settings.ECARNET_RECORD_OPENING_TTL_MINUTES, 0)
 
     def test_opening_and_record_access_are_refused_by_default(self):
         staff = User.objects.create_user(username="default-staff", password="test-password-123", is_staff=True)

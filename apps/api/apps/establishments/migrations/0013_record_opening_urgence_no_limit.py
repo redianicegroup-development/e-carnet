@@ -4,7 +4,7 @@ REASONS = ("urgence", "soins_en_cours", "continuite_soins", "demande_patient", "
 
 
 class Migration(migrations.Migration):
-    """ETA-09 : motif « Urgence » et ouverture sans limite de durée (expires_at vide) tant que le motif est enregistré."""
+    """ETA-09 : le motif « Urgence » est compatible avec une ouverture valable jusqu'à clôture."""
 
     dependencies = [
         ("establishments", "0012_establishment_record_opening"),

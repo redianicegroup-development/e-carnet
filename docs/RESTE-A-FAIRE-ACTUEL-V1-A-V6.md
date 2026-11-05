@@ -8,7 +8,7 @@
 
 > **Mise à jour du 02/11/2026 — hors connexion.** Livré : copie des déclarations en lecture seule (profil actif et profils enfants déjà ouverts, changement de profil sans réseau, 7 jours, effacée à la déconnexion, réglage *Paramètres › Hors connexion*) ; copies de carte d'urgence qui expirent et disparaissent vraiment (24 h, 404/410) ; rechargement hors ligne de `/urgence/<jeton>` ; désabonnement push à la déconnexion ; textes d'information ; 40 tests. **Reste** : revue juridique, analyse de menace et décision signée avant publication (PAT-22) ; recette sur téléphones réels (mode avion, iOS PWA installée, Android) ; statut « confirmé » des déclarations par un professionnel (n'existe pas dans l'API) ; vaccinations hors connexion si souhaité ; écriture et synchro hors connexion et chiffrement local : toujours sur décision.
 
-> **Mise à jour du 04/11/2026 — sécurité et données réelles.** Livré : Next.js 16.4.4 et `cryptography` 50.0.0 ; export Excel réparé (`URL_FORMAT_OVERRIDE: None`) ; ouverture de dossier par l’administrateur limitée à 30 minutes (jamais illimitée, 4 h au plus), anciennes ouvertures sans échéance refusées, lecture clinique désactivée par défaut ; FAQ, Aide, politique de confidentialité et `/v1` alignées sur le NO-GO (données fictives) depuis un interrupteur unique ; document `docs/DONNEES-REELLES-DECISION.md`. Décision : pas de double authentification pour l’équipe ni pour les professionnels pour le moment. **Reste, avant tout Go données réelles :** question ouverte « des données réelles ont-elles déjà été saisies ? » ; copie hors connexion (désactivée par défaut ou chiffrée avec un code choisi par la personne) ; documents médicaux chez Cloudinary ; `zod` < 4.6.6 ; migration `0025` (`FollowUpPlan.objective`) ; écran d’ouverture de dossier si la lecture est activée ; restauration réelle, hébergement, validations juridique/médicale, ARTCI, recette signée.
+> **Mise à jour du 04/11/2026 — sécurité et données réelles.** Livré : Next.js 16.4.4 et `cryptography` 50.0.0 ; export Excel réparé (`URL_FORMAT_OVERRIDE: None`) ; ouverture de dossier par l’administrateur valable jusqu’à clôture du motif par défaut (expiration positive plafonnée à 4 h), lecture clinique désactivée par défaut ; FAQ, Aide, politique de confidentialité et `/v1` alignées sur le NO-GO (données fictives) depuis un interrupteur unique ; document `docs/DONNEES-REELLES-DECISION.md`. Décision : pas de double authentification pour l’équipe ni pour les professionnels pour le moment. **Reste, avant tout Go données réelles :** question ouverte « des données réelles ont-elles déjà été saisies ? » ; copie hors connexion (désactivée par défaut ou chiffrée avec un code choisi par la personne) ; documents médicaux chez Cloudinary ; `zod` < 4.6.6 ; migration `0025` (`FollowUpPlan.objective`) ; écran d’ouverture de dossier si la lecture est activée ; restauration réelle, hébergement, validations juridique/médicale, ARTCI, recette signée.
 
 > **Mise à jour du 05/11/2026 — PRO-13.** Livré localement : bloc médecin « Ajouter une mesure » dans la pré-consultation, lecture et création limitées à l’autorisation active et à l’établissement, provenance visible dans les deux espaces, audit et refus de l’auto-accès. Le NO-GO données réelles reste inchangé ; la recette staging est à faire. Les 4 tests web PRO-13 passent et le typecheck complet est vert. La suite web compte 289 réussis sur 296 ; ses 7 échecs sont identiques à ceux vérifiés sur l’archive originale (285/292), donc antérieurs à PRO-13. La syntaxe Python est vérifiée ; les tests Django n’ont pas pu être exécutés dans l’environnement sans Django.
 
@@ -74,7 +74,7 @@
 - Administrateur nominatif historisé, invitation et remplacement.
 - Code médecin à usage unique, demande de rattachement `pending`, acceptation/refus, départ et suspension.
 - Liste établissement sans contenu clinique.
-- Ouverture d’un dossier de sa structure par l’administrateur : motif obligatoire (huit motifs dont Urgence), audit et notification patient ; **API seulement, aucun écran** ; **durée sans limite par défaut** depuis la v1.4 ; lecture clinique activée par défaut (coupure possible). *(Corrigé le 04/11/2026 : 30 minutes par défaut, lecture désactivée par défaut ; toujours aucun écran.)*
+- Ouverture d’un dossier de sa structure par l’administrateur : motif obligatoire (huit motifs dont Urgence), audit et notification patient ; **API seulement, aucun écran** ; **durée jusqu’à clôture du motif par défaut** ; lecture clinique désactivée par défaut ; toujours aucun écran.
 - Un seul administrateur actif par établissement : une nouvelle invitation le remplace après confirmation.
 - Journal staff des événements établissement ; journal d’audit complet consultable et exportable en CSV par les comptes d’exploitation (v1.3) ; liste d’e-mails d’exploitation fermée par défaut.
 - Modèle de pré-consultation établissement.
@@ -82,7 +82,7 @@
 
 ### Qualité : ce qui est prouvé et ce qui ne l'est pas
 
-- Tests API : **492 réussis, rejoués le 04/11/2026** (SQLite, variables de la CI) sur le code corrigé (Next.js 16.4.4, `cryptography` 50.0.0, ouverture de dossier à 30 minutes, export Excel réparé).
+- Tests API : **492 réussis, rejoués le 04/11/2026** (SQLite, variables de la CI) sur le code corrigé (Next.js 16.4.4, `cryptography` 50.0.0, ouverture de dossier jusqu’à clôture du motif par défaut, export Excel réparé).
 - Tests web : **296 écrits, 289 réussis, 7 échecs préexistants** ; comparaison directe avec l'archive originale : même liste d'échecs (285/292 avant le lot, 289/296 après ajout des 4 tests PRO-13 ; tous les tests PRO-13 passent). Typecheck complet vert (05/11/2026).
 - Audit automatisé d'accessibilité (axe) : 0 violation sur 10 routes locales (29/10).
 - Intégration continue : workflow `.github/workflows/ci.yml` écrit (API sur PostgreSQL 16 avec `makemigrations --check`, tests et sonde de surveillance ; web avec lint, typecheck, tests, build et e2e Playwright) ; **jamais exécuté**.
@@ -108,7 +108,7 @@
 | P0 | Sécurité base de données | Partiel | Permissions runtime, append-only, interdiction `TRUNCATE` et migrations vérifiées sur la cible |
 | P0 | Secrets et archives | À faire : `apps/api/.env` (4 006 octets), `apps/web/.env.production.local`, `db.sqlite3`, 5 PDF de test et des fichiers de travail (`Fichier.txt`, `jj`, `push-web.patch`, `phase2-celery/`, `akatech-v3.1.zip`) sont toujours dans l'archive | Aucun `.env`, secret ou `db.sqlite3` sensible dans les archives livrées ; secrets historiques renouvelés |
 | P0 | Textes publics : la FAQ, l'accueil et la confidentialité disent que de vraies données de santé peuvent être saisies | À corriger | Textes alignés sur le NO-GO ; confirmation écrite qu'aucune donnée réelle n'a été saisie sur l'environnement déployé |
-| P0 | Règle d'ouverture de dossier par l'administrateur d'établissement | À décider | Durée (sans limite par défaut aujourd'hui), motif Urgence, lecture clinique activée par défaut, base légale A8, information des patients, écran ou retrait de la fonction | *(04/11/2026 : durée de 30 minutes et lecture désactivée par défaut appliquées ; restent la base légale A8, l'information des patients et l'écran.)*
+| P0 | Règle d'ouverture de dossier par l'administrateur d'établissement | Implantée R1, à recetter | Durée jusqu'à clôture du motif, motif Urgence, lecture clinique désactivée par défaut, base légale A8, information des patients, écran ou retrait de la fonction | *(05/11/2026 : durée indéterminée appliquée ; restent la base légale A8, l'information des patients et l'écran.)*
 | P1 | Exécuter la CI écrite et corriger ses échecs, dont les 6 tests web | À faire | CI verte sur PostgreSQL 16 : tests API, lint, typage, build, tests web et e2e |
 | P0 | Go/No-Go données réelles | À décider | Validation écrite produit, médicale, juridique, sécurité et hébergement |
 
@@ -120,7 +120,7 @@
 - Recetter le consentement : périmètre affiché, exclusions, durée, refus, prolongation et révocation.
 - Recetter le proche de confiance : génération, remise manuelle du mot, consommation unique, sélection, lecture limitée et retrait immédiat.
 - Recetter C1/C2 : consentement granulaire, choix des structures sources, ouverture destinataire, lecture seule, audit et expiration.
-- Recetter l’ouverture établissement : liste sans contenu, motif obligatoire (dont Urgence), durée (sans limite par défaut), notification patient et absence d’accès inter-établissements ; l'écran d'ouverture n'existe pas encore. *(Durée par défaut : 30 minutes depuis le 04/11/2026.)*
+- Recetter l’ouverture établissement : liste sans contenu, motif obligatoire (dont Urgence), durée jusqu’à clôture du motif par défaut, notification patient et absence d’accès inter-établissements ; l'écran d'ouverture n'existe pas encore. *(Durée par défaut : jusqu’à clôture du motif depuis le 05/11/2026.)*
 - Recetter l'export du carnet en PDF et en Excel par période, et le journal d'audit consultable et exportable par l'équipe. *(L'export Excel répondait 404 jusqu'au 04/11/2026 : corrigé, à recetter.)*
 - Tester sur téléphones réels (Android, iOS avec PWA installée) : carte d'urgence publique et rechargement de `/urgence/<jeton>` en mode avion, papier, réseau lent ; déclarations hors connexion, changement de profil enfant, effacement à la déconnexion.
 - Vérifier que le service worker et les caches ne stockent aucune donnée clinique privée, hors la copie de carte d'urgence de 24 heures et la copie des déclarations en lecture seule de 7 jours décrites dans `docs/PWA-HORS-CONNEXION.md`.
@@ -147,7 +147,7 @@
 - Faire valider les champs, unités, bornes et corrections des constantes, pré-consultations, consultations et vaccinations par un référent médical.
 - Faire valider les conditions de rattachement professionnel et les règles de proche de confiance.
 - Obtenir l’avis juridique ivoirien et confirmer les formalités auprès de l’autorité compétente (dossier préparé : ECA-13).
-- Trancher la durée de l'ouverture d'un dossier par l'administrateur, le motif « Urgence » et la lecture clinique activée par défaut ; informer les patients (point A8). *(Durée et lecture désactivée par défaut appliquées le 04/11/2026 ; base légale A8 et information des patients restent à trancher.)*
+- Valider la base légale A8, l'information des patients et le choix des personnes autorisées à clôturer l'ouverture ; la durée indéterminée R1 et la lecture désactivée par défaut sont implantées.
 - Informer les patients qu'aucune alerte n'est envoyée quand la carte d'urgence publique est consultée, et décrire la copie de 24 heures dans le navigateur, Cloudinary et les notifications push dans la page de confidentialité.
 
 **Sortie V1 :** pilote fictif possible uniquement après signature des critères de recette. Traitement de données réelles toujours interdit tant que l’hébergement, la conformité et le Go/No-Go ne sont pas validés.
@@ -290,7 +290,7 @@
 # Écarts constatés entre le code et les documents (31 octobre 2026)
 
 1. **Données réelles :** la FAQ, l'accueil et la page de confidentialité affirment que de vraies données de santé peuvent être saisies ; c'est contraire au NO-GO. **→ Corrigé le 04/11/2026 : textes alignés sur le NO-GO (phase de test, données fictives).**
-2. **Ouverture de dossier par l'administrateur :** durée sans limite par défaut, motif Urgence, lecture clinique activée par défaut, aucun écran ; les documents parlent d'une ouverture temporaire. **→ Corrigé le 04/11/2026 : 30 minutes par défaut, lecture désactivée par défaut ; écran à construire.**
+2. **Ouverture de dossier par l'administrateur :** durée sans limite par défaut, motif Urgence, lecture clinique activée par défaut, aucun écran ; les documents parlent d'une ouverture temporaire. **→ Corrigé le 05/11/2026 par R1 : jusqu’à clôture du motif par défaut, lecture désactivée par défaut ; écran à construire.**
 3. **Stockage :** le stockage par défaut est local ; Cloudinary seulement s'il est configuré ; la confidentialité ne le cite pas.
 4. **Push et copie d'urgence :** non décrits dans la page de confidentialité ; pas de désabonnement à la déconnexion. *(Corrigé le 02/11/2026 : politique de confidentialité, Aide et accueil mis à jour ; désabonnement à la déconnexion livré.)*
 5. **Secrets et fichiers parasites** toujours dans l'archive ; README daté du 14/10/2026 avec des chiffres de tests périmés.
