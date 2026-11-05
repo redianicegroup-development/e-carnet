@@ -41,7 +41,7 @@ function Kpi({ href, icon, tone, label, value, hint }: { href?: string; icon: Ic
   return href ? <Link className="kpi card-link" href={href}>{body}</Link> : <div className="kpi">{body}</div>;
 }
 
-export function EstablishmentKpis({ memberships }: { memberships: KpiMembership[] }) {
+export function EstablishmentKpis({ memberships, activeJoinCodeCount = 0 }: { memberships: KpiMembership[]; activeJoinCodeCount?: number }) {
   const gradientId = useId().replace(/:/g, "");
   const stats = useMemo(() => {
     const now = Date.now();
@@ -92,6 +92,7 @@ export function EstablishmentKpis({ memberships }: { memberships: KpiMembership[
         <Kpi href="/etablissement/demandes" icon="document" tone="orb--green" label={`Demande${stats.pending > 1 ? "s" : ""} à traiter`} value={String(stats.pending)} hint={stats.recentRequests ? `+${stats.recentRequests} en 30 j` : undefined} />
         <Kpi icon="check" tone="orb--cream" label="Rattachements confirmés" value={confirmedShare} hint={stats.total ? `${stats.active} sur ${stats.total}` : undefined} />
         <Kpi icon="clock" tone="orb--mint" label="Délai moyen de réponse" value={formatDelay(stats.averageDelay)} />
+        <Kpi icon="qr" tone="orb--cream" label="Codes médecin actifs" value={String(activeJoinCodeCount)} hint="Non utilisés · valables 48 h" />
       </section>
 
       <div className="role-dashboard-grid">

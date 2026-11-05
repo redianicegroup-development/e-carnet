@@ -1,0 +1,11 @@
+.establishment-template-layout { grid-template-columns: minmax(280px, .8fr) minmax(0, 1.2fr); align-items: start; }
+.establishment-template-layout > .card { min-width: 0; }
+.preconsult-preview { display: grid; gap: 12px; padding: 16px; border: 1px dashed var(--border); border-radius: 14px; background: var(--surface-muted, var(--surface)); }
+.preconsult-preview h3 { margin: 0; }
+.preconsult-preview .field { margin: 0; }
+.preconsult-preview label { display: block; font-weight: 600; }
+.preconsult-preview input, .preconsult-preview select { width: 100%; }
+@media (max-width: 760px) {
+  .establishment-template-layout { grid-template-columns: minmax(0, 1fr); }
+  .establishment-template-layout .record { align-items: flex-start; flex-wrap: wrap; }
+}

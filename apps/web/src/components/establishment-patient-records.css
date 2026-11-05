@@ -7,10 +7,9 @@
 .establishment-patient-row__actions { display: flex; align-items: center; justify-content: flex-end; gap: 9px; flex-wrap: wrap; flex: 0 0 auto; }
 .establishment-patient-row__actions small { width: 100%; text-align: right; }
 .establishment-pagination { display: flex; align-items: center; justify-content: center; gap: 14px; }
-.establishment-record-timer { position: sticky; top: 12px; z-index: 4; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 16px; align-items: center; padding: 14px 18px; border: 1px solid color-mix(in srgb, var(--primary) 35%, var(--border)); border-radius: 18px; background: color-mix(in srgb, var(--surface) 94%, var(--primary)); box-shadow: var(--raise-sm); }
-.establishment-record-timer strong { color: var(--primary-text); }
-.establishment-record-timer span { color: var(--text-muted); font-size: .84rem; }
-.establishment-record-timer b { grid-row: 1 / span 2; font-family: var(--font-mono); font-size: 1.45rem; font-variant-numeric: tabular-nums; }
+.establishment-record-banner { position: sticky; top: 12px; z-index: 4; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px 18px; align-items: center; padding: 14px 18px; border: 1px solid color-mix(in srgb, var(--primary) 35%, var(--border)); border-radius: 18px; background: color-mix(in srgb, var(--surface) 94%, var(--primary)); box-shadow: var(--raise-sm); }
+.establishment-record-banner strong { color: var(--primary-text); }
+.establishment-record-banner span { color: var(--text-muted); font-size: .84rem; }
 .establishment-record-card { overflow-wrap: anywhere; }
 .establishment-record-card h3 { margin-top: 0; }
 .establishment-record-card p { margin: 7px 0 0; }
@@ -28,5 +27,5 @@
   .establishment-patient-row { align-items: stretch; flex-direction: column; gap: 14px; }
   .establishment-patient-row__actions { justify-content: flex-start; }
   .establishment-patient-row__actions small { width: auto; text-align: left; }
-  .establishment-record-timer { top: 6px; }
+  .establishment-record-banner { top: 6px; }
 }

@@ -1,125 +1,52 @@
 "use client";
-
 import { useEffect, useState } from "react";
-import { apiGet } from "../infrastructure/api/client";
+import { apiGet, apiPost } from "../infrastructure/api/client";
 import { PageHeader } from "./ui/PageHeader";
-
 type Establishment = { id: string; name: string; status: string };
-type Encounter = {
-  id: string;
-  reason: string;
-  observations: string;
-  status: string;
-  created_at: string;
-};
-type PrescriptionLine = { drug_name: string; dosage: string; posology: string; duration: string; instructions: string };
-type Consultation = {
-  id: string;
-  professional_name: string;
-  reason: string;
-  symptoms: string;
-  clinical_exam: string;
-  diagnosis: string;
-  observations: string;
-  conclusion: string;
-  care_plan: string;
-  validated_at: string;
-  prescription_lines: PrescriptionLine[];
-};
-type PatientRecord = {
-  id: string;
-  first_name: string;
-  last_name: string;
-  birth_date: string | null;
-  encounters: Encounter[];
-  consultations: Consultation[];
-};
-type Data = { establishment: Establishment | null; patients: PatientRecord[] };
-
+type Patient = { id: string; first_name: string; last_name: string; age?: number | null; last_service_at?: string | null };
+type Data = { establishment: Establishment | null; patients: Patient[] };
+type ClinicalData = { opening_id: string; patient: Patient; records: Record<string, Record<string, unknown>[]> };
+const REASONS = [["urgence", "Urgence"], ["soins_en_cours", "Soins en cours"], ["continuite_soins", "Continuité des soins"], ["demande_patient", "Demande du patient"], ["facturation_assurance", "Facturation / assurance"], ["qualite_audit", "Qualité / audit"], ["reclamation", "Réclamation"], ["autre", "Autre"]] as const;
 async function fetchRecords(): Promise<Data> {
   const establishments = await apiGet<Establishment[]>("/api/v1/establishments/");
   const establishment = establishments[0] ?? null;
   if (!establishment || establishment.status !== "active") return { establishment, patients: [] };
-  const patients = await apiGet<PatientRecord[]>(`/api/v1/establishments/${establishment.id}/patient-records/`);
-  return { establishment, patients };
+  const page = await apiGet<{ items: Patient[] }>(`/api/v1/establishments/${establishment.id}/patients/?page_size=100`);
+  return { establishment, patients: page.items ?? [] };
 }
-
-function formatDate(value: string | null) {
-  if (!value) return "Date non renseignée";
-  return new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" }).format(new Date(value));
+function formatDate(value?: string | null) { return value ? new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value)) : "Date non renseignée"; }
+function reasonLabel(value: string) { return REASONS.find(([key]) => key === value)?.[1] ?? "Motif enregistré"; }
+function ClinicalSection({ name, rows }: { name: string; rows: Record<string, unknown>[] }) {
+  if (!rows.length) return null;
+  const labels: Record<string, string> = { preconsultations: "Pré-consultations", consultations: "Consultations", measurements: "Mesures", documents: "Documents", vaccinations: "Vaccinations" };
+  return <section className="record"><h2>{labels[name] ?? name}</h2>{rows.map((row, index) => <article key={String(row.id ?? index)} className="establishment-record-card">{Object.entries(row).filter(([key, value]) => !["id", "patient", "download_url", "created_at", "updated_at"].includes(key) && value !== null && value !== "" && typeof value !== "object").map(([key, value]) => <p key={key}><strong>{key.replaceAll("_", " ")} :</strong> {String(value)}</p>)}</article>)}</section>;
 }
-
-function ClinicalField({ label, value }: { label: string; value: string }) {
-  return value ? <p><strong>{label} :</strong> {value}</p> : null;
-}
-
 export function EstablishmentPatientRecords() {
-  const [data, setData] = useState<Data | null>(null);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    let active = true;
-    fetchRecords()
-      .then((value) => { if (active) { setData(value); setError(""); } })
-      .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Les dossiers sont indisponibles."); });
-    return () => { active = false; };
-  }, []);
-
-  if (error) return <p className="notice" role="alert">{error}</p>;
+  const [data, setData] = useState<Data | null>(null); const [error, setError] = useState(""); const [selected, setSelected] = useState<Patient | null>(null);
+  const [reason, setReason] = useState(""); const [note, setNote] = useState(""); const [record, setRecord] = useState<ClinicalData | null>(null); const [openingId, setOpeningId] = useState("");
+  const [busy, setBusy] = useState(false); const [message, setMessage] = useState(""); const [openedAt, setOpenedAt] = useState("");
+  useEffect(() => { let active = true; fetchRecords().then((value) => { if (active) { setData(value); setError(""); } }).catch((cause) => { if (active) setError(cause instanceof Error ? cause.message : "Les dossiers sont indisponibles."); }); return () => { active = false; }; }, []);
+  async function openRecord() {
+    if (!data?.establishment || !selected || !reason) return; setBusy(true); setError(""); setMessage("");
+    try { const created = await apiPost<{ opening_id: string; opened_at: string }>(`/api/v1/establishments/${data.establishment.id}/patients/${selected.id}/openings/`, { reason_category: reason, ...(reason === "autre" ? { reason_note: note } : {}) }); setOpeningId(created.opening_id); setOpenedAt(created.opened_at); const opened = await apiGet<ClinicalData>(`/api/v1/establishments/${data.establishment.id}/openings/${created.opening_id}/record/`); setRecord(opened); setSelected(null); }
+    catch (cause) { setError(cause instanceof Error ? cause.message : "Impossible d’ouvrir ce dossier."); } finally { setBusy(false); }
+  }
+  async function closeRecord() {
+    if (!data?.establishment || !openingId) return; setBusy(true); setError("");
+    try { await apiPost(`/api/v1/establishments/${data.establishment.id}/openings/${openingId}/close/`, {}); setRecord(null); setOpeningId(""); setMessage("Dossier clôturé. Le patient en a été informé."); }
+    catch (cause) { setError(cause instanceof Error ? cause.message : "Impossible de clôturer cette ouverture."); } finally { setBusy(false); }
+  }
+  if (error && !data) return <p className="notice" role="alert">{error}</p>;
   if (!data) return <div className="skeleton" role="status"><span className="sr-only">Chargement des dossiers…</span><i /><i /></div>;
   if (!data.establishment) return <p className="notice" role="alert">Aucun établissement n’est rattaché à ce compte.</p>;
-
-  const active = data.establishment.status === "active";
-  return (
-    <div className="stack-lg">
-      <PageHeader
-        eyebrow={data.establishment.name}
-        title="Dossiers patients"
-        lead="Les dossiers affichés contiennent au moins une pré-consultation clôturée ou une consultation enregistrée dans votre établissement."
-      />
-      {!active ? (
-        <section className="card alert-card"><h2>Accès temporairement indisponible</h2><p>Les dossiers de l’établissement ne sont accessibles que lorsque sa structure est active.</p></section>
-      ) : data.patients.length === 0 ? (
-        <section className="card"><p className="empty">Aucun dossier patient n’est encore associé à cet établissement.</p></section>
-      ) : (
-        <section className="stack" aria-label="Dossiers de l’établissement">
-          {data.patients.map((patient) => (
-            <details className="card" key={patient.id}>
-              <summary>
-                <strong>{[patient.first_name, patient.last_name].filter(Boolean).join(" ") || "Patient sans nom"}</strong>
-                <span className="muted"> · {patient.birth_date ? `Né(e) le ${formatDate(patient.birth_date)}` : "Date de naissance non renseignée"}</span>
-                <span className="muted"> · {patient.encounters.length} pré-consultation{patient.encounters.length > 1 ? "s" : ""}, {patient.consultations.length} consultation{patient.consultations.length > 1 ? "s" : ""}</span>
-              </summary>
-              <div className="stack" style={{ marginTop: "1rem" }}>
-                {patient.encounters.map((encounter) => (
-                  <article className="record" key={encounter.id}>
-                    <h3>Pré-consultation · {formatDate(encounter.created_at)}</h3>
-                    <ClinicalField label="Motif" value={encounter.reason} />
-                    <ClinicalField label="Observations" value={encounter.observations} />
-                  </article>
-                ))}
-                {patient.consultations.map((consultation) => (
-                  <article className="record" key={consultation.id}>
-                    <h3>Consultation · {formatDate(consultation.validated_at)}</h3>
-                    <p className="muted">{consultation.professional_name}</p>
-                    <ClinicalField label="Motif" value={consultation.reason} />
-                    <ClinicalField label="Symptômes" value={consultation.symptoms} />
-                    <ClinicalField label="Examen clinique" value={consultation.clinical_exam} />
-                    <ClinicalField label="Diagnostic" value={consultation.diagnosis} />
-                    <ClinicalField label="Observations" value={consultation.observations} />
-                    <ClinicalField label="Conclusion" value={consultation.conclusion} />
-                    <ClinicalField label="Plan de soins" value={consultation.care_plan} />
-                    {consultation.prescription_lines.length > 0 && (
-                      <div><strong>Prescription</strong><ul>{consultation.prescription_lines.map((line, index) => <li key={`${consultation.id}-${index}`}>{[line.drug_name, line.dosage, line.posology, line.duration, line.instructions].filter(Boolean).join(" · ")}</li>)}</ul></div>
-                    )}
-                  </article>
-                ))}
-              </div>
-            </details>
-          ))}
-        </section>
-      )}
-      <p className="notice"><strong>Périmètre d’accès.</strong> Seules les pré-consultations et consultations associées à cet établissement sont affichées. Les données d’un autre établissement ne sont pas ouvertes automatiquement.</p>
-    </div>
-  );
+  const patientName = record ? [record.patient.first_name, record.patient.last_name].filter(Boolean).join(" ") : "";
+  return <div className="stack-lg"><PageHeader eyebrow={data.establishment.name} title="Dossiers patients" lead="L’accès à chaque dossier est motivé, limité à votre établissement et journalisé." />
+    {error && <p className="notice" role="alert">{error}</p>}{message && <p className="notice" role="status">{message}</p>}
+    {record ? <><aside className="establishment-record-banner" aria-label="Ouverture de dossier active"><strong>Dossier ouvert · {reasonLabel(reason)}</strong><span>Ouvert le {formatDate(openedAt)}</span><button className="button danger" type="button" disabled={busy} onClick={() => void closeRecord()}>Clôturer</button></aside><section className="card"><h2>{patientName || "Dossier patient"}</h2><p className="muted">Contenu clinique de cet établissement uniquement.</p></section>{Object.entries(record.records).map(([name, rows]) => <ClinicalSection key={name} name={name} rows={rows} />)}</>
+      : data.establishment.status !== "active" ? <section className="card alert-card"><h2>Accès temporairement indisponible</h2><p>Les dossiers de l’établissement ne sont accessibles que lorsque sa structure est active.</p></section>
+      : data.patients.length === 0 ? <section className="card"><p className="empty">Aucun dossier patient n’est encore associé à cet établissement.</p></section>
+      : <section className="stack" aria-label="Dossiers de l’établissement">{data.patients.map((patient) => <article className="card establishment-patient-row" key={patient.id}><div className="establishment-patient-row__main"><h2>{[patient.first_name, patient.last_name].filter(Boolean).join(" ") || "Patient sans nom"}</h2><p className="muted">Dernier soin : {formatDate(patient.last_service_at)}</p></div><button type="button" className="button primary" onClick={() => { setSelected(patient); setReason(""); setNote(""); }}>Ouvrir le dossier</button></article>)}</section>}
+    {selected && <div className="modal-backdrop" role="presentation"><section className="modal-dialog establishment-record-dialog" role="dialog" aria-modal="true" aria-labelledby="opening-title"><h2 id="opening-title">Pourquoi ouvrir ce dossier ?</h2><fieldset className="reason-options"><legend>Choisissez un motif</legend>{REASONS.map(([value, label]) => <label key={value}><input type="radio" name="reason" value={value} checked={reason === value} onChange={() => setReason(value)} />{label}</label>)}</fieldset>{reason === "autre" && <label className="field">Précision (140 caractères maximum)<textarea maxLength={140} value={note} onChange={(event) => setNote(event.target.value)} required /><small>{note.length}/140</small></label>}<div className="modal-actions"><button type="button" className="button" onClick={() => setSelected(null)}>Annuler</button><button type="button" className="button primary" disabled={busy || !reason || (reason === "autre" && !note.trim())} onClick={() => void openRecord()}>{busy ? "Ouverture…" : "Continuer"}</button></div></section></div>}
+    <p className="notice"><strong>Périmètre d’accès.</strong> Seules les données associées à cet établissement sont affichées. Chaque ouverture est notifiée au patient.</p>
+  </div>;
 }

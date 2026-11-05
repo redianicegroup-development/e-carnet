@@ -21,7 +21,7 @@ from apps.care.notifications import notify_patient
 from apps.care.serializers import CareEncounterSerializer, ConsultationSerializer, HealthMeasurementSerializer, MedicalDocumentSerializer, VaccinationSerializer
 from apps.patients.models import PatientProfile
 
-from .models import Establishment, EstablishmentAdministrator, EstablishmentRecordOpening
+from .models import Establishment, EstablishmentAdministrator, EstablishmentRecordOpening, EstablishmentRecordOpeningClosure, EstablishmentJoinCode
 from .views import active_administrator
 
 logger = logging.getLogger(__name__)
@@ -340,10 +340,43 @@ class EstablishmentRecordOpeningCreateView(APIView):
                 extra={"establishment_id": str(establishment.id), "administrator_id": str(request.user.pk), "distinct_patients_1h": distinct_patients},
             )
 
-        response = Response({"success": True, "data": {"opening_id": str(opening.id), "expires_at": opening.expires_at}}, status=201)
+        response = Response({"success": True, "data": {"opening_id": str(opening.id), "opened_at": opening.opened_at, "reason_category": opening.reason_category, "expires_at": opening.expires_at}}, status=201)
         response["Cache-Control"] = "private, no-store"
         return response
 
+
+class EstablishmentRecordOpeningsView(APIView):
+    """Liste administrative sans contenu clinique."""
+    permission_classes = [IsAuthenticated]
+    def get(self, request, establishment_id):
+        admin = active_administrator(request.user, establishment_id) if request.user.is_active else None
+        if not admin:
+            return Response({"success": False, "message": "Accès réservé à l’administrateur actif de cet établissement."}, status=403)
+        openings = EstablishmentRecordOpening.objects.filter(establishment=admin.establishment).select_related("closure").order_by("-opened_at")[:200]
+        data = [{"opening_id": str(item.id), "reason_category": item.reason_category, "reason_label": dict(EstablishmentRecordOpening.REASON_CHOICES)[item.reason_category], "opened_at": item.opened_at, "status": "clôturé" if hasattr(item, "closure") else "ouvert", "closed_at": item.closure.closed_at if hasattr(item, "closure") else None} for item in openings]
+        response = Response({"success": True, "data": data})
+        response["Cache-Control"] = "private, no-store"
+        return response
+
+class EstablishmentRecordOpeningCloseView(APIView):
+    permission_classes = [IsAuthenticated]
+    @transaction.atomic
+    def post(self, request, establishment_id, opening_id):
+        admin = active_administrator(request.user, establishment_id) if request.user.is_active else None
+        if not admin:
+            return Response({"success": False, "message": "Accès réservé à l’administrateur actif de cet établissement."}, status=403)
+        opening = EstablishmentRecordOpening.objects.select_for_update().filter(pk=opening_id, establishment=admin.establishment).select_related("patient", "establishment").first()
+        if not opening:
+            return Response({"success": False, "message": "Ouverture introuvable."}, status=404)
+        if EstablishmentRecordOpeningClosure.objects.filter(opening=opening).exists():
+            return Response({"success": False, "message": "Cette ouverture est déjà clôturée."}, status=409)
+        note = str(request.data.get("note", "")).strip()
+        if len(note) > 140:
+            return Response({"success": False, "message": "La note ne peut dépasser 140 caractères."}, status=400)
+        closure = EstablishmentRecordOpeningClosure.objects.create(opening=opening, closed_by=request.user, closed_at=timezone.now(), note=note)
+        record_event(event_type="establishment_record.closed", actor=request.user, actor_role="establishment_admin", patient=opening.patient, establishment=admin.establishment, metadata={"action": "closed", "opening_id": str(opening.id)})
+        notify_patient(opening.patient, kind="establishment_record.closed", title="Fin de consultation de votre dossier", body=f"{admin.establishment.name} a clôturé l’accès à votre dossier.", metadata={"opening_id": str(opening.id), "status": "clôturé"}, coalesce_key=f"closed:{admin.establishment_id}:{opening.patient_id}")
+        return Response({"success": True, "data": {"opening_id": str(opening.id), "status": "clôturé", "closed_at": closure.closed_at}})
 
 class EstablishmentRecordView(APIView):
     permission_classes = [IsAuthenticated]
@@ -365,6 +398,8 @@ class EstablishmentRecordView(APIView):
             return Response({"success": False, "message": "Ouverture introuvable."}, status=404)
         if opening.opened_by_id != request.user.pk:
             return Response({"success": False, "message": "Cette ouverture appartient à un autre administrateur."}, status=403)
+        if EstablishmentRecordOpeningClosure.objects.filter(opening=opening).exists():
+            return Response({"success": False, "code": "opening_closed", "message": "Cette ouverture est clôturée."}, status=403)
         if not opening.expires_at or opening.expires_at <= timezone.now():  # sans échéance = ancienne ouverture « sans limite » : refusée
             return Response({"success": False, "message": "Cette ouverture a expiré. Demandez un nouvel accès avec un motif."}, status=403)
         if not active_administrator(request.user, establishment_id):
@@ -440,6 +475,7 @@ class EstablishmentPatientViewHistoryView(APIView):
             "reason_label": dict(EstablishmentRecordOpening.REASON_CHOICES)[item.reason_category],
             "reason_note": item.reason_note,
             "opening_id": str(item.id),
+            "status": "clôturé" if EstablishmentRecordOpeningClosure.objects.filter(opening=item).exists() else "ouvert",
         } for item in openings]
 
         professional_reads = _view_events_for(establishment, patient_id).filter(event_type="clinical_data.read").select_related(

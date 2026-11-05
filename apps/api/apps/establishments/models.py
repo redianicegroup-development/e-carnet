@@ -240,3 +240,29 @@ class EstablishmentRecordOpening(models.Model):
 
     def delete(self, *args, **kwargs):
         raise TypeError("Les ouvertures de dossier sont immuables.")
+
+
+class EstablishmentRecordOpeningClosureQuerySet(models.QuerySet):
+    def update(self, **kwargs):
+        raise TypeError("Les clôtures d'ouverture sont immuables.")
+    def delete(self):
+        raise TypeError("Les clôtures d'ouverture sont immuables.")
+    def bulk_update(self, objs, fields, batch_size=None):
+        raise TypeError("Les clôtures d'ouverture sont immuables.")
+
+class EstablishmentRecordOpeningClosure(models.Model):
+    """Clôture append-only d'une ouverture ; l'ouverture source reste immuable."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    opening = models.OneToOneField(EstablishmentRecordOpening, on_delete=models.PROTECT, related_name="closure")
+    closed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="establishment_record_opening_closures")
+    closed_at = models.DateTimeField(default=timezone.now)
+    note = models.CharField(max_length=140, blank=True, default="")
+    objects = EstablishmentRecordOpeningClosureQuerySet.as_manager()
+    class Meta:
+        ordering = ("-closed_at",)
+    def save(self, *args, **kwargs):
+        if self.pk and type(self).objects.filter(pk=self.pk).exists():
+            raise TypeError("Les clôtures d'ouverture sont immuables.")
+        return super().save(*args, **kwargs)
+    def delete(self, *args, **kwargs):
+        raise TypeError("Les clôtures d'ouverture sont immuables.")

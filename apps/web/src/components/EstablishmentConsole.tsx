@@ -15,13 +15,16 @@ import { splitFullName } from "../lib/join-codes";
 
 type Establishment = { id: string; name: string; city: string; status: "pending" | "active" | "suspended" | "rejected" | string };
 type Membership = { id: string; status: "pending" | "active" | "refused" | "suspended" | string; professional_name?: string; professional_first_name?: string; professional_last_name?: string; professional_email?: string; professional_avatar_url?: string; professional_title?: string; professional_specialty?: string; professional_age?: number | null; requested_at?: string | null; reviewed_at?: string | null };
-type Data = { establishment: Establishment | null; memberships: Membership[] };
+type OpeningSummary = { opening_id: string; reason_label: string; opened_at: string; status: string };
+type Data = { establishment: Establishment | null; memberships: Membership[]; activeJoinCodeCount: number; openings: OpeningSummary[] };
 
 async function fetchConsole(): Promise<Data> {
   const items = await apiGet<Establishment[]>("/api/v1/establishments/");
   const establishment = items[0] ?? null;
   const memberships = establishment && establishment.status === "active" ? await apiGet<Membership[]>(`/api/v1/establishments/${establishment.id}/memberships/`) : [];
-  return { establishment, memberships };
+  const count = establishment && establishment.status === "active" ? await apiGet<{ count: number }>(`/api/v1/establishments/${establishment.id}/join-codes/active-count/`) : { count: 0 };
+  const openings = establishment && establishment.status === "active" ? await apiGet<OpeningSummary[]>(`/api/v1/establishments/${establishment.id}/openings/`) : [];
+  return { establishment, memberships, activeJoinCodeCount: count.count, openings };
 }
 
 function useConsole() {
@@ -102,7 +105,7 @@ export function EstablishmentConsole({ view }: { view: "home" | "requests" | "do
 
   if (error) return <p className="notice" role="alert">{error}</p>;
   if (!data) return <div className="skeleton" role="status"><span className="sr-only">Chargement…</span><i /><i /></div>;
-  const { establishment, memberships } = data;
+  const { establishment, memberships, activeJoinCodeCount, openings } = data;
   if (!establishment) return <NoEstablishment />;
   const active = establishment.status === "active";
   const pending = memberships.filter((item) => item.status === "pending");
@@ -175,7 +178,8 @@ export function EstablishmentConsole({ view }: { view: "home" | "requests" | "do
     <div className="stack-lg">
       <div className="greeting">{account && <AvatarBadge account={account} size={52} />}<div className="greeting__text"><small>{establishment.name} · {establishment.city}</small><h1>{account ? displayName(account) : "Administrateur"}</h1></div></div>
       {!active && <Pending establishment={establishment} />}
-      <EstablishmentKpis memberships={memberships} />
+      <EstablishmentKpis memberships={memberships} activeJoinCodeCount={activeJoinCodeCount} />
+      {active && <section className="card" aria-labelledby="openings-list-title"><div className="section-heading"><div><span className="eyebrow">Accès aux dossiers</span><h2 id="openings-list-title">Ouvertures récentes</h2></div></div>{openings.length === 0 ? <p className="empty">Aucune ouverture enregistrée.</p> : <ul className="stack">{openings.map((item) => <li className="record" key={item.opening_id}><strong>{item.reason_label}</strong><p className="muted">Depuis le {new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(item.opened_at))} · {item.status}</p></li>)}</ul>}</section>}
       {!active && <section className="card progress-card"><div className="section-heading"><div><span className="eyebrow">Mise en route</span><h2>Activer l’espace établissement</h2></div></div><p className="muted">L’équipe Mon E‑Carnet doit d’abord valider votre structure.</p><div className="progress-card__line" role="progressbar" aria-valuemin={0} aria-valuemax={2} aria-valuenow={establishment.status === "pending" ? 1 : 0}><span style={{ width: `${establishment.status === "pending" ? 50 : 0}%` }} /></div><div className="progress-card__meta"><span>{establishment.status === "pending" ? "Demande reçue" : "Fiche à préparer"}</span><Link className="text-link" href="/etablissement/parametres">Voir les paramètres</Link></div></section>}
       {pending.length > 0 && <section className="card alert-card"><h2>{pending.length} médecin{pending.length > 1 ? "s attendent" : " attend"} votre confirmation</h2><div className="actions"><Link className="button" href="/etablissement/demandes">Traiter les demandes</Link></div></section>}
       {codeCard}

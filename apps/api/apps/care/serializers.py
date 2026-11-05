@@ -10,17 +10,59 @@ class CareEncounterSerializer(serializers.ModelSerializer):
     provenance = serializers.SerializerMethodField()
     revision_count = serializers.SerializerMethodField()
     vitals = VitalsField(required=False)
+    preconsultation_template = serializers.PrimaryKeyRelatedField(queryset=PreconsultationTemplate.objects.all(), required=False, allow_null=True)
+    template_fields = serializers.SerializerMethodField()
+    template_responses = serializers.JSONField(required=False)
 
     class Meta:
         model = CareEncounter
-        fields = ("id", "establishment_id", "facility_label", "reason", "observations", "vitals", "recorded_with_help", "status", "closed_at", "provenance", "revision_count", "created_at", "updated_at")
-        read_only_fields = ("id", "establishment_id", "facility_label", "status", "closed_at", "provenance", "revision_count", "created_at", "updated_at")
+        fields = ("id", "establishment_id", "facility_label", "reason", "observations", "vitals", "recorded_with_help", "preconsultation_template", "template_fields", "template_responses", "status", "closed_at", "provenance", "revision_count", "created_at", "updated_at")
+        read_only_fields = ("id", "establishment_id", "facility_label", "template_fields", "status", "closed_at", "provenance", "revision_count", "created_at", "updated_at")
 
     def get_provenance(self, _obj):
         return {"code": "declared", "label": "Saisi dans le compte patient"}
 
     def get_revision_count(self, obj):
         return obj.revisions.count()
+
+    def get_template_fields(self, obj):
+        return obj.preconsultation_template.fields if obj.preconsultation_template_id else []
+
+    def validate(self, attrs):
+        template = attrs.get("preconsultation_template", getattr(self.instance, "preconsultation_template", None))
+        responses = attrs.get("template_responses", getattr(self.instance, "template_responses", {}))
+        if self.instance and self.instance.preconsultation_template_id and template is None:
+            raise serializers.ValidationError({"preconsultation_template": "Le modèle associé au brouillon ne peut être retiré."})
+        if template is None:
+            if responses:
+                raise serializers.ValidationError({"template_responses": "Les réponses exigent un modèle actif."})
+            return attrs
+        if template.status != "active" and not (self.instance and template == self.instance.preconsultation_template):
+            raise serializers.ValidationError({"preconsultation_template": "Seul un modèle actif peut être utilisé."})
+        if not isinstance(responses, dict):
+            raise serializers.ValidationError({"template_responses": "Les réponses doivent être un objet."})
+        schema = {field["key"]: field for field in template.fields}
+        if set(responses) - set(schema):
+            raise serializers.ValidationError({"template_responses": "Certaines réponses ne correspondent pas au modèle."})
+        for key, spec in schema.items():
+            value = responses.get(key)
+            if spec["required"] and value in (None, ""):
+                raise serializers.ValidationError({"template_responses": {key: "Ce champ est obligatoire."}})
+            if value in (None, ""):
+                continue
+            if spec["type"] == "text" and (not isinstance(value, str) or len(value) > 2000):
+                raise serializers.ValidationError({"template_responses": {key: "Texte invalide (2 000 caractères maximum)."}})
+            if spec["type"] == "number":
+                try:
+                    number = Decimal(str(value))
+                    if not number.is_finite(): raise InvalidOperation
+                except (InvalidOperation, ValueError):
+                    raise serializers.ValidationError({"template_responses": {key: "Saisissez un nombre valide."}})
+            if spec["type"] == "choice" and value not in spec["options"]:
+                raise serializers.ValidationError({"template_responses": {key: "Choix invalide."}})
+            if spec["type"] == "yes_no" and not isinstance(value, bool):
+                raise serializers.ValidationError({"template_responses": {key: "Valeur oui/non invalide."}})
+        return attrs
 
 
 class AccessGrantSerializer(serializers.ModelSerializer):
@@ -255,29 +297,64 @@ class PatientNotificationSerializer(serializers.ModelSerializer):
 
 
 class AppointmentSerializer(serializers.ModelSerializer):
+    establishment_id = serializers.UUIDField(read_only=True, allow_null=True)
     status_label = serializers.CharField(source="get_status_display", read_only=True)
     establishment_name = serializers.CharField(source="establishment.name", read_only=True, allow_null=True)
     professional_name = serializers.CharField(source="professional.user.get_full_name", read_only=True, allow_null=True)
     class Meta:
         model = Appointment
-        fields = ("id", "reason", "starts_at", "ends_at", "status", "status_label", "notes", "queue_number", "establishment_name", "professional_name", "created_at", "updated_at")
-        read_only_fields = ("id", "status", "status_label", "establishment_name", "professional_name", "created_at", "updated_at")
+        establishment_id = serializers.UUIDField(read_only=True, allow_null=True)
+        fields = ("id", "reason", "starts_at", "ends_at", "status", "status_label", "notes", "queue_number", "establishment_id", "establishment_name", "professional_name", "created_at", "updated_at")
+        read_only_fields = ("id", "status", "status_label", "establishment_id", "establishment_name", "professional_name", "created_at", "updated_at")
 
 
 class PreconsultationTemplateSerializer(serializers.ModelSerializer):
     class Meta:
         model = PreconsultationTemplate
-        fields = ("id", "name", "active", "fields", "created_at", "updated_at")
-        read_only_fields = ("id", "created_at", "updated_at")
-
+        fields = ("id", "name", "active", "status", "fields", "approved_by", "approved_at", "created_at", "updated_at")
+        read_only_fields = ("id", "active", "status", "approved_by", "approved_at", "created_at", "updated_at")
+    def validate_name(self, value):
+        value = " ".join(value.split())
+        if len(value) < 2:
+            raise serializers.ValidationError("Le nom doit contenir au moins deux caractères.")
+        establishment = self.context.get("establishment")
+        if establishment and PreconsultationTemplate.objects.filter(establishment=establishment, name__iexact=value).exclude(pk=getattr(self.instance, "pk", None)).exists():
+            raise serializers.ValidationError("Un modèle porte déjà ce nom dans cet établissement.")
+        return value
     def validate_fields(self, value):
+        import re
+        allowed = {"key", "label", "type", "unit", "required", "options"}
         if not isinstance(value, list) or len(value) > 30:
             raise serializers.ValidationError("Un modèle contient au maximum 30 champs.")
-        for field in value:
-            if not isinstance(field, dict) or not str(field.get("key", "")).strip() or not str(field.get("label", "")).strip():
-                raise serializers.ValidationError("Chaque champ doit contenir une clé et un libellé.")
-        return value
-
+        result, keys = [], set()
+        for index, field in enumerate(value):
+            if not isinstance(field, dict) or set(field) - allowed:
+                raise serializers.ValidationError({index: "Champ invalide : seules clé, libellé, type, unité, obligatoire et choix sont autorisés."})
+            key, label, kind = field.get("key"), field.get("label"), field.get("type")
+            if not isinstance(key, str) or not re.fullmatch(r"[a-z][a-z0-9_]{0,39}", key):
+                raise serializers.ValidationError({index: {"key": "Utilisez une clé snake_case (1 à 40 caractères, commençant par une lettre minuscule)."}})
+            if key in keys:
+                raise serializers.ValidationError({index: {"key": "Chaque clé doit être unique dans le modèle."}})
+            keys.add(key)
+            if not isinstance(label, str) or not label.strip() or len(label.strip()) > 100:
+                raise serializers.ValidationError({index: {"label": "Le libellé est obligatoire (100 caractères maximum)."}})
+            if kind not in ("text", "number", "choice", "yes_no"):
+                raise serializers.ValidationError({index: {"type": "Type attendu : text, number, choice ou yes_no."}})
+            required = field.get("required", False)
+            if not isinstance(required, bool):
+                raise serializers.ValidationError({index: {"required": "Ce champ doit être booléen."}})
+            unit = field.get("unit", "")
+            if not isinstance(unit, str) or len(unit) > 24 or (unit and kind != "number"):
+                raise serializers.ValidationError({index: {"unit": "L’unité (24 caractères maximum) est réservée aux champs numériques."}})
+            choices = field.get("options", [])
+            if kind == "choice":
+                if not isinstance(choices, list) or not 1 <= len(choices) <= 20 or any(not isinstance(choice, str) or not choice.strip() or len(choice) > 80 for choice in choices) or len({choice.strip() for choice in choices}) != len(choices):
+                    raise serializers.ValidationError({index: {"options": "Un champ à choix exige 1 à 20 options uniques (80 caractères maximum)."}})
+                choices = [choice.strip() for choice in choices]
+            elif choices:
+                raise serializers.ValidationError({index: {"options": "Les options ne sont permises que pour le type choice."}})
+            result.append({"key": key, "label": label.strip(), "type": kind, "unit": unit.strip(), "required": required, "options": choices})
+        return result
 
 MAX_ORDER_LINES = 15
 

@@ -50,8 +50,12 @@ class EncounterListCreateView(APIView):
         patient = PatientProfile.objects.select_for_update().get(pk=patient.pk)
         if CareEncounter.objects.filter(patient=patient, status="draft").exists():
             return Response({"success": False, "message": "Une pré-consultation est déjà en préparation. Modifiez-la : le médecin lira la dernière version."}, status=status.HTTP_409_CONFLICT)
-        item = CareEncounter.objects.create(patient=patient, **serializer.validated_data)
-        record_event(event_type="preconsultation.created", actor=request.user, actor_role=patient_actor_role(request), patient=item.patient, metadata={"action": "created", "encounter_id": str(item.id), "status": item.status})
+        template = serializer.validated_data.get("preconsultation_template")
+        establishment = template.establishment if template else None
+        if template and not Appointment.objects.filter(patient=patient, establishment=establishment, status__in=("requested", "confirmed"), starts_at__gte=timezone.now()).exists():
+            return Response({"success": False, "message": "Un modèle ne peut être utilisé que pour un établissement ayant un rendez-vous à venir."}, status=400)
+        item = serializer.save(patient=patient, establishment=establishment, facility_label=establishment.name if establishment else "")
+        record_event(event_type="preconsultation.created", actor=request.user, actor_role=patient_actor_role(request), patient=item.patient, establishment=establishment, metadata={"action": "created", "encounter_id": str(item.id), "status": item.status, "resource_type": "preconsultation"})
         return Response({"success": True, "data": CareEncounterSerializer(item).data}, status=status.HTTP_201_CREATED)
 
 
@@ -74,8 +78,12 @@ class EncounterDetailView(APIView):
             return Response({"success": False, "message": "Cette pré-consultation a été clôturée par le médecin et est conservée telle quelle."}, status=409)
         serializer = CareEncounterSerializer(item, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
-        record_event(event_type="preconsultation.updated", actor=request.user, actor_role=patient_actor_role(request), patient=item.patient, metadata={"action": "updated", "encounter_id": str(item.id), "status": item.status})
+        template = serializer.validated_data.get("preconsultation_template", item.preconsultation_template)
+        establishment = template.establishment if template else item.establishment
+        if template and template != item.preconsultation_template and not Appointment.objects.filter(patient=item.patient, establishment=establishment, status__in=("requested", "confirmed"), starts_at__gte=timezone.now()).exists():
+            return Response({"success": False, "message": "Un modèle ne peut être associé qu’à un rendez-vous à venir."}, status=400)
+        serializer.save(establishment=establishment, facility_label=establishment.name if establishment else item.facility_label)
+        record_event(event_type="preconsultation.updated", actor=request.user, actor_role=patient_actor_role(request), patient=item.patient, establishment=establishment, metadata={"action": "updated", "encounter_id": str(item.id), "status": item.status, "resource_type": "preconsultation"})
         return Response({"success": True, "data": serializer.data})
 
 
@@ -572,23 +580,86 @@ class PatientCarnetExportView(APIView):
 
 class EstablishmentPreconsultationTemplateListCreateView(APIView):
     permission_classes = [IsAuthenticated]
-
     def _establishment(self, request, establishment_id):
         from apps.establishments.views import active_administrator
         admin = active_administrator(request.user, establishment_id)
         return admin.establishment if admin else None
-
     def get(self, request, establishment_id):
         establishment = self._establishment(request, establishment_id)
         if not establishment: return Response({"success": False, "message": "Accès établissement refusé."}, status=403)
-        return Response({"success": True, "data": PreconsultationTemplateSerializer(PreconsultationTemplate.objects.filter(establishment=establishment), many=True).data})
-
+        return Response({"success": True, "data": PreconsultationTemplateSerializer(PreconsultationTemplate.objects.filter(establishment=establishment).select_related("approved_by__user"), many=True).data})
     def post(self, request, establishment_id):
         establishment = self._establishment(request, establishment_id)
         if not establishment: return Response({"success": False, "message": "Accès établissement refusé."}, status=403)
-        serializer = PreconsultationTemplateSerializer(data=request.data); serializer.is_valid(raise_exception=True); item = serializer.save(establishment=establishment)
+        serializer = PreconsultationTemplateSerializer(data=request.data, context={"establishment": establishment}); serializer.is_valid(raise_exception=True)
+        item = serializer.save(establishment=establishment, status="draft", active=False, approved_by=None, approved_at=None)
+        record_event(event_type="preconsultation_template.created", actor=request.user, actor_role="establishment_admin", establishment=establishment, metadata={"action": "created", "resource_type": "preconsultation_template", "resource_id": str(item.id), "status": item.status})
         return Response({"success": True, "data": PreconsultationTemplateSerializer(item).data}, status=201)
 
+class EstablishmentPreconsultationTemplateDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+    def _object(self, request, establishment_id, pk):
+        from apps.establishments.views import active_administrator
+        admin = active_administrator(request.user, establishment_id)
+        if not admin: return None, None
+        return admin.establishment, PreconsultationTemplate.objects.filter(pk=pk, establishment=admin.establishment).first()
+    def get(self, request, establishment_id, pk):
+        establishment, item = self._object(request, establishment_id, pk)
+        if not establishment: return Response({"success": False, "message": "Accès établissement refusé."}, status=403)
+        if not item: return Response({"success": False, "message": "Modèle introuvable."}, status=404)
+        return Response({"success": True, "data": PreconsultationTemplateSerializer(item).data})
+    def patch(self, request, establishment_id, pk):
+        establishment, item = self._object(request, establishment_id, pk)
+        if not establishment: return Response({"success": False, "message": "Accès établissement refusé."}, status=403)
+        if not item: return Response({"success": False, "message": "Modèle introuvable."}, status=404)
+        if item.status == "active": return Response({"success": False, "message": "Désactivez le modèle avant de le modifier ; une nouvelle validation médicale sera alors requise."}, status=409)
+        serializer = PreconsultationTemplateSerializer(item, data=request.data, partial=True, context={"establishment": establishment}); serializer.is_valid(raise_exception=True); item = serializer.save()
+        record_event(event_type="preconsultation_template.updated", actor=request.user, actor_role="establishment_admin", establishment=establishment, metadata={"action": "updated", "resource_type": "preconsultation_template", "resource_id": str(item.id), "status": item.status})
+        return Response({"success": True, "data": PreconsultationTemplateSerializer(item).data})
+    def post(self, request, establishment_id, pk):
+        establishment, item = self._object(request, establishment_id, pk)
+        if not establishment: return Response({"success": False, "message": "Accès établissement refusé."}, status=403)
+        if not item: return Response({"success": False, "message": "Modèle introuvable."}, status=404)
+        if request.data.get("action") != "deactivate": return Response({"success": False, "message": "Action attendue : deactivate."}, status=400)
+        if item.status != "active": return Response({"success": False, "message": "Seul un modèle actif peut être désactivé."}, status=409)
+        item.status = "disabled"; item.save(update_fields=("status", "active", "updated_at"))
+        record_event(event_type="preconsultation_template.deactivated", actor=request.user, actor_role="establishment_admin", establishment=establishment, metadata={"action": "deactivated", "resource_type": "preconsultation_template", "resource_id": str(item.id), "status": item.status})
+        return Response({"success": True, "data": PreconsultationTemplateSerializer(item).data})
+
+class PatientActivePreconsultationTemplatesView(APIView):
+    permission_classes = [IsAuthenticated]
+    def get(self, request):
+        patient = profile_for(request.user, request)
+        establishment_ids = Appointment.objects.filter(patient=patient, status__in=("requested", "confirmed"), starts_at__gte=timezone.now(), establishment__isnull=False).values_list("establishment_id", flat=True).distinct()
+        items = PreconsultationTemplate.objects.filter(establishment_id__in=establishment_ids, status="active").select_related("establishment")
+        data = [{"id": str(item.id), "name": item.name, "establishment_id": str(item.establishment_id), "establishment_name": item.establishment.name, "fields": item.fields} for item in items]
+        return Response({"success": True, "data": data})
+
+class ProfessionalPendingPreconsultationTemplatesView(APIView):
+    permission_classes = [IsAuthenticated]
+    def get(self, request):
+        profile = getattr(request.user, "professional_profile", None)
+        if not profile or not profile.active_establishment_id: return Response({"success": True, "data": []})
+        from apps.establishments.models import EstablishmentMembership
+        eligible = EstablishmentMembership.objects.filter(professional=profile, establishment_id=profile.active_establishment_id, status="active", is_medical_referent=True, professional__verification_status="verified").exists()
+        if not eligible: return Response({"success": False, "message": "Seul un référent médical actif peut valider ces modèles."}, status=403)
+        items = PreconsultationTemplate.objects.filter(establishment_id=profile.active_establishment_id, status__in=("draft", "disabled"))
+        return Response({"success": True, "data": PreconsultationTemplateSerializer(items, many=True).data})
+    @transaction.atomic
+    def post(self, request, pk=None):
+        profile = getattr(request.user, "professional_profile", None)
+        if not profile or not profile.active_establishment_id: return Response({"success": False, "message": "Sélectionnez un établissement actif."}, status=403)
+        from apps.establishments.models import EstablishmentMembership
+        if not EstablishmentMembership.objects.filter(professional=profile, establishment_id=profile.active_establishment_id, status="active", is_medical_referent=True, professional__verification_status="verified").exists():
+            return Response({"success": False, "message": "Seul un référent médical actif peut valider ces modèles."}, status=403)
+        if request.data.get("confirm_medical_review") is not True: return Response({"success": False, "message": "Confirmez explicitement la validation médicale."}, status=400)
+        item = PreconsultationTemplate.objects.select_for_update().filter(pk=pk, establishment_id=profile.active_establishment_id).first()
+        if not item: return Response({"success": False, "message": "Modèle introuvable dans votre établissement actif."}, status=404)
+        if item.status not in ("draft", "disabled"): return Response({"success": False, "message": "Ce modèle n’est pas en attente de validation."}, status=409)
+        if PreconsultationTemplate.objects.filter(establishment_id=item.establishment_id, status="active").exclude(pk=item.pk).exists(): return Response({"success": False, "message": "Désactivez d’abord le modèle actif avant d’en valider un autre."}, status=409)
+        item.status = "active"; item.approved_by = profile; item.approved_at = timezone.now(); item.save(update_fields=("status", "active", "approved_by", "approved_at", "updated_at"))
+        record_event(event_type="preconsultation_template.medically_approved", actor=request.user, actor_role="medical_referent", establishment=item.establishment, metadata={"action": "approved", "resource_type": "preconsultation_template", "resource_id": str(item.id), "status": item.status})
+        return Response({"success": True, "data": PreconsultationTemplateSerializer(item).data})
 
 class PatientAccessQrCreateView(APIView):
     permission_classes = [IsAuthenticated]
@@ -976,7 +1047,7 @@ class ProfessionalAuthorizedEncounterListView(APIView):
             require_scope(grant, "preconsultation")
         except PermissionDenied as exc:
             return Response({"success": False, "message": str(exc.detail)}, status=403)
-        latest = CareEncounter.objects.filter(patient=grant.patient, status="draft").order_by("-updated_at", "-created_at").first()
+        latest = CareEncounter.objects.filter(patient=grant.patient, status="draft").filter(Q(establishment__isnull=True) | Q(establishment=grant.establishment)).order_by("-updated_at", "-created_at").first()
         items = [latest] if latest else []
         duration = int(round((grant.expires_at - grant.starts_at).total_seconds() / 60)) if grant.starts_at and grant.expires_at else None
         record_event(event_type="clinical_data.read", actor=request.user, actor_role="professional", patient=grant.patient, establishment=grant.establishment, access_grant=grant, metadata={"action": "read_preconsultations", "resource_type": "preconsultation", "resource_count": len(items), "authorized_until": grant.expires_at.isoformat() if grant.expires_at else None, "access_duration_minutes": duration})

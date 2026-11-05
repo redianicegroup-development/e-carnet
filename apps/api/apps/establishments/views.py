@@ -685,6 +685,18 @@ class EstablishmentActiveJoinCodesView(APIView):
         return response
 
 
+class EstablishmentActiveJoinCodeCountView(APIView):
+    permission_classes = [IsAuthenticated]
+    def get(self, request, establishment_id):
+        admin = active_administrator(request.user, establishment_id)
+        if not admin:
+            return Response({"success": False, "message": "Vous n’êtes pas administrateur de cet établissement actif."}, status=403)
+        now = timezone.now()
+        count = EstablishmentJoinCode.objects.filter(establishment=admin.establishment, consumed_at__isnull=True, revoked_at__isnull=True, expires_at__gt=now).exclude(code_encrypted="").count()
+        response = Response({"success": True, "data": {"count": count}})
+        response["Cache-Control"] = "private, no-store"
+        return response
+
 class EstablishmentMembershipListView(APIView):
     permission_classes = [IsAuthenticated]
 

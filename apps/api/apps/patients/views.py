@@ -12,7 +12,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from apps.audit.services import record_event
-from apps.establishments.models import EstablishmentRecordOpening
+from apps.establishments.models import EstablishmentRecordOpening, EstablishmentRecordOpeningClosure
 from apps.identity.throttles import IpScopedThrottle, WriteScopedThrottle
 from apps.care.notifications import notify_patient
 from .access import PatientAccess
@@ -453,6 +453,8 @@ class PatientRecordViewsView(APIView):
                 "reason_category": opening.reason_category,
                 "reason_label": reason_labels[opening.reason_category],
                 "reason_note": opening.reason_note,
+                "status": "clôturé" if EstablishmentRecordOpeningClosure.objects.filter(opening=opening).exists() else "ouvert",
+                "closed_at": (EstablishmentRecordOpeningClosure.objects.filter(opening=opening).values_list("closed_at", flat=True).first()),
             })
 
         response = Response({"success": True, "data": list(data.values())})

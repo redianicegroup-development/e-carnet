@@ -20,6 +20,8 @@ class CareEncounter(models.Model):
     recorded_with_help = models.CharField(max_length=160, blank=True)
     # Constantes relevées avant la consultation (voir vitals.py) : {"weight_kg": 61.0, "systolic": 110, ...}, clés absentes si non mesurées.
     vitals = models.JSONField(default=dict, blank=True)
+    preconsultation_template = models.ForeignKey("care.PreconsultationTemplate", null=True, blank=True, on_delete=models.PROTECT, related_name="encounters")
+    template_responses = models.JSONField(default=dict, blank=True)
     status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="draft")
     closed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -397,16 +399,27 @@ class Appointment(models.Model):
 
 
 class PreconsultationTemplate(models.Model):
+    STATUS_CHOICES = (("draft", "Brouillon"), ("active", "Actif"), ("disabled", "Désactivé"))
     establishment = models.ForeignKey("establishments.Establishment", on_delete=models.CASCADE, related_name="preconsultation_templates")
     name = models.CharField(max_length=180)
-    active = models.BooleanField(default=True)
+    # Compatibilité client : le statut reste l'autorité et active est synchronisé en base.
+    active = models.BooleanField(default=False)
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="draft")
     fields = models.JSONField(default=list)
+    approved_by = models.ForeignKey("professionals.ProfessionalProfile", null=True, blank=True, on_delete=models.PROTECT, related_name="approved_preconsultation_templates")
+    approved_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
     class Meta:
-        ordering = ("-active", "name")
-        constraints = [models.UniqueConstraint(fields=("establishment", "name"), name="unique_preconsultation_template_name")]
+        ordering = ("status", "name")
+        constraints = [
+            models.UniqueConstraint(fields=("establishment", "name"), name="unique_preconsultation_template_name"),
+            models.UniqueConstraint(fields=("establishment",), condition=models.Q(status="active"), name="unique_active_preconsult_template"),
+            models.CheckConstraint(condition=(models.Q(status="active", active=True, approved_by__isnull=False, approved_at__isnull=False) | models.Q(status__in=("draft", "disabled"), active=False)), name="preconsultation_template_approval_ck"),
+        ]
+    def save(self, *args, **kwargs):
+        self.active = self.status == "active"
+        return super().save(*args, **kwargs)
 
 
 class PushSubscription(models.Model):

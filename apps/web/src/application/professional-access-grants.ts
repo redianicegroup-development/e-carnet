@@ -4,7 +4,7 @@ import type { HealthMeasurementRecord, MeasurementKind } from "../lib/measuremen
 import type { StoredVitals, VitalPayload } from "../lib/vitals";
 
 export type ProfessionalGrant = { id: string; reference: string; professional_id: string | null; establishment_id: string | null; professional_name: string; facility_label: string; scope: string[]; source_establishments: string[]; status: "pending" | "active" | "refused" | "expired" | "revoked"; starts_at: string | null; expires_at: string | null; extension_count: number };
-export type Encounter = { id: string; reason: string; observations: string; vitals?: StoredVitals; recorded_with_help?: string; status: "draft" | "closed"; facility_label: string; provenance: { label: string } };
+export type Encounter = { id: string; reason: string; observations: string; vitals?: StoredVitals; recorded_with_help?: string; status: "draft" | "closed"; facility_label: string; provenance: { label: string }; template_responses?: Record<string, string | number | boolean | null>; template_fields?: Array<{ key: string; label: string; type: string; unit?: string }> };
 export type Consultation = ConsultationRecord;
 export type ProfessionalVaccination = { id: string; vaccine_name: string; dose_number: number | null; administered_on: string | null; batch_number: string; facility: string; professional: string; next_due_on: string | null; document_id: string | null; confirmed_by_name: string; confirmed_at: string | null; status: "declared" | "documented" | "confirmed"; status_label: string; notes: string; created_at: string };
 export type ProfessionalMeasurement = HealthMeasurementRecord;

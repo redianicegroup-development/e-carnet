@@ -7,9 +7,11 @@ import { describeVitals, emptyVitalsForm, parseVitalsForm, vitalsToForm, VITAL_F
 import { buildObservations, isListed, numberOptions, OBSERVATIONS_MAX, OTHER_MAX, parseObservations, SYMPTOMS } from "../lib/preconsult";
 import "./preconsult-form.css";
 
-type Encounter = { id: string; facility_label: string; reason: string; observations: string; vitals?: StoredVitals; recorded_with_help?: string; status: "draft" | "closed"; closed_at: string | null; provenance: { label: string } };
-type FormState = { reason: string; selected: string[]; other: string; vitals: VitalsForm; recorded_with_help: string };
-const EMPTY_FORM: FormState = { reason: "", selected: [], other: "", vitals: emptyVitalsForm(), recorded_with_help: "" };
+type TemplateField = { key: string; label: string; type: "text" | "number" | "choice" | "yes_no"; unit: string; required: boolean; options: string[] };
+type ActiveTemplate = { id: string; name: string; establishment_id: string; establishment_name: string; fields: TemplateField[] };
+type Encounter = { id: string; facility_label: string; establishment_id?: string | null; reason: string; observations: string; vitals?: StoredVitals; recorded_with_help?: string; preconsultation_template?: string | null; template_fields?: TemplateField[]; template_responses?: Record<string, string | number | boolean | null>; status: "draft" | "closed"; closed_at: string | null; provenance: { label: string } };
+type FormState = { reason: string; selected: string[]; other: string; vitals: VitalsForm; recorded_with_help: string; templateId: string; templateResponses: Record<string, string | number | boolean | null>; templateFields: TemplateField[] };
+const EMPTY_FORM: FormState = { reason: "", selected: [], other: "", vitals: emptyVitalsForm(), recorded_with_help: "", templateId: "", templateResponses: {}, templateFields: [] };
 
 /* Un seul bloc, quatre sections (motif, symptômes, constantes, personne qui aide) : plus d'étapes à enchaîner.
    Aucun établissement à choisir : c'est le médecin qui lit ce brouillon grâce au QR du patient, puis le clôture en signant sa consultation.
@@ -17,11 +19,12 @@ const EMPTY_FORM: FormState = { reason: "", selected: [], other: "", vitals: emp
 function formFrom(item: Encounter | null): FormState {
   if (!item) return { ...EMPTY_FORM, selected: [], vitals: emptyVitalsForm() };
   const symptoms = parseObservations(item.observations);
-  return { reason: item.reason, selected: symptoms.selected, other: symptoms.other, vitals: vitalsToForm(item.vitals), recorded_with_help: item.recorded_with_help ?? "" };
+  return { reason: item.reason, selected: symptoms.selected, other: symptoms.other, vitals: vitalsToForm(item.vitals), recorded_with_help: item.recorded_with_help ?? "", templateId: item.preconsultation_template ? String(item.preconsultation_template) : "", templateResponses: item.template_responses ?? {}, templateFields: item.template_fields ?? [] };
 }
 
 export function PatientPreconsultations({ onDraftChange }: { onDraftChange?: (hasDraft: boolean) => void }) {
   const [items, setItems] = useState<Encounter[] | null>(null);
+  const [templates, setTemplates] = useState<ActiveTemplate[]>([]);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [editing, setEditing] = useState(false);
   const [message, setMessage] = useState("");
@@ -29,9 +32,9 @@ export function PatientPreconsultations({ onDraftChange }: { onDraftChange?: (ha
 
   useEffect(() => {
     let active = true;
-    apiGet<Encounter[]>("/api/v1/patient/care/encounters/")
-      .then((encounters) => { if (active) setItems(encounters); })
-      .catch((error) => { if (active) { setItems([]); setMessage(error instanceof Error ? error.message : "Impossible de charger les pré-consultations."); } });
+    Promise.all([apiGet<Encounter[]>("/api/v1/patient/care/encounters/"), apiGet<ActiveTemplate[]>("/api/v1/patient/care/patient/preconsultation-templates/")])
+      .then(([encounters, activeTemplates]) => { if (active) { setItems(encounters); setTemplates(activeTemplates); } })
+      .catch((error) => { if (active) { setItems([]); setTemplates([]); setMessage(error instanceof Error ? error.message : "Impossible de charger les pré-consultations."); } });
     return () => { active = false; };
   }, []);
 
@@ -45,13 +48,14 @@ export function PatientPreconsultations({ onDraftChange }: { onDraftChange?: (ha
     event.preventDefault();
     if (busy) return;
     if (!form.reason.trim()) { setMessage("Indiquez le motif de la consultation pour continuer."); document.getElementById("preconsult-reason")?.focus(); return; }
+    if (form.templateId && form.templateFields.some((field) => field.required && (form.templateResponses[field.key] === null || form.templateResponses[field.key] === undefined || form.templateResponses[field.key] === ""))) { setMessage("Complétez les champs obligatoires du modèle d’établissement."); return; }
     // Les constantes sont vérifiées ici : une valeur impossible n'est jamais envoyée.
     const parsedVitals = parseVitalsForm(form.vitals);
     if (!parsedVitals.ok) { setMessage(parsedVitals.message); return; }
     setBusy(true);
     setMessage("");
     try {
-      const payload = { reason: form.reason.trim(), observations: buildObservations({ selected: form.selected, other: form.other }), vitals: parsedVitals.vitals, recorded_with_help: form.recorded_with_help.trim() };
+      const payload = { reason: form.reason.trim(), observations: buildObservations({ selected: form.selected, other: form.other }), vitals: parsedVitals.vitals, recorded_with_help: form.recorded_with_help.trim(), preconsultation_template: form.templateId || null, template_responses: form.templateId ? form.templateResponses : {} };
       const saved = draft
         ? await apiPatch<Encounter>(`/api/v1/patient/care/encounters/${draft.id}/`, payload)
         : await apiPost<Encounter>("/api/v1/patient/care/encounters/", payload);
@@ -87,6 +91,7 @@ export function PatientPreconsultations({ onDraftChange }: { onDraftChange?: (ha
           <label className="field preconsult-wizard__field"><span>Motif</span><input id="preconsult-reason" required maxLength={240} value={form.reason} onChange={(event) => { setForm({ ...form, reason: event.target.value }); setMessage(""); }} placeholder="Ex. fièvre depuis deux jours" /></label>
         </fieldset>
 
+        {templates.length > 0 && <fieldset className="preconsult-section"><legend><span className="preconsult-section__num">+</span>Formulaire de l’établissement (facultatif)</legend><label className="field"><span>Modèle lié à un rendez-vous à venir</span><select value={form.templateId} onChange={(event) => { const id = event.target.value; const template = templates.find((item) => item.id === id); setForm((current) => ({ ...current, templateId: id, templateResponses: id === current.templateId ? current.templateResponses : Object.fromEntries((template?.fields ?? []).map((field) => [field.key, null])), templateFields: template?.fields ?? [] })); }}><option value="">Aucun modèle</option>{form.templateId && !templates.some((item) => item.id === form.templateId) && <option value={form.templateId}>Modèle déjà associé à ce brouillon</option>}{templates.map((item) => <option key={item.id} value={item.id}>{item.establishment_name} · {item.name}</option>)}</select></label>{form.templateFields.map((field) => <label className="field" key={field.key}><span>{field.label}{field.required ? " *" : ""}{field.unit ? ` (${field.unit})` : ""}</span>{field.type === "choice" || field.type === "yes_no" ? <select value={String(form.templateResponses[field.key] ?? "")} onChange={(event) => { const raw = event.target.value; setForm((current) => ({ ...current, templateResponses: { ...current.templateResponses, [field.key]: raw === "" ? null : field.type === "yes_no" ? raw === "true" : raw } })); }}><option value="">Choisir…</option>{(field.type === "choice" ? field.options.map((value) => [value, value] as const) : [["true", "Oui"], ["false", "Non"]] as const).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select> : <input type={field.type === "number" ? "number" : "text"} value={String(form.templateResponses[field.key] ?? "")} onChange={(event) => setForm((current) => ({ ...current, templateResponses: { ...current.templateResponses, [field.key]: event.target.value || null } }))} />}</label>)}<p className="muted">Seuls les modèles validés médicalement et liés à un rendez-vous à venir sont proposés.</p></fieldset>}
         <fieldset className="preconsult-section">
           <legend><span className="preconsult-section__num">2</span>Quels symptômes ou maux ressentez-vous ?</legend>
           <p className="muted preconsult-section__hint">Cochez ce qui correspond (facultatif).</p>
@@ -123,6 +128,7 @@ export function PatientPreconsultations({ onDraftChange }: { onDraftChange?: (ha
     {draft && !editing && <section className="card preconsult-draft" aria-labelledby="preconsult-draft-title">
       <div className="section-heading"><div><span className="eyebrow">Brouillon en cours</span><h2 id="preconsult-draft-title">{draft.reason || "Sans motif"}</h2></div><span className="badge pending">Brouillon</span></div>
       {draft.observations && <p className="preconsult-draft__text">{draft.observations}</p>}
+      {draft.template_fields && Object.keys(draft.template_responses ?? {}).length > 0 && <dl className="kv">{Object.entries(draft.template_responses ?? {}).map(([key, value]) => { const field = draft.template_fields?.find((item) => item.key === key); return <div key={key}><dt>{field?.label ?? key}</dt><dd>{typeof value === "boolean" ? (value ? "Oui" : "Non") : String(value ?? "—")}{field?.unit ? ` ${field.unit}` : ""}</dd></div>; })}</dl>}
       {describeVitals(draft.vitals).length > 0 && <p className="preconsult-draft__vitals"><strong>Constantes :</strong> {describeVitals(draft.vitals).map((line) => `${line.label} ${line.text}`).join(" · ")}</p>}
       {draft.recorded_with_help && <p className="muted">Rempli avec l’aide de : {draft.recorded_with_help}</p>}
       <p className="muted">Pour que le médecin le lise, montrez-lui votre QR d’accès temporaire. Vous pouvez encore modifier le brouillon.</p>
