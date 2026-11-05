@@ -8,11 +8,16 @@ on:
 jobs:
   api-tests:
     runs-on: ubuntu-latest
+    name: API Django (${{ matrix.database }})
+    strategy:
+      fail-fast: false
+      matrix:
+        database: [sqlite, postgresql]
     env:
       DJANGO_SECRET_KEY: ci-only-not-a-secret
       DJANGO_DEBUG: "true"
       DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,testserver
-      DATABASE_URL: postgres://ecarnet:ecarnet-test-only@localhost:5432/ecarnet
+      DATABASE_URL: ${{ matrix.database == 'postgresql' && 'postgres://ecarnet:ecarnet-test-only@localhost:5432/ecarnet' || '' }}
     services:
       postgres:
         image: postgres:16-alpine
@@ -41,7 +46,11 @@ jobs:
           sudo apt-get install -y --no-install-recommends qpdf
       - run: python apps/api/manage.py check
       - run: python apps/api/manage.py makemigrations --check --dry-run
-      - name: Tests d’intégration Django (PostgreSQL)
+      - name: Vérifier la couverture des routes C7 dans OpenAPI
+        run: python scripts/check-openapi-routes.py
+      - name: Produire le décompte des tests API depuis les sources
+        run: python scripts/count-api-tests.py
+      - name: Tests Django (${{ matrix.database }})
         working-directory: apps/api
         run: python manage.py test
       - name: Vérifier la syntaxe du contrôle de surveillance

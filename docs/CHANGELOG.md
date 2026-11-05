@@ -1,5 +1,20 @@
 > **Référence d’état auditée le 05/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-05.md`](ETAT-REEL-PROJET-2026-11-05.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
 
+## 2026-11-05 — C8 : essai de care.0026 sur PostgreSQL 16
+
+- Ajout de `apps/care/test_migration_0026_postgres.py`, un test d’intégration qui part de `care.0025`, insère des données historiques actives et inactives avec deux actifs dans le même établissement, avance à `care.0027`, vérifie la remise en brouillon et les deux contraintes, puis revient à `care.0025`.
+- Essai exécuté sur PostgreSQL 16.15 : réussi. La migration d’origine n’a pas produit de « pending trigger events » ; aucun découpage ou nouvelle migration corrective n’est nécessaire.
+- Le test restaure les migrations terminales et supprime ses lignes synthétiques sans utiliser le flush global, car l’audit du projet interdit volontairement `TRUNCATE`.
+- Le rejeu complet de la suite Django sur PostgreSQL et la recette staging restent à exécuter.
+
+## 2026-11-05 — C7 : contrats OpenAPI, registre de routes et décompte API
+
+- OpenAPI complétée pour les rendez-vous, les pré-consultations, les ouvertures de dossier, le référent médical, le compteur de codes actifs et le webhook signé/idempotent. Les limites d’exposition de données et l’accès clinique désactivé par défaut sont documentés.
+- Le garde-fou `scripts/check-openapi-routes.py` compare les routes et méthodes Django C7 à OpenAPI. Les routes professionnelles de pré-consultation sont explicitement limitées à GET (liste en attente) et POST (approbation), avec un test des méthodes refusées.
+- `scripts/count-api-tests.py` génère le nombre de définitions de tests API et la CI le journalise ; les documents actifs renvoient aux journaux CI plutôt que de maintenir un compte recopié.
+- Ajout du test Django de cohérence des migrations et d’une matrice CI SQLite/PostgreSQL. Suite Django complète SQLite, suite web, `manage.py check`, contrôle de migrations, parse OpenAPI et garde-fou de routes réussis localement ; le job PostgreSQL complet et toute recette staging restent à exécuter. Le test ciblé PostgreSQL de C8 est consigné ci-dessus.
+- Le manifeste C6 est appliqué à l’archive : suppression de la page FAQ redondante, du composant inutilisé et du répertoire FAQ vide. Le test C1 des notifications couvre maintenant l’exécution du callback après commit.
+
 ## 2026-11-05 — C6 : toutes les suites web incluses dans `npm test`
 
 - Le script web utilise `tests/*.test.mjs`, qui ajoute automatiquement tout fichier de test, y compris `measurement-series.test.mjs` et les quatre anciennes suites oubliées.

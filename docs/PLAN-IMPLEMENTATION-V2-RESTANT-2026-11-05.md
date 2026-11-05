@@ -21,12 +21,12 @@ Aucun chantier n’est « terminé » tant qu’il n’est pas **Vérifié**. L�
 
 | Chantier | Statut au 05/11/2026 | Ce qui bloque ou manque |
 |---|---|---|
-| PAT-13 graphiques de tendance | Implémenté | `measurement-series.test.mjs` est maintenant dans `npm test` (C6, 331/331) ; captures 320/411 px et axe à faire |
+| PAT-13 graphiques de tendance | Implémenté | `measurement-series.test.mjs` est inclus dans `npm test` (C6) ; captures 320/411 px et axe à faire |
 | PRO-13 saisie de mesures par le médecin | Implémenté | Recette staging |
 | ETA-09 ouverture et clôture du dossier | Implémenté, **écart avec la décision** | Durée toujours à 30 minutes alors que la décision est « indéterminée » (R1) ; base légale A8 |
 | ETA-11 modèles de pré-consultation | Implémenté (C1) | Suite Django et `makemigrations --check` à exécuter ; recette staging |
 | ETA-12 tableau de bord | Implémenté | Captures et axe |
-| ADM-09 anti-rejeu du webhook | Implémenté | Absent de l’OpenAPI (C7) ; recette staging |
+| ADM-09 anti-rejeu du webhook | Implémenté | OpenAPI et garde-fou C7 ajoutés ; vérification CI et recette staging à faire |
 | PAT-16 rendez-vous | Partiel — C2 à C5 implémentés | Tests Django C2–C5 à exécuter ; durée de validité et avertissement de chevauchement à trancher |
 | ADM-10 sondes | Livré, non recetté | Installation, secrets, recette staging |
 
@@ -118,27 +118,27 @@ Les données réelles restent interdites tant que le Go/No-Go n’est pas signé
 2. `tests/test-registry.test.mjs` vérifie que le glob est toujours présent et s’inclut lui-même, empêchant le retour à une liste manuelle incomplète.
 3. Les assertions périmées ont été corrigées pour refléter les composants et routes actuels (profil partagé, pré-consultation avec modèles liés, notifications, emplacement du QR, navigation, et FAQ redirigée). La route redondante `/faq` et un composant de scroll public inemployé ont été retirés. La politique de confidentialité décrit maintenant le marqueur `sessionStorage` temporaire, qui ne contient qu’un chemin et un horodatage.
 
-**Sortie vérifiée.** `npm test` exécuté avec les dépendances installées : **38 fichiers, 331 tests réussis, 0 échec, 0 ignoré**. Test-registre vert.
+**Sortie vérifiée.** `npm test` exécuté avec les dépendances installées ; le registre dynamique inclut tous les fichiers de test. Le journal CI demeure la référence du décompte exécuté.
 
-#### C7 — Documentation et chiffres — M
+#### C7 — Documentation et chiffres — Vérifié sur SQLite et web ; PostgreSQL à exécuter
 
-**Constat.** L’OpenAPI ne décrit aucun des nouveaux endpoints ; l’en-tête `X-Ecarnet-Monitor-Event-Id` du webhook n’y figure pas. Le code compte 507 tests API (`def test_`), les documents disent 492 (rejoués le 04/11, avant les nouveaux chantiers).
+**Constat initial.** L’OpenAPI omettait des routes récentes et l’en-tête d’idempotence du webhook ; les comptes de tests des notes historiques ne correspondaient plus au code.
 
-**À faire**
-1. `docs/api/openapi.yaml` : rendez-vous (options, liste et création, actions du détail, liste et actions professionnelles, liste établissement), ouvertures (création, liste, clôture, lecture), modèles de pré-consultation (liste, création, détail, désactivation, actifs côté patient, en attente et approbation côté professionnel), désignation du référent (C1), compteur de codes actifs, et le webhook (en-têtes `X-Ecarnet-Monitor-Timestamp`, `X-Ecarnet-Monitor-Event-Id`, signature `sha256=` sur `horodatage.identifiant.corps`, réponse 200 `already_received`).
-2. Garde-fou : un script de CI qui compare les routes déclarées (`urls.py`) aux chemins de l’OpenAPI et signale les écarts.
-3. Les nombres de tests ne s’écrivent plus à la main : un script les produit et les documents renvoient à la CI. Rejouer la suite Django (SQLite puis PostgreSQL) et ne publier que le résultat exécuté.
-4. Ajouter à la suite Django un test `makemigrations --check` : il aurait détecté C1.
+**Implanté**
+1. `docs/api/openapi.yaml` documente les rendez-vous (dont le `PATCH` de compatibilité), pré-consultations, ouvertures, désignation du référent, compteur de codes actifs et webhook. Les en-têtes signés, l’HMAC `sha256=` sur les octets de `horodatage.identifiant.corps` et la réponse idempotente `already_received` y figurent.
+2. `scripts/check-openapi-routes.py` compare les routes Django résolues et méthodes C7 aux chemins/opérations OpenAPI ; la CI exécute ce contrôle.
+3. `scripts/count-api-tests.py` génère le nombre de définitions de tests API depuis les sources et la CI affiche le résultat. Les documents actifs renvoient aux journaux CI au lieu d’entretenir un nombre copié.
+4. `apps/api/tests/test_migration_consistency.py` exécute `makemigrations --check --dry-run` dans la suite Django ; le job API CI est configuré sur SQLite et PostgreSQL.
 
-#### C8 — Migration `care.0026` sur PostgreSQL — S
+**Statut.** Suite Django SQLite complète, suite web, `manage.py check`, `makemigrations --check --dry-run`, parse YAML et contrôle des routes C7 exécutés avec succès. Le test ciblé C8 passe sur PostgreSQL 16.15 ; la suite Django PostgreSQL complète reste à exécuter. Recette staging non exécutée.
 
-**Constat.** La migration mélange schéma, `RunPython` (remise des anciens modèles en brouillon) et contraintes (`unique_active_preconsult_template`, `preconsultation_template_approval_ck`) dans une seule transaction. Sur PostgreSQL, modifier des lignes puis exécuter un `ALTER TABLE` dans la même transaction peut échouer (« pending trigger events »). Le `RunPython` ne touche que `status` et `active`, donc le risque est faible, mais non démontré.
+#### C8 — Migration `care.0026` sur PostgreSQL — Vérifié
 
-**À faire**
-1. Essai sur PostgreSQL 16 : migrer jusqu’à `care.0025`, insérer des modèles hérités (actifs et inactifs, plusieurs actifs dans le même établissement), migrer jusqu’à `care.0027`, vérifier que tout est en brouillon avec `active=False` et que les contraintes existent ; puis revenir à `care.0025`.
-2. Si l’essai échoue : scinder en schéma, données, contraintes. Renuméroter seulement si aucune base partagée n’a appliqué 0026 et 0027 ; sinon créer une migration corrective après 0027.
+**Constat initial.** La migration combine changements de schéma, `RunPython` de remise en brouillon et contraintes dans une même transaction, avec un risque redouté de « pending trigger events » sous PostgreSQL.
 
-**Sortie.** Aller et retour verts sur PostgreSQL avec des données héritées.
+**Essai exécuté.** Le test `apps.care.test_migration_0026_postgres` utilise PostgreSQL 16.15 : retour à `care.0025`, insertion de modèles actifs/inactifs avec plusieurs actifs dans un même établissement, migration à `care.0027`, vérification du statut `draft`, de `active=False` et des deux contraintes, puis rollback à `care.0025` et restauration des migrations terminales.
+
+**Sortie vérifiée.** Le test ciblé passe (1 réussi, aucun échec). Aucun découpage de migration n’est nécessaire ; les migrations `care.0026` et `care.0027` restent inchangées. La suite Django complète sur PostgreSQL reste distinctement à exécuter.
 
 ### À réappliquer (décisions et correctifs du 05/11, absents de l’archive v1.4.1)
 

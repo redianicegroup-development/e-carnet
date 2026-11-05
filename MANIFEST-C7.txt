@@ -1,0 +1,34 @@
+# Livraison C7 — Documentation API, garde-fous et chiffres
+
+Date : 2026-11-05
+Base : archive reçue `e-carnetv.1.4.2.zip`
+
+## Implantation
+
+- `docs/api/openapi.yaml` : rendez-vous (dont PATCH de compatibilité), pré-consultations, ouvertures de dossier, désignation du référent médical, compteur de codes actifs et webhook HMAC/idempotent.
+- `scripts/check-openapi-routes.py` : compare les chemins et méthodes résolus par Django pour le périmètre C7 avec l’OpenAPI et renvoie un code d’échec en cas d’écart.
+- `scripts/count-api-tests.py` : génère le décompte des définitions de tests API source en JSON ; le résultat est affiché dans les logs CI.
+- `apps/api/tests/test_migration_consistency.py` : ajoute `makemigrations --check --dry-run` à la suite Django.
+- `.github/workflows/ci.yml` : matrice API SQLite/PostgreSQL, contrôles de routes OpenAPI et décompte source.
+- `apps/api/apps/care/urls.py` : liste d’attente pré-consultation GET-only et approbation POST-only.
+- Tests des méthodes HTTP de pré-consultation ajoutés ; test C1 du callback push adapté à l’exécution après commit.
+- Plans racine et docs, état réel et changelog actualisés.
+
+## Vérifications exécutées dans le sandbox
+
+- `python scripts/check-openapi-routes.py` : réussi ; toutes les routes et méthodes C7 sont documentées.
+- Parse de `docs/api/openapi.yaml` : réussi.
+- `manage.py check` : réussi.
+- `manage.py makemigrations --check --dry-run` : aucune migration manquante.
+- Suite Django complète sur SQLite : réussie ; cinq tests ignorés.
+- Suite web `npm run test:web` : réussie, aucun échec ni test ignoré.
+- `scripts/count-api-tests.py` : exécuté ; le décompte source est généré et ne doit pas être recopié manuellement dans les documents.
+
+## À faire avant clôture complète
+
+- Exécuter le job PostgreSQL 16 de la matrice CI et conserver son journal comme preuve.
+- Recette staging non exécutée ; C7 ne constitue ni un déploiement ni une autorisation de données de santé réelles.
+
+## Nettoyage C6 complété pour permettre le rejeu web
+
+- Suppression de `apps/web/src/app/faq/page.tsx` et de `apps/web/src/components/public/PublicFooterScrollToTop.tsx`, puis du répertoire FAQ vide, conformément à `MANIFEST-TESTS-C6.txt`.

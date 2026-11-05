@@ -28,6 +28,11 @@ class PreconsultationTemplateWorkflowTests(TestCase):
         self.doctor_client = APIClient(); self.doctor_client.force_authenticate(self.doctor_user)
     def create_template(self, name="Admission", fields=None):
         return self.admin.post(self.base, {"name": name, "fields": fields if fields is not None else VALID_FIELDS}, format="json")
+    def test_pending_and_approval_routes_only_allow_the_documented_methods(self):
+        pending_url = "/api/v1/patient/care/professional/preconsultation-templates/pending/"
+        approval_url = "/api/v1/patient/care/professional/preconsultation-templates/123/approve/"
+        self.assertEqual(self.doctor_client.post(pending_url, {}, format="json").status_code, 405)
+        self.assertEqual(self.doctor_client.get(approval_url).status_code, 405)
     def test_json_schema_and_duplicate_keys_are_validated(self):
         invalid = self.create_template(fields=[VALID_FIELDS[0], VALID_FIELDS[0]])
         self.assertEqual(invalid.status_code, 400)

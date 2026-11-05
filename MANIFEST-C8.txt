@@ -1,0 +1,45 @@
+# Livraison C8 — C7+C8 en ZIP différentiel
+
+Date : 2026-11-05
+Base : archive utilisateur `e-carnetv.1.4.2.zip`
+
+Extraire le ZIP à la racine du dépôt afin de préserver tous les chemins. Il contient les fichiers ajoutés ou mis à jour depuis l’archive de base pour C7 et C8. Les vrais fichiers `.env`, la base SQLite locale, `node_modules` et les caches ne sont pas inclus.
+
+## Fichiers ajoutés
+
+- `MANIFEST-C7.txt`
+- `MANIFEST-C8.txt`
+- `apps/api/apps/care/test_migration_0026_postgres.py`
+- `apps/api/tests/test_migration_consistency.py`
+- `scripts/check-openapi-routes.py`
+- `scripts/count-api-tests.py`
+
+## Fichiers mis à jour
+
+- `.github/workflows/ci.yml`
+- `PLAN-IMPLEMENTATION-V2-RESTANT-2026-11-05-1.md`
+- `apps/api/apps/care/urls.py`
+- `apps/api/apps/care/test_preconsultation_templates.py`
+- `apps/api/apps/establishments/test_eta_11_medical_referent.py`
+- `docs/CHANGELOG.md`
+- `docs/ETAT-REEL-PROJET-2026-11-05.md`
+- `docs/PLAN-IMPLEMENTATION-V2-RESTANT-2026-11-05.md`
+- `docs/api/openapi.yaml`
+
+Les fichiers `care/migrations/0026_alter_preconsultationtemplate_options_and_more.py` et `care/migrations/0027_appointment_workflow.py` ne sont pas modifiés : l’essai a démontré qu’ils passent sur PostgreSQL 16.15.
+
+## Suppressions C6 à appliquer
+
+Un ZIP ne transporte pas les suppressions. Supprimer aussi du dépôt cible :
+
+- `apps/web/src/app/faq/page.tsx`
+- `apps/web/src/components/public/PublicFooterScrollToTop.tsx`
+
+Le répertoire `apps/web/src/app/faq/` a également été retiré car il était vide après suppression.
+
+## Vérifications
+
+- PostgreSQL 16.15 : `apps.care.test_migration_0026_postgres` réussit. Le test part de `care.0025`, insère des modèles pré-consultation actifs/inactifs avec deux modèles actifs du même établissement, migre à `care.0027`, vérifie la remise à `draft` et `active=False`, confirme les contraintes `unique_active_preconsult_template` et `preconsultation_template_approval_ck`, puis revient à `care.0025` et restaure les migrations terminales.
+- Suite Django complète SQLite après ajout C8 : réussie ; le test C8 PostgreSQL-only est ignoré comme prévu.
+- Le premier essai a également confirmé que les opérations de migration passent ; son erreur de teardown provenait du `TRUNCATE` global interdit par le trigger d’append-only de l’audit. Le test final contourne ce flush global et nettoie uniquement ses lignes synthétiques.
+- La suite Django complète PostgreSQL n’a pas été exécutée ; seule la preuve ciblée C8 est établie sur PG.

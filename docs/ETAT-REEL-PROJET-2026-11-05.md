@@ -46,12 +46,16 @@ L’état « présent dans le dépôt » ne signifie pas « validé en staging �
 - `python3 ops/test-monitoring-event.py` : signature, refus, mauvais usage et API injoignable vérifiés.
 - Simulation locale saine → panne readiness → rétablissement réussie.
 - Le ZIP différentiel ADM-10 est testable, mais aucune recette staging réelle n’a été exécutée depuis ce sandbox.
-- Les corrections ETA-11/C1 et PAT-16/C2/C3/C4/C5 sont syntaxiquement vérifiées (`py_compile`) ; les tests Django ciblés et `makemigrations --check` restent à exécuter dans un environnement avec Django. Tests web : `npm test` réussit avec 38 fichiers et 331/331 tests (C6) ; tests ciblés agenda C2/C4/C5 : 9/9. La durée de proposition et l’avertissement de chevauchement restent à trancher.
+- La suite Django complète a été rejouée sur SQLite et passe ; `manage.py check`, `makemigrations --check --dry-run` et le test intégré de cohérence des migrations passent également. Six tests ont été ignorés, dont le test C8 réservé à PostgreSQL.
+- `npm run test:web` passe après l’application des suppressions C6 listées dans `MANIFEST-TESTS-C6.txt`. Le nombre de définitions source est généré par `scripts/count-api-tests.py` et le résultat exécuté doit être consulté dans les journaux CI, plutôt que recopié dans les documents.
+- Le contrôle `scripts/check-openapi-routes.py` passe : chemins et méthodes C7 couverts par OpenAPI ; le YAML OpenAPI a aussi été parsé avec succès. Les routes professionnelles de pré-consultation n’exposent que GET pour la liste en attente et POST pour l’approbation.
+- Le test ciblé `apps.care.test_migration_0026_postgres` a réussi sur PostgreSQL 16.15. La suite Django complète PostgreSQL n’a pas été exécutée ; la matrice CI reste à vérifier pour C7. Tests staging non exécutés. La durée de proposition et l’avertissement de chevauchement restent à trancher.
 
 ## Ce qui n’est pas démontré par cette archive
 
 - Déploiement effectif sur Hodi, Render, Vercel, Neon ou un autre fournisseur.
 - Configuration réelle de `ECARNET_OPERATIONS_ADMIN_EMAILS`, des secrets webhook, du SMTP, de Cloudinary, des OAuth et des domaines HTTPS.
+- Exécution de la suite Django complète sur PostgreSQL 16 ; seul le test ciblé C8 de migration a été exécuté localement.
 - Exécution de la recette staging ADM-10 avec coupure réelle de base, incident créé/résolu dans l’instance déployée et accusé audité.
 - RPO/RTO, sauvegarde externe, restauration de la cible managée, disponibilité, latence et capacité en production.
 - Essais mobiles Android/iOS/4G, test navigateur complet, certification WCAG ou validation médicale/juridique.
@@ -65,6 +69,9 @@ python3 ops/test-monitoring-check.py
 python3 ops/test-monitoring-event.py
 
 # Contrôles de dépôt lorsque les dépendances sont installées
+python scripts/check-openapi-routes.py
+python scripts/count-api-tests.py
+python apps/api/manage.py makemigrations --check --dry-run
 npm run check:api
 npm run test:api
 npm run test:web
@@ -72,7 +79,7 @@ npm run lint
 npm run build
 ```
 
-Dans le sandbox audité, la suite Django n’a pas démarré car le module `django` n’était pas installé. Ce blocage d’environnement ne doit pas être présenté comme un échec fonctionnel du code ni comme une suite verte.
+Les validations ci-dessus sont locales et utilisent SQLite ; elles ne constituent pas une recette sur PostgreSQL ou en staging. Les résultats de CI restent la source de référence pour le décompte de tests et l’exécution PostgreSQL.
 
 ## Règle de mise à jour documentaire
 

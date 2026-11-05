@@ -37,7 +37,8 @@ class MedicalReferentAssignmentTests(TestCase):
 
     def test_active_administrator_can_designate_verified_active_doctor_and_notifies(self):
         with patch("apps.care.push.send_push_to_user") as push:
-            response = self.admin.post(self.url, {"is_medical_referent": True}, format="json")
+            with self.captureOnCommitCallbacks(execute=True):
+                response = self.admin.post(self.url, {"is_medical_referent": True}, format="json")
 
         self.assertEqual(response.status_code, 200, response.data)
         self.membership.refresh_from_db()
