@@ -17,7 +17,7 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
-from apps.care.models import MedicationIntake, MedicationReminder, MedicationReminderDispatch
+from apps.care.models import Appointment, AppointmentReminderDispatch, MedicationIntake, MedicationReminder, MedicationReminderDispatch
 from apps.care.notifications import notify_patient
 
 logger = logging.getLogger(__name__)
@@ -85,13 +85,38 @@ class Command(BaseCommand):
                         failed += 1
                         logger.exception("rappel: échec rappel=%s", reminder.pk)
 
+        appointment_reminders = self._send_appointment_reminders(now, dry_run)
         renewals = self._send_renewal_notices(now, tz, settings.ECARNET_REMINDER_RENEWAL_DAYS, dry_run)
         if not dry_run:
             MedicationReminderDispatch.objects.filter(scheduled_for__lt=now - timedelta(days=14)).delete()
         # Aucune donnée de santé dans les journaux : uniquement des compteurs.
         self.stdout.write(f"rappels: {sent} {'dus' if dry_run else 'envoyés'}, {skipped} déjà traités, {failed} en échec")
+        self.stdout.write(f"rendez-vous: {appointment_reminders} {'dus' if dry_run else 'envoyés'}")
         if settings.ECARNET_REMINDER_RENEWAL_DAYS > 0:
             self.stdout.write(f"renouvellements: {renewals} {'dus' if dry_run else 'envoyés'}")
+
+
+    @staticmethod
+    def _send_appointment_reminders(now, dry_run):
+        """Rappels neutres la veille et quelques heures avant, idempotents."""
+        sent = 0
+        appointments = Appointment.objects.filter(status="confirmed", starts_at__gt=now, patient__user__isnull=False).select_related("patient")
+        for appointment in appointments.iterator(chunk_size=500):
+            delta = appointment.starts_at - now
+            kind = "day_before" if timedelta(hours=23) <= delta <= timedelta(hours=25) else "hours_before" if timedelta(hours=2) <= delta <= timedelta(hours=4) else None
+            if not kind:
+                continue
+            if dry_run:
+                sent += 1
+                continue
+            with transaction.atomic():
+                _, created = AppointmentReminderDispatch.objects.get_or_create(appointment=appointment, kind=kind)
+                if not created:
+                    continue
+                text = "Vous avez un rendez-vous demain." if kind == "day_before" else "Vous avez un rendez-vous dans quelques heures."
+                notify_patient(appointment.patient, "appointment.reminder", "Rappel de rendez-vous", text, metadata={"appointment_id": str(appointment.pk), "reminder": kind})
+                sent += 1
+        return sent
 
     @staticmethod
     def _send_renewal_notices(now, tz, days, dry_run):

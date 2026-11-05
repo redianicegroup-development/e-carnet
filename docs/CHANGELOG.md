@@ -1,3 +1,13 @@
+## 2026-11-05 — PAT-16 : rendez-vous de la demande aux rappels
+
+- **Patient** : catalogue limité aux établissements actifs à fiche complète, puis professionnels actifs rattachés ; création d’une demande avec statut « Demandé », choix du motif, du début et de la fin, et confirmation d’un créneau proposé.
+- **Professionnel** : agenda des rendez-vous à venir avec confirmation, annulation motivée, fin de rendez-vous et proposition d’un autre créneau motivée ; toutes les transitions sont contrôlées par le serveur et auditées.
+- **Établissement** : endpoint de consultation limité à la date et au statut, sans motif ni contenu clinique ; le rattachement professionnel/établissement est revérifié à l’écriture.
+- **Notifications** : notification applicative et push au patient lors des changements ; commande `send_due_reminders` étendue aux rappels neutres la veille et quelques heures avant, avec clé d’idempotence.
+- **Sécurité** : les rendez-vous ne créent aucun accès au dossier ; l’accès clinique reste exclusivement gouverné par QR et consentement, avec cloisonnement par établissement.
+- **Migration** : `care.0027_appointment_workflow` ajoute les créneaux proposés, le motif de changement et les dispatches de rappel.
+- **Validation** : syntaxe Python OK, `manage.py check` OK, tests ciblés Django 14/14 OK, tests agenda web 7/7 OK. La vérification complète des migrations reste bloquée par une dérive préexistante `establishments.0016_remove_establishmentmembership_is_medical_referent`.
+
 ## 2026-11-05 — PRO-13 : saisie de mesures par le médecin
 
 - Écran « Ajouter une mesure » dans la pré-consultation, visible après sélection d’un accès actif avec le périmètre `preconsultation` ; catalogue partagé des sept types, avec tension et glycémie gardées en texte libre.

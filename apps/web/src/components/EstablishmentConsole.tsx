@@ -16,7 +16,8 @@ import { splitFullName } from "../lib/join-codes";
 type Establishment = { id: string; name: string; city: string; status: "pending" | "active" | "suspended" | "rejected" | string };
 type Membership = { id: string; status: "pending" | "active" | "refused" | "suspended" | string; professional_name?: string; professional_first_name?: string; professional_last_name?: string; professional_email?: string; professional_avatar_url?: string; professional_title?: string; professional_specialty?: string; professional_age?: number | null; requested_at?: string | null; reviewed_at?: string | null };
 type OpeningSummary = { opening_id: string; reason_label: string; opened_at: string; status: string };
-type Data = { establishment: Establishment | null; memberships: Membership[]; activeJoinCodeCount: number; openings: OpeningSummary[] };
+type AppointmentSummary = { id: string; starts_at: string; ends_at: string | null; status: string };
+type Data = { establishment: Establishment | null; memberships: Membership[]; activeJoinCodeCount: number; openings: OpeningSummary[]; appointments: AppointmentSummary[] };
 
 async function fetchConsole(): Promise<Data> {
   const items = await apiGet<Establishment[]>("/api/v1/establishments/");
@@ -24,7 +25,8 @@ async function fetchConsole(): Promise<Data> {
   const memberships = establishment && establishment.status === "active" ? await apiGet<Membership[]>(`/api/v1/establishments/${establishment.id}/memberships/`) : [];
   const count = establishment && establishment.status === "active" ? await apiGet<{ count: number }>(`/api/v1/establishments/${establishment.id}/join-codes/active-count/`) : { count: 0 };
   const openings = establishment && establishment.status === "active" ? await apiGet<OpeningSummary[]>(`/api/v1/establishments/${establishment.id}/openings/`) : [];
-  return { establishment, memberships, activeJoinCodeCount: count.count, openings };
+  const appointments = establishment && establishment.status === "active" ? await apiGet<AppointmentSummary[]>(`/api/v1/patient/care/establishment/${establishment.id}/appointments/`) : [];
+  return { establishment, memberships, activeJoinCodeCount: count.count, openings, appointments };
 }
 
 function useConsole() {
@@ -105,7 +107,7 @@ export function EstablishmentConsole({ view }: { view: "home" | "requests" | "do
 
   if (error) return <p className="notice" role="alert">{error}</p>;
   if (!data) return <div className="skeleton" role="status"><span className="sr-only">Chargement…</span><i /><i /></div>;
-  const { establishment, memberships, activeJoinCodeCount, openings } = data;
+  const { establishment, memberships, activeJoinCodeCount, openings, appointments } = data;
   if (!establishment) return <NoEstablishment />;
   const active = establishment.status === "active";
   const pending = memberships.filter((item) => item.status === "pending");
@@ -180,6 +182,7 @@ export function EstablishmentConsole({ view }: { view: "home" | "requests" | "do
       {!active && <Pending establishment={establishment} />}
       <EstablishmentKpis memberships={memberships} activeJoinCodeCount={activeJoinCodeCount} />
       {active && <section className="card" aria-labelledby="openings-list-title"><div className="section-heading"><div><span className="eyebrow">Accès aux dossiers</span><h2 id="openings-list-title">Ouvertures récentes</h2></div></div>{openings.length === 0 ? <p className="empty">Aucune ouverture enregistrée.</p> : <ul className="stack">{openings.map((item) => <li className="record" key={item.opening_id}><strong>{item.reason_label}</strong><p className="muted">Depuis le {new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(item.opened_at))} · {item.status}</p></li>)}</ul>}</section>}
+      {active && <section className="card" aria-labelledby="appointments-list-title"><div className="section-heading"><div><span className="eyebrow">Organisation des soins</span><h2 id="appointments-list-title">Rendez-vous</h2></div></div>{appointments.length === 0 ? <p className="empty">Aucun rendez-vous.</p> : <ul className="stack">{appointments.map((item) => <li className="record" key={item.id}><strong>{new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(item.starts_at))}</strong><span className="badge">{item.status}</span></li>)}</ul>}</section>}
       {!active && <section className="card progress-card"><div className="section-heading"><div><span className="eyebrow">Mise en route</span><h2>Activer l’espace établissement</h2></div></div><p className="muted">L’équipe Mon E‑Carnet doit d’abord valider votre structure.</p><div className="progress-card__line" role="progressbar" aria-valuemin={0} aria-valuemax={2} aria-valuenow={establishment.status === "pending" ? 1 : 0}><span style={{ width: `${establishment.status === "pending" ? 50 : 0}%` }} /></div><div className="progress-card__meta"><span>{establishment.status === "pending" ? "Demande reçue" : "Fiche à préparer"}</span><Link className="text-link" href="/etablissement/parametres">Voir les paramètres</Link></div></section>}
       {pending.length > 0 && <section className="card alert-card"><h2>{pending.length} médecin{pending.length > 1 ? "s attendent" : " attend"} votre confirmation</h2><div className="actions"><Link className="button" href="/etablissement/demandes">Traiter les demandes</Link></div></section>}
       {codeCard}

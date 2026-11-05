@@ -297,15 +297,35 @@ class PatientNotificationSerializer(serializers.ModelSerializer):
 
 
 class AppointmentSerializer(serializers.ModelSerializer):
-    establishment_id = serializers.UUIDField(read_only=True, allow_null=True)
+    establishment = serializers.PrimaryKeyRelatedField(queryset=__import__("apps.establishments.models", fromlist=["Establishment"]).Establishment.objects.all(), required=False, allow_null=True, write_only=True)
+    professional = serializers.PrimaryKeyRelatedField(queryset=__import__("apps.professionals.models", fromlist=["ProfessionalProfile"]).ProfessionalProfile.objects.all(), required=False, allow_null=True, write_only=True)
+    establishment_id = serializers.UUIDField(source="establishment.id", read_only=True, allow_null=True)
     status_label = serializers.CharField(source="get_status_display", read_only=True)
     establishment_name = serializers.CharField(source="establishment.name", read_only=True, allow_null=True)
     professional_name = serializers.CharField(source="professional.user.get_full_name", read_only=True, allow_null=True)
+    proposed_starts_at = serializers.DateTimeField(read_only=True, allow_null=True)
+    proposed_ends_at = serializers.DateTimeField(read_only=True, allow_null=True)
     class Meta:
         model = Appointment
-        establishment_id = serializers.UUIDField(read_only=True, allow_null=True)
-        fields = ("id", "reason", "starts_at", "ends_at", "status", "status_label", "notes", "queue_number", "establishment_id", "establishment_name", "professional_name", "created_at", "updated_at")
-        read_only_fields = ("id", "status", "status_label", "establishment_id", "establishment_name", "professional_name", "created_at", "updated_at")
+        fields = ("id", "reason", "starts_at", "ends_at", "proposed_starts_at", "proposed_ends_at", "status", "status_label", "notes", "change_reason", "queue_number", "establishment", "professional", "establishment_id", "establishment_name", "professional_name", "created_at", "updated_at")
+        read_only_fields = ("id", "status", "status_label", "establishment_id", "establishment_name", "professional_name", "proposed_starts_at", "proposed_ends_at", "change_reason", "created_at", "updated_at")
+
+    def validate(self, attrs):
+        establishment = attrs.get("establishment", getattr(self.instance, "establishment", None))
+        professional = attrs.get("professional", getattr(self.instance, "professional", None))
+        if (establishment is None) != (professional is None):
+            raise serializers.ValidationError("L'établissement et le professionnel doivent être choisis ensemble.")
+        if establishment is not None:
+            if establishment.status != "active" or not establishment.is_profile_complete:
+                raise serializers.ValidationError({"establishment": "Cet établissement n'est pas disponible dans le catalogue."})
+            from apps.establishments.models import EstablishmentMembership
+            if not EstablishmentMembership.objects.filter(establishment=establishment, professional=professional, status="active").exists():
+                raise serializers.ValidationError({"professional": "Ce professionnel n'est pas rattaché activement à cet établissement."})
+            if getattr(professional, "verification_status", None) != "verified":
+                raise serializers.ValidationError({"professional": "Ce professionnel n'est pas actif."})
+        if attrs.get("ends_at") and attrs.get("starts_at") and attrs["ends_at"] <= attrs["starts_at"]:
+            raise serializers.ValidationError({"ends_at": "La fin doit être postérieure au début."})
+        return attrs
 
 
 class PreconsultationTemplateSerializer(serializers.ModelSerializer):

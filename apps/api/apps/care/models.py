@@ -387,15 +387,28 @@ class Appointment(models.Model):
     reason = models.CharField(max_length=240)
     starts_at = models.DateTimeField()
     ends_at = models.DateTimeField(null=True, blank=True)
+    proposed_starts_at = models.DateTimeField(null=True, blank=True)
+    proposed_ends_at = models.DateTimeField(null=True, blank=True)
     status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="requested")
     notes = models.CharField(max_length=500, blank=True)
+    change_reason = models.CharField(max_length=500, blank=True)
     queue_number = models.PositiveIntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ("starts_at",)
-        indexes = [models.Index(fields=("patient", "starts_at")), models.Index(fields=("establishment", "starts_at"))]
+        indexes = [models.Index(fields=("patient", "starts_at")), models.Index(fields=("establishment", "starts_at")), models.Index(fields=("professional", "starts_at"))]
+
+
+class AppointmentReminderDispatch(models.Model):
+    """Clé d'idempotence des deux rappels d'un rendez-vous confirmé."""
+    appointment = models.ForeignKey(Appointment, on_delete=models.CASCADE, related_name="reminder_dispatches")
+    kind = models.CharField(max_length=24)
+    sent_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=("appointment", "kind"), name="unique_appointment_reminder_kind")]
 
 
 class PreconsultationTemplate(models.Model):
