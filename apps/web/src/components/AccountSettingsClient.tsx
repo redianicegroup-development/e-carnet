@@ -28,7 +28,7 @@ const sections: SettingsNavItem[] = [
   { id: "personnel", title: "Mes informations personnelles", description: "Modifier mon nom et ma photo de profil.", icon: "idcard" },
   { id: "sante", title: "Informations de santé déclaratives", description: "Téléphone, adresse et couverture santé.", icon: "heart" },
   { id: "notifications", title: "Notifications", description: "Consulter les notifications de votre carnet et les marquer comme lues.", icon: "bell" },
-  { id: "hors-connexion", title: "Hors connexion", description: "Consulter vos déclarations sans réseau, en lecture seule.", icon: "download" },
+  { id: "hors-connexion", title: "Hors connexion", description: "Naviguer sans réseau avec une copie chiffrée de vos données, en lecture seule.", icon: "download" },
   { id: "proches", title: "Proches et personnes représentées", description: "Gérer les dossiers distincts des enfants représentés.", icon: "users" },
   { id: "proches-de-confiance", title: "Proches de confiance", description: "Inviter ou retirer un accès limité à la fiche d’urgence.", icon: "users" },
   { id: "compte", title: "Paramètres du compte", description: "Personnaliser l’apparence de l’application.", icon: "sparkle" },

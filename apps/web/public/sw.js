@@ -1,21 +1,28 @@
-const CACHE_NAME = "ecarnet-public-v4";
+const CACHE_NAME = "ecarnet-public-v5";
 const ASSET_CACHE = "ecarnet-assets-v1";
+const SHELL_CACHE = "ecarnet-shells-v1";
 const OFFLINE_URL = "/hors-connexion.html";
 const OFFLINE_SCRIPT = "/hors-connexion.js";
-const PUBLIC_ASSETS = ["/", "/aide", "/a-propos", "/securite", "/manifest.webmanifest", OFFLINE_URL, OFFLINE_SCRIPT, "/brand/app-icon.svg"];
-/* Pages privées : leur HTML n'est jamais mis en cache et aucune réponse d'API non plus. Hors connexion, on affiche la page /hors-connexion.html,
-   qui lit la copie locale des déclarations (IndexedDB, lecture seule, gérée par l'application : voir docs/PWA-HORS-CONNEXION.md). */
+const PUBLIC_PAGES = ["/", "/aide", "/a-propos", "/securite", "/credits", "/cgu", "/confidentialite", "/mentions-legales", "/conditions-rattachement", "/proches-et-enfants"];
+const PUBLIC_ASSETS = [...PUBLIC_PAGES, "/manifest.webmanifest", OFFLINE_URL, OFFLINE_SCRIPT, "/brand/app-icon.svg"];
+/* Pages privées (05/11/2026) : leur HTML est une coquille SANS donnée personnelle (les pages sont des composants navigateur ; les données viennent de
+   l'API, jamais du HTML). On en garde donc la coquille pour que l'application s'ouvre sans réseau. Les RÉPONSES d'API ne sont jamais gardées ici :
+   la copie des lectures est faite par l'application, chiffrée (IndexedDB, voir docs/PWA-HORS-CONNEXION.md). Sans coquille connue, /hors-connexion.html. */
 const PRIVATE_PAGES = ["/patient", "/professionnel", "/etablissement", "/onboarding", "/connexion", "/inscription"];
-const MAX_ASSET_ENTRIES = 160;
+const MAX_ASSET_ENTRIES = 400;
+const MAX_SHELLS = 80;
+const MAX_WARM_PATHS = 60;
+const MAX_WARM_ASSETS = 160;
 const MAX_EMERGENCY_PAGES = 20;
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(PUBLIC_ASSETS)));
+  /* Une page publique indisponible à l'installation ne doit pas empêcher d'installer les autres. */
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => Promise.all(PUBLIC_ASSETS.map((url) => cache.add(url).catch(() => undefined)))));
   self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME && key !== ASSET_CACHE).map((key) => caches.delete(key)))));
+  event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME && key !== ASSET_CACHE && key !== SHELL_CACHE).map((key) => caches.delete(key)))));
   self.clients.claim();
 });
 
@@ -82,9 +89,101 @@ async function cacheEmergencyPage(pageUrl, assets) {
   await trimCache(files, MAX_ASSET_ENTRIES);
 }
 
+/* Coquille d'une page privée : réseau d'abord ; sans réseau, la dernière coquille connue de CETTE adresse, sinon la page hors connexion. */
+const shellKey = (url) => new Request(`${url.origin}${url.pathname}`);
+async function privateShell(event, request) {
+  const url = new URL(request.url);
+  const cache = await caches.open(SHELL_CACHE);
+  try {
+    const response = await fetch(request);
+    if (response.ok && response.status === 200 && !response.redirected) {
+      const copy = response.clone();
+      event.waitUntil(cache.put(shellKey(url), copy).then(() => trimCache(cache, MAX_SHELLS)).catch(() => undefined));
+    }
+    return response;
+  } catch {
+    return (await cache.match(shellKey(url), { ignoreVary: true })) || (await caches.match(OFFLINE_URL)) || textResponse("Vous êtes hors connexion.", 503);
+  }
+}
+
+/* Page publique : réseau d'abord, copie gardée à chaque succès (aucune donnée personnelle), puis l'accueil en dernier recours. */
+async function publicPage(event, request) {
+  const cache = await caches.open(CACHE_NAME);
+  try {
+    const response = await fetch(request);
+    if (response.ok && response.status === 200 && !response.redirected) {
+      const copy = response.clone();
+      event.waitUntil(cache.put(request, copy).catch(() => undefined));
+    }
+    return response;
+  } catch {
+    return (await cache.match(request, { ignoreVary: true, ignoreSearch: true })) || (await caches.match("/")) || Response.error();
+  }
+}
+
+/* Images, polices, feuilles de style et scripts du site (hors /_next/static/, déjà traités) : réseau d'abord, copie gardée, repli sur la copie. */
+const RUNTIME_DESTINATIONS = ["image", "font", "style", "script"];
+async function runtimeAsset(event, request) {
+  const cache = await caches.open(ASSET_CACHE);
+  try {
+    const response = await fetch(request);
+    if (response.ok && response.status === 200) {
+      const copy = response.clone();
+      event.waitUntil(cache.put(request, copy).then(() => trimCache(cache, MAX_ASSET_ENTRIES)).catch(() => undefined));
+    }
+    return response;
+  } catch {
+    return (await cache.match(request)) || Response.error();
+  }
+}
+
+/* Préchauffage (message WARM_SHELLS de l'application, en ligne) : garde la coquille des écrans listés et les fichiers /_next/static/ qu'elle
+   référence. Seules des adresses du site, connues (pages privées ou pages publiques), sont acceptées. */
+const WARM_PATH = /^\/[a-z0-9\-_/]*$/;
+const isWarmable = (path) => typeof path === "string" && path.length < 120 && WARM_PATH.test(path) && !path.includes("//") && (PUBLIC_PAGES.includes(path) || isPrivatePath(path));
+const ASSET_PATTERN = /(?:\/_next\/)?static\/(?:chunks|css|media)\/[A-Za-z0-9_\-/.[\]%~@]+?\.(?:js|css|woff2|woff)/g;
+function assetUrlsIn(html) {
+  const found = new Set();
+  for (const match of html.matchAll(ASSET_PATTERN)) {
+    const asset = match[0].startsWith("/_next/") ? match[0] : `/_next/${match[0]}`;
+    if (!asset.includes("..")) found.add(asset);
+  }
+  return [...found];
+}
+async function warmShells(paths) {
+  const wanted = [...new Set(Array.isArray(paths) ? paths.filter(isWarmable) : [])].slice(0, MAX_WARM_PATHS);
+  if (wanted.length === 0) return;
+  const shells = await caches.open(SHELL_CACHE);
+  const pages = await caches.open(CACHE_NAME);
+  const files = await caches.open(ASSET_CACHE);
+  const assets = new Set();
+  for (const path of wanted) {
+    try {
+      const response = await fetch(path, { credentials: "same-origin", cache: "no-store", headers: { Accept: "text/html" } });
+      if (!response.ok || response.status !== 200 || response.redirected) continue;
+      const html = await response.clone().text();
+      const target = isPrivatePath(path) ? shells : pages;
+      await target.put(isPrivatePath(path) ? shellKey(new URL(path, self.location.origin)) : new Request(new URL(path, self.location.origin)), response);
+      assetUrlsIn(html).forEach((asset) => assets.add(asset));
+    } catch { /* page indisponible : elle sera gardée à sa prochaine visite */ }
+  }
+  await trimCache(shells, MAX_SHELLS);
+  let fetched = 0;
+  for (const asset of assets) {
+    if (fetched >= MAX_WARM_ASSETS) break;
+    if (await files.match(asset)) continue;
+    try {
+      const response = await fetch(asset);
+      if (response.ok && response.status === 200) { await files.put(asset, response); fetched += 1; }
+    } catch { /* fichier indisponible : gardé à sa première utilisation */ }
+  }
+  await trimCache(files, MAX_ASSET_ENTRIES);
+}
+
 self.addEventListener("message", (event) => {
   const data = event.data || {};
   if (data.type === "CACHE_EMERGENCY_PAGE") event.waitUntil(cacheEmergencyPage(data.url, data.assets));
+  if (data.type === "WARM_SHELLS") event.waitUntil(warmShells(data.paths));
 });
 
 self.addEventListener("fetch", (event) => {
@@ -97,7 +196,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
   if (request.mode === "navigate" && isPrivatePath(path)) {
-    event.respondWith(fetch(request).catch(async () => (await caches.match(OFFLINE_URL)) || textResponse("Vous êtes hors connexion.", 503)));
+    event.respondWith(privateShell(event, request));
     return;
   }
   if (request.method !== "GET" || path.startsWith("/api/")) return;
@@ -107,7 +206,15 @@ self.addEventListener("fetch", (event) => {
   }
   if (isPrivatePath(path)) return;
   /* Le repli sur l'accueil n'a de sens que pour une page : renvoyer du HTML à la place d'un script ou d'une feuille de style casserait la page. */
-  event.respondWith(fetch(request).catch(async () => (await caches.match(request)) || (request.mode === "navigate" ? await caches.match("/") : undefined) || Response.error()));
+  if (request.mode === "navigate") {
+    event.respondWith(publicPage(event, request));
+    return;
+  }
+  if (RUNTIME_DESTINATIONS.includes(request.destination) || path === "/_next/image") {
+    event.respondWith(runtimeAsset(event, request));
+    return;
+  }
+  event.respondWith(fetch(request).catch(async () => (await caches.match(request)) || Response.error()));
 });
 
 /* ---------- Web Push ----------

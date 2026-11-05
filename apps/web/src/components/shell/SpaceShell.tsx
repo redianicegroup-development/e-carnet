@@ -16,10 +16,12 @@ import { TOUR_RESTART_EVENT } from "../../lib/tour";
 import { GooeyAccountMenu } from "./GooeyAccountMenu";
 import { AppSidebar, type SidebarItem, type SidebarMenuItem } from "./AppSidebar";
 import { TrustedDelegationBanner } from "../TrustedDelegationBanner";
-import { OfflineSnapshotSync } from "../OfflineSnapshotSync";
+import { OfflineCacheKeeper } from "../OfflineCacheKeeper";
 import { ScrollToTopOnNavigate } from "../ScrollToTopOnNavigate";
 import { cleanUpBeforeLogout } from "../../lib/logout";
 import { purgeOfflineSnapshot } from "../../lib/offline-snapshot";
+import { purgeOfflineCache } from "../../lib/offline-cache";
+import { OFFLINE_NO_COPY_MESSAGE } from "../../lib/network-status";
 
 export type SpaceAccount = {
   id: string;
@@ -161,26 +163,29 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
     const controller = new AbortController();
     async function load() {
       const deadline = Date.now() + WAKE_BUDGET_MS;
+      let probeFailures = 0; // échecs réseau (aucune réponse) de la sonde : au deuxième, on lit l'identité directement (copie chiffrée si hors connexion)
       setState({ status: "loading", label: "Veuillez patienter, chargement de votre espace…" });
       while (active && Date.now() < deadline) {
         let checkingIdentity = false;
         try {
-          const probeController = new AbortController();
-          const timeout = window.setTimeout(() => probeController.abort(), WAKE_TIMEOUT_MS);
-          const abortProbe = () => probeController.abort();
-          controller.signal.addEventListener("abort", abortProbe, { once: true });
-          let probe: Response;
-          try {
-            probe = await fetch("/api/v1/health/ready/", {
-              credentials: "omit",
-              cache: "no-store",
-              signal: probeController.signal,
-            });
-          } finally {
-            window.clearTimeout(timeout);
-            controller.signal.removeEventListener("abort", abortProbe);
+          if (navigator.onLine !== false && probeFailures < 2) {
+            const probeController = new AbortController();
+            const timeout = window.setTimeout(() => probeController.abort(), WAKE_TIMEOUT_MS);
+            const abortProbe = () => probeController.abort();
+            controller.signal.addEventListener("abort", abortProbe, { once: true });
+            let probe: Response;
+            try {
+              probe = await fetch("/api/v1/health/ready/", {
+                credentials: "omit",
+                cache: "no-store",
+                signal: probeController.signal,
+              });
+            } finally {
+              window.clearTimeout(timeout);
+              controller.signal.removeEventListener("abort", abortProbe);
+            }
+            if (!probe.ok) throw new ApiError("Le service démarre encore.", probe.status);
           }
-          if (!probe.ok) throw new ApiError("Le service démarre encore.", probe.status);
 
           checkingIdentity = true;
           const account = await apiGet<SpaceAccount>("/api/v1/identity/me/", 20000);
@@ -190,12 +195,17 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
           if (!active) return;
           if (checkingIdentity && isSessionMissing(error)) {
             void purgeOfflineSnapshot(); // le serveur a répondu : session absente. Ne pas garder de santé sur un appareil déconnecté.
+            void purgeOfflineCache();
             setState({ status: "anonymous" });
             return;
           }
-          if (space === "patient" && navigator.onLine === false && navigator.serviceWorker?.controller) {
-            window.location.reload(); // le service worker répond alors par la page hors connexion (déclarations en lecture seule)
-            return;
+          if (error instanceof TypeError) {
+            if (!checkingIdentity) probeFailures += 1;
+            // Sans réseau et sans copie de l'identité (jamais ouvert en ligne sur cet appareil, ou copie effacée) : inutile d'attendre deux minutes.
+            if (navigator.onLine === false || (checkingIdentity && probeFailures >= 2)) {
+              setState({ status: "error", message: OFFLINE_NO_COPY_MESSAGE });
+              return;
+            }
           }
           if (!isTransientConnectionError(error)) {
             setState({ status: "error", message: error instanceof Error ? error.message : "Service indisponible." });
@@ -293,7 +303,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
           <AccountContext.Provider value={state.status === "ready" ? state.account : null}>
             <PatientAccessQrContext.Provider value={{ qr: patientAccessQr, setQr: setPatientAccessQr }}>
               {space === "patient" && state.status === "ready" && !bare && <TrustedDelegationBanner />}
-              {space === "patient" && state.status === "ready" && !bare && <OfflineSnapshotSync account={state.account} />}
+              {state.status === "ready" && !bare && <OfflineCacheKeeper space={space} />}
               {children}
             </PatientAccessQrContext.Provider>
           </AccountContext.Provider>

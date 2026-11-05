@@ -111,7 +111,7 @@ body .public-scroll-top { position: fixed; }
 
 /* PublicShell est partagé par les pages d'information, pas seulement la landing. */
 .pub { min-height: 100dvh; display: grid; grid-template-rows: auto 1fr auto; }
-.pub-header { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 16px; padding: max(10px, env(safe-area-inset-top)) clamp(16px, 4vw, 40px) 10px; background: color-mix(in srgb, var(--bg) 90%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
+.pub-header { position: sticky; top: var(--net-banner-h, 0px); z-index: 30; display: flex; align-items: center; gap: 16px; padding: max(10px, env(safe-area-inset-top)) clamp(16px, 4vw, 40px) 10px; background: color-mix(in srgb, var(--bg) 90%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
 .pub-header.is-scrolled { background: color-mix(in srgb, var(--bg) 96%, transparent); }
 /* Menu : panneau déroulant sous l'en-tête (mobile et tablette), barre de liens à partir de 1200 px. */
 .pub-menu { position: absolute; top: 100%; left: 0; right: 0; display: grid; gap: 2px; padding: 6px clamp(16px, 4vw, 40px) 16px; background: var(--bg); border-bottom: 1px solid var(--border); box-shadow: 0 26px 40px -30px color-mix(in srgb, var(--text) 55%, transparent); visibility: hidden; opacity: 0; transform: translateY(-6px); transition: opacity .2s ease, transform .2s ease, visibility 0s linear .2s; }

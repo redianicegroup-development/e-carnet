@@ -8,6 +8,7 @@ import { ProfileSummary } from "./ProfileSummary";
 import { SettingsDirectory, type SettingsNavItem } from "./SettingsDirectory";
 import { SettingsModal } from "./SettingsModal";
 import { SettingsMoreSection } from "./SettingsMoreSection";
+import { OfflineDataToggle } from "./OfflineDataToggle";
 import { LandingFeedbackWidget } from "./LandingFeedbackWidget";
 import { ThemeSettingsClient } from "./ThemeSettingsClient";
 import { AccountActionRequestsSettingsClient } from "./AccountActionRequestsSettingsClient";
@@ -78,6 +79,7 @@ export function ProfessionalSettingsClient() {
     { id: "etablissement", title: activeEstablishment ? `Mon établissement — ${activeEstablishment.name}` : "Mon établissement", description: "Établissement actif et rattachements.", icon: "building" },
     { id: "compte", title: "Paramètres du compte", description: "Personnaliser l’apparence de l’application.", icon: "sparkle" },
     { id: "securite", title: "Sécurité et connexion", description: "Gérer les fournisseurs liés au compte.", icon: "lock" },
+    { id: "hors-connexion", title: "Hors connexion", description: "Naviguer sans réseau avec une copie chiffrée, en lecture seule.", icon: "download" },
     { id: "en-savoir-plus", title: "En savoir plus", description: "Aide, informations et documents Mon E‑Carnet.", icon: "help" },
     { id: "avis", title: "Votre avis", description: "Partager une suggestion ou signaler un problème.", icon: "pencil" },
   ];
@@ -102,6 +104,7 @@ export function ProfessionalSettingsClient() {
 
       {activeSection === "securite" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Accès au compte</span><p className="muted">Les autorisations professionnelles sont vérifiées côté API. Les fournisseurs ci-dessous servent uniquement à la connexion au compte.</p><LinkedProvidersSettingsClient nextPath="/professionnel/parametres" /><AccountActionRequestsSettingsClient isPrivileged={account?.is_privileged ?? true} /></div></SettingsModal>}
 
+      {activeSection === "hors-connexion" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><OfflineDataToggle audience="third-party" /></SettingsModal>}
       {activeSection === "en-savoir-plus" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><SettingsMoreSection /></SettingsModal>}
       {activeSection === "avis" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Amélioration continue</span><p className="muted">Votre retour aide l’équipe Mon E‑Carnet à améliorer l’application. N’indiquez aucune information personnelle ou médicale.</p><LandingFeedbackWidget inline /></div></SettingsModal>}
     </div>

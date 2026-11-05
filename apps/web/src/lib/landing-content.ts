@@ -77,7 +77,7 @@ export const FAQ_ITEMS: FaqItem[] = [
   { id: "refuse", q: "Puis-je refuser ou arrêter un accès ?", a: "Oui. Vous pouvez refuser une demande, ou révoquer un accès en cours depuis votre espace. La révocation n’efface pas les consultations déjà validées ni les traces d’audit." },
   { id: "verified", q: "Un professionnel est-il vérifié par Mon E-Carnet ?", a: "Non. Mon E-Carnet ne certifie ni l’identité, ni les diplômes, ni la compétence d’un professionnel. L’établissement confirme le rattachement du professionnel à sa structure." },
   { id: "protection", q: "Comment sont protégées mes informations ?", a: "Le service applique les mesures techniques décrites dans les pages Sécurité et Confidentialité.", link: { href: "/securite", label: "Page Sécurité" } },
-  { id: "phone", q: "Puis-je l’utiliser sur mon téléphone ?", a: "Oui. Mon E‑Carnet s’ouvre dans le navigateur d’un téléphone ou d’un ordinateur, et peut s’installer comme une application lorsque votre navigateur le permet. Sans réseau, vous pouvez consulter vos déclarations en lecture seule ; le reste demande la connexion." },
+  { id: "phone", q: "Puis-je l’utiliser sur mon téléphone ?", a: "Oui. Mon E‑Carnet s’ouvre dans le navigateur d’un téléphone ou d’un ordinateur, et peut s’installer comme une application lorsque votre navigateur le permet. Sans réseau, vous pouvez relire en lecture seule ce que vous avez déjà consulté ; toute modification demande la connexion." },
 ];
 
 /** Dernière section : l'invitation à créer son espace, puis le formulaire de contact (une seule section, un seul bouton principal). */

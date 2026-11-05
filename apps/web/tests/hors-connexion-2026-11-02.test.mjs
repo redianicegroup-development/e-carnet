@@ -246,6 +246,7 @@ function logoutEnv({ unsubscribe, purge }) {
   const calls = [];
   const lib = loadTs("src/lib/logout.ts", {
     "./offline-snapshot": { purgeOfflineSnapshot: async () => { calls.push("purge"); return purge?.(); } },
+    "./offline-cache": { purgeOfflineCache: async () => { calls.push("purge-cache"); } },
     "./push": { unsubscribeFromPush: async () => { calls.push("push"); return unsubscribe?.(); } },
   });
   return { lib, calls };
@@ -254,18 +255,19 @@ function logoutEnv({ unsubscribe, purge }) {
 test("déconnexion : désabonne le push et efface la copie locale", async () => {
   const env = logoutEnv({});
   await env.lib.cleanUpBeforeLogout();
-  assert.deepEqual(env.calls.sort(), ["purge", "push"]);
+  assert.deepEqual(env.calls.sort(), ["purge", "purge-cache", "push"]);
 });
 
 test("déconnexion : une erreur ou un blocage du désabonnement ne bloque jamais la déconnexion ni l'effacement", async () => {
   const failing = logoutEnv({ unsubscribe: () => { throw new Error("push indisponible"); } });
   await failing.lib.cleanUpBeforeLogout();
-  assert.deepEqual(failing.calls.sort(), ["purge", "push"]);
+  assert.deepEqual(failing.calls.sort(), ["purge", "purge-cache", "push"]);
   const hanging = logoutEnv({ unsubscribe: () => new Promise(() => {}) });
   const started = Date.now();
   await hanging.lib.cleanUpBeforeLogout(); // le plafond de 5 s est ramené à 20 ms par le faux window.setTimeout
   assert.ok(Date.now() - started < 2000);
   assert.ok(hanging.calls.includes("purge"));
+  assert.ok(hanging.calls.includes("purge-cache"));
 });
 
 test("déconnexion : partout, le nettoyage passe AVANT l'appel d'API (le désabonnement a besoin de la session)", () => {
@@ -281,13 +283,15 @@ test("déconnexion : partout, le nettoyage passe AVANT l'appel d'API (le désabo
   assert.match(read("src/lib/logout.ts"), /unsubscribeFromPush[\s\S]*purgeOfflineSnapshot/);
 });
 
-test("espace patient : la copie est synchronisée seulement en patient, et effacée quand le serveur dit « session absente »", () => {
+test("espaces : la copie hors connexion est entretenue partout, effacée quand le serveur dit « session absente », et sans réseau l'identité vient de la copie (05/11/2026)", () => {
   const shell = read("src/components/shell/SpaceShell.tsx");
-  assert.match(shell, /space === "patient" && state\.status === "ready" && !bare && <OfflineSnapshotSync account=\{state\.account\} \/>/);
-  assert.match(shell, /isSessionMissing\(error\)\) \{\s*void purgeOfflineSnapshot\(\)/);
-  assert.match(shell, /navigator\.onLine === false && navigator\.serviceWorker\?\.controller/);
-  const sync = read("src/components/OfflineSnapshotSync.tsx");
-  for (const event of ["ecarnet:patient-profile-changed", "ecarnet:product-action-completed", "online"]) assert.ok(sync.includes(`"${event}"`) || sync.includes(`'${event}'`), event);
+  assert.match(shell, /state\.status === "ready" && !bare && <OfflineCacheKeeper space=\{space\} \/>/);
+  assert.doesNotMatch(shell, /OfflineSnapshotSync/, "l'ancienne synchro en clair des déclarations n'est plus montée");
+  assert.match(shell, /isSessionMissing\(error\)\) \{\s*void purgeOfflineSnapshot\(\);[^\n]*\s*void purgeOfflineCache\(\)/);
+  assert.match(shell, /navigator\.onLine !== false && probeFailures < 2/, "hors connexion la sonde est sautée : l'identité est lue par le relais fetch (copie chiffrée)");
+  assert.match(shell, /OFFLINE_NO_COPY_MESSAGE/);
+  const keeper = read("src/components/OfflineCacheKeeper.tsx");
+  for (const needle of ["purgeOfflineSnapshot", "trimOfflineCache", "NETWORK_RESTORED_EVENT", "warmOfflineShells"]) assert.ok(keeper.includes(needle), needle);
   assert.doesNotMatch(read("src/lib/offline-sync.ts"), /apiPost|apiSend|apiPatch|apiPut|apiDelete|representations\/active/, "la synchro ne change jamais le profil actif et n'écrit rien côté serveur");
 });
 
@@ -449,19 +453,20 @@ test("page hors connexion : lecture seule — aucune écriture, aucun réseau ; 
 /* ---------- textes d'information ---------- */
 test("textes d'information : la politique, l'aide et la page d'accueil décrivent la copie hors connexion (plus « aucune donnée médicale »)", () => {
   const privacy = read("src/app/confidentialite/page.tsx");
-  assert.match(privacy, /Copie hors connexion des déclarations \(IndexedDB\)/);
-  assert.match(privacy, /ni historique, ni consultations, ni documents, ni agenda/);
-  assert.match(privacy, /après 7 jours sans visite en ligne/);
+  assert.match(privacy, /Copie hors connexion chiffrée \(IndexedDB\)/);
+  assert.match(privacy, /chiffrés \(AES‑GCM 256\)/);
+  assert.match(privacy, /après 7 jours sans visite en ligne \(24 heures pour les informations de patients/);
   assert.match(privacy, /appareil partagé, désactivez-la/);
   assert.match(privacy, /Carte d’urgence ouverte par QR \(IndexedDB\)[\s\S]*24 heures[\s\S]*dès que le QR est désactivé ou renouvelé/);
-  assert.match(privacy, /service worker garde[\s\S]*Il ne garde jamais le contenu des pages privées ni les réponses de l’API/);
+  assert.match(privacy, /service worker garde[\s\S]*sans donnée personnelle[\s\S]*Il ne garde jamais les réponses de l’API/);
   assert.match(privacy, /abonnement aux notifications est retiré/);
   const help = read("src/components/help/helpContent.ts");
   const landing = read("src/lib/landing-content.ts");
   for (const source of [help, landing]) assert.doesNotMatch(source, /aucune donnée médicale n’est conservée|Aucune donnée médicale ni réponse/i);
-  assert.match(help, /consultez vos déclarations, et celles des profils enfants déjà ouverts en ligne, en lecture seule/);
-  assert.match(help, /effacée à la déconnexion et après 7 jours/);
-  assert.match(landing, /consulter vos déclarations en lecture seule/);
+  assert.match(help, /les écrans déjà ouverts en ligne, en lecture seule/);
+  assert.match(help, /effacée à la déconnexion et après 7 jours \(24 heures pour les informations de patients/);
+  assert.match(help, /bandeau en haut de l’écran/);
+  assert.match(landing, /relire en lecture seule ce que vous avez déjà consulté/);
 });
 
 test("documentation : le journal des modifications et la doc PWA reflètent le comportement réel", () => {

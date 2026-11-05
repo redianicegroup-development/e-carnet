@@ -1,12 +1,15 @@
 /**
  * Règles du hors connexion, sans dépendance (testable en Node).
  *
- * Deux copies locales existent, et seulement deux :
+ * Copies locales (décision du 05/11/2026, qui remplace celle du 02/11/2026 « deux copies seulement ») :
  *  1. la carte d'urgence publique ouverte par QR (24 h, IndexedDB `ecarnet-public-emergency-v1`) ;
- *  2. les déclarations du carnet, en lecture seule (7 jours, IndexedDB `ecarnet-offline-v1`), décision du 02/11/2026.
+ *  2. une copie CHIFFRÉE des lectures de l'API (IndexedDB `ecarnet-offline-cache-v1`) : AES-GCM 256 avec une clé non extractible,
+ *     noms des entrées hachés (HMAC-SHA-256), 7 jours pour les données du patient, 24 h pour celles de tiers (patients d'un
+ *     médecin, dossiers d'un établissement), effacée à la déconnexion, au changement de compte ou de profil, et à la demande ;
+ *  3. l'ancienne copie en clair des déclarations (`ecarnet-offline-v1`) n'est plus écrite : elle est effacée au démarrage.
  *
- * Rien d'autre n'est conservé : ni historique, ni consultations, ni documents, ni agenda, ni réponse d'API.
- * Les constantes de la copie des déclarations sont dupliquées dans `public/hors-connexion.js` (qui ne peut pas importer
+ * Jamais conservés : réponses non JSON (documents, images, signatures), jetons et QR, administration, journal d'audit.
+ * Les constantes de la copie des déclarations restent dupliquées dans `public/hors-connexion.js` (qui ne peut pas importer
  * ce module) ; `tests/hors-connexion-2026-11-02.test.mjs` vérifie qu'elles restent identiques.
  */
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -124,4 +127,71 @@ export function pruneSnapshot(snapshot: OfflineSnapshot | null | undefined, now:
   }
   if (Object.keys(declarations).length === 0) return null;
   return { ...snapshot, declarations };
+}
+
+
+/* ---------- copie chiffrée des lectures de l'API (05/11/2026) ---------- */
+
+/** Copie chiffrée des lectures de l'API : active par défaut. Le réglage « Hors connexion » (le même que celui des déclarations) la coupe et l'efface. */
+export const OFFLINE_CACHE_DEFAULT_ENABLED = true;
+export const CACHE_DB_NAME = "ecarnet-offline-cache-v1";
+export const CACHE_ENTRY_STORE = "entries";
+export const CACHE_META_STORE = "meta";
+/** Données de tiers (patients d'un médecin, dossiers d'un établissement) : durée plus courte que celle du patient pour ses propres données. */
+export const THIRD_PARTY_CACHE_MAX_AGE_MS = DAY_MS;
+export const CACHE_MAX_ENTRY_CHARS = 1_000_000;
+export const CACHE_MAX_ENTRIES = 300;
+/** En-tête posé sur une réponse servie depuis la copie locale (date ISO de l'enregistrement). */
+export const OFFLINE_COPY_HEADER = "X-Ecarnet-Offline-Copy";
+
+export type CacheArea = "identity" | "patient" | "professional" | "establishment";
+
+const CACHEABLE_PREFIXES: { prefix: string; area: CacheArea }[] = [
+  { prefix: "/api/v1/identity/me/", area: "identity" },
+  { prefix: "/api/v1/patient/", area: "patient" },
+  { prefix: "/api/v1/professionals/", area: "professional" },
+  { prefix: "/api/v1/establishments/", area: "establishment" },
+];
+/** Jetons, QR, secrets, récupération de compte, fichiers et exports : jamais copiés, même sous un préfixe autorisé. */
+const NEVER_CACHE = /\/(csrf|health|qr|access-qr|token|tokens|secret|secrets|recovery|otp|totp|password|file|files|download|export|pdf|media|signature|credentials|push)(\/|$)/i;
+
+function splitPath(path: string): { route: string; segments: string[] } {
+  const route = path.split("?")[0].split("#")[0];
+  return { route, segments: route.split("/").filter(Boolean) };
+}
+
+/** `path` = chemin + requête de l'API (« /api/v1/patient/declarations/?x=1 »). */
+export function isCacheablePath(path: string): boolean {
+  if (typeof path !== "string" || !path.startsWith("/api/v1/") || path.includes("..")) return false;
+  const { route } = splitPath(path);
+  if (NEVER_CACHE.test(route)) return false;
+  return CACHEABLE_PREFIXES.some((item) => route.startsWith(item.prefix));
+}
+
+export function cacheArea(path: string): CacheArea | null {
+  const { route } = splitPath(path);
+  return CACHEABLE_PREFIXES.find((item) => route.startsWith(item.prefix))?.area ?? null;
+}
+
+/** Durée de conservation : 7 jours pour le patient et son compte, 24 h pour les données de tiers. */
+export function cacheTtlMs(path: string): number {
+  const area = cacheArea(path);
+  return area === "professional" || area === "establishment" ? THIRD_PARTY_CACHE_MAX_AGE_MS : SNAPSHOT_MAX_AGE_MS;
+}
+
+/** Une écriture invalide les lectures de la même ressource (les 4 premiers segments : « /api/v1/patient/declarations/ », sans l'identifiant). */
+export function cacheGroup(path: string): string {
+  const { segments } = splitPath(path);
+  return `/${segments.slice(0, 4).join("/")}/`;
+}
+
+/**
+ * Écritures qui changent ce que le serveur répond pour TOUT le reste (compte, espace actif, profil enfant actif, établissement actif) :
+ * la copie entière est effacée plutôt que de risquer d'afficher les données d'un autre contexte sous le nom du nouveau.
+ */
+export function changesSessionScope(path: string, method: string): boolean {
+  if (method.toUpperCase() === "GET") return false;
+  const { route } = splitPath(path);
+  if (route.startsWith("/api/v1/identity/")) return !route.startsWith("/api/v1/identity/me/");
+  return /\/representations\//.test(route) || route.startsWith("/api/v1/establishments/active/");
 }

@@ -68,11 +68,11 @@ test("chaque usage du stockage navigateur est connu, et déclaré dans la politi
   const walk = (dir) => readdirSync(dir).flatMap((name) => { const full = `${dir}/${name}`; return statSync(full).isDirectory() ? walk(full) : /\.(ts|tsx)$/.test(name) ? [full] : []; });
   const root = new URL("../src", import.meta.url).pathname;
   const offenders = walk(root).filter((file) => /\b(localStorage|sessionStorage|indexedDB)\b/.test(readFileSync(file, "utf8")) && !file.includes("/confidentialite/") && !file.includes("/tests/")).map((file) => file.slice(root.length + 1)).sort();
-  assert.deepEqual(offenders, ["components/ScrollToTopOnNavigate.tsx", "lib/emergency-card-offline.ts", "lib/offline-snapshot.ts", "lib/themeStorage.ts"], `usage du stockage navigateur non déclaré : ${offenders.join(", ")}`);
+  assert.deepEqual(offenders, ["components/ScrollToTopOnNavigate.tsx", "lib/emergency-card-offline.ts", "lib/offline-cache.ts", "lib/offline-snapshot.ts", "lib/themeStorage.ts"], `usage du stockage navigateur non déclaré : ${offenders.join(", ")}`);
   const privacy = read("confidentialite");
   assert.match(privacy, /copie du thème d’apparence choisi/i);
   assert.match(privacy, /se synchronise lorsque vous utilisez un autre appareil/i);
-  assert.match(privacy, /Copie hors connexion des déclarations \(IndexedDB\)/);
+  assert.match(privacy, /Copie hors connexion chiffrée \(IndexedDB\)/);
   assert.match(privacy, /Carte d’urgence ouverte par QR \(IndexedDB\)/);
   assert.match(privacy, /sessionStorage[^.]*chemin[^.]*10 secondes/i, "le scroll du pied de page public est temporaire et décrit");
   // Le thème (localStorage) ne touche pas aux autres mécanismes ; l’indicateur de défilement (sessionStorage) ne garde qu'un chemin et une date.

@@ -54,11 +54,11 @@ test("connexion sociale : les boutons se partagent la largeur (Google seul = tou
   assert.match(css, /\.ax-social \{ flex: 1 1 0; min-width: 0;/);
 });
 
-test("hors connexion : page d'explication de l'app (pas celle de Chrome), sans jamais mettre les pages privées en cache", () => {
+test("hors connexion : coquille des pages privées gardée (HTML sans donnée), sinon page d'explication de l'app (pas celle de Chrome)", () => {
   const sw = read("public/sw.js");
   assert.match(sw, /const OFFLINE_URL = "\/hors-connexion\.html"/);
   assert.match(sw, /PRIVATE_PAGES = \["\/patient", "\/professionnel"/);
-  assert.match(sw, /fetch\(request\)\.catch\(async \(\) => \(await caches\.match\(OFFLINE_URL\)\)/);
-  assert.doesNotMatch(sw, /cache\.put\(request[^)]*\)[^;]*\/patient/);
+  assert.match(sw, /\(await cache\.match\(shellKey\(url\), \{ ignoreVary: true \}\)\) \|\| \(await caches\.match\(OFFLINE_URL\)\)/);
+  assert.doesNotMatch(sw, /\/api\/[^\n]*cache\.put|cache\.put\([^)]*\/api\//, "aucune réponse d'API n'est gardée par le service worker");
   assert.match(read("public/hors-connexion.html"), /Vous êtes hors connexion/);
 });

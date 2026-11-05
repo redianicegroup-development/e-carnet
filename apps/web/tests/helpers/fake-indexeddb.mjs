@@ -1,6 +1,13 @@
 // Faux IndexedDB minimal (open, object stores, get/put/delete, curseur, transactions qui se valident) pour tester le vrai code
 // de src/lib/*.ts sans navigateur. Les valeurs sont copiées (structured clone) comme dans un vrai navigateur.
-const clone = (value) => (value === undefined ? undefined : JSON.parse(JSON.stringify(value)));
+// Copie structurée : comme JSON (les propriétés `undefined` disparaissent) mais en laissant passer les CryptoKey, que JSON détruirait.
+function cloneDeep(value) {
+  if (value === null || typeof value !== "object") return value;
+  if (typeof CryptoKey !== "undefined" && value instanceof CryptoKey) return value;
+  if (Array.isArray(value)) return value.map((item) => (item === undefined ? null : cloneDeep(item)));
+  return Object.fromEntries(Object.entries(value).filter(([, item]) => item !== undefined).map(([key, item]) => [key, cloneDeep(item)]));
+}
+const clone = (value) => (value === undefined ? undefined : cloneDeep(value));
 const tick = (fn) => setTimeout(fn, 0);
 
 export function createFakeIndexedDB() {
@@ -11,9 +18,9 @@ export function createFakeIndexedDB() {
       objectStoreNames: { contains: (name) => data.stores.has(name) },
       createObjectStore(name, { keyPath }) { data.stores.set(name, { keyPath, rows: new Map() }); },
       close() {},
-      transaction(storeName) {
-        const store = data.stores.get(storeName);
-        if (!store) throw new Error(`NotFoundError: ${storeName}`);
+      transaction(storeNames) {
+        const names = Array.isArray(storeNames) ? storeNames : [storeNames];
+        for (const name of names) if (!data.stores.get(name)) throw new Error(`NotFoundError: ${name}`);
         const tx = { oncomplete: null, onerror: null, onabort: null };
         let pending = 0;
         let finished = false;
@@ -28,7 +35,7 @@ export function createFakeIndexedDB() {
           });
           return request;
         };
-        tx.objectStore = () => ({
+        tx.objectStore = (requested) => { const store = data.stores.get(requested ?? names[0]); return ({
           get: (key) => run({}, () => clone(store.rows.get(key))),
           put: (value) => run({}, () => { store.rows.set(value[store.keyPath], clone(value)); return value[store.keyPath]; }),
           delete: (key) => run({}, () => { store.rows.delete(key); }),
@@ -56,7 +63,7 @@ export function createFakeIndexedDB() {
             step();
             return request;
           },
-        });
+        }); };
         settle(); // une transaction sans requête se valide aussi
         return tx;
       },

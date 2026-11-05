@@ -22,6 +22,9 @@ import { LandingFeedbackWidget } from "../components/LandingFeedbackWidget";
 import { GooeyFilters } from "../components/ui/GooeyFilters";
 import { ConfirmProvider } from "../components/modal/ConfirmProvider";
 import { CookieConsentBanner } from "../components/CookieConsentBanner";
+import { NetworkProvider } from "../components/network/NetworkProvider";
+import { OfflineBanner } from "../components/network/OfflineBanner";
+import "../components/network/network-banner.css";
 import { PROJECT_LOGO_WEBP } from "../lib/brand";
 import "./cookie-consent.css";
 import "./screen-loader.css";
@@ -62,5 +65,5 @@ export const metadata: Metadata = {
 export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#FFF7E6" };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
-  return <html lang="fr" className={localFontClasses}><body><GooeyFilters /><ThemeBootstrap /><AnonymousVisitorTracker /><PwaRegister /><ConfirmProvider>{children}</ConfirmProvider><CookieConsentBanner /><LandingFeedbackWidget /></body></html>;
+  return <html lang="fr" className={localFontClasses}><body><NetworkProvider><OfflineBanner /><GooeyFilters /><ThemeBootstrap /><AnonymousVisitorTracker /><PwaRegister /><ConfirmProvider>{children}</ConfirmProvider><CookieConsentBanner /><LandingFeedbackWidget /></NetworkProvider></body></html>;
 }
