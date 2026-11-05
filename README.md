@@ -108,4 +108,4 @@ Développement, staging et pilote n’utilisent que des données fictives (`exam
 
 ### Accès établissement — A6/A7
 
-Un administrateur actif peut consulter la liste sans contenu clinique, ouvrir un dossier de sa propre structure avec un motif obligatoire et lire temporairement les soins locaux. L’ouverture est journalisée, notifiée au patient et visible dans son historique. Les notifications sont coalescées sans réduire l’audit ; l’ancien endpoint `patient-records/` répond `410`. La validation juridique A8 reste requise avant l’usage de données réelles.
+Un administrateur actif peut consulter la liste sans contenu clinique ; l’ouverture d’un dossier de sa propre structure (motif obligatoire, 30 minutes, lecture temporaire des soins locaux) est **désactivée par défaut** (`ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ`) et n’a pas encore d’écran. Voir `docs/DONNEES-REELLES-DECISION.md`. L’ouverture est journalisée, notifiée au patient et visible dans son historique. Les notifications sont coalescées sans réduire l’audit ; l’ancien endpoint `patient-records/` répond `410`. La validation juridique A8 reste requise avant l’usage de données réelles.

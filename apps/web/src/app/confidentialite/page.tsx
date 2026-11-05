@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { DATA_POLICY } from "../../lib/data-policy";
 import Link from "next/link";
 import { Fill, LegalDocument, LegalTable, type LegalSectionDef } from "../../components/public/LegalDocument";
 import { CookiePreferencesLink } from "../../components/CookieConsentBanner";
@@ -125,7 +126,7 @@ const sections: LegalSectionDef[] = [
     title: "Prestataires et services tiers",
     body: (
       <>
-        <p>Liste des prestataires de l’<strong>environnement de production interne</strong>. Cet environnement accepte de vraies informations de santé ; les services susceptibles de les traiter, leurs régions et leurs accès doivent donc rester documentés et vérifiés.</p>
+        <p>Liste des prestataires de l’<strong>{DATA_POLICY.environmentLabel}</strong>. {DATA_POLICY.providersNote}</p>
         <LegalTable
           caption="Prestataires et services tiers"
           head={["Service", "Rôle", "Données concernées", "Lieu de traitement"]}
@@ -135,7 +136,7 @@ const sections: LegalSectionDef[] = [
             ["Google, Facebook (Meta), Apple", "Connexion, uniquement si vous choisissez cette méthode.", "Identifiant, adresse e-mail, nom, adresse de l’image de profil.", "Selon les conditions de chaque fournisseur, qui agit pour son propre compte."],
           ]}
         />
-        <p>La production interne accepte la saisie de vraies informations de santé. Les prestataires listés peuvent traiter les données nécessaires à leur rôle dans le service ; les régions, copies de sauvegarde et modalités d’accès d’assistance ne sont pas toutes confirmées.</p>
+        <p>{DATA_POLICY.inputNote}</p>
       </>
     ),
   },
@@ -146,7 +147,7 @@ const sections: LegalSectionDef[] = [
       <>
         <p>Les prestataires de l’environnement actuel sont des services internationaux. Leurs régions d’hébergement et l’emplacement de leurs copies de sauvegarde ne sont pas confirmés. <strong>Aucune garantie de localisation des données en Côte d’Ivoire n’est donnée pour cet environnement.</strong></p>
         <p>Régime applicable aux transferts : <Fill k="privacy.transfers" />.</p>
-        <p>Un hébergement en Côte d’Ivoire est à l’étude. Comme la production interne traite déjà de vraies données de santé, les régions d’hébergement, les copies, les journaux et les accès d’assistance doivent être confirmés pour chaque prestataire ; le service n’est pas ouvert au grand public.</p>
+        <p>{DATA_POLICY.hostingNote}</p>
       </>
     ),
   },

@@ -28,10 +28,26 @@ logger = logging.getLogger(__name__)
 
 
 VIEW_EVENT_TYPES = ("clinical_data.read", "establishment_record.opened")
+DEFAULT_RECORD_OPENING_TTL_MINUTES = 30
+MAX_RECORD_OPENING_TTL_MINUTES = 240
+
+
+def record_opening_ttl_minutes():
+    """Durée d'une ouverture de dossier : 30 minutes par défaut, 4 heures au plus. Une ouverture n'est jamais sans limite :
+    0, une valeur négative ou illisible reviennent à la valeur par défaut (ADR-002 : accès local temporaire, motivé, audité, notifié)."""
+    try:
+        minutes = int(getattr(settings, "ECARNET_RECORD_OPENING_TTL_MINUTES", DEFAULT_RECORD_OPENING_TTL_MINUTES))
+    except (TypeError, ValueError):
+        minutes = DEFAULT_RECORD_OPENING_TTL_MINUTES
+    if minutes <= 0:
+        minutes = DEFAULT_RECORD_OPENING_TTL_MINUTES
+    return min(minutes, MAX_RECORD_OPENING_TTL_MINUTES)
+
+
 def record_opening_expiry(now):
-    """Fin de validité d'une ouverture : aucune limite par défaut (décision ETA-09), ou now + ECARNET_RECORD_OPENING_TTL_MINUTES si elle est réglée."""
-    minutes = getattr(settings, "ECARNET_RECORD_OPENING_TTL_MINUTES", 0)
-    return now + timedelta(minutes=minutes) if minutes > 0 else None
+    return now + timedelta(minutes=record_opening_ttl_minutes())
+
+
 BULK_ACCESS_WINDOW = timedelta(hours=1)
 BULK_ACCESS_THRESHOLD = 15
 DEFAULT_PAGE_SIZE = 25
@@ -243,7 +259,7 @@ class EstablishmentRecordOpeningCreateView(APIView):
     def post(self, request, establishment_id, patient_id):
         if not request.user.is_active:
             return Response({"success": False, "message": "Accès réservé à l’administrateur actif de cet établissement."}, status=403)
-        if not getattr(settings, "ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ", True):
+        if not getattr(settings, "ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ", False):
             return Response({"success": False, "message": "La consultation des dossiers est temporairement désactivée."}, status=403)
 
         # Verrou établissement + affectation : sérialise les ouvertures et permet une seule alerte au franchissement du seuil.
@@ -335,7 +351,7 @@ class EstablishmentRecordView(APIView):
     def get(self, request, establishment_id, opening_id):
         if not request.user.is_active:
             return Response({"success": False, "message": "Accès établissement refusé."}, status=403)
-        if not getattr(settings, "ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ", True):
+        if not getattr(settings, "ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ", False):
             return Response({"success": False, "message": "La consultation des dossiers est temporairement désactivée."}, status=403)
         administrator = active_administrator(request.user, establishment_id)
         if not administrator:
@@ -349,7 +365,7 @@ class EstablishmentRecordView(APIView):
             return Response({"success": False, "message": "Ouverture introuvable."}, status=404)
         if opening.opened_by_id != request.user.pk:
             return Response({"success": False, "message": "Cette ouverture appartient à un autre administrateur."}, status=403)
-        if opening.expires_at and opening.expires_at <= timezone.now():
+        if not opening.expires_at or opening.expires_at <= timezone.now():  # sans échéance = ancienne ouverture « sans limite » : refusée
             return Response({"success": False, "message": "Cette ouverture a expiré. Demandez un nouvel accès avec un motif."}, status=403)
         if not active_administrator(request.user, establishment_id):
             return Response({"success": False, "message": "Votre habilitation établissement n’est plus active."}, status=403)

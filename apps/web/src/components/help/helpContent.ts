@@ -1,4 +1,5 @@
 import type { IconName } from "../ui/Icon";
+import { DATA_POLICY } from "../../lib/data-policy";
 
 /**
  * Contenu de l'aide. Chaque phrase décrit ce que le produit fait réellement (parcours patient, professionnel,
@@ -113,7 +114,7 @@ export const HELP_FAQ: HelpFaqGroup[] = [
     id: "donnees",
     title: "Données et sécurité",
     items: [
-      { q: "Puis-je saisir mes vraies données de santé ?", a: "Oui. En production interne, de vraies informations de santé peuvent être saisies dans l’espace du patient. L’infirmier n’a pas de compte : la pré-consultation se fait dans cet espace. Le service n’est pas ouvert au grand public.", profiles: ["patient", "professional", "establishment"] },
+      { q: DATA_POLICY.faq.q, a: DATA_POLICY.faq.a, profiles: ["patient", "professional", "establishment"] },
       { q: "Les données sont-elles disponibles hors connexion ?", a: "En partie, dans l’espace patient. Sans réseau, vous ouvrez l’application et consultez vos déclarations, et celles des profils enfants déjà ouverts en ligne, en lecture seule. L’historique, les consultations, les documents et l’agenda ne sont jamais conservés sur l’appareil. Cette copie est effacée à la déconnexion et après 7 jours, et se désactive dans Paramètres, rubrique Hors connexion. La carte d’urgence ouverte par QR reste lisible 24 heures sur l’appareil qui l’a ouverte.", profiles: ["patient", "professional", "establishment"] },
       { q: "Comment sont protégées mes informations ?", a: "Le service applique les mesures techniques décrites dans les pages Sécurité et Confidentialité.", profiles: ["patient", "professional", "establishment"] },
       { q: "Quelles données de fréquentation sont collectées ?", a: "Avec votre accord, un cookie aléatoire aide à compter les catégories de pages, certains clics publics et des événements de connexion. Le suivi ne conserve ni URL complète, ni adresse IP, ni texte de bouton.", profiles: ["patient", "professional", "establishment"] },

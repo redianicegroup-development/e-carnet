@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DATA_POLICY } from "../../lib/data-policy";
 import type { Metadata } from "next";
 import { BrandMark } from "../../components/ui/BrandMark";
 
@@ -15,7 +16,7 @@ const included = [
   "Consentement patient via AccessGrant limité dans le temps",
   "Pré-consultation clôturée par le médecin et consultation professionnelle traçable",
   "Audit des accès et des décisions sensibles",
-  "Isolation stricte entre établissements et donnée fictive uniquement",
+  DATA_POLICY.v1Scope,
 ];
 
 const excluded = [

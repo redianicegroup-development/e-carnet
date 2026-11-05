@@ -1,4 +1,5 @@
 import type { IconName } from "../components/ui/Icon";
+import { DATA_POLICY } from "./data-policy";
 
 /* Contenu de la landing. Règle : chaque phrase décrit ce que le produit fait réellement et reprend les réserves de la
    revue juridique (pas de « à tout moment », pas de « vérifié », pas de promesse de sécurité absolue).
@@ -71,7 +72,7 @@ export type FaqItem = {
    Chaque réponse est recopiée mot pour mot de components/help/helpContent.ts (texte relu par les juristes) :
    tests/landing.test.mjs échoue si l'une des deux versions change sans l'autre. */
 export const FAQ_ITEMS: FaqItem[] = [
-  { id: "real-data", q: "Puis-je saisir mes vraies données de santé ?", a: "Oui. En production interne, de vraies informations de santé peuvent être saisies dans l’espace du patient. L’infirmier n’a pas de compte : la pré-consultation se fait dans cet espace. Le service n’est pas ouvert au grand public." },
+  { id: "real-data", q: DATA_POLICY.faq.q, a: DATA_POLICY.faq.a },
   { id: "consent", q: "Un professionnel voit-il mon carnet automatiquement ?", a: "Non. Il doit être rattaché à un établissement actif, puis recevoir votre autorisation pour un contenu précis et une durée limitée." },
   { id: "refuse", q: "Puis-je refuser ou arrêter un accès ?", a: "Oui. Vous pouvez refuser une demande, ou révoquer un accès en cours depuis votre espace. La révocation n’efface pas les consultations déjà validées ni les traces d’audit." },
   { id: "verified", q: "Un professionnel est-il vérifié par Mon E-Carnet ?", a: "Non. Mon E-Carnet ne certifie ni l’identité, ni les diplômes, ni la compétence d’un professionnel. L’établissement confirme le rattachement du professionnel à sa structure." },
