@@ -1,3 +1,5 @@
+> **Référence d’état auditée le 05/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-05.md`](ETAT-REEL-PROJET-2026-11-05.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
+
 # Mon Carnet Numérique — plan de production V1 → V3
 
 > **Décision d’architecture — 08/10/2026** : utiliser **Vercel (frontend) + Render (API Django) + Neon (PostgreSQL)** en V1/V2. Ne pas migrer vers un VPS avant réévaluation après V2 fondée sur des besoins et mesures réels.

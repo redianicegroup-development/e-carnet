@@ -1,3 +1,5 @@
+> **Référence d’état auditée le 05/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-05.md`](ETAT-REEL-PROJET-2026-11-05.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
+
 # À propos, Crédits, en-tête et pied de page — 16 octobre 2026
 
 Base : `e-carnet_v_12.zip`. Livraison en ZIP différentiel (chemins d'origine conservés).

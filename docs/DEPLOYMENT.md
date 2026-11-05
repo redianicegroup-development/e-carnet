@@ -1,3 +1,5 @@
+> **Référence d’état auditée le 05/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-05.md`](ETAT-REEL-PROJET-2026-11-05.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
+
 # Développement, Docker et déploiement
 
 **Revu le 08/10/2026.** Les données restent fictives. PostgreSQL 16 local et restauration isolée ont une preuve réussie ; aucun staging/production n’est déclaré prêt.
@@ -72,7 +74,9 @@ Lier une identité secondaire doit se faire après connexion au compte existant;
 
 Le flow d’invitation est présent côté API/UI : lien hashé à usage unique valable 48 h, activation et choix du mot de passe par le destinataire. L’API n’inclut jamais le jeton brut dans sa réponse staff ; l’e-mail d’invitation le transporte. L’envoi utilise le backend SMTP configurable : configurer et tester les identifiants SMTP, SPF/DKIM/DMARC et le domaine expéditeur en staging avant production. Les preuves légales de la structure sont examinées hors application ; leur rétention, leurs accès et leur suppression restent à décider avec conseil juridique. Les justificatifs professionnels des médecins ne sont pas collectés par la plateforme. La cible d’hébergement retenue par le CDC est désormais Hodi Site Pro pour un staging/pilote fictif, sous réserve des confirmations écrites sur les données de santé, le stockage privé, les sauvegardes et la copie en Europe. Aucun basculement de données réelles n’est autorisé sur cette seule décision.
 
-## Tâches planifiées et limites de débit
+## Tâches planifiées, surveillance et limites de débit
+
+ADM-10 est livré côté dépôt avec une sonde serveur toutes les cinq minutes et une sonde HTTP indépendante. Installer les exemples `ops/monitoring-cron.example` et `ops/monitoring-external-cron.example`, renseigner les secrets hors Git et suivre `docs/MONITORING-WEBHOOK.md`. Cette présence dans le dépôt ne constitue pas une installation sur l’hébergeur.
 
 - `python manage.py cleanup_access_qr_tokens` : supprime les QR de consultation expirés ou consommés depuis plus de 24 h (`--retention-hours N`). À planifier chaque jour (cron Render ou équivalent) ; sans elle, les jetons expirés s’accumulent, sans risque d’accès mais avec un coût de stockage.
 - Limites ajoutées le 14/10 : `ECARNET_RATE_QR_CREATE` (création de QR de consultation, défaut `30/hour`) et `ECARNET_RATE_EMERGENCY_CARD` (page publique de carte d’urgence, par IP, défaut `120/hour`). Le cache de limitation doit être partagé entre instances en production.

@@ -1,0 +1,18 @@
+# Hodi/cPanel ou cron système — environnement chargé depuis un fichier protégé
+# (chmod 600), jamais depuis le dépôt.
+*/5 * * * * cd /home/UTILISATEUR/ecarnet && set -a && . /home/UTILISATEUR/.config/ecarnet/monitoring.env && set +a && /bin/bash ops/monitoring-check.sh >> /home/UTILISATEUR/logs/ecarnet-monitoring.log 2>&1
+
+# Variables minimales attendues dans monitoring.env :
+# ECARNET_MONITOR_BASE_URL=https://api-staging.example.tld
+# ECARNET_MONITOR_EVENT_BASE_URL=https://api-staging.example.tld
+# ECARNET_MONITOR_WEBHOOK_SECRET=<secret dédié, différent de DJANGO_SECRET_KEY>
+# ECARNET_MONITOR_REQUIRE_COMPONENTS=true
+# ECARNET_MONITOR_DATABASE_HOST=127.0.0.1
+# ECARNET_MONITOR_DATABASE_PORT=5432
+# ECARNET_MONITOR_CACHE_HOST=127.0.0.1
+# ECARNET_MONITOR_CACHE_PORT=6379
+# ECARNET_MONITOR_STORAGE_PATH=/home/UTILISATEUR/ecarnet/apps/api/private-media
+# ECARNET_MONITOR_BACKUP_DIR=/home/UTILISATEUR/backups
+# ECARNET_MONITOR_BACKUP_MAX_AGE_SECONDS=90000
+# ECARNET_MONITOR_SMTP_HOST=smtp.example.tld
+# ECARNET_MONITOR_SMTP_PORT=587

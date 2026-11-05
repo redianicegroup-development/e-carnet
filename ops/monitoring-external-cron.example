@@ -1,0 +1,8 @@
+# À installer sur une machine ou un service de supervision indépendant de Hodi.
+# Le fichier d’environnement est hors dépôt, chmod 600.
+*/5 * * * * cd /opt/ecarnet-monitor && set -a && . /etc/ecarnet-monitor.env && set +a && /bin/bash ops/monitoring-external-check.sh >> /var/log/ecarnet-monitoring-external.log 2>&1
+
+# Variables :
+# ECARNET_EXTERNAL_MONITOR_BASE_URL=https://api-staging.example.tld
+# ECARNET_EXTERNAL_MONITOR_EVENT_BASE_URL=https://api-staging.example.tld
+# ECARNET_EXTERNAL_MONITOR_WEBHOOK_SECRET=<secret webhook dédié, jamais le secret applicatif>

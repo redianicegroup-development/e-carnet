@@ -1,3 +1,5 @@
+> **Référence d’état auditée le 05/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-05.md`](ETAT-REEL-PROJET-2026-11-05.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
+
 # Flow établissement et rattachement médecin
 
 **Décision du porteur : 05/10/2026 — version 3, amendée le 08/10/2026 (conditions, résiliation, données médicales et cloisonnement).** Cette note est la référence métier pour l’accès établissement en V1. Le rôle « Root » global n’est pas retenu; on parle d’**administrateur établissement**.

@@ -1,3 +1,5 @@
+> **Référence d’état auditée le 05/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-05.md`](ETAT-REEL-PROJET-2026-11-05.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
+
 # Mon E‑Carnet — modifications du 18 octobre 2026 (base : `e-carnet_v15.zip`)
 
 Lot 1 sur 5 du plan validé : **identité du titulaire** et **flow pré-consultation → consultation**. Les lots suivants (documents joints, vaccins, ordonnance imprimable) ne sont pas dans cette archive.

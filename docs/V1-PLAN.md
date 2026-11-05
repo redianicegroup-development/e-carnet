@@ -1,3 +1,5 @@
+> **Référence d’état auditée le 05/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-05.md`](ETAT-REEL-PROJET-2026-11-05.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
+
 # Plan d’implémentation — V1 de Mon Carnet Numérique
 
 **État revu le 26/10/2026 :** V1 en construction, non acceptée. Ce plan décrit le périmètre V1 ; le backlog réel et classé V1 à V6 est désormais dans [RESTE-A-FAIRE-ACTUEL-V1-A-V6.md](RESTE-A-FAIRE-ACTUEL-V1-A-V6.md). Comparer chaque point au [code et aux preuves](ETAT-REEL-V1.md). Les prototypes ne dictent que la direction visuelle. Les changements B2-C2 et A6-A7 ont passé les contrôles ciblés ; la recette staging et les validations médicales/juridiques restent nécessaires.

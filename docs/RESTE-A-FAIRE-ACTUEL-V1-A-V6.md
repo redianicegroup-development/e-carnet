@@ -1,3 +1,5 @@
+> **Référence d’état auditée le 05/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-05.md`](ETAT-REEL-PROJET-2026-11-05.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
+
 # Mon E-Carnet — Reste à faire réel et feuille de route V1 à V6
 
 **Document de référence : 31 octobre 2026** (remplace la version du 29 octobre)  
@@ -128,7 +130,7 @@
 
 - Corriger les 6 tests web en échec (aide, rattachement médecin, QR visite, schémas, stockage local, cache de thème), puis rejouer la suite complète.
 - Exécuter la CI déjà écrite (`.github/workflows/ci.yml`) et corriger ses échecs : lint, typecheck, build, tests web, e2e Playwright, tests Django sur PostgreSQL 16 et `makemigrations --check`.
-- Mettre en place une surveillance sans contenu médical : erreurs frontend/backend, disponibilité, échec SMTP et tâches de nettoyage. Les scripts `ops/monitoring-check.sh` et `ops/send-monitoring-event.py` existent ; la sonde externe n'est pas branchée et le webhook ne garde pas la mémoire des événements dans sa fenêtre de 300 secondes.
+- Mettre en place une surveillance sans contenu médical : erreurs frontend/backend, disponibilité, échec SMTP et tâches de nettoyage. Les scripts `ops/monitoring-check.sh`, `ops/monitoring-external-check.sh` et `ops/send-monitoring-event.py` sont livrés, avec cron exemples, webhook anti-rejeu et runbook. Il reste à installer les sondes, renseigner les secrets/destinataires et produire la preuve de recette staging ; la mémoire des événements est assurée par `MonitoringWebhookEvent`.
 - Auditer les dépendances actuelles et traiter les alertes ; migrer `authlib.jose` vers `joserfc` ou documenter la décision.
 - Vérifier rate limiting, cookies, CSRF, domaines réels, headers, cache et absence de secrets dans le navigateur.
 - Audit WCAG 2.2 AA manuel restant : clavier, lecteur d’écran, focus, zoom 200 %, reflow 320 px, erreurs et annonces d’état ; l’audit axe automatisé passe à 0 violation sur 10 routes locales.

@@ -1,3 +1,5 @@
+> **Référence d’état auditée le 05/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`docs/ETAT-REEL-PROJET-2026-11-05.md`](docs/ETAT-REEL-PROJET-2026-11-05.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
+
 # 26/10/2026 — Dossier commun, carte avec métier, étape 3 professionnel en un bloc
 
 Base : `e-carnet_v2-2.zip`, puis réappliqué le 27/10 sur `e-carnet-3.zip` (qui n'en contenait que les nouveaux fichiers : 6 erreurs de types ; réparé, aucun conflit avec les fichiers de monitoring). Reprend et termine le paquet « maj 2026-10-25 » (dossier, carte, onboarding) sans rien écraser de v2-2

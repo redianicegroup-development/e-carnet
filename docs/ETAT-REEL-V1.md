@@ -1,3 +1,5 @@
+> **Référence d’état auditée le 05/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-05.md`](ETAT-REEL-PROJET-2026-11-05.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
+
 # État réel du projet — V1
 
 **État documentaire revu : 13/10/2026 — base v1.8 et modifications locales vérifiées**
@@ -82,7 +84,7 @@ Le nouveau flow est **largement présent** :
 - isolation entre établissements et espace établissement : liste sans contenu, ouverture locale avec motif obligatoire, lecture temporaire auditée et notification patient ; aucune lecture inter-établissements par l’administrateur ;
 - pages web de console staff, activation d’invitation, gestion établissement et rattachements présentes.
 
-Limites restantes : configurer et vérifier SMTP/délivrabilité en staging, tester les permissions et durcir la console staff avant production. Ne jamais réintroduire le jeton brut dans une réponse API.
+Limites restantes : configurer et vérifier SMTP/délivrabilité en staging, installer les sondes ADM-10, exécuter la recette d’incident sur staging, tester les permissions et conserver les validations juridiques/médicales avant production. Ne jamais réintroduire le jeton brut dans une réponse API.
 
 ### Frontend et PWA
 

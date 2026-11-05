@@ -1,3 +1,5 @@
+> **Référence d’état auditée le 05/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-05.md`](ETAT-REEL-PROJET-2026-11-05.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
+
 # Trois types de boutons, gooey partout, centre d'aide unique, landing en six sections — 17 octobre 2026
 
 Base : `e-carnet_v15.zip` (peau minimaliste et neumorphique `soft-skin.css`, récupération de compte). Rien de ta v15 n'est écrasé : ta peau reste la matière du carnet, les ajouts viennent par-dessus. Livré en deux ZIP : le projet complet (`e-carnet_v16.zip`) et le ZIP différentiel avec son manifeste.

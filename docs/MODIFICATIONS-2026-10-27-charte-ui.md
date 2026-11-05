@@ -1,3 +1,5 @@
+> **Référence d’état auditée le 05/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`docs/ETAT-REEL-PROJET-2026-11-05.md`](docs/ETAT-REEL-PROJET-2026-11-05.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
+
 # Modifications du 27/10/2026 — charte graphique, accueils, onglets, KPI établissement, onboarding, admin
 
 Base : e-carnet-4.zip. Tests : 199 réussis, 6 en échec déjà présents avant les modifications (aide, rattachement médecin, QR visite, schémas, stockage local, cache de thème), sans lien avec ces changements. Le projet n'a pas pu être compilé ici (pas de node_modules) : la syntaxe de chaque .tsx modifié a été vérifiée, pas le typage complet ; les graphiques Recharts n'ont pas été affichés.

@@ -1,3 +1,5 @@
+> **Référence d’état auditée le 05/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-05.md`](ETAT-REEL-PROJET-2026-11-05.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
+
 # Fusion de la landing dans la v11 — 15 octobre 2026
 
 **Base prioritaire : `e-carnet_v11.zip`.** Lot fusionné : `e-carnet-landing-updated-files.zip` (landing complète, FAQ, formulaire de contact), construit à l'origine sur la 1.9. La description de la landing est dans `MODIFICATIONS-2026-10-15.md` (inchangée). Ce document ne décrit que la fusion.

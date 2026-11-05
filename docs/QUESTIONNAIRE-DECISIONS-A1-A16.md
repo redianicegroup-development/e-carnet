@@ -1,3 +1,5 @@
+> **Référence d’état auditée le 05/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-05.md`](ETAT-REEL-PROJET-2026-11-05.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
+
 # Décisions produit et validations restantes — A1 à A16
 
 **Mise à jour : 08/10/2026.** Ce journal porte les décisions produit ; pour l’implémentation et les preuves, utiliser [l’état réel V1](ETAT-REEL-V1.md) et [la matrice de recette](RECETTE-V1.md). Les décisions ne valent ni validation médicale/juridique ni recette de déploiement.

@@ -1,3 +1,5 @@
+> **Référence d’état auditée le 05/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-05.md`](ETAT-REEL-PROJET-2026-11-05.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
+
 # Idées complémentaires avant et pendant la V2 — Mon Carnet Numérique
 
 > Pistes issues de la revue des versions 1.7 à 1.9 (14/10/2026). Elles **complètent** la V2 « prévention et suivi quotidien » de [ROADMAP-V1-V5](ROADMAP-V1-V5.md) §8 sans la remplacer : mesures, rappels de médicaments, vaccination, rendez‑vous, messagerie et contenus éducatifs restent définis là‑bas. Ce ne sont **pas des engagements** : à arbitrer après la recette et le pilote avec données fictives. Pas de données réelles avant hébergement ivoirien, validation juridique et médicale, restauration testée et Go/No‑Go formel.

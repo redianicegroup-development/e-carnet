@@ -1,3 +1,5 @@
+> **Référence d’état auditée le 05/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-05.md`](ETAT-REEL-PROJET-2026-11-05.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
+
 # Console admin, journaux, surveillance et alertes
 
 **Date :** 27 octobre 2026  
@@ -45,7 +47,7 @@ La surveillance technique ne doit pas dépendre uniquement de l’interface admi
 
 ## 3. Organisation proposée dans `/admin`
 
-Ajouter une rubrique **Surveillance technique** visible uniquement par les comptes d’exploitation autorisés, idéalement `is_superuser` ou un rôle futur `ops_admin`. Un administrateur d’établissement, un professionnel et un patient ne doivent jamais voir cette rubrique.
+La rubrique **Surveillance technique** est présente et visible uniquement par les comptes d’exploitation autorisés via `ECARNET_OPERATIONS_ADMIN_EMAILS` (avec le comportement local documenté en debug). Un administrateur d’établissement, un professionnel et un patient ne doivent jamais voir cette rubrique.
 
 ### Écran A — Vue d’ensemble
 

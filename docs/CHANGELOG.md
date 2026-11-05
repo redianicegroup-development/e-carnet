@@ -1,3 +1,5 @@
+> **Référence d’état auditée le 05/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-05.md`](ETAT-REEL-PROJET-2026-11-05.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
+
 ## 2026-11-05 — PAT-16 : rendez-vous de la demande aux rappels
 
 - **Patient** : catalogue limité aux établissements actifs à fiche complète, puis professionnels actifs rattachés ; création d’une demande avec statut « Demandé », choix du motif, du début et de la fin, et confirmation d’un créneau proposé.
@@ -222,3 +224,7 @@ Les entrées historiques consignent l’état à leur date; pour l’état coura
 - **C2** : portée `care_history`, sélection des structures sources par le patient, lecture temporaire des soins validés provenant d’autres structures, audit par établissement et absence de copie conservée en V1.
 - **A6-A7** : documentation alignée, coalescence des notifications sans réduction de l’audit, liste établissement sans contenu clinique et fermeture `410` de l’ancien endpoint.
 - **Aide et pages légales** : parcours proches, adressages, ouvertures administrateur, destinataires et limites inter-établissements actualisés ; versions légales datées du 26/10/2026, toujours en attente de validation juridique.
+
+## 2026-11-05 — audit de l’état réel et ADM-10
+
+Documentation réalignée sur le code présent. ADM-10 comprend désormais la sonde serveur multi-composants, la sonde HTTP indépendante, les exemples de planification, le webhook signé anti-rejeu et le runbook de recette. La configuration d’hébergement, les secrets et la recette staging restent à exécuter dans l’environnement cible. Référence : [`ETAT-REEL-PROJET-2026-11-05.md`](ETAT-REEL-PROJET-2026-11-05.md).

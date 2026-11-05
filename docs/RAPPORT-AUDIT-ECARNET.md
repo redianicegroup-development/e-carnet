@@ -1,3 +1,5 @@
+> **Référence d’état auditée le 05/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-05.md`](ETAT-REEL-PROJET-2026-11-05.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
+
 # Audit de conformité et d’alignement — Mon Carnet Numérique
 
 > **Audit historique du 05/10/2026, remplacé pour l’état courant.** Plusieurs constats et tâches ci-dessous ont depuis changé (notamment A9, QR, sanitizer SVG, invitation, conditions de rattachement, résiliation et tests PostgreSQL/restauration). Ne pas les traiter comme des décisions actives. Références actuelles : [état réel V1](ETAT-REEL-V1.md), [roadmap](ROADMAP-V1-V5.md), [recette](RECETTE-V1.md).

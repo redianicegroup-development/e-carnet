@@ -1,3 +1,5 @@
+> **Référence d’état auditée le 05/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-05.md`](ETAT-REEL-PROJET-2026-11-05.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
+
 # Décision « données de santé réelles » — état au 04/11/2026
 
 **Verdict affiché par le code : NON.** Mon E-Carnet est en phase de test, données fictives uniquement. Tous les textes publics (FAQ de l'accueil, Aide, politique de confidentialité, page `/v1`) lisent **un seul interrupteur** : `REAL_HEALTH_DATA_ALLOWED` dans `apps/web/src/lib/data-policy.ts` (`false`). Le NO-GO de `GO-NO-GO-2026-10-05.md` est donc respecté partout.

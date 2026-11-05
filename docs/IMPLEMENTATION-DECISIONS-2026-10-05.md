@@ -1,3 +1,5 @@
+> **Référence d’état auditée le 05/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-05.md`](ETAT-REEL-PROJET-2026-11-05.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
+
 # Implémentation des décisions — 5 octobre 2026
 
 > Journal historique des changements et validations de cette date, pas un état actuel ni une liste active de tâches. Depuis, voir [l’état réel V1](ETAT-REEL-V1.md), les [décisions produit](QUESTIONNAIRE-DECISIONS-A1-A16.md) et les [preuves PostgreSQL du 08/10](../reports/postgres-tests-20261008.txt).

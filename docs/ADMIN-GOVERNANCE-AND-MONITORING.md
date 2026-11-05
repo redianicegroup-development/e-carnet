@@ -1,3 +1,5 @@
+> **Référence d’état auditée le 05/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-05.md`](ETAT-REEL-PROJET-2026-11-05.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
+
 # Gouvernance des établissements et surveillance
 
 ## Contrôle des rôles
@@ -45,19 +47,19 @@ La suite Django est la preuve d’intégration API/DB; les parcours réels de na
 
 ## Surveillance opérationnelle
 
-`ops/monitoring-check.sh` interroge les endpoints publics liveness et readiness. Il n’affiche que les statuts HTTP; il ne journalise ni corps de réponse ni données de santé. Exemple de configuration dans un ordonnanceur externe :
+`ops/monitoring-check.sh` interroge les endpoints publics liveness et readiness et, lorsqu’il est exécuté sur le serveur avec `ECARNET_MONITOR_REQUIRE_COMPONENTS=true`, vérifie aussi base, cache, stockage, fraîcheur de sauvegarde et SMTP. Il n’affiche que des statuts techniques; il ne journalise ni corps de réponse ni données de santé. La planification et la sonde indépendante sont détaillées dans [`MONITORING-WEBHOOK.md`](MONITORING-WEBHOOK.md).
 
 ```bash
 ECARNET_MONITOR_BASE_URL=https://api.example.tld \
-ECARNET_MONITOR_WEBHOOK_URL="$MONITORING_WEBHOOK_URL" \
+ECARNET_MONITOR_WEBHOOK_SECRET="$DEDICATED_MONITORING_SECRET" \
 ./ops/monitoring-check.sh
 ```
 
-Exécuter la sonde toutes les cinq minutes depuis un service indépendant de l’hébergeur. Stocker l’URL de webhook dans le gestionnaire de secrets de l’ordonnanceur, jamais dans le dépôt. Liveness mesure que le processus répond; readiness vérifie aussi la base de données. Une panne de webhook ne masque pas l’échec de la sonde : le script retourne un code non nul.
+La sonde serveur s’exécute toutes les cinq minutes sur l’hébergement applicatif. Une seconde sonde HTTP s’exécute toutes les cinq minutes hors de cet hébergeur et ne partage aucun accès interne. Les deux utilisent un secret webhook dédié, jamais le secret applicatif. Une panne de webhook ne masque pas l’échec de la sonde : le script retourne un code non nul.
 
 **À configurer par l’exploitant avant ouverture :** l’ordonnanceur externe, le webhook/outil d’alerte, les destinataires, les seuils et l’escalade. Le code ne peut pas créer ou authentifier un compte de surveillance externe sans configuration et accès opérateur.
 
 
-## Évolution prévue de la console admin
+## Console admin livrée
 
-La console admin actuelle couvre la gouvernance des établissements, les récupérations de compte et les journaux métier. Elle doit encore recevoir une rubrique séparée **Surveillance technique** : disponibilité API/base, erreurs, latence, sauvegardes, stockage, incidents et accusés de prise en compte. Cette rubrique sera réservée à l’exploitation autorisée et ne remplacera pas la sonde externe, qui doit continuer à fonctionner même lorsque l’API est indisponible. Le plan détaillé est décrit dans [`PLAN-ADMIN-SURVEILLANCE-ET-ALERTES.md`](PLAN-ADMIN-SURVEILLANCE-ET-ALERTES.md).
+La console admin couvre désormais une rubrique séparée **Surveillance technique** : disponibilité API/base, cache, stockage local, configuration SMTP, incidents et accusés de prise en compte. Elle est réservée à l’exploitation autorisée et ne remplace pas la sonde externe, qui doit continuer à fonctionner même lorsque l’API est indisponible. Le déroulé de recette est décrit dans [`MONITORING-WEBHOOK.md`](MONITORING-WEBHOOK.md).

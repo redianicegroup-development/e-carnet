@@ -1,3 +1,5 @@
+> **Référence d’état auditée le 05/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-05.md`](ETAT-REEL-PROJET-2026-11-05.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
+
 # Mise à jour E‑Carnet — 11 octobre 2026
 
 Cette archive contient uniquement les fichiers source, migrations, tests, dépendances et documentation modifiés. Elle exclut les secrets d’environnement, les caches, les dépendances installées et les artefacts de build.

@@ -1,3 +1,5 @@
+> **Référence d’état auditée le 05/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`docs/ETAT-REEL-PROJET-2026-11-05.md`](docs/ETAT-REEL-PROJET-2026-11-05.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
+
 # Plan d’implantation V2 — état réel au 05/11/2026
 
 **Source de vérité :** code présent dans l’archive de travail `/home/ubuntu/work/pat16`, contrôlé le 05/11/2026. Ce document remplace le plan joint `PLAN-IMPLEMENTATION-V2-RESTANT-2026-11-05(1).md`.
@@ -142,26 +144,15 @@ Déjà fait :
 
 ---
 
-## 3. Chantier restant n°2 — ADM-10 : sonde externe et recette staging
+## 3. ADM-10 — implantation livrée, configuration et recette staging restantes
 
 ### État vérifié
 
-Présent :
+L’implantation est présente dans le dépôt : `ops/monitoring-check.sh` contrôle l’API et les composants hôte configurés ; `ops/monitoring-external-check.sh` fournit la sonde hors hébergeur ; `ops/send-monitoring-event.py` émet les événements signés ; la console et les incidents opérationnels sont présents ; ADM-09 fournit la protection anti-rejeu. Les deux exemples de planification et le runbook sont livrés.
 
-- `ops/monitoring-check.sh` vérifie l’API, la base, le cache, le stockage, la sauvegarde et SMTP.
-- `ops/send-monitoring-event.py` émet vers le webhook signé.
-- Console « Surveillance technique » et incidents opérationnels présents.
-- ADM-09 fournit désormais la protection anti-rejeu.
+Restent hors dépôt : installer les deux tâches dans les environnements choisis, renseigner les secrets dédiés et `ECARNET_OPERATIONS_ADMIN_EMAILS`, puis exécuter la recette staging réelle avec preuve de panne base, résolution et accusé audité. La simulation locale des scripts passe ; elle ne vaut pas recette staging.
 
-À faire :
-
-1. Programmer la sonde interne toutes les cinq minutes sur l’hébergement choisi.
-2. Brancher une sonde HTTP indépendante de l’hébergeur pour détecter une panne totale de l’API.
-3. Renseigner un secret webhook dédié et `ECARNET_OPERATIONS_ADMIN_EMAILS` dans l’environnement de staging/production, sans réutiliser le secret applicatif.
-4. Exécuter une recette staging : panne base → incident ouvert ; rétablissement → incident résolu ; accusé de réception audité.
-5. Compléter le runbook `docs/MONITORING-WEBHOOK.md` avec l’hébergeur retenu, la fréquence, les alertes et la procédure d’escalade.
-
-**Sortie attendue :** incident créé, notifié, accusé puis résolu automatiquement sur panne simulée.
+**Sortie obtenue dans cette archive :** scripts et documentation ADM-10 livrés ; incident staging créé/résolu automatiquement non démontré faute d’instance staging et de dépendances Django disponibles dans le sandbox.
 
 ---
 

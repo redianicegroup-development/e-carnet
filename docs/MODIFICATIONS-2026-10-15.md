@@ -1,3 +1,5 @@
+> **Référence d’état auditée le 05/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-05.md`](ETAT-REEL-PROJET-2026-11-05.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
+
 # Mise à jour E‑Carnet — 15 octobre 2026 : landing complète
 
 Base : `e-carnetv_1_9.zip`. La landing de Vazi Express (`delivery-platform-v1.zip`) a servi de référence pour la mécanique (Lenis + ScrollTrigger, hero épinglé, FAQ) ; la maquette jointe (modèle médical) a servi pour le ton des sections (bandeau de repères, cartes arrondies, grille numérotée). Rien n’est copié : tout est réécrit avec les variables du thème, donc la page suit la palette choisie.
