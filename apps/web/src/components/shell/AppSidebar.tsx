@@ -31,12 +31,12 @@ export type SidebarItem = {
   heading?: string;
   /** Entrée « compte » : gardée dans la barre basse mobile, mais sur desktop on y accède par le menu du compte. */
   account?: boolean;
+  /** Onglet principal de l'espace : pastille de miel (couleur de la palette choisie) dans la barre basse mobile. */
+  featured?: boolean;
   /** Mode onglets (administration) : id du bouton et id du panneau qu’il commande. */
   domId?: string;
   controls?: string;
 };
-
-/** Bouton principal de l'espace (Préparer ma consultation, Scanner un QR) : surélevé au centre de la barre basse mobile, en tête de la sidebar sur grand écran. */
 
 export type SidebarMenuItem = {
   id: string;
@@ -119,6 +119,7 @@ function useGooeyIndicator(activeId: string | undefined, count: number) {
 function ItemBody({ item }: { item: SidebarItem }) {
   return (
     <>
+      {item.featured ? <span className="sb__orb" aria-hidden="true" /> : null}
       <Icon name={item.icon} size={20} />
       <span className="sb__label">{item.label}</span>
       <span className="sb__long">{item.long}</span>
@@ -128,7 +129,7 @@ function ItemBody({ item }: { item: SidebarItem }) {
 }
 
 function NavItem({ item, tabs }: { item: SidebarItem; tabs: boolean }) {
-  const className = `sb__item${item.active ? " is-active" : ""}${item.account ? " sb__item--account" : ""}`;
+  const className = `sb__item${item.active ? " is-active" : ""}${item.account ? " sb__item--account" : ""}${item.featured ? " sb__item--featured" : ""}`;
   // `data-tour` : repère de la visite guidée (components/tour) ; un onglet = une étape.
   const common = { className, "aria-label": item.ariaLabel ?? item.long, "data-tip": item.long, "data-tour": `nav-${item.id}` };
   if (tabs) {
@@ -264,7 +265,7 @@ export function AppSidebar({ ariaLabel, brand, items, listRole, listLabel, accou
   const rail = collapsed && !bare;
   const scroll = useGooeyIndicator(items.find((item) => item.active)?.id, items.length);
   return (
-    <nav className={`sb${rail ? " is-collapsed" : ""}${bare ? " is-bare" : ""}`} aria-label={ariaLabel}>
+    <nav className={`sb${rail ? " is-collapsed" : ""}${bare ? " is-bare" : ""}`} aria-label={ariaLabel} data-scroll-top="true">
       <div className="sb__head">
         <Link className="sb__brand" href={brand.href} aria-label={`${brand.title}, ${brand.subtitle.toLowerCase()} : retour à l’accueil`}>
           <BrandMark />

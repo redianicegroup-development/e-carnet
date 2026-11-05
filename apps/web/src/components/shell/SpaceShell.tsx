@@ -17,6 +17,7 @@ import { GooeyAccountMenu } from "./GooeyAccountMenu";
 import { AppSidebar, type SidebarItem, type SidebarMenuItem } from "./AppSidebar";
 import { TrustedDelegationBanner } from "../TrustedDelegationBanner";
 import { OfflineSnapshotSync } from "../OfflineSnapshotSync";
+import { ScrollToTopOnNavigate } from "../ScrollToTopOnNavigate";
 import { cleanUpBeforeLogout } from "../../lib/logout";
 import { purgeOfflineSnapshot } from "../../lib/offline-snapshot";
 
@@ -241,7 +242,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
   }, [toActivate]);
 
   const visibleTabs = visibleTabsFor(space, clinicalReady === true);
-  const items: SidebarItem[] = visibleTabs.map((tab) => ({ id: tab.id, label: tab.label, long: tab.long, icon: tab.icon, href: tab.href, active: tab.match(pathname), account: tab === moi }));
+  const items: SidebarItem[] = visibleTabs.map((tab) => ({ id: tab.id, label: tab.label, long: tab.long, icon: tab.icon, href: tab.href, active: tab.match(pathname), account: tab === moi, featured: tab.featured === true }));
   const menu: SidebarMenuItem[] = [
     { id: "settings", label: "Profil et paramètres", icon: "sliders", href: moi.href },
     ...(switchTarget ? [{ id: "switch-space", label: switching ? "Changement d’espace…" : `Changer d’espace : ${switchTarget.label.toLowerCase()}`, icon: "refresh" as const, disabled: switching, onSelect: () => void switchSpace() }] : []),
@@ -253,6 +254,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
 
   return (
     <div className={`space space--${space}${bare ? " space--bare" : ""}${navCollapsed && !bare ? " space--nav-collapsed" : ""}`}>
+      <ScrollToTopOnNavigate />
       <AppSidebar
         ariaLabel={`Navigation de l’${config.label.toLowerCase()}`}
         brand={{ href: bare || state.status !== "ready" ? "/" : config.home, title: "Mon E-Carnet", subtitle: config.label }}
@@ -296,7 +298,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
             </PatientAccessQrContext.Provider>
           </AccountContext.Provider>
         )}
-        {!bare && <p className="space-footer"><Link href="/aide#donnees">Aide</Link></p>}
+        {!bare && <p className="space-footer" data-scroll-top="true"><Link href="/aide">Aide</Link></p>}
       </main>
       {state.status === "ready" && !bare && <GreetingModal account={state.account} space={space} />}
       {state.status === "ready" && !bare && !passwordChangePending && !profilePending && <ProductTour space={space} accountId={state.account.id} />}

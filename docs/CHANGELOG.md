@@ -1,3 +1,10 @@
+## 2026-11-03 — Navigation mobile : onglet « Moi » patient, onglet principal en évidence, pages ouvertes en haut
+
+- **5e onglet « Moi »** pour le patient (barre basse mobile : Accueil, Mon carnet, Consultations, Historique, Moi). Sur grand écran il reste masqué : le compte est en bas de la sidebar.
+- **Onglet principal en évidence** : la 3e entrée (patient : Consultations ; professionnel : Suivi) porte une pastille de miel. La couleur est `--orb-honey`, calculée à partir de la palette choisie par la personne : jaune par défaut, elle suit le thème. Actif, la goutte d'accent l'entoure d'un anneau. Propriété `featured` de `lib/spaces.ts`.
+- **Pages ouvertes tout en haut** : le lien « Aide » de l'espace (qui menait à `/aide#donnees`, au milieu de la page), les liens de « En savoir plus », la barre de navigation (barre basse, sidebar) et le menu du compte ramènent en haut de la page de destination. Les pages s'ouvraient auparavant sous l'en-tête fixe mobile. Une seule logique (`lib/scroll-to-top.ts` + `ScrollToTopOnNavigate`) remplace `PublicFooterScrollToTop`, désormais supprimé ; les liens avec ancre gardent leur cible.
+- Tests : `navigation-2026-11-03.test.mjs` (15). Le test des onglets d'espace (`espaces-2026-10-22`), qui attendait d'anciens onglets et échouait déjà dans v1.4-final, est mis à jour.
+
 ## 2026-11-02 — Hors connexion : déclarations en lecture seule, copies qui expirent vraiment, push retiré à la déconnexion
 
 - **Déclarations hors connexion** (espace patient, lecture seule) : copie locale IndexedDB `ecarnet-offline-v1` des déclarations du profil actif et des profils enfants déjà ouverts en ligne ; la page `/hors-connexion.html` (script `hors-connexion.js`) permet de changer de profil et de naviguer entre les onglets sans réseau. Ni historique, ni consultations, ni documents, ni agenda. 7 jours ; effacée à la déconnexion, sur « session absente », à la demande ; réglage *Paramètres › Hors connexion*.

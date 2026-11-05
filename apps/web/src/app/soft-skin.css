@@ -120,6 +120,20 @@ body .sb__goo { display: none; }
   body .sb__scroll:not([data-goo="on"]) .sb__item.is-active { background: var(--primary); color: var(--on-primary); box-shadow: var(--accent-shadow); }
 }
 
+/* Onglet principal de l'espace (3e entrée de la barre basse : Consultations pour le patient, Suivi pour le professionnel) : pastille de miel.
+   --orb-honey vient de la palette choisie (--brand-2 → --brand-3) : jaune par défaut, elle change avec le thème de la personne.
+   La pastille (.sb__orb, un vrai élément : cette peau n'a pas de pseudo-élément) est un peu plus petite que la goutte de l'onglet actif :
+   actif, la goutte d'accent l'entoure d'un anneau. Sur grand écran la pastille n'existe pas. */
+body .sb__orb { display: none; }
+@media (max-width: 919px) {
+  body .sb__item--featured { isolation: isolate; }
+  body .sb__item--featured .sb__orb { display: block; position: absolute; inset: 4px; z-index: -1; border-radius: 50%; background: var(--orb-honey); box-shadow: var(--orb-shine), 0 5px 10px -5px color-mix(in srgb, var(--text) 45%, transparent); pointer-events: none; transition: transform .15s ease; }
+  body .sb__item--featured:active .sb__orb { transform: scale(.94); }
+  body .sb .sb__scroll .sb__item.sb__item--featured, body .sb .sb__scroll .sb__item.sb__item--featured:hover, body .sb .sb__scroll .sb__item.sb__item--featured.is-active { color: var(--text); }
+  body .sb .sb__scroll .sb__item.sb__item--featured.is-active { background: transparent; box-shadow: none; }
+  body .sb .sb__scroll:not([data-goo="on"]) .sb__item.sb__item--featured.is-active { box-shadow: inset 0 0 0 4px var(--primary); }
+}
+
 /* Sidebar desktop : même matière que la page, séparée par une ombre douce ; l'entrée active est enfoncée */
 @media (min-width: 920px) {
   body .sb, body .sb.is-bare { background: var(--bg); border-right: 0; box-shadow: 10px 0 24px -8px var(--neu-dark), inset -1px 0 0 var(--neu-light); }

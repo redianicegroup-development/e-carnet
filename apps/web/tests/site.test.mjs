@@ -63,14 +63,14 @@ test("les quatre espaces partagent une seule sidebar responsive (logo, navigatio
   assert.doesNotMatch(styles, /space-nav|space-sidebar|admin-sidebar-|admin-nav-link|admin-nav-badge/, "les anciennes règles de sidebar ne doivent plus subsister dans globals.css");
   assert.doesNotMatch(sidebar, /localStorage|sessionStorage|indexedDB/, "l’état replié de la sidebar reste en mémoire (aucun stockage navigateur)");
 });
-test("la sidebar patient expose Accueil, Mon carnet, Consultations et Historique dans cet ordre (Moi reste dans le menu du compte)", () => {
+test("la navigation patient expose Accueil, Mon carnet, Consultations, Historique puis Moi (5e onglet de la barre basse mobile)", () => {
   const spaces = read("src/lib/spaces.ts");
   const shell = read("src/components/shell/SpaceShell.tsx");
   const patient = spaces.slice(spaces.indexOf("  patient:"), spaces.indexOf("  professional:"));
   const labels = [...patient.matchAll(/\{ id: "(?:home|carnet|consultations|historique|moi)", label: "([^"]+)"/g)].map((match) => match[1]);
   assert.deepEqual(labels, ["Accueil", "Mon carnet", "Consultations", "Historique", "Moi"]);
   assert.match(shell, /visibleTabsFor\(space, clinicalReady === true\)/);
-  assert.match(spaces, /if \(space === "patient"\) return tabs\.filter\(\(tab\) => tab\.id !== "moi"\)/);
+  assert.doesNotMatch(spaces, /tab\.id !== "moi"/, "le patient garde l'onglet Moi (masqué sur grand écran par la classe account)");
   assert.doesNotMatch(shell, /items\.splice\(items\.length - 1, 0, \{ id: "admin"/);
   assert.match(shell, /href: "https:\/\/e-carnetci\.vercel\.app\/admin\//, "l’accès admin autorisé reste disponible dans le menu du compte");
 });
@@ -98,15 +98,17 @@ test("visiteurs : le pied de page public renvoie vers les trois pages légales",
 
 test("les liens internes du pied de page ramènent en haut, sans détourner les ancres", () => {
   const footer = read("src/components/public/PublicShell.tsx");
-  const scroll = read("src/components/public/PublicFooterScrollToTop.tsx");
-  assert.match(footer, /<PublicFooterScrollToTop\s*\/>/);
-  assert.match(scroll, /data-footer-zone="true"/);
-  assert.match(scroll, /destination\.origin !== window\.location\.origin \|\| destination\.hash/);
+  const scroll = read("src/components/ScrollToTopOnNavigate.tsx");
+  const rules = read("src/lib/scroll-to-top.ts");
+  assert.match(footer, /<ScrollToTopOnNavigate\s*\/>/);
+  assert.match(footer, /data-footer-zone="true"/);
+  assert.match(rules, /\[data-footer-zone="true"\]/);
+  assert.match(rules, /destination\.origin !== current\.origin \|\| destination\.hash/);
   assert.match(scroll, /usePathname\(\)/);
-  assert.match(scroll, /sessionStorage\.setItem\(PENDING_FOOTER_SCROLL_KEY/);
+  assert.match(scroll, /sessionStorage\.setItem\(PENDING_SCROLL_KEY/);
   assert.match(scroll, /window\.scrollTo\(\{ top: 0, left: 0, behavior: "instant" \}\)/);
   assert.match(scroll, /window\.requestAnimationFrame\(scrollInstantlyToTop\)/);
-  assert.match(scroll, /event\.metaKey \|\| event\.ctrlKey \|\| event\.shiftKey \|\| event\.altKey/);
+  assert.match(rules, /click\.metaKey \|\| click\.ctrlKey \|\| click\.shiftKey \|\| click\.altKey/);
 });
 
 test("connectés : Paramètres › En savoir plus renvoie vers les pages légales et les crédits, sans « À venir »", () => {

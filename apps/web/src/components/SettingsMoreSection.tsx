@@ -34,7 +34,7 @@ const GROUPS: MoreGroup[] = [
 
 export function SettingsMoreSection() {
   return (
-    <section className="settings-more-content" aria-label="Ressources Mon E-Carnet">
+    <section className="settings-more-content" aria-label="Ressources Mon E-Carnet" data-scroll-top="true">
       <p className="muted">Aide, informations légales et remerciements de Mon E‑Carnet.</p>
       {GROUPS.map((group) => (
         <div className="settings-more-group" key={group.title} role="group" aria-label={group.title}>

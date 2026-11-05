@@ -78,8 +78,8 @@ test("un médecin sans rattachement actif ne voit que l'accueil et le rattacheme
   const ids = (list) => list.map((tab) => tab.id);
   assert.deepEqual(ids(spaces.visibleTabsFor("professional", false)), ["home", "acces"]);
   assert.deepEqual(ids(spaces.visibleTabsFor("professional", true)), ["home", "patients", "consultations", "acces", "moi"]);
-  assert.deepEqual(ids(spaces.visibleTabsFor("patient", false)), ["home", "carnet", "consultations", "acces"]);
-  assert.deepEqual(ids(spaces.visibleTabsFor("establishment", false)), ["home", "equipe", "demandes", "parametres"]);
+  assert.deepEqual(ids(spaces.visibleTabsFor("patient", false)), ["home", "carnet", "consultations", "historique", "moi"]);
+  assert.deepEqual(ids(spaces.visibleTabsFor("establishment", false)), ["home", "dossiers", "equipe", "demandes", "parametres"]);
   assert.equal(spaces.SPACES.professional.tabs.find((tab) => tab.id === "acces").label, "Rattachement");
   const shell = read("src/components/shell/SpaceShell.tsx");
   assert.match(shell, /\/api\/v1\/professionals\/me\//);

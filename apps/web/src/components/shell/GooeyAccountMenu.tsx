@@ -63,7 +63,7 @@ export function GooeyAccountMenu({ account, menu, notice }: { account: SidebarAc
   let index = 0;
   const step = () => ({ "--i": index++ } as React.CSSProperties);
   return (
-    <div className="gm" ref={root} data-open={open}>
+    <div className="gm" ref={root} data-open={open} data-scroll-top="true">
       <span className="gm__goo" aria-hidden="true"><i className="gm__anchor" /><i className="gm__blob" /></span>
       <div className="gm__panel" id={panelId} role="menu" aria-label={`Compte de ${account.name}`} inert={!open} onKeyDown={onKeyDown}>
         <div className="gm__content" ref={content}>

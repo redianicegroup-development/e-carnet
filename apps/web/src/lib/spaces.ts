@@ -1,7 +1,8 @@
 import type { IconName } from "../components/ui/Icon";
 
 export type SpaceId = "patient" | "professional" | "establishment";
-export type Tab = { id: string; label: string; long: string; href: string; icon: IconName; match: (path: string) => boolean };
+/** `featured` : onglet principal de l'espace (la 3e entrée de la barre basse mobile), mis en évidence par une pastille de miel qui suit la palette choisie. */
+export type Tab = { id: string; label: string; long: string; href: string; icon: IconName; match: (path: string) => boolean; featured?: boolean };
 
 const exact = (href: string) => (path: string) => path === href;
 const section = (...hrefs: string[]) => (path: string) => hrefs.some((href) => path === href || path.startsWith(`${href}/`));
@@ -14,7 +15,7 @@ export const SPACES: Record<SpaceId, { label: string; role: string; home: string
     tabs: [
       { id: "home", label: "Accueil", long: "Accueil", href: "/patient", icon: "home", match: exact("/patient") },
       { id: "carnet", label: "Mon carnet", long: "Mon carnet · documents · vaccins · traitements", href: "/patient/carnet", icon: "folder", match: section("/patient/carnet") },
-      { id: "consultations", label: "Consultations", long: "Pré-consultation et accès temporaire", href: "/patient/consultations", icon: "stethoscope", match: section("/patient/consultations") },
+      { id: "consultations", label: "Consultations", long: "Pré-consultation et accès temporaire", href: "/patient/consultations", icon: "stethoscope", match: section("/patient/consultations"), featured: true },
       { id: "historique", label: "Historique", long: "Historique · consultations · vaccins · accès", href: "/patient/historique", icon: "clock", match: section("/patient/historique", "/patient/acces") },
       { id: "moi", label: "Moi", long: "Mon compte et paramètres", href: "/patient/parametres", icon: "user", match: section("/patient/parametres") },
     ],
@@ -24,7 +25,7 @@ export const SPACES: Record<SpaceId, { label: string; role: string; home: string
     tabs: [
       { id: "home", label: "Accueil", long: "Accueil", href: "/professionnel", icon: "home", match: exact("/professionnel") },
       { id: "patients", label: "Patients", long: "Patients autorisés et demandes d’accès", href: "/professionnel/patients", icon: "search", match: section("/professionnel/patients") },
-      { id: "consultations", label: "Suivi", long: "Consultations · ordonnances · plans de suivi", href: "/professionnel/consultations", icon: "stethoscope", match: section("/professionnel/consultations") },
+      { id: "consultations", label: "Suivi", long: "Consultations · ordonnances · plans de suivi", href: "/professionnel/consultations", icon: "stethoscope", match: section("/professionnel/consultations"), featured: true },
       { id: "acces", label: "Rattachement", long: "Mon rattachement et mes établissements", href: "/professionnel/acces", icon: "building", match: section("/professionnel/acces", "/professionnel/etablissements") },
       { id: "moi", label: "Moi", long: "Mon profil et paramètres", href: "/professionnel/parametres", icon: "user", match: section("/professionnel/parametres") },
     ],
@@ -49,7 +50,7 @@ export const PROFESSIONAL_SETUP_TABS = ["home", "acces"] as const;
     qu'on ne le sait pas encore — il ne voit que l'accueil et le rattachement. Une fois le code validé par l'établissement, tous les onglets apparaissent. */
 export function visibleTabsFor(space: SpaceId, clinicalReady: boolean): Tab[] {
   const tabs = SPACES[space].tabs;
-  if (space === "patient") return tabs.filter((tab) => tab.id !== "moi");
+  // Le patient garde « Moi » comme 5e onglet de la barre basse mobile (masqué sur grand écran, où le compte est en bas de la sidebar).
   if (space === "professional" && !clinicalReady) return tabs.filter((tab) => (PROFESSIONAL_SETUP_TABS as readonly string[]).includes(tab.id));
   return tabs;
 }
