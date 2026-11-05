@@ -1,0 +1,41 @@
+# Livraison différentielle C1 + C2 — ETA-11 / PAT-16
+
+Baseline : e-carnetv.1.4.1.zip
+Archive précédente intégrée : e-carnetv1.4.zip (correctif C1)
+Date : 2026-11-05
+
+## C2 — Identité minimale dans l’agenda professionnel
+
+- Le professionnel autorisé reçoit uniquement prénom et nom du profil patient (y compris profil enfant) dans son agenda et ses réponses d’action.
+- L’API patient conserve le sérialiseur sans identité ; l’API établissement n’expose que l’identifiant technique, les dates et le statut.
+- L’agenda professionnel affiche le nom. L’OpenAPI documente les frontières.
+- Tests ciblés couvrant cloisonnement professionnel, profil enfant, endpoint patient et vue établissement.
+
+## Fichiers dans cette livraison
+
+C1 repris de l’archive précédente :
+- apps/api/apps/establishments/models.py
+- apps/api/apps/establishments/views.py
+- apps/api/apps/establishments/urls.py
+- apps/api/apps/audit/services.py
+- apps/api/apps/establishments/test_eta_11_medical_referent.py
+
+C2 et documentation mise à jour :
+- apps/api/apps/care/serializers.py
+- apps/api/apps/care/views.py
+- apps/api/apps/care/test_pat16_patient_identity.py
+- apps/web/src/components/ProfessionalAgenda.tsx
+- docs/api/openapi.yaml
+- docs/PLAN-IMPLEMENTATION-V2-RESTANT-2026-11-05.md
+- docs/ETAT-REEL-PROJET-2026-11-05.md
+- docs/CHANGELOG.md
+- MANIFEST-ETA11-C1.txt
+- MANIFEST-PAT16-C2.txt
+
+## Vérifications et limites
+
+- `py_compile` sur serializers.py, views.py et le nouveau test : réussi.
+- Tests web agenda préexistants : 7/7 réussis.
+- Tests Django C2 : non exécutés, Django n’est pas installé dans le sandbox (`ModuleNotFoundError`).
+- Recette staging : non exécutée.
+- Aucun secret, fichier `.env`, base SQLite ou dépendance n’est inclus dans ce ZIP différentiel.

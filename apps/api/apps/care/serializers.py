@@ -1,4 +1,7 @@
 from decimal import Decimal, InvalidOperation
+from datetime import datetime
+from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 
 from rest_framework import serializers
 from .models import AccessGrant, Appointment, CareEncounter, Consultation, ExamRequest, FollowUpPlan, FollowUpPlanItem, HealthMeasurement, MedicalDocument, MedicationIntake, MedicationReminder, PatientNotification, PreconsultationTemplate, PrescriptionLine, Vaccination
@@ -324,6 +327,46 @@ class AppointmentSerializer(serializers.ModelSerializer):
             if getattr(professional, "verification_status", None) != "verified":
                 raise serializers.ValidationError({"professional": "Ce professionnel n'est pas actif."})
         if attrs.get("ends_at") and attrs.get("starts_at") and attrs["ends_at"] <= attrs["starts_at"]:
+            raise serializers.ValidationError({"ends_at": "La fin doit être postérieure au début."})
+        return attrs
+
+
+class ProfessionalAppointmentSerializer(AppointmentSerializer):
+    """Agenda du professionnel : identité minimale du profil patient uniquement."""
+    patient_name = serializers.SerializerMethodField()
+
+    class Meta(AppointmentSerializer.Meta):
+        fields = AppointmentSerializer.Meta.fields + ("patient_name",)
+        read_only_fields = AppointmentSerializer.Meta.read_only_fields + ("patient_name",)
+
+    def get_patient_name(self, appointment):
+        patient = appointment.patient
+        return " ".join(part for part in (patient.display_first_name(), patient.display_last_name()) if part)
+
+
+class StrictAwareDateTimeField(serializers.DateTimeField):
+    """Refuse les heures sans fuseau plutôt que d’inventer un fuseau local."""
+    default_error_messages = {
+        **serializers.DateTimeField.default_error_messages,
+        "timezone": "La date doit inclure un fuseau horaire.",
+    }
+
+    def to_internal_value(self, value):
+        parsed = value if isinstance(value, datetime) else parse_datetime(str(value))
+        if parsed is None or timezone.is_naive(parsed):
+            self.fail("timezone")
+        return super().to_internal_value(value)
+
+
+class ProposeAppointmentSerializer(serializers.Serializer):
+    starts_at = StrictAwareDateTimeField(required=True)
+    ends_at = StrictAwareDateTimeField(required=False, allow_null=True)
+    reason = serializers.CharField(required=True, max_length=500, allow_blank=False, trim_whitespace=True)
+
+    def validate(self, attrs):
+        if attrs["starts_at"] <= timezone.now():
+            raise serializers.ValidationError({"starts_at": "Le créneau proposé doit être dans le futur."})
+        if attrs.get("ends_at") is not None and attrs["ends_at"] <= attrs["starts_at"]:
             raise serializers.ValidationError({"ends_at": "La fin doit être postérieure au début."})
         return attrs
 

@@ -60,3 +60,18 @@ test("la fusion du 31/10 garde les écrans des maquettes : Aujourd'hui, agenda e
   assert.match(src("components/PatientConsultations.tsx"), /<ConsultationSealPanel item=\{item\} \/>/);
   assert.match(src("components/ConsultationSealPanel.tsx"), /aria-expanded=\{open\}/);
 });
+
+test("C4 : le professionnel peut proposer un déplacement confirmé et le patient peut accepter ou refuser", () => {
+  const professionalAgenda = src("components/ProfessionalAgenda.tsx");
+  const patientAppointments = src("components/PatientAppointments.tsx");
+  assert.match(professionalAgenda, /\["requested", "confirmed"\]\.includes\(item\.status\).*Proposer un autre créneau/s);
+  assert.match(patientAppointments, /action: "confirm-proposal"/);
+  assert.match(patientAppointments, /action: "decline-proposal"/);
+  assert.match(patientAppointments, /Accepter le créneau/);
+  assert.match(patientAppointments, /Refuser le créneau/);
+});
+
+test("C5 : le professionnel peut retirer une proposition en attente", () => {
+  assert.match(src("components/ProfessionalAgenda.tsx"), /action\(item\.id, "withdraw-proposal"\)/);
+  assert.match(src("components/ProfessionalAgenda.tsx"), /Retirer la proposition/);
+});

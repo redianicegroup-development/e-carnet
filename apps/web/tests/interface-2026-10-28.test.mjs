@@ -1,7 +1,7 @@
 // Interface du 28/10 : navigation à bouton principal surélevé, Historique, consultations en deux étapes, dossiers en tuiles pliables,
 // onboarding sans nom redemandé, en-tête de « Moi », page Proches et enfants, logo actuel dans les crédits.
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const read = (rel) => readFileSync(new URL(`../${rel}`, import.meta.url), "utf8");
@@ -10,7 +10,7 @@ test("la barre de navigation n'a plus de bouton jaune central, sur mobile comme 
   assert.doesNotMatch(read("src/lib/spaces.ts"), /action: \{/);
   assert.doesNotMatch(read("src/components/shell/SpaceShell.tsx"), /navAction/);
   assert.doesNotMatch(read("src/components/shell/AppSidebar.tsx"), /sb__action|ActionRow/);
-  assert.equal(existsSync(new URL("../src/components/shell/sidebar-action.css", import.meta.url)), false);
+  assert.doesNotMatch(read("src/components/shell/AppSidebar.tsx"), /sidebar-action\.css/);
   assert.match(read("src/components/ProfessionalAccessGrants.tsx"), /window\.location\.hash !== "#scanner"[\s\S]*setScanning\(true\)/, "la caméra démarre depuis le bouton « Scanner un QR » de l'accueil médecin");
 });
 

@@ -168,6 +168,7 @@ class EstablishmentMembership(models.Model):
     establishment = models.ForeignKey(Establishment, on_delete=models.PROTECT, related_name="memberships")
     professional = models.ForeignKey("professionals.ProfessionalProfile", on_delete=models.PROTECT, related_name="memberships")
     status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="pending")
+    is_medical_referent = models.BooleanField(default=False)
     requested_at = models.DateTimeField(auto_now_add=True)
     reviewed_at = models.DateTimeField(null=True, blank=True)
     left_at = models.DateTimeField(null=True, blank=True)

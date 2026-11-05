@@ -1,0 +1,30 @@
+# Livraison différentielle C1 — ETA-11
+
+Baseline : e-carnetv.1.4.1.zip
+Date d’implantation : 2026-11-05
+
+## Correction
+
+Le champ `EstablishmentMembership.is_medical_referent` est réintroduit dans le modèle, conformément à la migration `establishments.0015`. L’endpoint POST `/api/v1/establishments/<establishment_id>/memberships/<membership_id>/medical-referent/` permet à l’administrateur actif de désigner ou retirer un professionnel vérifié et rattaché activement.
+
+La valeur est strictement booléenne, l’auto-désignation est refusée, les rattachements hors établissement/inactifs/non vérifiés sont refusés, le changement est audité et le professionnel est notifié par push après commit. Un rattachement terminé ou renouvelé perd le rôle.
+
+## Fichiers livrés
+
+- `apps/api/apps/establishments/models.py`
+- `apps/api/apps/establishments/views.py`
+- `apps/api/apps/establishments/urls.py`
+- `apps/api/apps/audit/services.py`
+- `apps/api/apps/establishments/test_eta_11_medical_referent.py`
+- `docs/PLAN-IMPLEMENTATION-V2-RESTANT-2026-11-05.md`
+- `docs/ETAT-REEL-PROJET-2026-11-05.md`
+- `docs/CHANGELOG.md`
+
+## Vérifications
+
+- `py_compile` des fichiers Python modifiés : OK.
+- Contrôles statiques du champ, de la migration, de la route, du booléen strict et de l’audit : OK.
+- Tests Django ETA-11 et `makemigrations --check` : non exécutables dans le sandbox, car le module Django n’est pas installé.
+- Recette staging : non exécutée.
+
+Aucun secret, fichier `.env`, base SQLite ou dépendance n’est inclus dans ce ZIP différentiel.

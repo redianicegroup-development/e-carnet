@@ -53,6 +53,11 @@ export function PatientAppointments() {
     catch (error) { setMessage(error instanceof Error ? error.message : "Confirmation impossible."); }
   }
 
+  async function declineProposal(id: string) {
+    try { const updated = await apiPost<Appointment>(`/api/v1/patient/care/appointments/${id}/`, { action: "decline-proposal" }); setItems((current) => (current ?? []).map((item) => item.id === id ? updated : item)); }
+    catch (error) { setMessage(error instanceof Error ? error.message : "Refus impossible."); }
+  }
+
   return <section className="card" aria-labelledby="appointments-title">
     <div className="section-heading"><div><span className="eyebrow">Organisation des soins</span><h2 id="appointments-title">Rendez-vous</h2></div></div>
     <form className="patient-grid" onSubmit={submit}>
@@ -63,6 +68,6 @@ export function PatientAppointments() {
       <button className="button primary" disabled={busy}>Demander un rendez-vous</button>
     </form>
     <p className="status" role="status">{message}</p>
-    <div className="stack">{items?.map((item) => <article className="record" key={item.id}><div><strong>{item.reason}</strong><p className="muted">{new Date(item.starts_at).toLocaleString("fr-FR")} · {item.status_label} · {item.professional_name ?? "Professionnel à confirmer"}</p>{item.proposed_starts_at && <p className="notice">Nouveau créneau proposé : {new Date(item.proposed_starts_at).toLocaleString("fr-FR")}</p>}</div><div className="cluster">{item.proposed_starts_at && item.status === "requested" && <button className="button small" onClick={() => confirmProposal(item.id)}>Confirmer le créneau</button>}{["requested", "confirmed"].includes(item.status) && <button className="button small" onClick={() => cancel(item.id)}>Annuler</button>}</div></article>)}</div>
+    <div className="stack">{items?.map((item) => <article className="record" key={item.id}><div><strong>{item.reason}</strong><p className="muted">{new Date(item.starts_at).toLocaleString("fr-FR")} · {item.status_label} · {item.professional_name ?? "Professionnel à confirmer"}</p>{item.proposed_starts_at && <p className="notice">Nouveau créneau proposé : {new Date(item.proposed_starts_at).toLocaleString("fr-FR")}</p>}</div><div className="cluster">{item.proposed_starts_at && ["requested", "confirmed"].includes(item.status) && <><button className="button small" onClick={() => confirmProposal(item.id)}>Accepter le créneau</button><button className="button small" onClick={() => declineProposal(item.id)}>Refuser le créneau</button></>}{["requested", "confirmed"].includes(item.status) && <button className="button small" onClick={() => cancel(item.id)}>Annuler</button>}</div></article>)}</div>
   </section>;
 }

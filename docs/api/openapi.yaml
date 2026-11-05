@@ -179,6 +179,143 @@ paths:
           description: Consultation validée et historisée
         '400':
           description: Autorisation absente, expirée, révoquée ou pré-consultation non clôturée
+  /patient/care/appointments/options/:
+    get:
+      summary: Lister les options de rendez-vous
+      description: Si establishment_id est présent, il doit être un UUID valide. Un établissement inconnu renvoie une liste de professionnels vide, sans révéler son existence.
+      parameters:
+        - name: establishment_id
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Établissements et professionnels éligibles
+        '400':
+          description: Identifiant d’établissement mal formé
+  /patient/care/appointments/:
+    get:
+      summary: Lister les rendez-vous du patient authentifié
+      description: La réponse patient ne contient pas de nom patient ; aucune date de naissance, coordonnée ou donnée médicale supplémentaire n’est exposée.
+      responses:
+        '200':
+          description: Rendez-vous du patient courant
+    post:
+      summary: Demander un rendez-vous
+      responses:
+        '201':
+          description: Rendez-vous créé
+  /patient/care/appointments/{appointment_id}/:
+    post:
+      summary: Accepter ou refuser une proposition, ou annuler un rendez-vous patient
+      description: confirm-proposal accepte depuis requested ou confirmed et applique le nouveau créneau ; decline-proposal efface la proposition sans changer statut ni créneau initial. L’acceptation et le refus sont audités et déclenchent une notification push au professionnel après commit. Une annulation efface aussi les champs de proposition.
+      parameters:
+        - name: appointment_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action:
+                  type: string
+                  enum: [confirm-proposal, decline-proposal, cancel]
+                reason:
+                  type: string
+                  description: Motif requis pour cancel.
+      responses:
+        '200':
+          description: Proposition acceptée/refusée ou rendez-vous annulé
+        '404':
+          description: Rendez-vous absent du profil patient courant
+        '409':
+          description: Action impossible ou aucune proposition en attente
+  /patient/care/professional/appointments/:
+    get:
+      summary: Lister les rendez-vous du professionnel authentifié
+      description: Limité au professionnel courant. Inclut uniquement le prénom et le nom du profil patient, y compris enfant ; aucune date de naissance, coordonnée ou donnée médicale supplémentaire. Les bornes sont ISO date ou date-heure, la période combinée est limitée à 92 jours et la réponse à 500 rendez-vous.
+      parameters:
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            description: Date ISO ou date-heure ISO 8601 ; borne incluse.
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            description: Date ISO ou date-heure ISO 8601 ; borne exclue.
+      responses:
+        '200':
+          description: Rendez-vous du professionnel avec identité minimale du profil patient (500 lignes au maximum)
+        '400':
+          description: Date invalide, bornes inversées ou fenêtre supérieure à 92 jours
+        '403':
+          description: Profil professionnel absent ou non vérifié
+    post:
+      summary: Gérer un rendez-vous du professionnel
+      description: Une action propose exige starts_at futur avec fuseau, ends_at facultatif mais postérieur, et un motif de 500 caractères maximum. Elle est autorisée depuis requested ou confirmed ; le créneau confirmé d’origine reste effectif jusqu’à la décision du patient. Confirm et complete sont refusés (409) si une proposition attend encore une réponse. withdraw-proposal retire une proposition en attente.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [appointment_id, action]
+              properties:
+                appointment_id:
+                  type: string
+                  format: uuid
+                action:
+                  type: string
+                  enum: [propose, confirm, cancel, complete, withdraw-proposal]
+                starts_at:
+                  type: string
+                  format: date-time
+                ends_at:
+                  type: string
+                  format: date-time
+                reason:
+                  type: string
+                  maxLength: 500
+      responses:
+        '200':
+          description: Rendez-vous mis à jour
+        '400':
+          description: Action invalide ou date, fuseau, ordre des dates ou motif invalide
+        '403':
+          description: Profil professionnel absent ou non vérifié
+        '404':
+          description: Rendez-vous absent de l’agenda du professionnel
+        '409':
+          description: Transition non autorisée
+  /patient/care/establishment/{establishment_id}/appointments/:
+    get:
+      summary: Lister les rendez-vous d’un établissement
+      description: Réservé à l’administrateur actif de l’établissement. Retourne uniquement identifiant technique, dates et statut ; aucun nom, motif ou détail médical.
+      parameters:
+        - name: establishment_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Rendez-vous limités aux dates et statuts
+        '403':
+          description: Administrateur actif requis
 components:
   schemas:
     Theme:

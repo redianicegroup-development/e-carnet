@@ -1,0 +1,37 @@
+# Livraison différentielle cumulative C1 + C2 + C3 + C4 — ETA-11 / PAT-16
+
+Baseline : e-carnetv.1.4.1.zip
+Correctifs précédents inclus : C1 (`e-carnetv1.4.zip`), C2 (`e-carnetv1.4-C2.zip`), C3 (`e-carnetv1.4-C3.zip`)
+Date : 2026-11-05
+
+## C4 — Déplacement d’un rendez-vous confirmé
+
+- `APPOINTMENT_TRANSITIONS` documente les états autorisés pour les actions patient et professionnel.
+- Le professionnel propose depuis `requested` ou `confirmed`. Un rendez-vous confirmé conserve ses dates effectives initiales et son statut jusqu’à l’acceptation du patient.
+- Le patient accepte la proposition depuis `requested` ou `confirmed`, ce qui applique le nouveau créneau, ou refuse la proposition sans changer le créneau initial ni le statut.
+- Les agendas patient et professionnel exposent les commandes utiles.
+- L’OpenAPI décrit les actions et les transitions.
+
+## Fichiers C4 ajoutés ou mis à jour
+
+- apps/api/apps/care/views.py
+- apps/api/apps/care/test_pat16_appointment_transitions.py
+- apps/web/src/components/ProfessionalAgenda.tsx
+- apps/web/src/components/PatientAppointments.tsx
+- apps/web/tests/agenda-2026-10-31.test.mjs
+- docs/api/openapi.yaml
+- docs/PLAN-IMPLEMENTATION-V2-RESTANT-2026-11-05.md
+- docs/ETAT-REEL-PROJET-2026-11-05.md
+- docs/CHANGELOG.md
+- MANIFEST-PAT16-C4.txt
+
+Le ZIP reprend également tous les fichiers et tests C1, C2 et C3 des archives précédentes.
+
+## Vérifications et limites
+
+- `py_compile` des modules Python C4/C3 et tests Python concernés : réussi.
+- Tests web d’agenda : 8/8 réussis.
+- Tests Django d’intégration C4 : ajoutés mais non exécutés, Django n’est pas installé (`ModuleNotFoundError`).
+- Recette staging : non exécutée.
+- Durée de vie 48 h et avertissement non bloquant en cas de chevauchement : restent des décisions à confirmer et ne sont pas implémentés.
+- Aucun secret, fichier `.env`, base SQLite ou dépendance n’est inclus.

@@ -719,6 +719,60 @@ class EstablishmentMembershipListView(APIView):
         return Response({"success": True, "data": data})
 
 
+class MembershipMedicalReferentView(APIView):
+    """Désignation médicale réservée à l'administrateur actif de la structure."""
+
+    permission_classes = [IsAuthenticated]
+
+    @transaction.atomic
+    def post(self, request, establishment_id, membership_id):
+        admin = active_administrator(request.user, establishment_id)
+        if not admin:
+            return Response({"success": False, "message": "Vous n’êtes pas administrateur de cet établissement actif."}, status=403)
+
+        value = request.data.get("is_medical_referent")
+        if type(value) is not bool:
+            return Response({"success": False, "message": "is_medical_referent doit être un booléen."}, status=400)
+
+        membership = (
+            EstablishmentMembership.objects.select_for_update()
+            .select_related("professional__user")
+            .filter(
+                id=membership_id,
+                establishment=admin.establishment,
+                status="active",
+                professional__verification_status="verified",
+            )
+            .first()
+        )
+        if not membership:
+            return Response({"success": False, "message": "Le rattachement actif et vérifié est introuvable."}, status=404)
+        if membership.professional.user_id == request.user.id:
+            return Response({"success": False, "message": "Un administrateur ne peut pas se désigner lui-même référent médical."}, status=403)
+
+        if membership.is_medical_referent != value:
+            membership.is_medical_referent = value
+            membership.save(update_fields=("is_medical_referent",))
+            record_event(
+                event_type="establishment.medical_referent_changed",
+                actor=request.user,
+                actor_role="establishment_administrator",
+                establishment=admin.establishment,
+                metadata={"action": "designated" if value else "removed", "membership_id": str(membership.id), "is_medical_referent": value},
+            )
+            from apps.care.push import send_push_to_user
+            transaction.on_commit(lambda: send_push_to_user(
+                membership.professional.user_id,
+                kind="establishment.medical_referent_changed",
+                title="Qualité de référent médical mise à jour",
+                body=("Vous êtes désigné comme référent médical pour un établissement." if value else "Votre qualité de référent médical a été retirée."),
+                url="/professionnel/consultations",
+                data={"establishment_id": str(admin.establishment_id), "membership_id": str(membership.id), "is_medical_referent": value},
+            ))
+
+        return Response({"success": True, "data": MembershipSerializer(membership).data})
+
+
 class EstablishmentJoinCodeRedeemView(APIView):
     permission_classes = [IsAuthenticated]
     throttle_classes = [ScopedRateThrottle]
@@ -739,13 +793,14 @@ class EstablishmentJoinCodeRedeemView(APIView):
         if not created and membership.status in ("pending", "active"):
             return Response({"success": False, "message": "Une demande existe déjà pour ce médecin et cet établissement."}, status=409)
         membership.status = "pending"
+        membership.is_medical_referent = False
         membership.requested_at = timezone.now()
         membership.reviewed_at = None
         membership.left_at = None
         membership.agreement_version = MEMBERSHIP_AGREEMENT_VERSION
         membership.agreement_accepted_at = timezone.now()
         membership.agreement_accepted_by = request.user
-        membership.save(update_fields=("status", "requested_at", "reviewed_at", "left_at", "agreement_version", "agreement_accepted_at", "agreement_accepted_by"))
+        membership.save(update_fields=("status", "is_medical_referent", "requested_at", "reviewed_at", "left_at", "agreement_version", "agreement_accepted_at", "agreement_accepted_by"))
         join_code.consumed_at = timezone.now()
         join_code.code_encrypted = ""
         join_code.save(update_fields=("consumed_at", "code_encrypted"))
@@ -792,9 +847,10 @@ class MembershipLeaveView(APIView):
         if not membership:
             return Response({"success": False, "message": "Aucun rattachement actif à quitter."}, status=404)
         membership.status = "terminated"
+        membership.is_medical_referent = False
         membership.left_at = timezone.now()
         membership.reviewed_at = membership.left_at
-        membership.save(update_fields=("status", "left_at", "reviewed_at"))
+        membership.save(update_fields=("status", "is_medical_referent", "left_at", "reviewed_at"))
         if profile.active_establishment_id == membership.establishment_id:
             profile.active_establishment = None
             profile.save(update_fields=("active_establishment", "updated_at"))
@@ -813,9 +869,10 @@ class MembershipTerminateByEstablishmentView(APIView):
         if not membership:
             return Response({"success": False, "message": "Rattachement actif introuvable ou action non autorisée."}, status=404)
         membership.status = "terminated"
+        membership.is_medical_referent = False
         membership.left_at = timezone.now()
         membership.reviewed_at = timezone.now()
-        membership.save(update_fields=("status", "left_at", "reviewed_at"))
+        membership.save(update_fields=("status", "is_medical_referent", "left_at", "reviewed_at"))
         profile = membership.professional
         if profile.active_establishment_id == membership.establishment_id:
             profile.active_establishment = None

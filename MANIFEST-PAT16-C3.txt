@@ -1,0 +1,36 @@
+# Livraison différentielle cumulative C1 + C2 + C3 — ETA-11 / PAT-16
+
+Baseline : e-carnetv.1.4.1.zip
+Correctifs antérieurs inclus : e-carnetv1.4.zip (C1) et e-carnetv1.4-C2.zip (C2)
+Date : 2026-11-05
+
+## C3 — Entrées invalides de rendez-vous
+
+- UUID de l’établissement validé avant requête ; valeur mal formée ou vide = 400 ; UUID inconnu = professionnels vides.
+- Dates `from`/`to` de l’agenda professionnel analysées comme date ISO ou date-heure ISO ; dates rendues conscientes du fuseau ; entrée invalide, bornes inversées ou période > 92 jours = 400.
+- Liste professionnelle plafonnée à 500 éléments.
+- Propositions validées avant écriture : début futur obligatoirement avec fuseau, fin facultative mais postérieure, motif ≤ 500 caractères.
+- Handler DRF global transforme `django.core.exceptions.ValidationError` en réponse 400.
+
+## Fichiers C3 ajoutés ou mis à jour
+
+- apps/api/apps/care/serializers.py
+- apps/api/apps/care/views.py
+- apps/api/apps/care/test_pat16_input_validation.py
+- apps/api/config/exception_handler.py
+- apps/api/config/settings.py
+- docs/api/openapi.yaml
+- docs/PLAN-IMPLEMENTATION-V2-RESTANT-2026-11-05.md
+- docs/ETAT-REEL-PROJET-2026-11-05.md
+- docs/CHANGELOG.md
+- MANIFEST-PAT16-C3.txt
+
+Le ZIP reprend aussi les fichiers de code C1/C2 et tests des archives précédentes.
+
+## Vérifications et limites
+
+- `py_compile` des fichiers Python C3 et modifiés : réussi.
+- Tests web d’agenda préexistants : 7/7 réussis (aucun changement web C3).
+- Tests Django C3 : ajoutés mais non exécutés : Django n’est pas installé (`ModuleNotFoundError`).
+- Recette staging : non exécutée.
+- Aucun secret, fichier `.env`, base SQLite ou dépendance n’est inclus.

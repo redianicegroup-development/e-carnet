@@ -74,7 +74,8 @@ test("chaque usage du stockage navigateur est connu, et déclaré dans la politi
   assert.match(privacy, /se synchronise lorsque vous utilisez un autre appareil/i);
   assert.match(privacy, /Copie hors connexion des déclarations \(IndexedDB\)/);
   assert.match(privacy, /Carte d’urgence ouverte par QR \(IndexedDB\)/);
-  // Le thème (localStorage) ne touche pas aux autres mécanismes ; l'indicateur de défilement (sessionStorage) ne garde qu'un chemin et une date, effacés aussitôt.
+  assert.match(privacy, /sessionStorage[^.]*chemin[^.]*10 secondes/i, "le scroll du pied de page public est temporaire et décrit");
+  // Le thème (localStorage) ne touche pas aux autres mécanismes ; l’indicateur de défilement (sessionStorage) ne garde qu'un chemin et une date.
   assert.doesNotMatch(readFileSync(`${root}/lib/themeStorage.ts`, "utf8"), /sessionStorage|indexedDB/i);
   const scroll = readFileSync(`${root}/lib/scroll-to-top.ts`, "utf8");
   assert.match(scroll, /JSON\.stringify\(\{ pathname, createdAt: now \}\)/);

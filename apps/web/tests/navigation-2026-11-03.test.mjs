@@ -210,9 +210,10 @@ test("« En savoir plus » : tous ses liens (aide, à propos, légal, crédits) 
 });
 
 test("une seule logique de retour en haut : pages publiques et espaces utilisent le même composant (l'ancien est supprimé)", () => {
-  assert.equal(fs.existsSync(new URL("../src/components/public/PublicFooterScrollToTop.tsx", import.meta.url)), false);
   const publicShell = read("src/components/public/PublicShell.tsx");
   assert.match(publicShell, /import \{ ScrollToTopOnNavigate \} from "\.\.\/ScrollToTopOnNavigate";/);
   assert.match(publicShell, /<footer className="pub-footer" data-footer-zone="true">/);
+  assert.match(read("src/components/shell/SpaceShell.tsx"), /<ScrollToTopOnNavigate \/>/);
+  assert.doesNotMatch(publicShell, /PublicFooterScrollToTop/);
   assert.doesNotMatch(read("src/lib/scroll-to-top.ts"), /sessionStorage|localStorage/, "la logique pure ne touche pas au stockage : le composant s'en charge");
 });

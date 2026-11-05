@@ -1,5 +1,50 @@
 > **Référence d’état auditée le 05/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-05.md`](ETAT-REEL-PROJET-2026-11-05.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
 
+## 2026-11-05 — C6 : toutes les suites web incluses dans `npm test`
+
+- Le script web utilise `tests/*.test.mjs`, qui ajoute automatiquement tout fichier de test, y compris `measurement-series.test.mjs` et les quatre anciennes suites oubliées.
+- Ajout de `tests/test-registry.test.mjs` contre toute liste d’exécution incomplète.
+- Assertions historiques mises en phase avec les routes et composants actuels ; retrait de la page FAQ redondante et du composant public de scroll non référencé. Déclaration de `sessionStorage` de navigation ajoutée à la politique.
+- Vérification avec les dépendances installées : 38 fichiers, 331 tests réussis, aucun échec ni test ignoré.
+
+## 2026-11-05 — C5 / PAT-16 : cohérence, audit et notification des propositions
+
+- Confirmation et fin de rendez-vous bloquées en 409 pendant une proposition en attente ; ajout de `withdraw-proposal` professionnel et interdiction d’écraser une proposition non résolue.
+- Acceptation, refus, retrait et annulation patient/professionnel effacent les champs `proposed_*` ; le refus conserve statut et créneau initial.
+- Ajout des événements d’audit `appointment.proposal_confirmed` et `appointment.proposal_declined`, ainsi que `appointment.proposal_withdrawn`. L’identifiant technique du rendez-vous est admis dans les métadonnées d’audit ; aucun contenu clinique ni motif n’y figure.
+- Acceptation et refus notifient le professionnel par push après commit (si push configurée et abonnement actif). Interface professionnelle : retrait d’une proposition en attente.
+- Tests Django C5 ajoutés, non exécutés (Django absent). Tests web d’agenda : 9/9 réussis. Recette staging non exécutée.
+
+## 2026-11-05 — C4 / PAT-16 : déplacement d’un rendez-vous confirmé
+
+- Ajout de `APPOINTMENT_TRANSITIONS`, matrice explicite des actions patient/professionnel et états source/cible.
+- Le professionnel peut proposer un autre créneau depuis un rendez-vous demandé ou confirmé. Pour un rendez-vous confirmé, la date et le statut initiaux restent intacts jusqu’à l’acceptation du patient.
+- Le patient peut accepter la proposition depuis les deux statuts ou la refuser ; le refus retire les champs proposés sans modifier le statut ni le créneau original.
+- Les interfaces professionnel et patient exposent les actions correspondantes ; tests de matrice et d’intégration ajoutés. Tests web d’agenda : 8/8 réussis ; tests Django non exécutés (Django absent).
+- Durée de validité 48 h et avertissement non bloquant en cas de chevauchement restent des choix à confirmer ; non implémentés.
+
+## 2026-11-05 — C3 / PAT-16 : entrées invalides et réponses 400
+
+- Le catalogue valide `establishment_id` comme UUID (400 si invalide ; établissement inconnu : professionnels vides, sans énumération).
+- Les bornes de l’agenda professionnel acceptent date ISO ou date-heure ISO, rejettent les valeurs invalides, les bornes inversées et les fenêtres de plus de 92 jours ; maximum 500 rendez-vous renvoyés.
+- L’action `propose` valide `starts_at` futur avec fuseau, `ends_at` facultatif/postérieur et motif ≤ 500 caractères avant d’écrire les dates.
+- Ajout de `config.exception_handler` pour convertir les `django.core.exceptions.ValidationError` en réponses DRF 400.
+- Tests ajoutés dans `test_pat16_input_validation.py`. `py_compile` réussi ; tests Django non exécutés (Django absent) ; staging non exécuté.
+
+## 2026-11-05 — C2 / PAT-16 : identité minimale dans l’agenda professionnel
+
+- `ProfessionalAppointmentSerializer` ajoute uniquement le prénom et le nom du profil patient dans les réponses de l’agenda professionnel ; les profils d’enfant utilisent leur propre profil.
+- L’API patient conserve `AppointmentSerializer` sans nom ; la vue établissement reste limitée à l’identifiant technique, aux dates et au statut. L’OpenAPI précise ces frontières.
+- `ProfessionalAgenda.tsx` affiche le nom du patient dans chaque rendez-vous.
+- Tests ciblés ajoutés : cloisonnement par professionnel, profil enfant, absence du nom côté patient et champs limités côté établissement. Syntaxe Python vérifiée ; tests Django et recette staging non exécutés.
+
+## 2026-11-05 — C1 / ETA-11 : référent médical
+
+- Ajout du champ `EstablishmentMembership.is_medical_referent`, conforme à la migration `establishments.0015` déjà présente.
+- Ajout de l’endpoint POST de désignation/retrait, réservé à l’administrateur actif et limité aux rattachements actifs de professionnels vérifiés ; auto-désignation et valeurs non booléennes refusées.
+- Audit `establishment.medical_referent_changed` et notification push du professionnel après validation de la transaction.
+- Tests ciblés ajoutés dans `apps/api/apps/establishments/test_eta_11_medical_referent.py`. Leur exécution et `makemigrations --check` restent à lancer dans un environnement avec Django installé.
+
 ## 2026-11-05 — PAT-16 : rendez-vous de la demande aux rappels
 
 - **Patient** : catalogue limité aux établissements actifs à fiche complète, puis professionnels actifs rattachés ; création d’une demande avec statut « Demandé », choix du motif, du début et de la fin, et confirmation d’un créneau proposé.
@@ -8,7 +53,7 @@
 - **Notifications** : notification applicative et push au patient lors des changements ; commande `send_due_reminders` étendue aux rappels neutres la veille et quelques heures avant, avec clé d’idempotence.
 - **Sécurité** : les rendez-vous ne créent aucun accès au dossier ; l’accès clinique reste exclusivement gouverné par QR et consentement, avec cloisonnement par établissement.
 - **Migration** : `care.0027_appointment_workflow` ajoute les créneaux proposés, le motif de changement et les dispatches de rappel.
-- **Validation** : syntaxe Python OK, `manage.py check` OK, tests ciblés Django 14/14 OK, tests agenda web 7/7 OK. La vérification complète des migrations reste bloquée par une dérive préexistante `establishments.0016_remove_establishmentmembership_is_medical_referent`.
+- **Validation historique** : cette entrée rapporte une vérification antérieure à la correction C1. La dérive du champ `is_medical_referent` est corrigée par l’alignement du modèle sur `establishments.0015` ; la suite Django et `makemigrations --check` doivent encore être exécutés dans l’environnement de dépendances.
 
 ## 2026-11-05 — PRO-13 : saisie de mesures par le médecin
 

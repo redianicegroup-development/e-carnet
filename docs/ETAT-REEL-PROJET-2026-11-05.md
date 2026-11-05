@@ -17,7 +17,8 @@ L’état « présent dans le dépôt » ne signifie pas « validé en staging �
 - Contrôles serveur de permissions, cloisonnement des établissements, journalisation des opérations sensibles et migrations d’audit append-only avec protection PostgreSQL contre `TRUNCATE`.
 - Données patient : profil titulaire, profils représentés, carte d’urgence, déclarations, contacts de confiance, transferts soumis à vérification et mécanismes d’accès contrôlé.
 - Parcours professionnel : profil, spécialités déclaratives, rattachements établissement, demandes d’accès et credentials ; aucun justificatif professionnel n’est collecté automatiquement par le code observé.
-- Parcours de soins : pré-consultations, consultations signées, documents, vaccinations avec confirmation professionnelle, mesures de santé structurées, rendez-vous, notifications, rappels, plans de suivi, prescriptions et export XLSX.
+- Pré-consultations : modèles configurables par établissement, brouillon jusqu’à validation médicale, champ `EstablishmentMembership.is_medical_referent` aligné sur la migration `establishments.0015`, désignation réservée à l’administrateur actif et notification push du professionnel concerné.
+- Parcours de soins : pré-consultations, consultations signées, documents, vaccinations avec confirmation professionnelle, mesures de santé structurées, rendez-vous (agenda professionnel avec prénom/nom minimal du profil patient ; endpoints patient et établissement sans nom ; validation C3 et transitions C4 pour propositions depuis un rendez-vous demandé ou confirmé), notifications, rappels, plans de suivi, prescriptions et export XLSX.
 - QR d’accès opaque, hashé, à usage unique, durée configurée par défaut à 300 secondes, invalidation des anciens jetons, limitation de création et commande de purge.
 - Uploads de documents prévus pour Cloudinary privé en environnement configuré ; le stockage local est conservé pour les tests et les environnements sans configuration. L’URL média publique ne sert pas les documents privés.
 - Service worker et hors connexion limités aux instantanés explicitement prévus : profils/déclarations par profil et préférences ; les consultations, documents, agenda et réponses médicales ne sont pas mis en cache hors connexion par le code documenté.
@@ -45,6 +46,7 @@ L’état « présent dans le dépôt » ne signifie pas « validé en staging �
 - `python3 ops/test-monitoring-event.py` : signature, refus, mauvais usage et API injoignable vérifiés.
 - Simulation locale saine → panne readiness → rétablissement réussie.
 - Le ZIP différentiel ADM-10 est testable, mais aucune recette staging réelle n’a été exécutée depuis ce sandbox.
+- Les corrections ETA-11/C1 et PAT-16/C2/C3/C4/C5 sont syntaxiquement vérifiées (`py_compile`) ; les tests Django ciblés et `makemigrations --check` restent à exécuter dans un environnement avec Django. Tests web : `npm test` réussit avec 38 fichiers et 331/331 tests (C6) ; tests ciblés agenda C2/C4/C5 : 9/9. La durée de proposition et l’avertissement de chevauchement restent à trancher.
 
 ## Ce qui n’est pas démontré par cette archive
 

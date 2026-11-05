@@ -1,7 +1,7 @@
 // Décisions du 31/10 sur les maquettes : accueils sans grilles ni « À faire » de préparation, pas de bouton central, dossiers ouverts,
 // carte virtuelle carrée, historique des consultations dans Historique, boutons Google à largeur partagée, page hors connexion.
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const read = (rel) => readFileSync(new URL(`../${rel}`, import.meta.url), "utf8");
@@ -35,7 +35,7 @@ test("le dossier patient et le dossier médecin sont toujours ouverts ; la carte
 
 test("pas de bouton jaune central dans les navigations", () => {
   assert.doesNotMatch(read("src/lib/spaces.ts"), /action: \{/);
-  assert.equal(existsSync(new URL("../src/components/shell/sidebar-action.css", import.meta.url)), false);
+  assert.doesNotMatch(read("src/components/shell/AppSidebar.tsx"), /sidebar-action\.css|sb__action|ActionRow/);
 });
 
 test("Consultations ne garde que le parcours ; tout l'historique est dans Historique, avec filtres et sceau", () => {

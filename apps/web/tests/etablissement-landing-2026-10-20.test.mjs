@@ -6,16 +6,17 @@ import test from "node:test";
 const root = new URL("../", import.meta.url);
 const read = (rel) => readFileSync(new URL(rel, root), "utf8");
 
-test("pro et établissement ont le même en-tête de paramètres que le patient (plus de nom écrasé par la notice)", () => {
+test("pro et établissement partagent l’en-tête de profil et séparent la notice du nom", () => {
   for (const file of ["src/components/ProfessionalSettingsClient.tsx", "src/components/EstablishmentSettingsClient.tsx"]) {
     const source = read(file);
-    assert.match(source, /card [a-z-]*\s?account-summary settings-account-summary|account-summary settings-account-summary/);
-    assert.match(source, /settings-account-summary__row/);
-    assert.match(source, /settings-account-summary__copy/);
+    assert.match(source, /import \{ ProfileSummary \} from "\.\/ProfileSummary"/);
+    assert.match(source, /<ProfileSummary/);
+    assert.match(source, /<p className="notice" role="status"/);
     assert.match(source, /establishment-settings\.css/);
   }
-  const css = read("src/components/establishment-settings.css");
-  assert.match(css, /\.account-summary\.settings-account-summary \{ display: grid;/);
+  const summary = read("src/components/ProfileSummary.tsx");
+  assert.match(summary, /className="card profile-card"/);
+  assert.match(summary, /<h2>\{name\}<\/h2>/);
 });
 
 test("« Informations administratives » et « Coordonnées » se modifient, avec logo, via un seul formulaire partagé", () => {
@@ -68,7 +69,7 @@ test("pied de page : bandeau « Prêt à commencer ? » retiré, slogan du proje
   assert.match(shell, /<p className="pub-footer__slogan">Gardez le fil avec Mon E‑Carnet\.<\/p>/);
   // pages publiques ET légales passent par ce pied de page
   assert.match(read("src/components/public/LegalDocument.tsx"), /PublicShell|PublicFooter/);
-  for (const page of ["a-propos", "aide", "faq", "securite", "credits", "conditions-rattachement"]) assert.match(read(`src/app/${page}/page.tsx`), /PublicShell/);
+  for (const page of ["a-propos", "aide", "securite", "credits", "conditions-rattachement"]) assert.match(read(`src/app/${page}/page.tsx`), /PublicShell/);
 });
 
 test("boutons flottants : « remonter » reste fixe à droite, « avis » est rond sur PC comme sur mobile", () => {

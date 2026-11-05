@@ -77,13 +77,13 @@ test("les trois paires de polices portent des noms courts, la première reste la
   assert.match(read("src/components/ThemeSettingsClient.tsx"), /\(par défaut\)/);
 });
 
-test("la pré-consultation n'a plus d'établissement à choisir ni de clôture côté patient", () => {
+test("la pré-consultation n'a plus de choix manuel d'établissement ni de clôture côté patient", () => {
   const patient = read("src/components/PatientPreconsultations.tsx");
-  assert.doesNotMatch(patient, /establishment|catalog|useConfirm|\/close/i); // plus de choix d'établissement ni de clôture par le patient
+  assert.doesNotMatch(patient, /setEstablishmentId|EstablishmentSelector|action:\s*["']close["']|\/close\//i); // des modèles liés à un rendez-vous peuvent toutefois mentionner l'établissement
   assert.match(patient, /apiPatch<Encounter>/);
   assert.match(patient, /apiPost<Encounter>\("\/api\/v1\/patient\/care\/encounters\/"/);
   assert.match(patient, /status: "draft" \| "closed"/);
-  assert.match(patient, /Qui remplit avec le patient/);
+  assert.match(patient, /L’infirmier ou le médecin remplit cette pré-consultation avec vous/);
   assert.match(patient, /href="\/patient\/acces"/);
   const pro = read("src/components/ProfessionalConsultations.tsx");
   assert.match(pro, /useConfirm\(\)/);

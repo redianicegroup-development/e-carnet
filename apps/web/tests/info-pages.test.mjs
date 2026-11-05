@@ -93,9 +93,10 @@ test("les schémas ne dessinent ni nom de personne, ni promesse, ni information 
   const recipients = src("components/public/figures/RecipientsFigure.tsx");
   assert.match(recipients, /id: "tech"[^}]*gate: "plain"/);
   assert.match(recipients, /id: "team"[^}]*gate: "plain"/);
-  // les pages légales gardent leurs garde-fous : le schéma des destinataires reprend la phrase du tableau
-  assert.ok(recipients.includes("Un rattachement à un établissement ne donne pas, à lui seul, accès à un dossier patient."));
-  assert.ok(src("app/confidentialite/page.tsx").includes("RecipientsFigure"));
+  // la phrase de garde-fou se trouve dans le texte légal accompagnant le schéma, pas dans le dessin lui-même
+  const privacy = src("app/confidentialite/page.tsx");
+  assert.ok(privacy.includes("Un rattachement à un établissement ne donne pas, à lui seul, accès à un dossier patient."));
+  assert.ok(privacy.includes("RecipientsFigure"));
 });
 
 test("les anciennes classes CSS de À propos (about-chain) ne subsistent plus et la page garde ses ancres", () => {

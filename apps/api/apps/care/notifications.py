@@ -72,6 +72,25 @@ def notify_patient(
         return notification
 
 
+def notify_professional(professional, *, kind, title, body, appointment_id):
+    """Planifie une notification push au professionnel après validation de l’action."""
+    user_id = getattr(professional, "user_id", None)
+    if not user_id:
+        return
+    from .push import send_push_to_user
+
+    transaction.on_commit(
+        lambda: send_push_to_user(
+            user_id,
+            kind=kind,
+            title=title,
+            body=body,
+            url="/professionnel/agenda",
+            data={"appointment_id": str(appointment_id)},
+        )
+    )
+
+
 def _push_after_commit(patient, notification):
     """Prévient les appareils abonnés une fois la transaction validée. Ne lève jamais d'exception.
 

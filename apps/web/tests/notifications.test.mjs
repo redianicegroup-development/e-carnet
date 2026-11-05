@@ -24,7 +24,8 @@ test("la cloche patient utilise l’inbox et conserve un panneau accessible", ()
   assert.match(bell, /AudioContext/);
   assert.match(bell, /playNotificationChime/);
   assert.match(bell, /aria-pressed=\{soundEnabled\}/);
-  assert.match(read("src/components/notifications/notification-bell.css"), /ecarnet-gooey/);
+  assert.match(bell, /gm__trigger notification-bell__trigger/);
+  assert.match(read("src/components/notifications/notification-bell.css"), /notification-bell__panel/);
   assert.match(read("src/components/notifications/notification-bell.css"), /notification-bell-pulse/);
 });
 
@@ -45,7 +46,7 @@ test("les chemins de contexte des notifications restent statiques", () => {
   const bell = read("src/components/notifications/NotificationBell.tsx");
   assert.doesNotMatch(bell, /[?&](id|notification|kind)=/i);
   assert.match(bell, /patient\/consultations/);
-  assert.match(bell, /patient\/acces/);
+  assert.match(bell, /patient\/historique#acces/);
   assert.match(bell, /patient\/carnet#vaccinations/);
   assert.match(bell, /patient\/carnet#medications/);
 });

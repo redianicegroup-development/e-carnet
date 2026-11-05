@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, time, timedelta
 import uuid
 from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -7,6 +7,7 @@ from django.db import transaction
 from django.db.models import Q, Sum
 from django.http import FileResponse, HttpResponse
 from django.utils import timezone
+from django.utils.dateparse import parse_date, parse_datetime
 from apps.identity.throttles import WriteScopedThrottle
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -23,9 +24,9 @@ from apps.audit.services import record_event
 from apps.cloudinary_storage import CLOUDINARY_CONFIGURED, destroy as cloudinary_destroy, extension_from_name, signed_download, upload as cloudinary_upload
 from .models import AccessGrant, Appointment, CareEncounter, Consultation, ExamRequest, FollowUpPlan, FollowUpPlanItem, FollowUpPlanRevision, HealthMeasurement, MedicalDocument, MedicationIntake, MedicationReminder, PatientNotification, PreconsultationTemplate, PushSubscription, Vaccination
 from .pdf_compression import compress_pdf_lossless
-from .serializers import AccessGrantSerializer, AppointmentSerializer, CareEncounterSerializer, ConsultationSerializer, FollowUpPlanSerializer, HealthMeasurementSerializer, MedicalDocumentSerializer, MedicationIntakeSerializer, MedicationReminderSerializer, PatientNotificationSerializer, PreconsultationTemplateSerializer, ProfessionalAccessGrantSerializer, ProfessionalConsultationCreateSerializer, VaccinationSerializer
+from .serializers import AccessGrantSerializer, AppointmentSerializer, CareEncounterSerializer, ConsultationSerializer, FollowUpPlanSerializer, HealthMeasurementSerializer, MedicalDocumentSerializer, MedicationIntakeSerializer, MedicationReminderSerializer, PatientNotificationSerializer, PreconsultationTemplateSerializer, ProfessionalAccessGrantSerializer, ProfessionalAppointmentSerializer, ProfessionalConsultationCreateSerializer, ProposeAppointmentSerializer, VaccinationSerializer
 from .services import QR_TOKEN_TTL_SECONDS, SelfAccessRefused, create_patient_qr_token, create_professional_grant, is_own_patient_file, require_scope
-from .notifications import notify_patient
+from .notifications import notify_patient, notify_professional
 from .push import is_allowed_endpoint, push_enabled, vapid_public_key
 from .consultation_services import validate_consultation
 
@@ -527,11 +528,28 @@ class PatientAppointmentOptionsView(APIView):
     def get(self, request):
         from apps.establishments.models import Establishment, EstablishmentMembership
         establishments = Establishment.with_complete_profile().filter(status="active").values("id", "name", "city", "establishment_type")
-        establishment_id = request.query_params.get("establishment_id")
+        establishment_id = None
         professionals = []
-        if establishment_id:
+        if "establishment_id" in request.query_params:
+            raw_establishment_id = request.query_params.get("establishment_id", "")
+            try:
+                establishment_id = uuid.UUID(raw_establishment_id)
+            except (ValueError, TypeError, AttributeError):
+                raise ValidationError({"establishment_id": "Identifiant d’établissement invalide."})
             professionals = list(EstablishmentMembership.objects.filter(establishment_id=establishment_id, status="active", professional__verification_status="verified", professional__user__is_active=True).select_related("professional__user").values("professional_id", "professional__user__first_name", "professional__user__last_name", "professional__specialty"))
         return Response({"success": True, "data": {"establishments": [{"id": str(x["id"]), "name": x["name"], "city": x["city"], "type": x["establishment_type"]} for x in establishments], "professionals": [{"id": str(x["professional_id"]), "name": (f'{x["professional__user__first_name"]} {x["professional__user__last_name"]}').strip(), "specialty": x["professional__specialty"]} for x in professionals]}})
+
+
+def _parse_appointment_bound(value, parameter):
+    parsed = parse_datetime(value)
+    if parsed is None:
+        calendar_date = parse_date(value)
+        if calendar_date is None:
+            raise ValidationError({parameter: "Date invalide ; utilisez une date ISO ou une date-heure ISO 8601."})
+        parsed = datetime.combine(calendar_date, time.min)
+    if timezone.is_naive(parsed):
+        parsed = timezone.make_aware(parsed, timezone.get_current_timezone())
+    return parsed
 
 
 class PatientAppointmentListCreateView(APIView):
@@ -561,23 +579,35 @@ class PatientAppointmentDetailView(APIView):
         appointment = Appointment.objects.select_for_update().filter(pk=pk, patient=profile_for(request.user, request)).first()
         if not appointment:
             return Response({"success": False, "message": "Rendez-vous introuvable."}, status=404)
-        if request.data.get("action") == "confirm-proposal" and appointment.proposed_starts_at and appointment.status == "requested":
+        action = request.data.get("action")
+        next_status = APPOINTMENT_TRANSITIONS.get(("patient", action), {}).get(appointment.status)
+        has_proposal = appointment.proposed_starts_at is not None
+        if action == "confirm-proposal" and has_proposal and next_status is not None:
             appointment.starts_at = appointment.proposed_starts_at
             appointment.ends_at = appointment.proposed_ends_at
             appointment.proposed_starts_at = appointment.proposed_ends_at = None
-            appointment.status = "confirmed"
+            appointment.status = next_status
             appointment.change_reason = "Créneau proposé confirmé par le patient"
             appointment.save(update_fields=("starts_at", "ends_at", "proposed_starts_at", "proposed_ends_at", "status", "change_reason", "updated_at"))
+            record_event(event_type="appointment.proposal_confirmed", actor=request.user, actor_role=patient_actor_role(request), patient=appointment.patient, establishment=appointment.establishment, metadata={"appointment_id": str(appointment.id), "status": appointment.status})
+            notify_professional(appointment.professional, kind="appointment.proposal_confirmed", title="Créneau accepté", body="Le patient a accepté votre proposition de rendez-vous.", appointment_id=appointment.id)
             _notify_appointment_change(appointment, "Rendez-vous confirmé", "Votre rendez-vous est confirmé.")
             return Response({"success": True, "data": AppointmentSerializer(appointment).data})
-        if request.data.get("action") == "cancel":
+        if action == "decline-proposal" and has_proposal and next_status is not None:
+            appointment.proposed_starts_at = appointment.proposed_ends_at = None
+            appointment.save(update_fields=("proposed_starts_at", "proposed_ends_at", "updated_at"))
+            record_event(event_type="appointment.proposal_declined", actor=request.user, actor_role=patient_actor_role(request), patient=appointment.patient, establishment=appointment.establishment, metadata={"appointment_id": str(appointment.id), "status": appointment.status})
+            notify_professional(appointment.professional, kind="appointment.proposal_declined", title="Créneau refusé", body="Le patient a refusé votre proposition de rendez-vous.", appointment_id=appointment.id)
+            return Response({"success": True, "data": AppointmentSerializer(appointment).data})
+        if action == "cancel":
             reason = str(request.data.get("reason", "")).strip()
             if not reason:
                 return Response({"success": False, "message": "Un motif est requis pour annuler le rendez-vous."}, status=400)
-            if appointment.status not in ("requested", "confirmed"):
+            if next_status is None:
                 return Response({"success": False, "message": "La transition demandée n'est pas autorisée."}, status=409)
-            appointment.status = "cancelled"; appointment.change_reason = reason
-            appointment.save(update_fields=("status", "change_reason", "updated_at"))
+            appointment.status = next_status; appointment.change_reason = reason
+            appointment.proposed_starts_at = appointment.proposed_ends_at = None
+            appointment.save(update_fields=("status", "change_reason", "proposed_starts_at", "proposed_ends_at", "updated_at"))
             record_event(event_type="appointment.cancelled", actor=request.user, actor_role=patient_actor_role(request), patient=appointment.patient, establishment=appointment.establishment, metadata={"appointment_id": str(appointment.id), "status": appointment.status})
             _notify_appointment_change(appointment, "Rendez-vous annulé", "Votre rendez-vous a été annulé.")
             return Response({"success": True, "data": AppointmentSerializer(appointment).data})
@@ -602,6 +632,18 @@ def _notify_appointment_change(appointment, title, body):
     notify_patient(appointment.patient, kind="appointment.updated", title=title, body=body, metadata={"appointment_id": str(appointment.id), "status": appointment.status})
 
 
+APPOINTMENT_TRANSITIONS = {
+    ("professional", "propose"): {"requested": "requested", "confirmed": "confirmed"},
+    ("professional", "withdraw-proposal"): {"requested": "requested", "confirmed": "confirmed"},
+    ("professional", "confirm"): {"requested": "confirmed"},
+    ("professional", "complete"): {"confirmed": "completed"},
+    ("professional", "cancel"): {"requested": "cancelled", "confirmed": "cancelled"},
+    ("patient", "confirm-proposal"): {"requested": "confirmed", "confirmed": "confirmed"},
+    ("patient", "decline-proposal"): {"requested": "requested", "confirmed": "confirmed"},
+    ("patient", "cancel"): {"requested": "cancelled", "confirmed": "cancelled"},
+}
+
+
 class ProfessionalAppointmentListView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -610,11 +652,23 @@ class ProfessionalAppointmentListView(APIView):
         if not professional:
             return Response({"success": False, "message": "Accès professionnel refusé."}, status=403)
         qs = Appointment.objects.filter(professional=professional).select_related("patient__user", "establishment")
-        if request.query_params.get("from"):
-            qs = qs.filter(starts_at__gte=request.query_params["from"])
-        if request.query_params.get("to"):
-            qs = qs.filter(starts_at__lt=request.query_params["to"])
-        return Response({"success": True, "data": AppointmentSerializer(qs, many=True).data})
+        bounds = {}
+        for parameter in ("from", "to"):
+            if parameter in request.query_params:
+                raw_value = request.query_params.get(parameter, "")
+                if not raw_value:
+                    raise ValidationError({parameter: "Ce paramètre ne peut pas être vide."})
+                bounds[parameter] = _parse_appointment_bound(raw_value, parameter)
+        if "from" in bounds and "to" in bounds:
+            if bounds["from"] >= bounds["to"]:
+                raise ValidationError({"to": "La borne de fin doit être postérieure à la borne de début."})
+            if bounds["to"] - bounds["from"] > timedelta(days=92):
+                raise ValidationError({"to": "La période demandée ne peut pas dépasser 92 jours."})
+        if "from" in bounds:
+            qs = qs.filter(starts_at__gte=bounds["from"])
+        if "to" in bounds:
+            qs = qs.filter(starts_at__lt=bounds["to"])
+        return Response({"success": True, "data": ProfessionalAppointmentSerializer(qs[:500], many=True).data})
 
     @transaction.atomic
     def post(self, request):
@@ -626,23 +680,35 @@ class ProfessionalAppointmentListView(APIView):
             return Response({"success": False, "message": "Rendez-vous introuvable dans votre agenda."}, status=404)
         action = request.data.get("action")
         reason = str(request.data.get("reason", "")).strip()
-        transitions = {"confirm": ("requested", "confirmed"), "cancel": (("requested", "confirmed"), "cancelled"), "complete": ("confirmed", "completed")}
         if action == "propose":
-            if appointment.status != "requested" or not request.data.get("starts_at") or not reason:
-                return Response({"success": False, "message": "Un nouveau créneau et un motif sont requis."}, status=400)
-            appointment.proposed_starts_at = request.data["starts_at"]; appointment.proposed_ends_at = request.data.get("ends_at"); appointment.change_reason = reason
+            if APPOINTMENT_TRANSITIONS.get(("professional", "propose"), {}).get(appointment.status) is None:
+                return Response({"success": False, "message": "La transition demandée n’est pas autorisée."}, status=409)
+            if appointment.proposed_starts_at is not None:
+                return Response({"success": False, "message": "Une proposition est déjà en attente ; retirez-la avant d’en créer une autre."}, status=409)
+            proposal = ProposeAppointmentSerializer(data=request.data)
+            proposal.is_valid(raise_exception=True)
+            appointment.proposed_starts_at = proposal.validated_data["starts_at"]
+            appointment.proposed_ends_at = proposal.validated_data.get("ends_at")
+            appointment.change_reason = proposal.validated_data["reason"]
             appointment.save(update_fields=("proposed_starts_at", "proposed_ends_at", "change_reason", "updated_at"))
             _notify_appointment_change(appointment, "Nouveau créneau proposé", "Un nouveau créneau est proposé pour votre rendez-vous.")
-        elif action == "confirm" and appointment.status == "requested":
-            appointment.status = "confirmed"; appointment.save(update_fields=("status", "updated_at")); _notify_appointment_change(appointment, "Rendez-vous confirmé", "Votre rendez-vous est confirmé.")
-        elif action == "complete" and appointment.status == "confirmed":
-            appointment.status = "completed"; appointment.save(update_fields=("status", "updated_at")); _notify_appointment_change(appointment, "Rendez-vous terminé", "Votre rendez-vous est terminé.")
-        elif action == "cancel" and appointment.status in ("requested", "confirmed") and reason:
-            appointment.status = "cancelled"; appointment.change_reason = reason; appointment.save(update_fields=("status", "change_reason", "updated_at")); _notify_appointment_change(appointment, "Rendez-vous annulé", "Votre rendez-vous a été annulé.")
+        elif action == "withdraw-proposal" and appointment.proposed_starts_at is not None and APPOINTMENT_TRANSITIONS.get(("professional", action), {}).get(appointment.status) is not None:
+            appointment.proposed_starts_at = appointment.proposed_ends_at = None
+            appointment.save(update_fields=("proposed_starts_at", "proposed_ends_at", "updated_at"))
+            _notify_appointment_change(appointment, "Proposition retirée", "Le professionnel a retiré sa proposition de créneau.")
+        elif action in ("confirm", "complete") and APPOINTMENT_TRANSITIONS.get(("professional", action), {}).get(appointment.status):
+            if appointment.proposed_starts_at is not None:
+                return Response({"success": False, "message": "Une proposition est en attente de décision du patient."}, status=409)
+            appointment.status = APPOINTMENT_TRANSITIONS[("professional", action)][appointment.status]
+            appointment.save(update_fields=("status", "updated_at"))
+            _notify_appointment_change(appointment, "Rendez-vous confirmé" if action == "confirm" else "Rendez-vous terminé", "Votre rendez-vous est confirmé." if action == "confirm" else "Votre rendez-vous est terminé.")
+        elif action == "cancel" and APPOINTMENT_TRANSITIONS.get(("professional", action), {}).get(appointment.status) and reason:
+            appointment.status = APPOINTMENT_TRANSITIONS[("professional", action)][appointment.status]; appointment.change_reason = reason; appointment.proposed_starts_at = appointment.proposed_ends_at = None; appointment.save(update_fields=("status", "change_reason", "proposed_starts_at", "proposed_ends_at", "updated_at")); _notify_appointment_change(appointment, "Rendez-vous annulé", "Votre rendez-vous a été annulé.")
         else:
             return Response({"success": False, "message": "Transition de rendez-vous non autorisée ou motif manquant."}, status=409)
-        record_event(event_type=f"appointment.{action}", actor=request.user, actor_role="professional", patient=appointment.patient, establishment=appointment.establishment, metadata={"appointment_id": str(appointment.id), "status": appointment.status})
-        return Response({"success": True, "data": AppointmentSerializer(appointment).data})
+        event_type = "appointment.proposal_withdrawn" if action == "withdraw-proposal" else f"appointment.{action}"
+        record_event(event_type=event_type, actor=request.user, actor_role="professional", patient=appointment.patient, establishment=appointment.establishment, metadata={"appointment_id": str(appointment.id), "status": appointment.status})
+        return Response({"success": True, "data": ProfessionalAppointmentSerializer(appointment).data})
 
 
 class EstablishmentAppointmentListView(APIView):

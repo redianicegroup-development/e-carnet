@@ -1,0 +1,39 @@
+# Livraison différentielle cumulative C1 + C2 + C3 + C4 + C5 — ETA-11 / PAT-16
+
+Baseline : e-carnetv.1.4.1.zip
+Correctifs précédents inclus : C1 à C4 dans e-carnetv1.4-C4.zip
+Date : 2026-11-05
+
+## C5 — Cohérence des propositions et audit
+
+- Confirmation et complétion bloquées en 409 tant qu’une proposition est en attente.
+- Le professionnel peut retirer sa proposition ; une proposition en cours ne peut pas être écrasée.
+- Acceptation, refus, retrait et annulation patient/professionnel vident les dates proposées.
+- Les événements `appointment.proposal_confirmed` et `appointment.proposal_declined` sont auditables avec identifiant de rendez-vous et statut seulement ; le retrait est aussi audité.
+- Acceptation et refus notifient le professionnel par push après commit, si le push est configuré et qu’un abonnement est actif.
+
+## Fichiers ajoutés ou modifiés pour C5
+
+- apps/api/apps/care/views.py
+- apps/api/apps/care/notifications.py
+- apps/api/apps/care/test_pat16_proposal_audit.py
+- apps/api/apps/care/test_pat16_appointment_transitions.py
+- apps/api/apps/audit/services.py
+- apps/web/src/components/ProfessionalAgenda.tsx
+- apps/web/tests/agenda-2026-10-31.test.mjs
+- docs/api/openapi.yaml
+- docs/PLAN-IMPLEMENTATION-V2-RESTANT-2026-11-05.md
+- docs/ETAT-REEL-PROJET-2026-11-05.md
+- docs/CHANGELOG.md
+- MANIFEST-PAT16-C5.txt
+
+Le ZIP reprend tous les fichiers et tests des livraisons C1 à C4.
+
+## Vérifications et limites
+
+- `py_compile` des fichiers Python concernés : réussi.
+- Tests web ciblés agenda : 9/9 réussis.
+- Tests Django C5 ajoutés mais non exécutés ; Django n’est pas installé (`ModuleNotFoundError`).
+- Recette staging non exécutée.
+- Durée de validité 48 h et avertissement de chevauchement restent à trancher.
+- Aucun secret, `.env`, base SQLite ou dépendance n’est inclus.

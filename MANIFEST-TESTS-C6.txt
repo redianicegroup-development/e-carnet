@@ -1,0 +1,42 @@
+# Livraison cumulative C1 + C2 + C3 + C4 + C5 + C6
+
+Base différentielle : e-carnetv1.4-C5.zip
+Date : 2026-11-05
+
+## C6 — Enregistrement et vérification des tests web
+
+- `apps/web/package.json` lance désormais `tests/*.test.mjs` via Node `--test`, sans liste manuelle susceptible d’oublier un fichier.
+- Les cinq suites auparavant omises sont couvertes automatiquement : `measurement-series.test.mjs`, `etablissement-landing-2026-10-20.test.mjs`, `modal-illustrations.test.mjs`, `mon-e-carnet-v13.test.mjs` et `notifications.test.mjs`.
+- `apps/web/tests/test-registry.test.mjs` garde-fou : exige le glob d’exécution et son propre enregistrement.
+- Assertions périmées réalignées sur l’architecture actuelle. La route `/faq` redondante et le composant `PublicFooterScrollToTop.tsx` non utilisé sont supprimés ; les pages publiques et les espaces utilisent le composant partagé `ScrollToTopOnNavigate`.
+- La politique de confidentialité décrit maintenant `sessionStorage` pour le marqueur temporaire de retour en haut (chemin de page + horodatage, expiration à 10 secondes).
+
+## Fichiers modifiés/ajoutés
+
+- apps/web/package.json
+- apps/web/tests/test-registry.test.mjs (ajout)
+- apps/web/tests/etablissement-landing-2026-10-20.test.mjs
+- apps/web/tests/mon-e-carnet-v13.test.mjs
+- apps/web/tests/notifications.test.mjs
+- apps/web/tests/interface-2026-10-28.test.mjs
+- apps/web/tests/maquettes-2026-10-31.test.mjs
+- apps/web/tests/info-pages.test.mjs
+- apps/web/tests/fusion-correctifs.test.mjs
+- apps/web/tests/legal.test.mjs
+- apps/web/tests/navigation-2026-11-03.test.mjs
+- apps/web/src/app/confidentialite/page.tsx
+- docs/PLAN-IMPLEMENTATION-V2-RESTANT-2026-11-05.md
+- docs/ETAT-REEL-PROJET-2026-11-05.md
+- docs/CHANGELOG.md
+- MANIFEST-TESTS-C6.txt
+
+## Suppressions à appliquer à l’archive source avant la livraison
+
+- apps/web/src/app/faq/page.tsx
+- apps/web/src/components/public/PublicFooterScrollToTop.tsx
+
+Ces chemins sont listés ici parce qu’un ZIP différentiel ne peut pas porter une suppression de fichier.
+
+## Vérification
+
+`npm test` exécuté depuis `apps/web` avec dépendances installées : **38 fichiers, 331 tests réussis, 0 échec, 0 test ignoré**. Le test-registre s’est exécuté dans cette même commande.
