@@ -6,7 +6,7 @@ Le backend expose un webhook générique compatible avec Render, Hodi ou un serv
 POST /api/v1/identity/monitoring/webhook/
 ```
 
-Il ne demande pas de session utilisateur. Il exige une signature HMAC-SHA256 calculée avec le secret `ECARNET_MONITOR_WEBHOOK_SECRET` sur l’**horodatage et le corps JSON brut**.
+Il ne demande pas de session utilisateur. Il exige un identifiant UUID d’événement et une signature HMAC-SHA256 calculée avec le secret `ECARNET_MONITOR_WEBHOOK_SECRET` sur l’**horodatage, l’identifiant et le corps JSON brut**.
 
 ## Configuration
 
@@ -22,26 +22,28 @@ Ne jamais mettre ce secret dans le frontend, dans Git, dans une URL ou dans une 
 
 ```text
 X-Ecarnet-Monitor-Timestamp: <secondes Unix, ex. 1792000000>
-X-Ecarnet-Monitor-Signature: sha256=<hexadécimal HMAC-SHA256 de "horodatage.corps">
+X-Ecarnet-Monitor-Event-Id: <UUID unique de l’événement>
+X-Ecarnet-Monitor-Signature: sha256=<hexadécimal HMAC-SHA256 de "horodatage.identifiant.corps">
 ```
 
 Exemple de calcul :
 
 ```python
-import hashlib, hmac, json, time
+import hashlib, hmac, json, time, uuid
 
 body = json.dumps(payload, separators=(",", ":"), ensure_ascii=False).encode()
 timestamp = str(int(time.time()))
+event_id = str(uuid.uuid4())
 signature = hmac.new(
     b"une-valeur-longue-aleatoire",
-    timestamp.encode() + b"." + body,
+    timestamp.encode() + b"." + event_id.encode() + b"." + body,
     hashlib.sha256,
 ).hexdigest()
 ```
 
-Le corps et la signature doivent être calculés sur exactement les mêmes octets. L’horodatage fait partie de la signature : un événement capturé ne peut pas être rejoué au-delà de la tolérance (300 secondes, réglable avec `ECARNET_MONITOR_WEBHOOK_TOLERANCE_SECONDS`). L’horloge de l’émetteur doit donc rester à l’heure (NTP).
+Le corps, l’identifiant et la signature doivent être calculés sur exactement les mêmes octets. L’horodatage fait partie de la signature : un événement capturé ne peut pas être accepté au-delà de la tolérance (300 secondes, réglable avec `ECARNET_MONITOR_WEBHOOK_TOLERANCE_SECONDS`). La table `MonitoringWebhookEvent` retient ensuite chaque UUID accepté ; un même UUID rejoué répond `200` avec `already_received: true` et ne modifie pas l’incident. L’horloge de l’émetteur doit donc rester à l’heure (NTP).
 
-Un événement refusé, signé avec l’ancien format (sans horodatage), trop vieux ou daté du futur, répond `401`.
+Un événement refusé, sans UUID, signé avec l’ancien format, trop vieux ou daté du futur, répond `401`.
 
 ## Envoyer un événement : le script fourni
 
@@ -93,8 +95,10 @@ La résolution externe est affichée dans `/admin`, avec la mention « Résolu p
 
 ## Protection
 
-- Signature absente, incorrecte, sans horodatage ou hors tolérance : `401`.
+- Signature absente, incorrecte, sans UUID, sans horodatage ou hors tolérance : `401`.
+- UUID déjà reçu : `200`, `already_received: true`, sans modification de l’incident ; le rejeu est journalisé.
 - Débit limité par adresse IP, requêtes refusées comprises : `ECARNET_RATE_MONITOR_WEBHOOK` (600 par heure par défaut), puis `429`.
 - Journal d’audit : l’ouverture, la réouverture, le changement de gravité et la résolution d’un incident sont tracés (`operations.incident.external_opened` / `external_resolved`, acteur « monitoring »). Un même événement répété chaque minute n’est tracé qu’une fois.
 - Le payload est strictement borné : aucun texte clinique, identifiant patient, e-mail, jeton ou corps de requête ne doit être envoyé. Le webhook ne remplace pas la sonde : il reçoit les événements d’un outil externe qui doit lui-même vérifier la disponibilité de l’API.
+- Les UUID reçus sont purgés par `python manage.py cleanup_monitoring_webhook_events` après deux fois la tolérance (`2 × ECARNET_MONITOR_WEBHOOK_TOLERANCE_SECONDS`). Planifiez cette commande avec les autres tâches de nettoyage.
 - Ne changez pas le format des en-têtes sans prévenir l’émetteur : l’ancien format (signature seule) n’est plus accepté depuis le 27/10/2026.

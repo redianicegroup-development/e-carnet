@@ -1,0 +1,14 @@
+.professional-measurements { min-width: 0; }
+.professional-measurements__form { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); gap: 12px; align-items: end; }
+.professional-measurements__form .button { min-height: 44px; }
+.professional-measurements__message { min-height: 1.5em; margin: 10px 0; }
+.professional-measurements__history { margin-top: 18px; }
+.professional-measurements__history h3 { margin: 0 0 12px; font-size: 1rem; }
+.professional-measurements__list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.professional-measurements__list .record { min-width: 0; overflow-wrap: anywhere; }
+.professional-measurements__list .record p { margin: 5px 0; }
+.professional-measurements .notice.error p { margin-top: 0; }
+@media (max-width: 480px) {
+  .professional-measurements__form { grid-template-columns: minmax(0, 1fr); }
+  .professional-measurements__form .button { width: 100%; }
+}

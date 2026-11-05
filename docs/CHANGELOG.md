@@ -1,3 +1,10 @@
+## 2026-11-05 — PRO-13 : saisie de mesures par le médecin
+
+- Écran « Ajouter une mesure » dans la pré-consultation, visible après sélection d’un accès actif avec le périmètre `preconsultation` ; catalogue partagé des sept types, avec tension et glycémie gardées en texte libre.
+- Lecture GET protégée par le même grant : uniquement les mesures validées du patient dans l’établissement courant, avec provenance professionnelle, `Cache-Control: no-store` et audit `clinical_data.read`. La création reste attribuée par le serveur (`source=measured`) et auditée.
+- Le carnet patient affiche « Mesuré par … » ; les refus de périmètre, d’autorisation expirée/révoquée et d’auto-accès sont explicités. Aucune interprétation ni seuil clinique ajouté.
+- Tests web PRO-13 : 4/4 réussis ; typecheck complet vert et syntaxe Python vérifiée. Suite web entière : 289/296, les 7 échecs sont identiques sur l’archive originale (285/292), donc antérieurs à ce lot. Tests Django non exécutés (Django absent) ; recette staging à faire.
+
 ## 2026-11-04 — Sécurité des dépendances, export Excel, ouverture de dossier, textes « données réelles »
 
 - **Dépendances** : Next.js 16.3.8 → **16.4.4** (avec `eslint-config-next`), `cryptography` 47.0.0 → **50.0.0** (`requirements.in` : `>=50,<51` ; empreintes de `requirements.txt` régénérées depuis PyPI). Restant : `zod` < 4.6.6 signalé par `npm audit` (voir `DONNEES-REELLES-DECISION.md`).

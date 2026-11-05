@@ -1,11 +1,14 @@
 import { apiGet, apiPost } from "../infrastructure/api/client";
 import type { ConsultationRecord, ExamKind } from "../lib/care-records";
+import type { HealthMeasurementRecord, MeasurementKind } from "../lib/measurement-types";
 import type { StoredVitals, VitalPayload } from "../lib/vitals";
 
 export type ProfessionalGrant = { id: string; reference: string; professional_id: string | null; establishment_id: string | null; professional_name: string; facility_label: string; scope: string[]; source_establishments: string[]; status: "pending" | "active" | "refused" | "expired" | "revoked"; starts_at: string | null; expires_at: string | null; extension_count: number };
 export type Encounter = { id: string; reason: string; observations: string; vitals?: StoredVitals; recorded_with_help?: string; status: "draft" | "closed"; facility_label: string; provenance: { label: string } };
 export type Consultation = ConsultationRecord;
 export type ProfessionalVaccination = { id: string; vaccine_name: string; dose_number: number | null; administered_on: string | null; batch_number: string; facility: string; professional: string; next_due_on: string | null; document_id: string | null; confirmed_by_name: string; confirmed_at: string | null; status: "declared" | "documented" | "confirmed"; status_label: string; notes: string; created_at: string };
+export type ProfessionalMeasurement = HealthMeasurementRecord;
+export type ProfessionalMeasurementInput = { kind: MeasurementKind; value: string; unit: string; measured_at: string };
 
 export function listProfessionalGrants(): Promise<ProfessionalGrant[]> { return apiGet<ProfessionalGrant[]>("/api/v1/patient/care/professional/access-grants/"); }
 export function requestProfessionalGrant(scope: string[], qrToken: string, sourceEstablishments: string[] = []): Promise<ProfessionalGrant> { return apiPost<ProfessionalGrant>("/api/v1/patient/care/professional/access-grants/", { scope, qr_token: qrToken, source_establishments: sourceEstablishments }); }
@@ -13,6 +16,8 @@ export function requestProfessionalGrant(scope: string[], qrToken: string, sourc
 export function listAuthorizedEncounters(grantId: string): Promise<Encounter[]> { return apiGet<Encounter[]>(`/api/v1/patient/care/professional/access-grants/${grantId}/encounters/`); }
 export function listProfessionalConsultations(): Promise<Consultation[]> { return apiGet<Consultation[]>("/api/v1/patient/care/professional/consultations/"); }
 export function listProfessionalVaccinations(grantId: string): Promise<ProfessionalVaccination[]> { return apiGet<ProfessionalVaccination[]>(`/api/v1/patient/care/professional/access-grants/${grantId}/vaccinations/`); }
+export function listProfessionalMeasurements(grantId: string): Promise<ProfessionalMeasurement[]> { return apiGet<ProfessionalMeasurement[]>(`/api/v1/patient/care/professional/access-grants/${grantId}/measurements/`); }
+export function createProfessionalMeasurement(grantId: string, input: ProfessionalMeasurementInput): Promise<ProfessionalMeasurement> { return apiPost<ProfessionalMeasurement>(`/api/v1/patient/care/professional/access-grants/${grantId}/measurements/`, input); }
 export function listCareHistory(grantId: string): Promise<unknown[]> { return apiGet<unknown[]>(`/api/v1/patient/care/professional/access-grants/${grantId}/care-history/`); }
 export function confirmProfessionalVaccination(grantId: string, vaccinationId: string): Promise<ProfessionalVaccination> { return apiPost<ProfessionalVaccination>(`/api/v1/patient/care/professional/access-grants/${grantId}/vaccinations/${vaccinationId}/confirm/`, {}); }
 

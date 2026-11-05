@@ -330,7 +330,7 @@ class PatientMeasurementListCreateView(APIView):
 
     def get(self, request):
         patient = profile_for(request.user, request)
-        items = HealthMeasurement.objects.filter(patient=patient)
+        items = HealthMeasurement.objects.filter(patient=patient).select_related("professional__user")
         kind = request.query_params.get("kind")
         if kind:
             items = items.filter(kind=kind)
@@ -986,6 +986,49 @@ class ProfessionalAuthorizedEncounterListView(APIView):
 class ProfessionalHealthMeasurementCreateView(APIView):
     """Saisie d’une mesure pendant une prise en charge autorisée par le patient."""
     permission_classes = [IsAuthenticated]
+
+    def get(self, request, grant_id):
+        profile = getattr(request.user, "professional_profile", None)
+        access_error = professional_clinical_access_error(profile)
+        if access_error:
+            return Response({"success": False, "message": access_error}, status=403)
+
+        grant = AccessGrant.objects.filter(
+            pk=grant_id,
+            professional=profile,
+            establishment=profile.active_establishment,
+        ).select_related("patient", "establishment").first()
+        if not grant:
+            return Response({"success": False, "message": "Autorisation introuvable dans votre périmètre."}, status=404)
+        if is_own_patient_file(profile, grant.patient):
+            return Response({"success": False, "code": "self_access", "message": "Vous ne pouvez pas consulter les mesures de votre propre dossier en tant que professionnel."}, status=403)
+        try:
+            require_scope(grant, "preconsultation")
+        except PermissionDenied as exc:
+            return Response({"success": False, "message": str(exc.detail)}, status=403)
+
+        items = list(HealthMeasurement.objects.filter(
+            patient=grant.patient,
+            establishment=grant.establishment,
+            validated_at__isnull=False,
+        ).select_related("professional__user").order_by("-measured_at", "-created_at"))
+        record_event(
+            event_type="clinical_data.read",
+            actor=request.user,
+            actor_role="professional",
+            patient=grant.patient,
+            establishment=grant.establishment,
+            access_grant=grant,
+            metadata={
+                "action": "read_establishment_measurements",
+                "resource_type": "health_measurement",
+                "resource_count": len(items),
+                "authorized_until": grant.expires_at.isoformat() if grant.expires_at else None,
+            },
+        )
+        response = Response({"success": True, "data": HealthMeasurementSerializer(items, many=True).data})
+        response["Cache-Control"] = "no-store"
+        return response
 
     @transaction.atomic
     def post(self, request, grant_id):

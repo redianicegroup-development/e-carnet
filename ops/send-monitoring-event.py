@@ -17,15 +17,16 @@ import json
 import os
 import sys
 import time
+import uuid
 import urllib.error
 import urllib.request
 
 WEBHOOK_PATH = "/api/v1/identity/monitoring/webhook/"
 
 
-def sign(secret: str, timestamp: str, body: bytes) -> str:
-    """HMAC-SHA256 de « horodatage.corps » en hexadécimal, comme attendu par le serveur."""
-    return hmac.new(secret.encode(), timestamp.encode() + b"." + body, hashlib.sha256).hexdigest()
+def sign(secret: str, timestamp: str, event_id: str, body: bytes) -> str:
+    """HMAC-SHA256 de « horodatage.identifiant.corps » en hexadécimal."""
+    return hmac.new(secret.encode(), timestamp.encode() + b"." + event_id.encode() + b"." + body, hashlib.sha256).hexdigest()
 
 
 def main(argv=None) -> int:
@@ -52,12 +53,14 @@ def main(argv=None) -> int:
         separators=(",", ":"), ensure_ascii=False,
     ).encode("utf-8")
     timestamp = str(int(time.time()))
+    event_id = str(uuid.uuid4())
     request = urllib.request.Request(
         args.base_url.rstrip("/") + WEBHOOK_PATH, data=body, method="POST",
         headers={
             "Content-Type": "application/json",
             "X-Ecarnet-Monitor-Timestamp": timestamp,
-            "X-Ecarnet-Monitor-Signature": "sha256=" + sign(secret, timestamp, body),
+            "X-Ecarnet-Monitor-Event-Id": event_id,
+            "X-Ecarnet-Monitor-Signature": "sha256=" + sign(secret, timestamp, event_id, body),
         },
     )
     try:

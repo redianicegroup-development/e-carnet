@@ -682,11 +682,20 @@ a.setting-item:hover, button.setting-item:hover { border-color: var(--primary); 
 .role-chart-legend li { display: flex; align-items: center; gap: 8px; color: var(--text-muted); font-size: .9rem; }
 .role-chart-legend li span { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 auto; }
 .role-chart-legend li strong { margin-left: auto; color: var(--text); }
+.measurement-trends { min-width: 0; }
+.measurement-trends__controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.measurement-trends__alternative { min-width: 0; }
+.measurement-trends__alternative summary { cursor: pointer; color: var(--primary); font-weight: 650; }
+.measurement-trends__table-wrap { max-width: 100%; overflow-x: auto; }
+.measurement-trends table { width: 100%; min-width: 480px; border-collapse: collapse; font-size: .88rem; }
+.measurement-trends th, .measurement-trends td { padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: left; }
+.measurement-trends th { color: var(--text-muted); font-weight: 700; }
 .progress-card { display: grid; gap: 12px; }
 .progress-card__line { height: 10px; overflow: hidden; border-radius: 999px; background: var(--surface-tint); }
 .progress-card__line span { display: block; height: 100%; border-radius: inherit; background: var(--primary); transition: width .25s ease; }
 .progress-card__meta { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: .9rem; }
 @media (max-width: 760px) { .role-dashboard-grid { grid-template-columns: 1fr; } .role-chart-plot { height: 200px; } }
+@media (max-width: 420px) { .measurement-trends__controls { grid-template-columns: 1fr; } .measurement-trends .role-chart-plot { height: 210px; } }
 
 /* Affichage contrôlé de la réponse secrète pendant l’onboarding */
 .auth-secret-field__control { position: relative; display: block; }

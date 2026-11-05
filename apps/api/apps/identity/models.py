@@ -334,3 +334,18 @@ class OperationalIncident(models.Model):
 
     def __str__(self):
         return f"{self.severity} · {self.category} · {self.incident_key}"
+
+
+class MonitoringWebhookEvent(models.Model):
+    """Identifiant technique déjà accepté, pour rendre le webhook idempotent entre processus."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    event_id = models.UUIDField(unique=True, editable=False, db_index=True)
+    received_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ("-received_at",)
+        verbose_name = "événement de webhook de monitoring"
+        verbose_name_plural = "événements de webhook de monitoring"
+
+    def __str__(self):
+        return f"Événement de monitoring {self.event_id}"

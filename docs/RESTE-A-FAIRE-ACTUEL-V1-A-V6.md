@@ -6,7 +6,9 @@
 
 > **Mise à jour du 02/11/2026 — hors connexion.** Livré : copie des déclarations en lecture seule (profil actif et profils enfants déjà ouverts, changement de profil sans réseau, 7 jours, effacée à la déconnexion, réglage *Paramètres › Hors connexion*) ; copies de carte d'urgence qui expirent et disparaissent vraiment (24 h, 404/410) ; rechargement hors ligne de `/urgence/<jeton>` ; désabonnement push à la déconnexion ; textes d'information ; 40 tests. **Reste** : revue juridique, analyse de menace et décision signée avant publication (PAT-22) ; recette sur téléphones réels (mode avion, iOS PWA installée, Android) ; statut « confirmé » des déclarations par un professionnel (n'existe pas dans l'API) ; vaccinations hors connexion si souhaité ; écriture et synchro hors connexion et chiffrement local : toujours sur décision.
 
-> **Mise à jour du 04/11/2026 — sécurité et données réelles.** Livré : Next.js 16.4.4 et `cryptography` 50.0.0 ; export Excel réparé (`URL_FORMAT_OVERRIDE: None`) ; ouverture de dossier par l'administrateur limitée à 30 minutes (jamais illimitée, 4 h au plus), anciennes ouvertures sans échéance refusées, lecture clinique désactivée par défaut ; FAQ, Aide, politique de confidentialité et `/v1` alignées sur le NO-GO (données fictives) depuis un interrupteur unique ; document `docs/DONNEES-REELLES-DECISION.md`. Décision : pas de double authentification pour l'équipe ni pour les professionnels pour le moment. **Reste, avant tout Go données réelles :** question ouverte « des données réelles ont-elles déjà été saisies ? » ; copie hors connexion (désactivée par défaut ou chiffrée avec un code choisi par la personne) ; documents médicaux chez Cloudinary ; `zod` < 4.6.6 ; migration `0025` (`FollowUpPlan.objective`) ; écran d'ouverture de dossier si la lecture est activée ; restauration réelle, hébergement, validations juridique/médicale, ARTCI, recette signée.
+> **Mise à jour du 04/11/2026 — sécurité et données réelles.** Livré : Next.js 16.4.4 et `cryptography` 50.0.0 ; export Excel réparé (`URL_FORMAT_OVERRIDE: None`) ; ouverture de dossier par l’administrateur limitée à 30 minutes (jamais illimitée, 4 h au plus), anciennes ouvertures sans échéance refusées, lecture clinique désactivée par défaut ; FAQ, Aide, politique de confidentialité et `/v1` alignées sur le NO-GO (données fictives) depuis un interrupteur unique ; document `docs/DONNEES-REELLES-DECISION.md`. Décision : pas de double authentification pour l’équipe ni pour les professionnels pour le moment. **Reste, avant tout Go données réelles :** question ouverte « des données réelles ont-elles déjà été saisies ? » ; copie hors connexion (désactivée par défaut ou chiffrée avec un code choisi par la personne) ; documents médicaux chez Cloudinary ; `zod` < 4.6.6 ; migration `0025` (`FollowUpPlan.objective`) ; écran d’ouverture de dossier si la lecture est activée ; restauration réelle, hébergement, validations juridique/médicale, ARTCI, recette signée.
+
+> **Mise à jour du 05/11/2026 — PRO-13.** Livré localement : bloc médecin « Ajouter une mesure » dans la pré-consultation, lecture et création limitées à l’autorisation active et à l’établissement, provenance visible dans les deux espaces, audit et refus de l’auto-accès. Le NO-GO données réelles reste inchangé ; la recette staging est à faire. Les 4 tests web PRO-13 passent et le typecheck complet est vert. La suite web compte 289 réussis sur 296 ; ses 7 échecs sont identiques à ceux vérifiés sur l’archive originale (285/292), donc antérieurs à PRO-13. La syntaxe Python est vérifiée ; les tests Django n’ont pas pu être exécutés dans l’environnement sans Django.
 
 
 > Chaque ligne a été contrôlée contre le code de la v1.4-final ; les tests, le lint et le build n'ont pas été rejoués pour cette mise à jour. Ce document remplace les anciennes listes qui décrivaient encore comme « à faire » plusieurs fonctions déjà présentes dans le code. Une fonction marquée **Livré localement** existe dans l’API et/ou l’interface, mais peut encore nécessiter une recette staging, mobile, juridique ou médicale.
@@ -41,7 +43,7 @@
 - Pré-consultation en brouillon, modification et clôture par le professionnel.
 - Consultations signées, historique, constantes, ordonnance structurée et examens demandés.
 - Vaccinations : ajout patient et confirmation professionnelle.
-- Mesures de santé : saisie et lecture autorisée.
+- Mesures de santé : saisie et lecture autorisées ; écran médecin PRO-13, avec provenance et contrôle de l’autorisation active (livré localement le 05/11/2026, recette staging à faire).
 - Documents médicaux : dépôt patient, téléchargement contrôlé et lecture professionnelle selon périmètre.
 - Plans de suivi : écran médecin avec objectif, statut et historique des révisions (v1.3), lecture patient.
 - Rappels de médicaments et confirmations de prise : jours de la semaine, dates de début et de fin, stock et seuil, rappel de renouvellement 3 jours avant la fin (v1.4).
@@ -79,7 +81,7 @@
 ### Qualité : ce qui est prouvé et ce qui ne l'est pas
 
 - Tests API : **492 réussis, rejoués le 04/11/2026** (SQLite, variables de la CI) sur le code corrigé (Next.js 16.4.4, `cryptography` 50.0.0, ouverture de dossier à 30 minutes, export Excel réparé).
-- Tests web : **292 écrits, 289 réussis, 3 en échec hérités de la v1.4** (centre d'aide `/faq`, QR de visite, schémas), rejoués le 04/11/2026 ; le test sur le stockage local et celui des onglets du médecin sont corrigés.
+- Tests web : **296 écrits, 289 réussis, 7 échecs préexistants** ; comparaison directe avec l'archive originale : même liste d'échecs (285/292 avant le lot, 289/296 après ajout des 4 tests PRO-13 ; tous les tests PRO-13 passent). Typecheck complet vert (05/11/2026).
 - Audit automatisé d'accessibilité (axe) : 0 violation sur 10 routes locales (29/10).
 - Intégration continue : workflow `.github/workflows/ci.yml` écrit (API sur PostgreSQL 16 avec `makemigrations --check`, tests et sonde de surveillance ; web avec lint, typecheck, tests, build et e2e Playwright) ; **jamais exécuté**.
 - `manage.py check` : sans erreur (04/11/2026). **`makemigrations --check` échoue** : migration `0025` manquante pour `FollowUpPlan.objective`, alors que la CI le lance. Lint et build : non rejoués (polices Google inaccessibles dans l'environnement de test).
@@ -164,7 +166,7 @@
 - ~~Ajouter l’alerte de consultation de la carte d’urgence~~ : **retiré par décision en v1.3** ; ne pas implémenter.
 - Ajouter un résumé périodique des accès contrôlable par le patient.
 - Compléter l’export du carnet : l'export PDF et Excel par période est livré ; restent le choix par catégorie, l'avertissement, la mention que le fichier téléchargé ne peut pas être révoqué et la documentation de portabilité.
-- Ajouter l'écran de saisie de mesures par le médecin (la route API existe).
+- ~~Ajouter l'écran de saisie de mesures par le médecin~~ : **PRO-13 livré le 05/11/2026** (lecture et création protégées par l'autorisation active, provenance patient/médecin et audit) ; recette staging à faire.
 - Ajouter la recherche rapide et les listes denses côté professionnel (rien n'existe).
 
 ## V2.2 — Établissements et coordination
@@ -299,7 +301,7 @@
 3. Exécuter la CI et corriger les 6 tests web en échec ; rejouer les tests Django, `makemigrations --check`, lint et build.
 4. Terminer les portes V1 : staging, PostgreSQL cible, SMTP, stockage privé, sauvegarde/restauration, sécurité, hébergement et Go/No-Go.
 5. Écrire les tests end-to-end des parcours déjà livrés avant d'ajouter de nouvelles fonctions.
-6. Finir les interfaces V2 manquantes : rendez-vous côté professionnel, saisie de mesures par le médecin, graphiques, patients récents, indicateurs établissement.
+6. Finir les interfaces V2 manquantes : rendez-vous côté professionnel, graphiques, patients récents, indicateurs établissement ; la saisie de mesures par le médecin (PRO-13) est livrée localement, recette staging à faire.
 7. Ne commencer V3 qu'après validation de la V1 et décision écrite sur MFA, récupération et partage A→B.
 8. Ne planifier V4, V5 et V6 qu'après retours du pilote fictif, partenaires confirmés et revue de risques.
 

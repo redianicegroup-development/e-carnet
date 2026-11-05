@@ -6,12 +6,13 @@ from rest_framework.test import APIClient
 from apps.audit.models import AuditEvent
 from apps.identity.models import AccountContext
 from apps.patients.models import PatientProfile
-from .models import AccessGrant, PatientAccessQrToken
+from .models import AccessGrant, HealthMeasurement, PatientAccessQrToken
 from .services import SELF_ACCESS_MESSAGE, create_patient_qr_token, is_own_patient_file
 from .tests import make_clinic_doctor, make_grant
 
 User = get_user_model()
 GRANTS = "/api/v1/patient/care/professional/access-grants/"
+MEASUREMENTS = "/api/v1/patient/care/professional/access-grants/{}/measurements/"
 
 
 class ProfessionalCannotOpenOwnFileTests(TestCase):
@@ -64,6 +65,22 @@ class ProfessionalCannotOpenOwnFileTests(TestCase):
         response = self.client.get(GRANTS)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["data"], [])
+
+    def test_professional_measurement_read_and_write_are_refused_for_own_file(self):
+        grant = make_grant(self.own_patient, self.profile, self.establishment, ["preconsultation"])
+        self.client.force_authenticate(self.doctor)
+
+        read_response = self.client.get(MEASUREMENTS.format(grant.id))
+        create_response = self.client.post(
+            MEASUREMENTS.format(grant.id),
+            {"kind": "weight", "value": "68", "unit": "kg"},
+            format="json",
+        )
+
+        self.assertEqual(read_response.status_code, 403)
+        self.assertEqual(create_response.status_code, 403)
+        self.assertEqual(create_response.data["code"], "self_access")
+        self.assertEqual(HealthMeasurement.objects.count(), 0)
 
     def test_helper_ignores_patients_without_account(self):
         orphan = PatientProfile.objects.create(user=None)

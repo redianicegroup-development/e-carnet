@@ -1,5 +1,6 @@
 import json
 import time
+import uuid
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
@@ -7,7 +8,7 @@ from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
 from apps.audit.models import AuditEvent
-from .models import OperationalIncident
+from .models import MonitoringWebhookEvent, OperationalIncident
 from .monitoring_webhook import MonitoringWebhookView, monitoring_signature
 from .throttles import IpScopedThrottle
 
@@ -16,14 +17,16 @@ WEBHOOK_URL = "/api/v1/identity/monitoring/webhook/"
 SECRET = "test-webhook-secret"
 
 
-def signed_post(client, payload, *, timestamp=None, secret=SECRET, raw_body=None):
+def signed_post(client, payload, *, timestamp=None, secret=SECRET, raw_body=None, event_id=None):
     """Envoie un événement signé comme le fera le script d'exploitation (horodatage + corps)."""
     body = raw_body if raw_body is not None else json.dumps(payload).encode()
     ts = str(int(time.time()) if timestamp is None else timestamp)
+    event_id = event_id or str(uuid.uuid4())
     return client.post(
         WEBHOOK_URL, body, content_type="application/json",
         HTTP_X_ECARNET_MONITOR_TIMESTAMP=ts,
-        HTTP_X_ECARNET_MONITOR_SIGNATURE=f"sha256={monitoring_signature(secret, ts, body)}",
+        HTTP_X_ECARNET_MONITOR_EVENT_ID=event_id,
+        HTTP_X_ECARNET_MONITOR_SIGNATURE=f"sha256={monitoring_signature(secret, ts, event_id, body)}",
     )
 
 class AdminOperationsTests(TestCase):
@@ -179,8 +182,9 @@ class AdminOperationsTests(TestCase):
         self.assertEqual(signed_post(client, payload, secret="autre-secret").status_code, 401)
         body = json.dumps(payload).encode()
         ts = str(int(time.time()))
-        good = monitoring_signature(SECRET, ts, body)
-        tampered = client.post(WEBHOOK_URL, body.replace(b"Forg", b"Forc"), content_type="application/json", HTTP_X_ECARNET_MONITOR_TIMESTAMP=ts, HTTP_X_ECARNET_MONITOR_SIGNATURE=f"sha256={good}")
+        event_id = str(uuid.uuid4())
+        good = monitoring_signature(SECRET, ts, event_id, body)
+        tampered = client.post(WEBHOOK_URL, body.replace(b"Forg", b"Forc"), content_type="application/json", HTTP_X_ECARNET_MONITOR_TIMESTAMP=ts, HTTP_X_ECARNET_MONITOR_EVENT_ID=event_id, HTTP_X_ECARNET_MONITOR_SIGNATURE=f"sha256={good}")
         self.assertEqual(tampered.status_code, 401)
         self.assertFalse(OperationalIncident.objects.exists())
 
@@ -202,6 +206,22 @@ class AdminOperationsTests(TestCase):
     def test_webhook_payload_must_be_a_json_object(self):
         response = signed_post(APIClient(), None, raw_body=b"[1, 2, 3]")
         self.assertEqual(response.status_code, 400)
+
+    @override_settings(ECARNET_MONITOR_WEBHOOK_SECRET=SECRET)
+    def test_replayed_event_is_idempotent_and_two_event_ids_are_distinct(self):
+        client = APIClient()
+        payload = {"incident_key": "api:idempotent", "action": "open", "severity": "warning", "summary": "Événement rejoué."}
+        event_id = str(uuid.uuid4())
+        first = signed_post(client, payload, event_id=event_id)
+        replay = signed_post(client, {**payload, "severity": "critical"}, event_id=event_id)
+        second = signed_post(client, {**payload, "severity": "critical"})
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(replay.status_code, 200)
+        self.assertTrue(replay.data["data"]["already_received"])
+        self.assertEqual(second.status_code, 200)
+        self.assertEqual(MonitoringWebhookEvent.objects.count(), 2)
+        incident = OperationalIncident.objects.get(incident_key="api:idempotent")
+        self.assertEqual(incident.severity, "critical")
 
     @override_settings(ECARNET_MONITOR_WEBHOOK_SECRET=SECRET, CACHES=REAL_CACHE)
     def test_monitoring_webhook_is_rate_limited_per_ip_even_with_bad_signatures(self):

@@ -54,24 +54,90 @@ class ProfessionalMeasurementCreateTests(TestCase):
         self.assertEqual(response.data["data"]["establishment_id"], str(self.establishment.id))
         self.assertEqual(response.data["data"]["professional_id"], str(self.profile.id))
         self.assertEqual(response.data["data"]["source"], "measured")
+        self.assertEqual(response.data["data"]["professional_name"], self.doctor.get_full_name())
         self.assertTrue(AuditEvent.objects.filter(
             event_type="establishment_record.measurement_created",
             patient=self.patient,
             establishment=self.establishment,
             access_grant=self.grant,
         ).exists())
+        patient_client = APIClient()
+        patient_client.force_authenticate(self.patient_user)
+        patient_history = patient_client.get("/api/v1/patient/care/measurements/")
+        self.assertEqual(patient_history.status_code, 200)
+        self.assertEqual(patient_history.data["data"][0]["professional_name"], self.doctor.get_full_name())
 
     def test_measurement_requires_patient_granted_active_preconsultation_scope(self):
         self.grant.scope = ["declarations"]
         self.grant.save(update_fields=("scope",))
 
+        read_response = self.client.get(MEASUREMENT_URL.format(self.grant.id))
         response = self.client.post(
             MEASUREMENT_URL.format(self.grant.id),
             {"kind": "weight", "value": "68.4", "unit": "kg"},
             format="json",
         )
 
+        self.assertEqual(read_response.status_code, 403)
         self.assertEqual(response.status_code, 403)
+        self.assertEqual(HealthMeasurement.objects.count(), 0)
+
+    def test_measurement_list_is_scoped_to_patient_and_establishment_and_is_audited(self):
+        allowed = HealthMeasurement.objects.create(
+            patient=self.patient,
+            establishment=self.establishment,
+            professional=self.profile,
+            validated_at=timezone.now(),
+            kind="weight",
+            value=Decimal("68.4"),
+            unit="kg",
+            measured_at=timezone.now(),
+        )
+        other_establishment = Establishment.objects.create(created_by=self.patient_user, name="Autre structure", status="active")
+        HealthMeasurement.objects.create(
+            patient=self.patient,
+            establishment=other_establishment,
+            professional=self.profile,
+            validated_at=timezone.now(),
+            kind="weight",
+            value=Decimal("70"),
+            unit="kg",
+            measured_at=timezone.now(),
+        )
+        HealthMeasurement.objects.create(
+            patient=PatientProfile.objects.create(),
+            establishment=self.establishment,
+            professional=self.profile,
+            validated_at=timezone.now(),
+            kind="weight",
+            value=Decimal("90"),
+            unit="kg",
+            measured_at=timezone.now(),
+        )
+
+        response = self.client.get(MEASUREMENT_URL.format(self.grant.id))
+
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual([item["id"] for item in response.data["data"]], [str(allowed.id)])
+        self.assertEqual(response.data["data"][0]["professional_name"], self.doctor.get_full_name())
+        self.assertEqual(response["Cache-Control"], "no-store")
+        event = AuditEvent.objects.get(event_type="clinical_data.read", access_grant=self.grant)
+        self.assertEqual(event.metadata["action"], "read_establishment_measurements")
+        self.assertEqual(event.metadata["resource_count"], 1)
+
+    def test_expired_grant_cannot_read_or_create_measurements(self):
+        self.grant.expires_at = timezone.now() - timedelta(seconds=1)
+        self.grant.save(update_fields=("expires_at",))
+
+        read_response = self.client.get(MEASUREMENT_URL.format(self.grant.id))
+        create_response = self.client.post(
+            MEASUREMENT_URL.format(self.grant.id),
+            {"kind": "weight", "value": "68.4", "unit": "kg"},
+            format="json",
+        )
+
+        self.assertEqual(read_response.status_code, 403)
+        self.assertEqual(create_response.status_code, 403)
         self.assertEqual(HealthMeasurement.objects.count(), 0)
 
 

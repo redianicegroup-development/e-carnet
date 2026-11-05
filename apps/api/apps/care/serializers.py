@@ -147,6 +147,7 @@ class MeasurementValueField(serializers.Field):
 class HealthMeasurementSerializer(serializers.ModelSerializer):
     kind_label = serializers.CharField(source="get_kind_display", read_only=True)
     source_label = serializers.CharField(source="get_source_display", read_only=True)
+    professional_name = serializers.SerializerMethodField()
     value = MeasurementValueField()
     establishment_id = serializers.UUIDField(read_only=True)
     professional_id = serializers.UUIDField(read_only=True)
@@ -154,8 +155,13 @@ class HealthMeasurementSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = HealthMeasurement
-        fields = ("id", "kind", "kind_label", "value", "unit", "source", "source_label", "measured_at", "note", "establishment_id", "professional_id", "validated_at", "created_at")
-        read_only_fields = ("id", "kind_label", "source_label", "establishment_id", "professional_id", "validated_at", "created_at")
+        fields = ("id", "kind", "kind_label", "value", "unit", "source", "source_label", "professional_name", "measured_at", "note", "establishment_id", "professional_id", "validated_at", "created_at")
+        read_only_fields = ("id", "kind_label", "source_label", "professional_name", "establishment_id", "professional_id", "validated_at", "created_at")
+
+    def get_professional_name(self, obj):
+        if not obj.professional_id:
+            return None
+        return obj.professional.user.get_full_name().strip() or obj.professional.professional_title or None
 
     def validate_kind(self, value):
         if value not in {"blood_pressure", "glycemia", "weight", "height", "temperature", "heart_rate", "spo2"}:

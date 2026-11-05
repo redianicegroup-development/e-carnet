@@ -7,6 +7,7 @@ import subprocess
 import sys
 import threading
 import time
+import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -20,7 +21,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         body = self.rfile.read(int(self.headers.get("Content-Length", "0")))
-        received.update(path=self.path, body=body, timestamp=self.headers.get("X-Ecarnet-Monitor-Timestamp", ""), signature=self.headers.get("X-Ecarnet-Monitor-Signature", ""))
+        received.update(path=self.path, body=body, timestamp=self.headers.get("X-Ecarnet-Monitor-Timestamp", ""), event_id=self.headers.get("X-Ecarnet-Monitor-Event-Id", ""), signature=self.headers.get("X-Ecarnet-Monitor-Signature", ""))
         self.send_response(Handler.status)
         self.end_headers()
         self.wfile.write(b"{}")
@@ -48,7 +49,8 @@ def main():
         assert received["path"] == "/api/v1/identity/monitoring/webhook/", received["path"]
         payload = json.loads(received["body"])
         assert payload == {"incident_key": "api:test", "action": "open", "severity": "major", "category": "database", "summary": "Événement de test é."}, payload
-        expected = hmac.new(SECRET.encode(), received["timestamp"].encode() + b"." + received["body"], hashlib.sha256).hexdigest()
+        assert uuid.UUID(received["event_id"]), received["event_id"]
+        expected = hmac.new(SECRET.encode(), received["timestamp"].encode() + b"." + received["event_id"].encode() + b"." + received["body"], hashlib.sha256).hexdigest()
         assert received["signature"] == f"sha256={expected}", "signature différente de celle que le serveur recalcule"
         assert abs(time.time() - int(received["timestamp"])) < 30, "horodatage inattendu"
         assert SECRET not in ok.stdout + ok.stderr, "le secret ne doit jamais être affiché"

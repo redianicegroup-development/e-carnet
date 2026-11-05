@@ -93,6 +93,54 @@ paths:
           description: Demande créée en attente du consentement patient; demandes pending/active uniques par patient, professionnel et établissement
         '400':
           description: QR absent, expiré, déjà utilisé ou invalide ; préconditions cliniques, refus récent ou périmètre invalide
+  /patient/care/professional/access-grants/{grant_id}/measurements/:
+    parameters:
+      - name: grant_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: Lister les mesures validées du patient dans l’établissement autorisé
+      description: Requiert un AccessGrant actif avec le périmètre preconsultation, lié au professionnel et à son établissement actif. Le dossier personnel du professionnel est refusé. Les lectures sont auditées et la réponse est privée (no-store).
+      responses:
+        '200':
+          description: Mesures du patient dans l’établissement, avec provenance et professionnel ayant saisi la donnée
+        '403':
+          description: Autorisation expirée, périmètre absent ou tentative d’accès à son propre dossier
+        '404':
+          description: Autorisation hors du professionnel ou de l’établissement actif
+    post:
+      summary: Saisir une mesure pendant une pré-consultation autorisée
+      description: Requiert le même périmètre actif. Le serveur impose le patient, le professionnel, l’établissement et source=measured ; la mesure est auditée. Aucune valeur de diagnostic ou de seuil n’est ajoutée.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [kind, value, unit]
+              properties:
+                kind:
+                  type: string
+                  enum: [temperature, heart_rate, spo2, blood_pressure, glycemia, weight, height]
+                value:
+                  type: string
+                  maxLength: 32
+                unit:
+                  type: string
+                  maxLength: 16
+                measured_at:
+                  type: string
+                  format: date-time
+      responses:
+        '201':
+          description: Mesure créée avec source mesurée et attribution côté serveur
+        '400':
+          description: Type, valeur ou unité invalide
+        '403':
+          description: Autorisation expirée, périmètre absent ou tentative d’accès à son propre dossier
   /patient/care/professional/consultations/:
     get:
       summary: Lister les consultations validées par le professionnel courant
