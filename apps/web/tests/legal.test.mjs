@@ -37,6 +37,18 @@ test("les données techniques déclarées correspondent à l'inventaire du code"
   assert.ok(!legal.HOSTS.some((h) => /hodi/i.test(h.name)), "Hodi ne doit pas figurer tant que contrat et déploiement n'existent pas");
 });
 
+test("la session PWA reste persistante 30 jours sans activité et sa durée déclarée correspond au serveur", () => {
+  const settings = readFileSync(new URL("../../../apps/api/config/settings.py", import.meta.url), "utf8");
+  const env = readFileSync(new URL("../../../.env.example", import.meta.url), "utf8");
+  const sessionCookie = legal.COOKIES.find((cookie) => cookie.name === "sessionid");
+  assert.match(settings, /SESSION_COOKIE_AGE = int\(os\.environ\.get\("ECARNET_SESSION_AGE_SECONDS", str\(60 \* 60 \* 24 \* 30\)\)\)/);
+  assert.match(settings, /SESSION_EXPIRE_AT_BROWSER_CLOSE = False/);
+  assert.match(settings, /SESSION_SAVE_EVERY_REQUEST = True/);
+  assert.match(env, /^ECARNET_SESSION_AGE_SECONDS=2592000$/m);
+  assert.match(sessionCookie.duration, /30 jours sans activité/);
+  assert.match(legal.TECH_VALIDITY.session, /30 jours sans activité/);
+});
+
 test("les pages restent en mode juridique : pas de promesse de conformité ni de ton marketing", () => {
   const forbidden = [/aucun outil de mesure d’audience/i, /aucun bandeau de consentement/i, /\b100 ?%/, /(?<!ne )garantit\b/i, /conforme à la loi/i, /conformité garantie/i, /\bcertifié\b/i, /sécurité maximale/i, /\b(totalement|entièrement|parfaitement) (sécuris|conform|prot)/i];
   for (const page of ["mentions-legales", "confidentialite", "cgu"]) {

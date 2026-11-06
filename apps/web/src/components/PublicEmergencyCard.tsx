@@ -36,7 +36,7 @@ export function PublicEmergencyCard({ token }: { token: string }) {
   }, [token]);
 
   if (status === "loading") return <main className="epub"><section className="epub__state" role="status"><span className="epub__pulse" /><h1>Ouverture de la carte d’urgence…</h1></section></main>;
-  if (status === "missing" || !data) return <main className="epub"><section className="epub__state" role="alert"><span className="eyebrow">Mon E‑Carnet</span><h1>Carte indisponible</h1><p>Ce QR a peut-être été désactivé ou renouvelé par son propriétaire. Une connexion est nécessaire pour la première consultation.</p></section></main>;
+  if (status === "missing" || !data) return <main className="epub"><section className="epub__state" role="alert"><span className="eyebrow">Mon E‑Carnet</span><h1>Carte indisponible</h1><p>Ce QR a été désactivé ou renouvelé. Si c’est votre première visite, connectez-vous à Internet puis réessayez.</p></section></main>;
 
   const phone = data.contact_phone.replace(/[^+\d]/g, "");
   return <main className="epub"><div className="epub__inner">

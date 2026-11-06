@@ -142,7 +142,7 @@ export const HELP_FAQ: HelpFaqGroup[] = [
 
 export const HELP_TROUBLESHOOTING: { problem: string; solution: string; profiles?: HelpProfileId[] }[] = [
   { problem: "Je n’arrive pas à me connecter", solution: "Vérifiez votre adresse e-mail et votre mot de passe (12 caractères au moins). Après plusieurs essais, le service limite les tentatives : patientez un peu avant de recommencer. Si vous avez lié Google, Facebook ou Apple, essayez cette méthode." },
-  { problem: "Ma session s’est fermée", solution: "Elle expire après environ 8 heures sans activité. Reconnectez-vous pour continuer." },
+  { problem: "Ma session s’est fermée", solution: "Elle reste active sur cet appareil pendant 30 jours sans activité. Si elle a expiré ou si vous vous êtes déconnecté, reconnectez-vous pour continuer." },
   { problem: "Mon QR code ne fonctionne plus", solution: "Il n’est valable que 5 minutes et ne sert qu’une fois. Affichez-en un nouveau depuis l’onglet « Accès ».", profiles: ["patient", "professional"] },
   { problem: "Une demande d’accès attend toujours", solution: "Elle attend votre décision dans l’onglet « Accès ». Vous pouvez l’autoriser ou la refuser.", profiles: ["patient"] },
   { problem: "L’accès à un carnet s’est arrêté", solution: "L’autorisation dure 2 heures, avec deux prolongations possibles d’une heure. Ensuite, faites une nouvelle demande : le patient décide à nouveau.", profiles: ["professional"] },

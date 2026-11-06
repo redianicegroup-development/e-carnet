@@ -129,7 +129,7 @@ export function AuthForms() {
         <svg className="ax-glyph" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 2.5v19M3.8 7.2l16.4 9.6M20.2 7.2 3.8 16.8" /></svg>
       </div>
       <h2 className="ax-title" key={mode}>{login ? "Bon retour parmi nous" : "Créer mon carnet"}</h2>
-      <p className="ax-subtitle">{login ? "Connectez-vous pour retrouver votre carnet et vos accès." : "Votre compte sera prêt en quelques secondes."}</p>
+      <p className="ax-subtitle">{login ? "Retrouvez votre carnet en vous connectant." : "Votre compte sera prêt en quelques secondes."}</p>
       {!login && <div className="ax-names">
         <label className="ax-field" data-ax-item><span>Prénom</span><input required autoComplete="given-name" value={form.first_name} onChange={(e) => setForm({ ...form, first_name: e.target.value })} /></label>
         <label className="ax-field" data-ax-item><span>Nom</span><input required autoComplete="family-name" value={form.last_name} onChange={(e) => setForm({ ...form, last_name: e.target.value })} /></label>
@@ -145,7 +145,7 @@ export function AuthForms() {
       {login && <p className="ax-forgot" data-ax-item><Link href="/connexion/recuperation">Récupérer mon compte</Link></p>}
       <button className={`button primary ax-submit${status === "busy" ? " is-loading" : ""}`} type="submit" disabled={busy} data-ax-item><span className="ax-submit__label">{status === "success" ? "Bienvenue !" : busy ? "Connexion sécurisée…" : login ? "Se connecter" : "Créer mon compte"}</span><svg className="ax-submit__arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6" /></svg><span className="ax-submit__spinner" aria-hidden="true" /></button>
       <div className="ax-divider" data-ax-item><span>ou continuer avec</span></div>
-      <Socials labeled={false} oauthNext={oauthNext} />
+      <Socials labeled oauthNext={oauthNext} />
       <p className="ax-switch" data-ax-item>{login ? "Pas encore de compte ?" : "Vous avez déjà un compte ?"} <button type="button" onClick={() => switchMode(login ? "register" : "login")}>{login ? "Créer mon carnet" : "Se connecter"}</button></p>
       <p className="ax-message" role="status" aria-live="polite" hidden={!message}>{message}</p>
     </form>

@@ -113,7 +113,7 @@ export const HOSTS = [
 
 /** Durées de VALIDITÉ TECHNIQUE (et non de conservation) présentes dans le code et la documentation produit. */
 export const TECH_VALIDITY = {
-  session: "8 heures par défaut, renouvelées à chaque échange avec le serveur",
+  session: "30 jours sans activité par défaut, prolongés à chaque échange avec le serveur",
   qr: "5 minutes, usage unique",
   accessInitial: "2 heures",
   accessExtension: "2 prolongations d’une heure au plus",
@@ -127,7 +127,7 @@ export const COOKIES = [
     name: "sessionid",
     essential: true,
     purpose: "Maintenir votre connexion et protéger le parcours de connexion avec un fournisseur d’identité.",
-    duration: "8 heures par défaut, prolongées à chaque échange avec le serveur",
+    duration: "30 jours sans activité par défaut, prolongés à chaque échange avec le serveur",
     attributes: "HttpOnly ; Secure ; SameSite=None en configuration de test (Lax en développement)",
   },
   {

@@ -150,7 +150,8 @@ SESSION_COOKIE_SAMESITE = os.environ.get("SESSION_COOKIE_SAMESITE", "None" if no
 CSRF_COOKIE_SAMESITE = os.environ.get("CSRF_COOKIE_SAMESITE", "None" if not DEBUG else "Lax")
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
-SESSION_COOKIE_AGE = int(os.environ.get("ECARNET_SESSION_AGE_SECONDS", str(60 * 60 * 8)))
+# Session persistante adaptée à la PWA : glissante à chaque requête, avec expiration après 30 jours sans activité.
+SESSION_COOKIE_AGE = int(os.environ.get("ECARNET_SESSION_AGE_SECONDS", str(60 * 60 * 24 * 30)))
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 SESSION_SAVE_EVERY_REQUEST = True
 SECURE_CONTENT_TYPE_NOSNIFF = True

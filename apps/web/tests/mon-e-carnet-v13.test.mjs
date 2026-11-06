@@ -83,7 +83,7 @@ test("la pré-consultation n'a plus de choix manuel d'établissement ni de clôt
   assert.match(patient, /apiPatch<Encounter>/);
   assert.match(patient, /apiPost<Encounter>\("\/api\/v1\/patient\/care\/encounters\/"/);
   assert.match(patient, /status: "draft" \| "closed"/);
-  assert.match(patient, /L’infirmier ou le médecin remplit cette pré-consultation avec vous/);
+  assert.match(patient, /L’infirmier ou le médecin peut remplir ce formulaire avec vous/);
   assert.match(patient, /href="\/patient\/acces"/);
   const pro = read("src/components/ProfessionalConsultations.tsx");
   assert.match(pro, /useConfirm\(\)/);

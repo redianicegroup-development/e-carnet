@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { apiGet, apiPatch, apiPost } from "../infrastructure/api/client";
 import { describeVitals, emptyVitalsForm, parseVitalsForm, vitalsToForm, VITAL_FIELDS, type StoredVitals, type VitalsForm } from "../lib/vitals";
 import { buildObservations, isListed, numberOptions, OBSERVATIONS_MAX, OTHER_MAX, parseObservations, SYMPTOMS } from "../lib/preconsult";
@@ -12,6 +12,13 @@ type ActiveTemplate = { id: string; name: string; establishment_id: string; esta
 type Encounter = { id: string; facility_label: string; establishment_id?: string | null; reason: string; observations: string; vitals?: StoredVitals; recorded_with_help?: string; preconsultation_template?: string | null; template_fields?: TemplateField[]; template_responses?: Record<string, string | number | boolean | null>; status: "draft" | "closed"; closed_at: string | null; provenance: { label: string } };
 type FormState = { reason: string; selected: string[]; other: string; vitals: VitalsForm; recorded_with_help: string; templateId: string; templateResponses: Record<string, string | number | boolean | null>; templateFields: TemplateField[] };
 const EMPTY_FORM: FormState = { reason: "", selected: [], other: "", vitals: emptyVitalsForm(), recorded_with_help: "", templateId: "", templateResponses: {}, templateFields: [] };
+
+function fetchPreconsultationData() {
+  return Promise.all([
+    apiGet<Encounter[]>("/api/v1/patient/care/encounters/"),
+    apiGet<ActiveTemplate[]>("/api/v1/patient/care/patient/preconsultation-templates/"),
+  ]);
+}
 
 /* Un seul bloc, quatre sections (motif, symptômes, constantes, personne qui aide) : plus d'étapes à enchaîner.
    Aucun établissement à choisir : c'est le médecin qui lit ce brouillon grâce au QR du patient, puis le clôture en signant sa consultation.
@@ -29,12 +36,30 @@ export function PatientPreconsultations({ onDraftChange }: { onDraftChange?: (ha
   const [editing, setEditing] = useState(false);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [loadingItems, setLoadingItems] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [retryNeeded, setRetryNeeded] = useState(false);
+
+  const reloadItems = useCallback(async () => {
+    setLoadingItems(true);
+    setLoadError("");
+    try {
+      const [encounters, activeTemplates] = await fetchPreconsultationData();
+      setItems(encounters);
+      setTemplates(activeTemplates);
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : "Pré-consultation indisponible.");
+    } finally {
+      setLoadingItems(false);
+    }
+  }, []);
 
   useEffect(() => {
     let active = true;
-    Promise.all([apiGet<Encounter[]>("/api/v1/patient/care/encounters/"), apiGet<ActiveTemplate[]>("/api/v1/patient/care/patient/preconsultation-templates/")])
+    fetchPreconsultationData()
       .then(([encounters, activeTemplates]) => { if (active) { setItems(encounters); setTemplates(activeTemplates); } })
-      .catch((error) => { if (active) { setItems([]); setTemplates([]); setMessage(error instanceof Error ? error.message : "Impossible de charger les pré-consultations."); } });
+      .catch((error) => { if (active) setLoadError(error instanceof Error ? error.message : "Pré-consultation indisponible."); })
+      .finally(() => { if (active) setLoadingItems(false); });
     return () => { active = false; };
   }, []);
 
@@ -56,14 +81,26 @@ export function PatientPreconsultations({ onDraftChange }: { onDraftChange?: (ha
     setMessage("");
     try {
       const payload = { reason: form.reason.trim(), observations: buildObservations({ selected: form.selected, other: form.other }), vitals: parsedVitals.vitals, recorded_with_help: form.recorded_with_help.trim(), preconsultation_template: form.templateId || null, template_responses: form.templateId ? form.templateResponses : {} };
-      const saved = draft
-        ? await apiPatch<Encounter>(`/api/v1/patient/care/encounters/${draft.id}/`, payload)
+      // Après un échec réseau, le serveur a peut-être enregistré le POST sans que la réponse soit arrivée.
+      // On relit d'abord le brouillon : on le met à jour s'il existe, sinon seulement on retente la création.
+      const currentDraft = retryNeeded
+        ? (await apiGet<Encounter[]>("/api/v1/patient/care/encounters/")).find((item) => item.status === "draft") ?? null
+        : draft;
+      const saved = currentDraft
+        ? await apiPatch<Encounter>(`/api/v1/patient/care/encounters/${currentDraft.id}/`, payload)
         : await apiPost<Encounter>("/api/v1/patient/care/encounters/", payload);
-      setItems((current) => draft ? (current ?? []).map((item) => (item.id === saved.id ? saved : item)) : [saved, ...(current ?? [])]);
+      setItems((current) => currentDraft && (current ?? []).some((item) => item.id === saved.id)
+        ? (current ?? []).map((item) => (item.id === saved.id ? saved : item))
+        : [saved, ...(current ?? []).filter((item) => item.id !== saved.id)]);
+      setRetryNeeded(false);
       setEditing(false);
       setForm({ ...EMPTY_FORM, selected: [], vitals: emptyVitalsForm() });
-      setMessage("Brouillon enregistré. Le médecin le lira en scannant votre QR, puis le clôturera à la fin de la consultation.");
-    } catch (error) { setMessage(error instanceof Error ? error.message : "Enregistrement refusé."); }
+      setMessage("Enregistré. Pour le médecin, ouvrez votre QR temporaire.");
+    } catch (error) {
+      const status = error && typeof error === "object" && "status" in error ? Number((error as { status?: unknown }).status) : -1;
+      setRetryNeeded(error instanceof TypeError || status === 0 || status === 409 || status >= 500);
+      setMessage(error instanceof Error ? error.message : "Enregistrement refusé.");
+    }
     finally { setBusy(false); }
   }
 
@@ -81,10 +118,15 @@ export function PatientPreconsultations({ onDraftChange }: { onDraftChange?: (ha
   const setVital = (key: keyof VitalsForm, value: string) => { setForm((current) => ({ ...current, vitals: { ...current.vitals, [key]: value } })); setMessage(""); };
 
   return <div className="stack-lg" id="preparer">
+    {items === null && <section className="card" aria-busy={loadingItems} aria-labelledby="preconsult-loading-title">
+      <h2 id="preconsult-loading-title">Pré-consultation</h2>
+      <p className="muted" role={loadError ? "alert" : "status"}>{loadError || "Chargement de la pré-consultation…"}</p>
+      {loadError && <button type="button" className="button" onClick={() => void reloadItems()} disabled={loadingItems}>Réessayer</button>}
+    </section>}
     {showWizard && <section className="card preconsult-wizard preconsult-form" aria-labelledby="preconsult-title">
       <div className="preconsult-wizard__top"><span className="eyebrow">{draft ? "Modifier le brouillon" : "Préparer ma consultation"}</span></div>
       <h2 id="preconsult-title">Préparer ma consultation</h2>
-      <p className="muted">L’infirmier ou le médecin remplit cette pré-consultation avec vous, sur votre téléphone : seul le motif est obligatoire.</p>
+      <p className="muted">L’infirmier ou le médecin peut remplir ce formulaire avec vous. Seul le motif est obligatoire.</p>
       <form onSubmit={save} noValidate>
         <fieldset className="preconsult-section">
           <legend><span className="preconsult-section__num">1</span>Quel est le motif de la consultation ?</legend>
@@ -119,9 +161,10 @@ export function PatientPreconsultations({ onDraftChange }: { onDraftChange?: (ha
 
         <div className="preconsult-wizard__actions">
           {draft && <button type="button" className="button preconsult-wizard__back" disabled={busy} onClick={() => { setEditing(false); setMessage(""); }}>Annuler</button>}
-          <button className="button primary preconsult-wizard__next" type="submit" disabled={busy}>{busy ? "Enregistrement…" : "Enregistrer le brouillon"}</button>
+          <button className="button primary preconsult-wizard__next" type="submit" disabled={busy}>{busy ? "Enregistrement…" : retryNeeded ? "Réessayer l’enregistrement" : "Enregistrer le brouillon"}</button>
         </div>
         <p className="status" role="status" aria-live="polite">{message}</p>
+        {retryNeeded && <p className="muted" role="note">L’envoi n’est pas confirmé. Vos réponses restent affichées. Reconnectez-vous puis réessayez. Rien n’est envoyé hors connexion.</p>}
       </form>
     </section>}
 
@@ -131,7 +174,7 @@ export function PatientPreconsultations({ onDraftChange }: { onDraftChange?: (ha
       {draft.template_fields && Object.keys(draft.template_responses ?? {}).length > 0 && <dl className="kv">{Object.entries(draft.template_responses ?? {}).map(([key, value]) => { const field = draft.template_fields?.find((item) => item.key === key); return <div key={key}><dt>{field?.label ?? key}</dt><dd>{typeof value === "boolean" ? (value ? "Oui" : "Non") : String(value ?? "—")}{field?.unit ? ` ${field.unit}` : ""}</dd></div>; })}</dl>}
       {describeVitals(draft.vitals).length > 0 && <p className="preconsult-draft__vitals"><strong>Constantes :</strong> {describeVitals(draft.vitals).map((line) => `${line.label} ${line.text}`).join(" · ")}</p>}
       {draft.recorded_with_help && <p className="muted">Rempli avec l’aide de : {draft.recorded_with_help}</p>}
-      <p className="muted">Pour que le médecin le lise, montrez-lui votre QR d’accès temporaire. Vous pouvez encore modifier le brouillon.</p>
+      <p className="muted">Montrez votre QR temporaire au médecin. Vous pouvez encore modifier ce brouillon.</p>
       <div className="actions"><button type="button" className="button" onClick={startEditing}>Modifier le brouillon</button><Link className="button primary" href="/patient/acces">Ouvrir mon QR d’accès</Link></div>
       <p className="status" role="status" aria-live="polite">{message}</p>
     </section>}
