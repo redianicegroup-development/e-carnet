@@ -53,7 +53,11 @@ class SendDueRemindersTests(TestCase):
         self.reminder(name="Inactif", active=False)
         self.reminder(name="Épuisé", stock_remaining=0)
         self.run_command()
-        self.assertEqual(PatientNotification.objects.count(), 0)
+        self.assertEqual(PatientNotification.objects.count(), 1)
+        self.assertEqual(
+            PatientNotification.objects.get().metadata["reminder_id"],
+            str(MedicationReminder.objects.get(name="Épuisé").pk),
+        )
 
     def test_timezone_is_configurable_and_global_time_zone_untouched(self):
         self.reminder()
@@ -129,4 +133,3 @@ class SendDueRemindersTests(TestCase):
         self.assertEqual(created.data["data"]["days_of_week"] if "data" in created.data else created.data["days_of_week"], [0, 2])
         self.assertEqual(client.post(url, {**base, "days_of_week": [7]}, format="json").status_code, 400)
         self.assertEqual(client.post(url, {**base, "days_of_week": ["lundi"]}, format="json").status_code, 400)
-

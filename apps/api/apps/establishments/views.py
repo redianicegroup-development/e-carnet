@@ -30,7 +30,7 @@ from apps.identity.models import AccountContext
 from apps.identity.temporary_password import disable_temporary_password, has_pending_temporary_password, issue_temporary_password, temporary_password_expired
 from .provisioning import AccountConflict, ProvisionedAccess, login_url, provision_administrator
 from .join_code_crypto import purge_dead_codes, seal_code, unseal_code
-from .models import PROFILE_FIELDS, Establishment, EstablishmentAdminInvitation, EstablishmentAdministrator, EstablishmentJoinCode, EstablishmentMembership, PrescriptionTemplate, generate_internal_code
+from .models import PROFILE_FIELDS, Establishment, EstablishmentAdminInvitation, EstablishmentAdministrator, EstablishmentJoinCode, EstablishmentMembership, EstablishmentNotification, PrescriptionTemplate, generate_internal_code
 from .serializers import EstablishmentProfileSerializer, EstablishmentSerializer, MembershipSerializer, PrescriptionTemplateSerializer, logo_for
 
 User = get_user_model()
@@ -97,6 +97,36 @@ class EstablishmentListView(APIView):
             memberships__professional__user=request.user
         )
         return Response({"success": True, "data": EstablishmentSerializer(establishments.distinct(), many=True).data})
+
+
+class EstablishmentNotificationListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        admin_ids = EstablishmentAdministrator.objects.filter(
+            user=request.user,
+            status="active",
+            establishment__status="active",
+        ).values("establishment_id")
+        items = EstablishmentNotification.objects.filter(
+            recipient=request.user,
+            establishment_id__in=admin_ids,
+        ).order_by("-created_at")[:50]
+        return Response({
+            "success": True,
+            "data": [
+                {
+                    "id": item.id,
+                    "kind": item.kind,
+                    "title": item.title,
+                    "body": item.body,
+                    "metadata": item.metadata,
+                    "read_at": item.read_at,
+                    "created_at": item.created_at,
+                }
+                for item in items
+            ],
+        })
 
 
 class EstablishmentCatalogView(APIView):

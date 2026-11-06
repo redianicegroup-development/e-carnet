@@ -15,7 +15,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.views import APIView
-from apps.patients.models import ClinicalDeclaration, PatientProfile
+from apps.patients.models import ClinicalDeclaration, PatientAccessSummaryPreference, PatientProfile
 from apps.patients.views import patient_actor_role, profile_for
 from apps.professionals.access import professional_clinical_access_error
 from apps.professionals.models import ProfessionalProfile
@@ -485,6 +485,27 @@ class PatientMedicationIntakeCreateView(APIView):
         serializer.is_valid(raise_exception=True)
         intake, _ = MedicationIntake.objects.update_or_create(reminder=reminder, scheduled_for=serializer.validated_data["scheduled_for"], defaults={"status": serializer.validated_data["status"]})
         return Response({"success": True, "data": MedicationIntakeSerializer(intake).data}, status=201)
+
+
+class PatientAccessSummaryPreferenceView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        patient = profile_for(request.user, request)
+        preference, _ = PatientAccessSummaryPreference.objects.get_or_create(patient=patient)
+        return Response({"success": True, "data": {"frequency": preference.frequency, "last_sent_at": preference.last_sent_at}})
+
+    def patch(self, request):
+        patient = profile_for(request.user, request)
+        frequency = request.data.get("frequency")
+        valid = {choice[0] for choice in PatientAccessSummaryPreference.FREQUENCY_CHOICES}
+        if frequency not in valid:
+            raise ValidationError({"frequency": "Choisissez désactivé, hebdomadaire ou mensuel."})
+        preference, _ = PatientAccessSummaryPreference.objects.update_or_create(
+            patient=patient,
+            defaults={"frequency": frequency},
+        )
+        return Response({"success": True, "data": {"frequency": preference.frequency, "last_sent_at": preference.last_sent_at}})
 
 
 class PatientNotificationInboxView(APIView):
@@ -1122,6 +1143,70 @@ class ProfessionalAccessGrantListCreateView(APIView):
         record_event(event_type="access_grant.requested", actor=request.user, actor_role="professional", patient=item.patient, establishment=item.establishment, access_grant=item, metadata={"action": "requested", "scope": item.scope, "status": item.status})
         notify_patient(item.patient, kind="access.requested", title="Nouvelle demande d’accès", body=f"{item.professional_name} de {item.facility_label} demande l’accès à votre carnet.", metadata={"access_grant_id": str(item.id)})
         return Response({"success": True, "data": ProfessionalAccessGrantSerializer(item).data}, status=status.HTTP_201_CREATED)
+
+
+class ProfessionalRecentPatientsView(APIView):
+    """Liste personnelle minimale, calculée sans table ni copie de dossier.
+
+    Une autorisation active ou expirée depuis au plus 30 jours, ou une consultation
+    récente du professionnel, suffit à conserver le nom dans cette liste. Aucun
+    identifiant patient n'est renvoyé : l'action côté client est une nouvelle
+    demande d'accès par QR, jamais une réouverture du dossier.
+    """
+    permission_classes = [IsAuthenticated]
+    RETENTION = timedelta(days=30)
+    LIMIT = 20
+
+    def get(self, request):
+        profile = getattr(request.user, "professional_profile", None)
+        access_error = professional_clinical_access_error(profile)
+        if access_error:
+            return Response({"success": False, "message": access_error}, status=403)
+
+        now = timezone.now()
+        cutoff = now - self.RETENTION
+        candidates = {}
+
+        grants = AccessGrant.objects.filter(
+            professional=profile,
+            patient__user__is_active=True,
+        ).filter(
+            Q(status="active", starts_at__lte=now, expires_at__gt=now)
+            | Q(status="expired", expires_at__gt=cutoff)
+        ).select_related("patient", "patient__user")
+        for grant in grants:
+            patient = grant.patient
+            last_access = grant.requested_at
+            if grant.starts_at and grant.starts_at > last_access:
+                last_access = grant.starts_at
+            candidates[patient.pk] = {"patient": patient, "last_accessed_at": last_access}
+
+        consultations = Consultation.objects.filter(
+            professional=profile,
+            patient__user__is_active=True,
+            validated_at__gte=cutoff,
+        ).select_related("patient", "patient__user").order_by("-validated_at")
+        for consultation in consultations:
+            row = candidates.setdefault(
+                consultation.patient_id,
+                {"patient": consultation.patient, "last_accessed_at": consultation.validated_at},
+            )
+            if consultation.validated_at > row["last_accessed_at"]:
+                row["last_accessed_at"] = consultation.validated_at
+
+        rows = sorted(candidates.values(), key=lambda item: item["last_accessed_at"], reverse=True)[: self.LIMIT]
+        data = [
+            {
+                "first_name": item["patient"].display_first_name(),
+                "last_name": item["patient"].display_last_name(),
+                "last_accessed_at": item["last_accessed_at"],
+            }
+            for item in rows
+        ]
+        response = Response({"success": True, "data": data})
+        response["Cache-Control"] = "private, max-age=86400"
+        response["Vary"] = "Authorization"
+        return response
 
 
 class ProfessionalCareHistoryView(APIView):

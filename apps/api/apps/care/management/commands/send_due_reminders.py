@@ -56,7 +56,6 @@ class Command(BaseCommand):
 
         reminders = (
             MedicationReminder.objects.filter(active=True, patient__user__isnull=False)
-            .exclude(stock_remaining=0)
             .select_related("patient")
         )
         sent = skipped = failed = 0

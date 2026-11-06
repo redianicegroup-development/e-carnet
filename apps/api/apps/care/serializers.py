@@ -271,7 +271,7 @@ class FollowUpPlanSerializer(serializers.ModelSerializer):
 class MedicationReminderSerializer(serializers.ModelSerializer):
     class Meta:
         model = MedicationReminder
-        fields = ("id", "name", "dosage", "instructions", "times", "days_of_week", "starts_on", "ends_on", "stock_remaining", "refill_threshold", "active", "created_at", "updated_at")
+        fields = ("id", "name", "dosage", "instructions", "times", "days_of_week", "starts_on", "ends_on", "active", "created_at", "updated_at")
         read_only_fields = ("id", "created_at", "updated_at")
 
     def validate_days_of_week(self, value):

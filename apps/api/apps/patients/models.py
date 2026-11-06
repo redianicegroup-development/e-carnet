@@ -34,6 +34,16 @@ class PatientProfile(models.Model):
         return self.last_name or (self.user.last_name if self.user_id else "")
 
 
+class PatientAccessSummaryPreference(models.Model):
+    """Préférence explicite du patient pour le résumé périodique des accès."""
+    FREQUENCY_CHOICES = (("disabled", "Désactivé"), ("weekly", "Hebdomadaire"), ("monthly", "Mensuel"))
+    patient = models.OneToOneField(PatientProfile, on_delete=models.CASCADE, related_name="access_summary_preference")
+    frequency = models.CharField(max_length=16, choices=FREQUENCY_CHOICES, default="disabled")
+    last_sent_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
 class PatientRepresentation(models.Model):
     """Lien explicite et révocable entre un compte représentant et un dossier patient."""
     RELATION_CHOICES = (

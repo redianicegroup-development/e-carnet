@@ -136,6 +136,24 @@ class EstablishmentAdminInvitation(models.Model):
         return not self.consumed_at and not self.revoked_at and self.expires_at > timezone.now()
 
 
+class EstablishmentNotification(models.Model):
+    """Notification interne d’un administrateur, cloisonnée à sa structure."""
+    establishment = models.ForeignKey(Establishment, on_delete=models.CASCADE, related_name="notifications")
+    recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="establishment_notifications")
+    kind = models.CharField(max_length=64)
+    title = models.CharField(max_length=180)
+    body = models.CharField(max_length=500)
+    event_key = models.CharField(max_length=255)
+    metadata = models.JSONField(default=dict, blank=True)
+    read_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+        constraints = [models.UniqueConstraint(fields=("recipient", "event_key"), name="unique_establishment_notification_event")]
+        indexes = [models.Index(fields=("recipient", "read_at", "created_at"), name="est_notif_recipient_idx")]
+
+
 class EstablishmentJoinCode(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     establishment = models.ForeignKey(Establishment, on_delete=models.PROTECT, related_name="join_codes")
