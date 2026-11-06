@@ -13,11 +13,11 @@ type SecurityPrinciple = { icon: IconName; title: string; text: string };
 const PRINCIPLES: SecurityPrinciple[] = [
   { icon: "lock", title: "Accès limités", text: "Le patient voit le périmètre et la durée d’une autorisation, puis peut la retirer à tout moment." },
   { icon: "clock", title: "Durée maîtrisée", text: "Une autorisation clinique est temporaire. Elle ne devient jamais un accès permanent par défaut." },
-  { icon: "check", title: "Décision explicite", text: "Un professionnel doit être rattaché à son établissement et recevoir l’accord du patient avant de consulter le carnet. Un administrateur ne peut ouvrir que les soins de sa propre structure, avec un motif enregistré et une notification au patient." },
+  { icon: "check", title: "Décision explicite", text: "Un professionnel doit être rattaché à son établissement et recevoir l’accord du patient avant de consulter le carnet. L’ouverture clinique par un administrateur d’établissement est désactivée par défaut ; le mécanisme prévu dans le code n’est pas exposé dans un écran utilisateur et ne doit pas être activé avant la décision juridique applicable." },
   { icon: "document", title: "Historique conservé", text: "Les demandes, décisions et consultations validées laissent une trace dans le carnet pour garder le fil." },
   { icon: "shield", title: "Compte personnel", text: "Gardez vos identifiants confidentiels et utilisez uniquement votre compte. Les services d’urgence restent indépendants du carnet." },
   { icon: "chart", title: "Suivi mesuré", text: "Avec votre accord seulement, les statistiques du site utilisent des catégories de pages et des clics publics, sans conserver les URL complètes ni les adresses IP." },
-  { icon: "lock", title: "Copie hors connexion", text: "Sans réseau, l’application relit en lecture seule une copie chiffrée gardée sur l’appareil. Elle s’efface à la déconnexion et se désactive dans les paramètres. La clé étant sur l’appareil, elle protège le stockage, pas un navigateur resté ouvert : sur un appareil partagé, désactivez-la." },
+  { icon: "lock", title: "Copie hors connexion", text: "Les lectures de l’API sont conservées en lecture seule dans un cache chiffré sur l’appareil, désactivable dans les paramètres et effacé à la déconnexion. À part, une carte d’urgence ouverte par QR est gardée jusqu’à 24 heures dans IndexedDB sans chiffrement applicatif. La clé du cache chiffré étant sur l’appareil, elle ne protège pas contre l’utilisation d’un navigateur déjà ouvert : privilégiez un appareil de confiance." },
 ];
 
 export default function SecurityPage() {

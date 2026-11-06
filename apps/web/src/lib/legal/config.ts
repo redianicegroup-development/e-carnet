@@ -20,8 +20,8 @@ export const LEGAL_REVIEW: { status: "pending" | "validated"; reviewer: string |
 
 export const LEGAL_DOCS: Record<LegalDocKey, { path: string; title: string; short: string; version: string; lastUpdated: string }> = {
   mentions: { path: "/mentions-legales", title: "Mentions légales", short: "Mentions légales", version: "2026-11-05-v3", lastUpdated: "2026-11-05" },
-  privacy: { path: "/confidentialite", title: "Politique de confidentialité", short: "Confidentialité", version: "2026-11-05-v3", lastUpdated: "2026-11-05" },
-  terms: { path: "/cgu", title: "Conditions générales d’utilisation", short: "Conditions d’utilisation", version: "2026-11-05-v3", lastUpdated: "2026-11-05" },
+  privacy: { path: "/confidentialite", title: "Politique de confidentialité", short: "Confidentialité", version: "2026-11-06-v4", lastUpdated: "2026-11-06" },
+  terms: { path: "/cgu", title: "Conditions générales d’utilisation", short: "Conditions d’utilisation", version: "2026-11-06-v4", lastUpdated: "2026-11-06" },
 };
 
 /** Date ISO (aaaa-mm-jj) → « 10 octobre 2026 », en UTC pour un rendu identique serveur/navigateur. */
@@ -128,14 +128,14 @@ export const COOKIES = [
     essential: true,
     purpose: "Maintenir votre connexion et protéger le parcours de connexion avec un fournisseur d’identité.",
     duration: "30 jours sans activité par défaut, prolongés à chaque échange avec le serveur",
-    attributes: "HttpOnly ; Secure ; SameSite=None en configuration de test (Lax en développement)",
+    attributes: "HttpOnly ; Secure hors DEBUG ; SameSite=None par défaut hors DEBUG et Lax par défaut en DEBUG ; valeurs configurables par l’environnement",
   },
   {
     name: "csrftoken",
     essential: true,
     purpose: "Protéger les formulaires et les requêtes contre les envois non voulus (CSRF).",
     duration: "Durée par défaut du framework Django (52 semaines) : la configuration ne la modifie pas",
-    attributes: "Secure ; SameSite=None en configuration de test ; lisible par le script de l’application (non HttpOnly)",
+    attributes: "Lisible par le script de l’application (non HttpOnly) ; Secure hors DEBUG ; SameSite=None par défaut hors DEBUG et Lax par défaut en DEBUG ; valeurs configurables par l’environnement",
   },
   {
     name: "ecarnet_analytics_consent",
@@ -149,6 +149,6 @@ export const COOKIES = [
     essential: false,
     purpose: "Mesurer la fréquentation du service : identifiant aléatoire de visiteur, sans lien avec un compte.",
     duration: "30 jours",
-    attributes: "HttpOnly ; Secure ; SameSite=None en configuration de test (Lax en développement)",
+    attributes: "HttpOnly ; Secure hors DEBUG (ou sur requête HTTPS) ; SameSite=None si Secure, sinon Lax",
   },
 ] as const;

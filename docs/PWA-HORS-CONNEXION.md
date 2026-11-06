@@ -1,8 +1,8 @@
-> **Référence d’état auditée le 05/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-05.md`](ETAT-REEL-PROJET-2026-11-05.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
+> **Référence d’état auditée le 06/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-06.md`](ETAT-REEL-PROJET-2026-11-06.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
 
 # PWA hors connexion
 
-Mis à jour le 05/11/2026. Cette version remplace la décision du 02/11/2026 (« deux copies locales, et seulement deux ; le HTML des pages privées n'est jamais gardé »), à la demande du produit : rester dans l'application sans réseau, dans les trois espaces (patient, professionnel, établissement), y compris les paramètres, les pages d'information et les écrans déjà consultés.
+Mis à jour le 06/11/2026. Cette version décrit aussi le stockage séparé, non chiffré, de la carte d’urgence ouverte par QR. Elle remplace la décision du 02/11/2026 (« deux copies locales, et seulement deux ; le HTML des pages privées n'est jamais gardé »), à la demande du produit : rester dans l'application sans réseau, dans les trois espaces (patient, professionnel, établissement), y compris les paramètres, les pages d'information et les écrans déjà consultés.
 
 ## Ce que voit l'utilisateur
 
@@ -38,7 +38,7 @@ Mis à jour le 05/11/2026. Cette version remplace la décision du 02/11/2026 («
 
 ### 3. Carte d'urgence publique ouverte par QR (inchangée)
 
-La réponse de `/api/v1/patient/emergency-card/qr/<token>/` est gardée **24 heures** sur l'appareil de celui qui la consulte (IndexedDB `ecarnet-public-emergency-v1`), supprimée à l'expiration et dès que le QR est désactivé ou renouvelé (404/410) ; elle n'est montrée que si le serveur ne répond pas. Elle n'entre pas dans la copie chiffrée (le jeton est dans l'adresse).
+La réponse de `/api/v1/patient/emergency-card/qr/<token>/` est gardée jusqu’à **24 heures** dans une IndexedDB séparée (`ecarnet-public-emergency-v1`) sur l’appareil de celui qui consulte le QR. Cette copie et le jeton utilisé comme clé sont **stockés sans chiffrement applicatif** ; ils ne font pas partie du cache API chiffré et ne sont pas contrôlés par son réglage. La copie est supprimée à l’expiration et quand le serveur répond 404/410, et n’est montrée qu’en l’absence de réponse du serveur. Le renouvellement du QR ne peut pas effacer immédiatement une copie déjà enregistrée sur un appareil hors ligne ; utiliser cette fonction uniquement sur un appareil de confiance.
 
 ## Chiffrement : ce que cela protège, et ce que cela ne protège pas
 

@@ -1,4 +1,4 @@
-> **Référence d’état auditée le 05/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-05.md`](ETAT-REEL-PROJET-2026-11-05.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
+> **Référence d’état auditée le 06/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-06.md`](ETAT-REEL-PROJET-2026-11-06.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
 
 # Décisions produit et validations restantes — A1 à A16
 
@@ -28,13 +28,15 @@ Un scope est le périmètre précis de données couvert par l’autorisation du 
 
 ## État des décisions A1–A16
 
+> **À réconcilier avant activation :** dans ce questionnaire, A8 porte sur les champs de pré-consultation. Dans les documents A6-A7/ETA-13, « A8 » désigne la validation de l’accès clinique administratif. Les identifiants ne concordent pas. Cette incohérence doit être résolue dans le registre de décisions ; en attendant, le garde-fou serveur d’ouverture admin reste `false` et aucun rôle habilité à ouvrir un dossier n’est fixé par ce questionnaire.
+
 | ID | Sujet | État et suite requise |
 |---|---|---|
 | A1 | OTP WhatsApp | **Décidé :** exclu. Ne pas l’intégrer. |
 | A2 | Authentification | **Décidé :** e-mail/mot de passe, Google, Facebook et Apple; identité unique et liaison explicite. **Implémenté :** callbacks, retour UI, liaison/déliaison et audit. **Restant :** credentials, URLs réelles et tests fournisseurs. SMS est V3. |
 | A3 | Récupération/MFA | **Décidé :** MFA/TOTP V3. Règles détaillées de récupération de compte à préciser; pas de contournement ad hoc. |
 | A4 | Vérification structure et compte établissement | **Décidé :** la structure envoie ses justificatifs à l’adresse officielle E‑Carnet; un staff vérifie via une route privée puis crée l’accès nominatif. Un administrateur principal en V1. Invitation unique 48 h; le destinataire définit son mot de passe. Aucune demande/upload public. Rétention des pièces e-mail à formaliser. |
-| A5 | Accès clinique administrateur établissement | **Décision mise à jour :** accès aux dossiers associés à son établissement; aucun accès automatique aux données d’un autre établissement. Le professionnel reste limité à son cas attribué et à l’autorisation active du patient. |
+| A5 | Accès clinique administrateur établissement | Le périmètre produit envisagé est celui de la structure propre, sans accès automatique aux données d’un autre établissement. **État technique au 06/11 :** l’ouverture clinique admin est désactivée par défaut (`ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ=false`) ; les routes API ne sont pas exposées dans un écran utilisateur. La décision sur le rôle qui pourrait ouvrir un dossier est en attente de validation et de réconciliation des références A8. Le professionnel reste limité à son cas attribué et à l’autorisation active du patient. |
 | A6 | Validation médecin et rattachement | **Décidé :** E‑Carnet ne collecte pas les justificatifs personnels du médecin; la vérification se fait en interne entre médecin et établissement. L’administrateur établissement émet un code à usage unique/48 h; sa saisie crée `pending`, puis l’établissement accepte/refuse. L’acceptation est la validation institutionnelle du rattachement pour cette structure. |
 | A7 | Aide à la pré-consultation | Pas de compte infirmier. Champ d’aide éventuel sans authentification ni droits supplémentaires. Règles exactes de l’établissement et de la personne aidante à confirmer si modifiées. |
 | A8 | Champs de pré-consultation | **Ouvert médicalement :** champs, unités, bornes, obligatoires/facultatifs, antécédents et documents. Validation référent médical requise. |

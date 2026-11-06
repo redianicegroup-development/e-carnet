@@ -1,4 +1,4 @@
-> **Référence d’état auditée le 05/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-05.md`](ETAT-REEL-PROJET-2026-11-05.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
+> **Photographie historique du 11/10/2026 — non à jour pour l’état technique courant.** Voir [`ETAT-REEL-PROJET-2026-11-06.md`](ETAT-REEL-PROJET-2026-11-06.md) et le complément du 06/11 dans `DONNEES-REELLES-DECISION.md`. Les durées, les cookies, les copies hors connexion et les fonctionnalités de la version 2 ci-dessous décrivent l’archive analysée à cette date. Le document reste préparatoire et ne constitue pas un avis juridique.
 
 # Mon Carnet Numérique — LEGAL DATA INPUT, Compliance Matrix et champs à compléter
 

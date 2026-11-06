@@ -1,4 +1,4 @@
-> **Référence d’état auditée le 05/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`../ETAT-REEL-PROJET-2026-11-05.md`](../ETAT-REEL-PROJET-2026-11-05.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
+> **Référence d’état auditée le 06/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`../ETAT-REEL-PROJET-2026-11-06.md`](../ETAT-REEL-PROJET-2026-11-06.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
 
 # ADR-002 — Accès privé établissement par invitation nominative et rattachement médecin
 
@@ -20,7 +20,7 @@ La V1 actuelle laisse un établissement soumettre une fiche via l’application,
 5. L’établissement vérifie le médecin en interne. E‑Carnet ne collecte pas ses justificatifs personnels. L’administrateur génère un code médecin aléatoire, à usage unique, valable 48 heures; le code permet seulement au compte Professionnel existant de créer une demande `pending`.
 6. L’administrateur établissement accepte ou refuse cette demande. Une acceptation crée le rattachement actif; elle ne donne pas accès à un dossier patient. La validation du rattachement devient la preuve institutionnelle au niveau de cette structure; l’AccessGrant et le consentement du patient restent des contrôles séparés.
 7. Les structures, invitations, codes, décisions et affiliations conservent une trace append-only. Une fin d’accès se fait par révocation/suspension et non par suppression de l’historique.
-8. L’espace établissement est privé. L’administrateur actif ne reçoit d’abord qu’une liste sans contenu et ouvre temporairement les soins associés à sa structure avec un motif obligatoire; l’ouverture est auditée et notifiée au patient. Le professionnel ne consulte que le dossier de son cas attribué, avec l’autorisation patient active. Aucun accès automatique aux données d’un autre établissement.
+8. L’espace établissement est privé. **État technique au 06/11/2026 :** l’administrateur actif reçoit une liste sans contenu clinique ; le mécanisme API d’ouverture temporaire des soins associés à sa structure (motif obligatoire, audit, notification) existe mais est désactivé par défaut par `ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ=false` et n’a pas d’écran utilisateur. Son activation est en attente de décision et validation. Le professionnel ne consulte que le dossier de son cas attribué, avec l’autorisation patient active. Aucun accès automatique aux données d’un autre établissement.
 
 ## Alternatives écartées
 

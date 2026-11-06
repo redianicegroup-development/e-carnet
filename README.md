@@ -1,76 +1,36 @@
-> **Référence d’état auditée le 05/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`docs/ETAT-REEL-PROJET-2026-11-05.md`](docs/ETAT-REEL-PROJET-2026-11-05.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
-
 # Mon E-Carnet — V1 en construction
 
-**Version 1.5 — 05/11/2026** (hors connexion, textes légaux et aide mis à jour sur l’état réel) : voir [`docs/CHANGELOG.md`](docs/CHANGELOG.md). Toujours en phase de test : données fictives uniquement.
+**État documentaire : 6 novembre 2026.** La référence du code, des configurations de déploiement présentes et des limites connues est [`docs/ETAT-REEL-PROJET-2026-11-06.md`](docs/ETAT-REEL-PROJET-2026-11-06.md). Une fonction présente dans le dépôt n’est pas nécessairement déployée, testée en staging ou autorisée pour des données réelles.
 
-Monorepo d’une application web/PWA mobile-first : Next.js 16, API Django/DRF et PostgreSQL cible.
+Monorepo d’une application web/PWA mobile-first : Next.js, API Django/DRF et PostgreSQL cible. Le service est en phase de test : utiliser uniquement des données fictives (`example.test`). Les pages juridiques affichent encore un statut provisoire et ne constituent pas un avis juridique.
 
-> **Documentation mise à jour le 14/10/2026. V1 en construction, non acceptée et non autorisée pour des données de santé réelles.**
-> Les tests PostgreSQL 16 et le smoke local de sauvegarde/restauration ont réussi. Le verdict reste **NO-GO** : ils ne remplacent ni une recette staging, ni une sauvegarde managée testée, ni l’approbation du RPO/RTO et des validations produit, juridiques et sécurité.
+## Fonctionnalités présentes dans le code
 
-## Dernières preuves disponibles
+- Comptes nominatifs et sessions serveur Django. Dans les configurations de référence, la session persiste après fermeture de la PWA et expire après 30 jours sans activité ; une déconnexion explicite met fin à la session. Les valeurs d’un environnement hébergé peuvent être différentes.
+- Espaces patient, professionnel et établissement avec contrôles d’autorisation côté API. Le dépôt contient le carnet, les consultations et pré-consultations, les documents, mesures, vaccinations, rendez-vous, rappels, notifications et plans de suivi selon les rôles et permissions.
+- Carte d’urgence virtuelle, QR public activé par le patient et téléchargement PNG. Les éléments de la carte sont des déclarations et doivent être vérifiés par les professionnels. Une carte ouverte par QR est copiée jusqu’à 24 h dans IndexedDB sans chiffrement applicatif sur l’appareil qui la consulte.
+- Mode PWA hors connexion : les coquilles d’écrans et ressources peuvent être rechargées ; des lectures API éligibles sont conservées en cache chiffré, en lecture seule. Durée maximale : 7 jours pour les données du patient/compte et 24 h pour les informations de tiers. Aucune écriture n’est mise en attente ou rejouée hors connexion.
+- OAuth Google, Facebook et Apple présent dans le code ; les identifiants fournisseurs et la recette réelle restent à fournir.
 
-- Le 08/10, `npm run test:api -- --keepdb` sur PostgreSQL 16 local : **77 tests réussis, aucun échec, aucun ignoré**. Voir [rapport de tests PostgreSQL](reports/postgres-tests-20261008.txt).
-- Le 08/10, une sauvegarde PostgreSQL custom a été restaurée dans une base isolée ; empreinte, marqueur synthétique et migrations vérifiés. La commande de restauration a pris 1 s, ce qui **ne mesure pas** le RTO d’un service. Voir [rapport de restauration](reports/postgres-restore-20261008T081823Z.txt).
-- Sur la copie locale le 14/10 (Linux, SQLite), **mesuré sur la base 1.9 des correctifs avant fusion dans la 1.10** : **169 tests Django réussis (3 ignorés)**, **46 tests web réussis**, `tsc` sans erreur, lint sans erreur (4 avertissements `<img>` existants), `makemigrations --check` propre, et rendu vérifié dans Chromium (carte d’urgence de 320 à 1440 px, téléchargement PNG, QR de consultation). Le `next build` n’a pas pu être rejoué ce jour-là (Google Fonts injoignable depuis l’environnement de correction) : le relancer sur la machine de développement. Sous Windows, les tests web échouaient le 13/10 à cause de chemins `C:\C:\...` ; non rejoué depuis. Détails : [état réel V1](docs/ETAT-REEL-V1.md).
-- Le 14/10, `npm audit --omit=dev` : **0 vulnérabilité** (dépendances de production). L’avertissement de dépréciation `authlib.jose` est toujours émis ; les alertes du 05/10 restent des observations historiques.
-- Les tests locaux tournent sous SQLite, où les verrous de ligne (`select_for_update`) n’ont aucun effet : la concurrence réelle du QR à usage unique doit être rejouée sur PostgreSQL (`npm run test:api -- --keepdb`).
-- Le staging réel, les sauvegardes managées, le RPO/RTO, les domaines/cookies/SMTP/OAuth réels, les essais Android/iOS et les validations médicales/juridiques restent à prouver.
+## Limites à ne pas confondre avec des fonctions autorisées
 
-Pour éviter de réintroduire un ancien choix : [état réel et hiérarchie documentaire](docs/ETAT-REEL-V1.md) fait foi pour le code ; [roadmap](docs/ROADMAP-V1-V5.md) fait foi pour les décisions produit ; les rapports datés sont des preuves historiques, pas des spécifications actives.
+- Les données de santé réelles sont interdites dans l’état documenté du projet (`REAL_HEALTH_DATA_ALLOWED = false`).
+- L’ouverture clinique par un administrateur d’établissement est désactivée par défaut dans le code et les modèles d’environnement. A8 reste à trancher ; aucune ouverture ne doit être activée avant validation. L’écran d’ouverture n’est pas présent.
+- ETA-13 / E4 — plusieurs administrateurs avec rôles propriétaire et gestionnaire — n’est pas implémenté. Le modèle d’administrateur actuel demeure.
+- PAT-21 — budget faible débit mesuré sur Android modeste et cinq essais utilisateur réels, dont une personne âgée — n’est pas déclaré terminé.
+- Les validations médicales et juridiques, la recette de déploiement, les appareils mobiles, la conformité d’hébergement et la restauration de la base hébergée ne sont pas établies par le contenu de cette archive.
 
-## Fonctionnalités présentes
+## Structure
 
-- Compte unique, sessions serveur, CSRF/CORS et Argon2id.
-- Authentification e-mail/mot de passe et endpoints OAuth Google/Facebook/Apple : callbacks et interface de liaison/déliaison sont présents ; secrets et recette réelle fournisseur restent requis. Aucun compte n’est fusionné sur la seule égalité d’e-mail.
-- Onboarding en quatre étapes : identité, choix du contexte, profil métier, puis configuration d’une question de récupération complémentaire. Sa réponse est hachée; elle ne permet pas à elle seule de récupérer le compte ni d’ouvrir le dossier médical.
-- Profil patient, déclarations, pré-consultation, historique et consultation.
-- Profils d’enfants représentés séparés du dossier du parent; transfert du dossier existant à son titulaire adulte soumis à vérifications humaines. Le seuil légal reste à configurer et les délégations d’adultes ne sont pas ouvertes.
-- **Carte d’urgence virtuelle** (Moi → Paramètres) : nom, prénom, groupe sanguin, ville, allergies, traitements déclarés et contact d’urgence, avec le QR à côté (en colonne sur petit écran). Le QR est désactivé par défaut, révocable et renouvelable ; il ouvre une page publique sans connexion (`/urgence/<jeton>`, non indexée, limitée à 120 requêtes/h par IP). La même carte se télécharge en **image PNG** (dessinée dans le navigateur, QR inclus : à partager avec précaution). La ville et le contact se modifient sur place ; groupe sanguin et allergies viennent des déclarations du carnet.
-- Carte d’urgence imprimable distincte du carnet complet (sans QR) : identité minimale, déclarations choisies et contact d’urgence; les copies imprimées peuvent être périmées et ne sont pas effaçables à distance.
-- AccessGrant : consentement, scopes V1, expiration serveur de 2 h, deux prolongations d’1 h et révocation.
-- QR de consultation opaque, hashé en base, à usage unique, valable **5 minutes** ; A9 : `preconsultation` + `declarations` par défaut, `consultations` sélectionnable, `documents` hors V1.
-  - **Le QR est exigé par l’API** pour toute demande professionnelle (`qr_token` obligatoire) ; un identifiant patient seul est refusé. Les réponses destinées au professionnel ne contiennent plus `patient_id` (seulement une référence courte).
-  - **Usage unique sous concurrence** : le jeton est verrouillé puis consommé par un `UPDATE` conditionnel dans la même transaction ; un deuxième scan simultané échoue. Générer un nouveau QR invalide les précédents ; la création est limitée à 30/h ; les jetons expirés sont purgés (`python manage.py cleanup_access_qr_tokens`, à planifier chaque jour).
-  - Le QR s’affiche **uniquement dans l’onglet « Accès et QR »** et y reste quand on change d’onglet puis qu’on revient ; il n’est plus épinglé en haut des autres pages.
-- Invitations établissement via transport SMTP Django configurable ; le jeton brut n’est jamais renvoyé dans une réponse API.
-- Établissement privé : routes staff, administrateur nominatif historisé, invitation 48 h, code médecin 48 h à usage unique, demande `pending`, acceptation/refus et isolation.
-- Audit applicatif, PWA et pages web des espaces principaux.
-- Sanitation SVG par allowlist stricte : primitives de dessin uniquement, sans script/CSS/URL externe/DTD/média/namespace non autorisé.
-- Scripts de recette PostgreSQL/restauration/staging et smoke mobile/accessibilité livrés.
-
-## Ce qui bloque encore la V1
-
-1. Répéter les tests PostgreSQL, trigger append-only et privilèges sur l’instance cible, notamment la protection `TRUNCATE` encore à compléter.
-2. Vérifier les sauvegardes managées et restaurations sur staging, puis approuver et mesurer le RPO/RTO opérationnel.
-3. Configurer et recetter domaines, HTTPS, SMTP/délivrabilité, OAuth fournisseurs et cookies/CSRF réels.
-4. Tester Android/iOS/4G, le flux QR complet (scan d’un QR de consultation et d’un QR de carte d’urgence avec de vrais téléphones) et l’accessibilité WCAG 2.2 AA ; le smoke Chromium local ne vaut pas certification.
-5. Rejouer la concurrence QR sur PostgreSQL, planifier la purge `cleanup_access_qr_tokens` en staging, et décider d’un délai d’attente après révocation/expiration (il n’existe que 30 jours après un refus ; chaque nouvelle demande exige désormais un QR frais, mais un professionnel garde jusqu’à 60 demandes/h).
-6. Traiter la dépréciation `authlib.jose` avec des tests JWT Apple ; refaire un audit des dépendances avant chaque livraison (0 vulnérabilité en production le 14/10).
-7. Obtenir les validations médicales, juridiques, hébergement/localisation, conservation, incidents et stockage privé.
-8. Faire signer CA-01 à CA-24 et réévaluer le verdict **NO-GO**.
-
-Tant que ces points ne sont pas prouvés et validés, utiliser uniquement des données synthétiques `example.test`.
-
-## Documentation de référence
-
-- [État réel V1](docs/ETAT-REEL-V1.md)
-- [Rapport Go/No-Go (historique, complété le 08/10)](docs/GO-NO-GO-2026-10-05.md)
-- [Décisions produit et cahier de charge A1–A16](docs/QUESTIONNAIRE-DECISIONS-A1-A16.md)
-- [Roadmap produit V1–V5](docs/ROADMAP-V1-V5.md)
-- [Plan d’implémentation V1](docs/V1-PLAN.md)
-- [Matrice de recette V1](docs/RECETTE-V1.md)
-- [Flow établissement](docs/FLOW-ETABLISSEMENT.md) · [ADR-002](docs/adr/ADR-002-etablissement-invitation-et-rattachement.md)
-- [Audit initial du 05/10 (historique)](docs/RAPPORT-AUDIT-ECARNET.md)
-- [Sécurité](docs/SECURITY.md) · [Déploiement](docs/DEPLOYMENT.md)
-- [Gouvernance des établissements, tests connectés et surveillance](docs/ADMIN-GOVERNANCE-AND-MONITORING.md)
-- [Compression PDF sans perte](docs/PDF-LOSSLESS-COMPRESSION.md)
-- [Journal d’implémentation du 05/10](docs/IMPLEMENTATION-DECISIONS-2026-10-05.md)
+- `apps/web` : interface Next.js et PWA.
+- `apps/api` : API Django/DRF.
+- `docs` : état du projet, décisions, guides de déploiement et rapports datés.
+- `ops` : scripts de recette et d’exploitation.
+- `render.yaml` : modèle Blueprint Render ; ne prouve pas qu’un service est en ligne ni que ses secrets sont configurés.
 
 ## Démarrer en local
 
-Prérequis : Node.js 22+, npm 10+, Python 3.12+, Docker Engine et Docker Compose v2 pour la pile PostgreSQL complète.
+Prérequis : Node.js 22+, npm 10+, Python 3.12+, Docker Engine et Docker Compose v2 pour PostgreSQL local.
 
 ```bash
 cp .env.example .env
@@ -83,9 +43,9 @@ docker compose up --build
 - API readiness : <http://localhost:8000/api/v1/health/ready/>
 - PostgreSQL local : `localhost:5432`
 
-Les services sont liés à `127.0.0.1`. `docker compose down -v` efface les données fictives du volume local.
+Les services locaux sont liés à `127.0.0.1`. `docker compose down -v` supprime le volume local.
 
-## Contrôles
+## Contrôles courants
 
 ```bash
 npm ci
@@ -94,22 +54,16 @@ npm run check:api
 (cd apps/api && python manage.py makemigrations --check --dry-run)
 npm run lint
 npm run build
-
-# Après démarrage du web local
-ops/accessibility-mobile-smoke.sh http://127.0.0.1:3000
-
-# Sur un runner avec Docker/PostgreSQL
-ops/staging-gates.sh reports/staging-gates-current.txt
 ```
 
-Pour l’API hors Docker, utiliser un environnement virtuel Python et installer `apps/api/requirements.txt`.
+Les tests web ciblés peuvent être exécutés depuis `apps/web` avec `node --experimental-strip-types --no-warnings --import ./tests/helpers/register-ts-resolver.mjs --test tests/<fichier>.test.mjs` (adapter au fichier de test concerné). Un résultat local ne vaut pas recette staging.
 
-Tâches planifiées côté API (cron/Render) : `python manage.py cleanup_access_qr_tokens` (purge des QR de consultation expirés ou consommés depuis plus de 24 h ; `--retention-hours` pour changer la durée) et `python manage.py cleanup_visitor_analytics`.
+## Références
 
-## Sécurité des données
-
-Développement, staging et pilote n’utilisent que des données fictives (`example.test`). Toute donnée réelle reste bloquée tant que l’hébergement ivoirien, les avis juridique/médical, le stockage privé, la sécurité SVG, le plan d’incident, la restauration testée et les gates Go/No-Go ne sont pas validés.
-
-### Accès établissement — A6/A7
-
-Un administrateur actif peut consulter la liste sans contenu clinique ; l’ouverture d’un dossier de sa propre structure (motif obligatoire, ouverture valable jusqu’à clôture du motif, lecture temporaire des soins locaux) est **désactivée par défaut** (`ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ`) et n’a pas encore d’écran. Voir `docs/DONNEES-REELLES-DECISION.md`. L’ouverture est journalisée, notifiée au patient et visible dans son historique. Les notifications sont coalescées sans réduire l’audit ; l’ancien endpoint `patient-records/` répond `410`. La validation juridique A8 reste requise avant l’usage de données réelles.
+- [État réel du projet — 06/11/2026](docs/ETAT-REEL-PROJET-2026-11-06.md)
+- [Journal des changements](docs/CHANGELOG.md)
+- [Déploiement](docs/DEPLOYMENT.md) et [plan d’architecture daté](docs/prod.md)
+- [Sécurité](docs/SECURITY.md) et [mode hors connexion](docs/PWA-HORS-CONNEXION.md)
+- [Décision « données de santé réelles »](docs/DONNEES-REELLES-DECISION.md)
+- [Roadmap V1–V5](docs/ROADMAP-V1-V5.md)
+- [Rapports et décisions datés](docs/)

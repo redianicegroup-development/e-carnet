@@ -40,13 +40,56 @@ test("les données techniques déclarées correspondent à l'inventaire du code"
 test("la session PWA reste persistante 30 jours sans activité et sa durée déclarée correspond au serveur", () => {
   const settings = readFileSync(new URL("../../../apps/api/config/settings.py", import.meta.url), "utf8");
   const env = readFileSync(new URL("../../../.env.example", import.meta.url), "utf8");
+  const productionEnv = readFileSync(new URL("../../../apps/api/.env.production.example", import.meta.url), "utf8");
+  const render = readFileSync(new URL("../../../render.yaml", import.meta.url), "utf8");
   const sessionCookie = legal.COOKIES.find((cookie) => cookie.name === "sessionid");
   assert.match(settings, /SESSION_COOKIE_AGE = int\(os\.environ\.get\("ECARNET_SESSION_AGE_SECONDS", str\(60 \* 60 \* 24 \* 30\)\)\)/);
   assert.match(settings, /SESSION_EXPIRE_AT_BROWSER_CLOSE = False/);
   assert.match(settings, /SESSION_SAVE_EVERY_REQUEST = True/);
   assert.match(env, /^ECARNET_SESSION_AGE_SECONDS=2592000$/m);
+  assert.match(productionEnv, /^ECARNET_SESSION_AGE_SECONDS=2592000$/m);
+  assert.match(render, /key: ECARNET_SESSION_AGE_SECONDS\s+value: "2592000"/);
   assert.match(sessionCookie.duration, /30 jours sans activité/);
   assert.match(legal.TECH_VALIDITY.session, /30 jours sans activité/);
+});
+
+test("les configurations de référence et les textes visibles gardent fermé l’accès clinique admin", () => {
+  const settings = readFileSync(new URL("../../../apps/api/config/settings.py", import.meta.url), "utf8");
+  const env = readFileSync(new URL("../../../.env.example", import.meta.url), "utf8");
+  const productionEnv = readFileSync(new URL("../../../apps/api/.env.production.example", import.meta.url), "utf8");
+  const render = readFileSync(new URL("../../../render.yaml", import.meta.url), "utf8");
+  const terms = read("cgu");
+  const establishmentHelp = readFileSync(new URL("../src/components/EstablishmentHelp.tsx", import.meta.url), "utf8");
+  const recipientsFigure = readFileSync(new URL("../src/components/public/figures/RecipientsFigure.tsx", import.meta.url), "utf8");
+  assert.match(settings, /ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ = os\.environ\.get\("ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ", "false"\)/);
+  assert.match(env, /^ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ=false$/m);
+  assert.match(productionEnv, /^ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ=false$/m);
+  assert.match(render, /key: ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ\s+value: "false"/);
+  assert.match(terms, /ne peut pas ouvrir le dossier.*reste désactivé par défaut/);
+  assert.match(establishmentHelp, /ne peut pas ouvrir les dossiers.*reste désactivé par défaut/);
+  assert.match(recipientsFigure, /gate: "closed", open: false/);
+  assert.doesNotMatch(terms, /décision A8/);
+});
+
+test("la confidentialité distingue le cache API chiffré de la copie de carte QR non chiffrée", () => {
+  const privacy = read("confidentialite");
+  const security = read("securite");
+  const help = readFileSync(new URL("../src/components/help/helpContent.ts", import.meta.url), "utf8");
+  assert.match(privacy, /Copie hors connexion chiffrée \(IndexedDB\)/);
+  assert.match(privacy, /Carte d’urgence ouverte par QR \(IndexedDB, copie séparée\)/);
+  assert.match(privacy, /sans chiffrement applicatif/);
+  assert.match(privacy, /n’est pas gérée par le réglage du cache API/);
+  assert.doesNotMatch(privacy, /la seule copie de données est celle, chiffrée/);
+  assert.match(security, /À part, une carte d’urgence ouverte par QR est gardée jusqu’à 24 heures.*sans chiffrement applicatif/);
+  assert.match(help, /copie séparée.*sans chiffrement applicatif/);
+});
+
+test("la page /v1 ne promet ni stabilité de production, ni ETA-13, ni essais PAT-21 déjà réalisés", () => {
+  const page = read("v1");
+  assert.match(page, /ETA-13.*n’est pas implémenté/);
+  assert.match(page, /essais avec cinq personnes.*ne sont pas déclarés comme réalisés/);
+  assert.match(page, /données de santé réelles ne sont pas autorisées/);
+  assert.doesNotMatch(page, /V1 stable et utilisable|socle fiable et utilisable|Share inter-établissements/);
 });
 
 test("les pages restent en mode juridique : pas de promesse de conformité ni de ton marketing", () => {
@@ -85,7 +128,7 @@ test("chaque usage du stockage navigateur est connu, et déclaré dans la politi
   assert.match(privacy, /copie du thème d’apparence choisi/i);
   assert.match(privacy, /se synchronise lorsque vous utilisez un autre appareil/i);
   assert.match(privacy, /Copie hors connexion chiffrée \(IndexedDB\)/);
-  assert.match(privacy, /Carte d’urgence ouverte par QR \(IndexedDB\)/);
+  assert.match(privacy, /Carte d’urgence ouverte par QR \(IndexedDB(?:, copie séparée)?\)/);
   assert.match(privacy, /sessionStorage[^.]*chemin[^.]*10 secondes/i, "le scroll du pied de page public est temporaire et décrit");
   // Le thème (localStorage) ne touche pas aux autres mécanismes ; l’indicateur de défilement (sessionStorage) ne garde qu'un chemin et une date.
   assert.doesNotMatch(readFileSync(`${root}/lib/themeStorage.ts`, "utf8"), /sessionStorage|indexedDB/i);

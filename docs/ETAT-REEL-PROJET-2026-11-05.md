@@ -1,10 +1,10 @@
-> **Référence d’état auditée le 05/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-05.md`](ETAT-REEL-PROJET-2026-11-05.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
+> **Archive historique du 05/11/2026 — remplacée comme référence courante.** L’état courant est désormais décrit dans [`ETAT-REEL-PROJET-2026-11-06.md`](ETAT-REEL-PROJET-2026-11-06.md). Ce document conserve la photographie du dépôt à sa date ; il ne doit pas servir à confirmer l’état actuel d’une configuration ou d’un déploiement.
 
 # État réel du projet — audit du 5 novembre 2026
 
 ## Portée et méthode
 
-Ce document est la référence actuelle de l’état du dépôt. Il est fondé sur l’arborescence, le code, les migrations, les tests présents et les scripts d’exploitation de l’archive auditée le 5 novembre 2026. Un compte rendu daté décrit une photographie historique : il ne doit pas être lu comme une liste de tâches active lorsqu’il contredit ce document ou le code.
+Ce document était la référence de l’état du dépôt le 5 novembre 2026. Il est fondé sur l’arborescence, le code, les migrations, les tests présents et les scripts d’exploitation de l’archive auditée à cette date. Pour l’état courant, voir le rapport du 6 novembre ; les résultats ci-dessous restent une photographie historique.
 
 L’état « présent dans le dépôt » ne signifie pas « validé en staging », « déployé » ou « autorisé pour des données de santé réelles ». Les secrets, les adresses d’exploitation, les fournisseurs et les preuves de recette restent des paramètres d’environnement hors Git.
 

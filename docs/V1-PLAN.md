@@ -1,4 +1,4 @@
-> **Référence d’état auditée le 05/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-05.md`](ETAT-REEL-PROJET-2026-11-05.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
+> **Référence d’état auditée le 06/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-06.md`](ETAT-REEL-PROJET-2026-11-06.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
 
 # Plan d’implémentation — V1 de Mon Carnet Numérique
 
@@ -8,7 +8,7 @@
 
 - Application mobile-first, comptes uniques; contexte public limité à Patient / Professionnel.
 - L’établissement est privé, sans inscription publique, avec un administrateur nominatif (un seul actif en V1); pas de rôle global `root`. La structure envoie ses preuves par e-mail à E‑Carnet; staff vérifie puis crée le compte. Invitation unique 48 h, mot de passe choisi par le destinataire. Le médecin est vérifié en interne par la structure; aucun justificatif personnel ne remonte à E‑Carnet. Code médecin 48 h/une fois → demande en attente → approbation établissement.
-- **Matrice d’accès aux dossiers :** l’administrateur actif voit d’abord une liste sans contenu, puis ouvre temporairement les soins de son établissement avec motif obligatoire, audit et notification au patient; le professionnel accède uniquement au dossier du cas qui lui est attribué, avec rattachement et établissement actifs et autorisation patient active. Aucun accès automatique aux données d’un autre établissement.
+- **Matrice d’accès aux dossiers — état du 06/11 :** l’administrateur actif voit une liste sans contenu clinique. L’ouverture clinique admin est désactivée par défaut (`ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ=false`) et n’a pas d’écran utilisateur ; les routes API présentes ne doivent pas être activées avant validation du rôle habilité et de la base applicable. Le professionnel accède uniquement au dossier du cas qui lui est attribué, avec rattachement et établissement actifs et autorisation patient active. Aucun accès automatique aux données d’un autre établissement.
 - OTP SMS et TOTP/MFA : V3, non prérequis V1. Aucun rôle ou endpoint infirmier autonome.
 - Données fictives uniquement avant l’autorisation formelle de traitement réel.
 

@@ -12,7 +12,7 @@ export function EstablishmentHelp() {
       <section className="card">
         <span className="eyebrow">Accès aux dossiers</span>
         <h2>Un périmètre propre à chaque rôle</h2>
-        <p className="muted">L’administrateur voit d’abord une liste sans contenu clinique. Il peut ouvrir temporairement un dossier de son établissement avec un motif obligatoire ; l’ouverture est auditée et notifiée au patient. Le professionnel n’accède qu’au dossier de son cas attribué, selon l’autorisation du patient. Aucun accès automatique aux données d’un autre établissement.</p>
+        <p className="muted">Dans la configuration de référence, l’administrateur voit une liste sans contenu clinique et ne peut pas ouvrir les dossiers par la fonction administrative. Un mécanisme API temporaire, avec motif, audit et notification au patient, existe dans le code mais reste désactivé par défaut ; aucun écran ne l’expose. Il ne doit pas être activé avant la décision juridique applicable. Le professionnel n’accède qu’au dossier de son cas attribué, selon l’autorisation du patient. Aucun accès automatique aux données d’un autre établissement.</p>
         <div className="actions"><Link className="button" href="/etablissement/dossiers">Voir les dossiers de l’établissement</Link><Link className="button" href="/securite">Notre approche de la sécurité</Link></div>
       </section>
       <section className="stack" aria-labelledby="aide-questions">

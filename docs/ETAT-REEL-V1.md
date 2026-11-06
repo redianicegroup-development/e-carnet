@@ -1,4 +1,4 @@
-> **Référence d’état auditée le 05/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-05.md`](ETAT-REEL-PROJET-2026-11-05.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
+> **Référence d’état auditée le 06/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-06.md`](ETAT-REEL-PROJET-2026-11-06.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
 
 # État réel du projet — V1
 
@@ -130,4 +130,4 @@ Limites restantes : configurer et vérifier SMTP/délivrabilité en staging, ins
 
 ## Mise à jour A6-A7 — accès établissement local
 
-Le lot A6-A7 est aligné avec l’implémentation actuelle : l’administrateur actif consulte uniquement la liste sans contenu, ouvre un dossier local avec un motif catégorisé, puis lit pendant la fenêtre autorisée. Le patient reçoit une notification et retrouve l’ouverture dans son historique. L’ancien endpoint `patient-records/` répond `410` pour les anciennes PWA. La coalescence ne concerne que les notifications ; l’audit reste exhaustif. La validation juridique A8 demeure nécessaire avant activation production.
+Le code A6-A7 contient des routes d’ouverture locale avec motif catégorisé, audit, notification et expiration ; **état au 06/11/2026 :** `ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ=false` par défaut et aucun écran utilisateur d’ouverture. L’administrateur ne peut donc pas ouvrir le dossier par cette fonction dans la configuration de référence. Le patient retrouve les traces d’une ouverture autorisée si le mécanisme est ultérieurement activé après décision. L’ancien endpoint `patient-records/` répond `410` pour les anciennes PWA. La coalescence ne concerne que les notifications ; l’audit reste exhaustif. La décision sur la base et le rôle habilité reste en attente ; l’identifiant « A8 » est à réconcilier entre les documents.

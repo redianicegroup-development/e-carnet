@@ -1,4 +1,13 @@
-> **Référence d’état auditée le 05/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-05.md`](ETAT-REEL-PROJET-2026-11-05.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
+> **Référence d’état auditée le 06/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-06.md`](ETAT-REEL-PROJET-2026-11-06.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
+
+## 2026-11-06 — Session PWA et cohérence des informations
+
+- **Session persistante** : durée glissante par défaut portée à 30 jours sans activité dans Django, le modèle Render et l’exemple de production ; fermer la PWA sans choisir « Déconnexion » ne termine pas la session. Les valeurs réellement appliquées sur un environnement hébergé restent à vérifier.
+- **Accès clinique admin** : les exemples locaux/production et le Blueprint Render fixent explicitement `ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ=false`, en attente de la décision A8. Le code d’ouverture déjà présent n’est pas un déploiement ni une autorisation. ETA-13/E4 (rôles propriétaire/gestionnaire et invitations multi-admins) n’est pas commencé.
+- **Pages publiques et légales** : `/v1`, Sécurité, Confidentialité, CGU, l’Aide et le schéma des destinataires reflètent le garde-fou admin fermé. Les textes distinguent le cache API chiffré de la copie de carte QR conservée jusqu’à 24 h dans une IndexedDB séparée sans chiffrement applicatif ; les cookies décrivent les valeurs par défaut `DEBUG` et les surcharges d’environnement.
+- **Documentation** : ajout d’une photographie courante au 06/11 ; les rapports plus anciens gardent leur date et leur valeur historique.
+- **PAT-21** : les essais faible débit sur appareils réels et les cinq essais utilisateur ne sont pas déclarés réalisés.
+- **Références juridiques** : repérage d’une incohérence de numérotation A8 (accès clinique admin dans les notes A6-A7, champs de pré-consultation dans le questionnaire A1-A16) ; à réconcilier avant activation.
 
 ## Version 1.5 — 05/11/2026 (base V1_4_4)
 
@@ -245,4 +254,4 @@ Les entrées historiques consignent l’état à leur date; pour l’état coura
 
 ## 2026-11-05 — audit de l’état réel et ADM-10
 
-Documentation réalignée sur le code présent. ADM-10 comprend désormais la sonde serveur multi-composants, la sonde HTTP indépendante, les exemples de planification, le webhook signé anti-rejeu et le runbook de recette. La configuration d’hébergement, les secrets et la recette staging restent à exécuter dans l’environnement cible. Référence : [`ETAT-REEL-PROJET-2026-11-05.md`](ETAT-REEL-PROJET-2026-11-05.md).
+Documentation réalignée sur le code présent. ADM-10 comprend désormais la sonde serveur multi-composants, la sonde HTTP indépendante, les exemples de planification, le webhook signé anti-rejeu et le runbook de recette. La configuration d’hébergement, les secrets et la recette staging restent à exécuter dans l’environnement cible. Référence : [`ETAT-REEL-PROJET-2026-11-06.md`](ETAT-REEL-PROJET-2026-11-06.md).

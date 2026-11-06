@@ -38,7 +38,7 @@ Audit des textes contre le code (modèles Django, réglages, composants). Rien n
 
 ## 5. Documentation
 
-Rétablie depuis la v1.4.1 : tout `docs/`. Mis à jour : `PWA-HORS-CONNEXION.md` (réécrit), `SECURITY.md`, `CHANGELOG.md` (entrée « Version 1.5 »), `ETAT-REEL-PROJET-2026-11-05.md` (passage sur le hors connexion), `DONNEES-REELLES-DECISION.md`, ce fichier. Les autres documents datés gardent leur valeur historique. `README.md` : ligne de version.
+Rétablie depuis la v1.4.1 : tout `docs/`. Mis à jour : `PWA-HORS-CONNEXION.md` (réécrit), `SECURITY.md`, `CHANGELOG.md` (entrée « Version 1.5 »), `ETAT-REEL-PROJET-2026-11-06.md` (passage sur le hors connexion), `DONNEES-REELLES-DECISION.md`, ce fichier. Les autres documents datés gardent leur valeur historique. `README.md` : ligne de version.
 
 ## 6. Vérifications
 

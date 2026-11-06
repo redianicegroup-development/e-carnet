@@ -1,4 +1,4 @@
-> **Référence d’état auditée le 05/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-05.md`](ETAT-REEL-PROJET-2026-11-05.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
+> **Référence d’état auditée le 06/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-06.md`](ETAT-REEL-PROJET-2026-11-06.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
 
 # Gouvernance des établissements et surveillance
 
@@ -7,7 +7,7 @@
 Deux périmètres restent distincts côté serveur :
 
 - les opérations de gouvernance (remplacement, suspension/réactivation et lecture du journal) exigent une session authentifiée avec le rôle staff Django (`is_staff`, via `IsAdminUser`) ;
-- les opérations courantes d’un établissement exigent un administrateur actif rattaché à cet établissement (`active_administrator`). La liste sans contenu passe par `GET /api/v1/establishments/{id}/patients/`, l’ouverture motivée par `POST /api/v1/establishments/{id}/patients/{patient_id}/openings/`, puis la lecture temporaire par `GET /api/v1/establishments/{id}/openings/{opening_id}/record/`. Ces routes ne retournent que les soins de la structure concernée; l’ancien endpoint `/patient-records/` répond `410` et aucun dossier d’une autre structure n’est accessible.
+- les opérations courantes d’un établissement exigent un administrateur actif rattaché à cet établissement (`active_administrator`). La liste sans contenu passe par `GET /api/v1/establishments/{id}/patients/`. Le code comprend aussi des routes de demande d’ouverture et de lecture temporaire, mais `ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ=false` les bloque dans la configuration de référence ; il n’existe pas d’écran utilisateur d’ouverture. Garder ce garde-fou fermé jusqu’à la décision A8 et aux validations prévues. L’ancien endpoint `/patient-records/` répond `410` et aucun dossier d’une autre structure n’est accessible.
 
 Le remplacement d’un responsable reste une opération du staff, avec confirmation explicite. La transaction verrouille l’établissement et son responsable courant; le précédent rôle est terminé et le nouveau rôle est créé par le service de provisionnement. Le compte personnel précédent n’est pas supprimé et les autres rôles de ce compte ne sont pas modifiés. L’événement `establishment.administrator.replaced` est inscrit au journal.
 
@@ -30,7 +30,7 @@ La suspension ne supprime pas les comptes, rattachements, dossiers ni consenteme
 
 ## Tests connectés
 
-`apps/api/apps/establishments/test_admin_governance.py` et `test_patient_records.py` exercent l’API avec des comptes de test et la base relationnelle : séparation staff/administrateur/tiers, remplacement des droits, suspension, accès local aux dossiers, cloisonnement entre établissements et journalisation. Le workflow CI exécute la suite Django sur PostgreSQL 16.
+`apps/api/apps/establishments/test_admin_governance.py` et `test_patient_records.py` exercent l’API avec des comptes de test et la base relationnelle : séparation staff/administrateur/tiers, remplacement des droits, suspension, règles de l’API dossiers, cloisonnement entre établissements et journalisation. Ces tests n’établissent pas la valeur du flag sur un service hébergé. Le workflow CI exécute la suite Django sur PostgreSQL 16.
 
 Commandes locales :
 

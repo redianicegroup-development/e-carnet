@@ -4,42 +4,34 @@ import type { Metadata } from "next";
 import { BrandMark } from "../../components/ui/BrandMark";
 
 export const metadata: Metadata = {
-  title: "V1 — Cœur sûr et utilisable | Mon E-Carnet",
-  description: "Vue d’ensemble de la V1 stable du produit : sécurité, consentement, traçabilité et parcours patient/professionnel restreints.",
+  title: "Périmètre et état du projet — Mon E-Carnet",
+  description: "Aperçu du périmètre présent dans le code Mon E-Carnet et des validations qui restent à faire.",
   robots: { index: false, follow: false },
 };
 
 const included = [
-  "Inscription et connexion sécurisées avec sessions serveur",
-  "Onboarding patient et professionnel en parcours guidé",
-  "Vérification de contexte, rattachement et établissement actif",
-  "Consentement patient via AccessGrant limité dans le temps",
-  "Pré-consultation clôturée par le médecin et consultation professionnelle traçable",
-  "Audit des accès et des décisions sensibles",
+  "Comptes nominatifs avec authentification par session serveur ; la configuration de référence garde la session après fermeture de la PWA, jusqu’à 30 jours sans activité.",
+  "Espaces patient, professionnel et établissement avec contrôle des autorisations côté API.",
+  "Carnet patient, déclarations, documents, consultations, vaccinations, mesures, rendez-vous, rappels et plans de suivi selon les rôles et autorisations disponibles.",
+  "Carte d’urgence virtuelle, QR public activé par le patient et téléchargement PNG ; les informations restent des déclarations et doivent être vérifiées par les professionnels.",
+  "Navigation hors connexion en lecture seule : cache des lectures d’API chiffré sur l’appareil, avec des durées limitées ; aucune écriture n’est mise en attente.",
   DATA_POLICY.v1Scope,
 ];
 
-const excluded = [
-  "MFA TOTP (reporté en V3)",
-  "OTP SMS (reporté en V3)",
-  "Partage inter-établissements (V3)",
-  "Comptes infirmiers ou espace infirmier autonome",
-  "Ordonnances structurées, IA et fonctions cliniques avancées",
-];
-
-const readiness = [
-  "Le patient reste titulaire de son carnet.",
-  "Le professionnel ne voit aucune donnée sans autorisation explicite.",
-  "L’établissement actif est vérifié côté serveur pour chaque action clinique.",
-  "Les accès sont temporaires, limités et audités.",
-  "La V1 est prête à être présentée comme socle fiable et utilisable.",
+const limitations = [
+  "Les données de santé réelles ne sont pas autorisées : le service reste en phase de test avec des données fictives.",
+  "L’accès clinique des administrateurs d’établissement est désactivé par défaut ; les modèles d’environnement du dépôt le fixent à false. La décision juridique sur le rôle habilité et le parcours d’ouverture restent à valider.",
+  "ETA-13 (plusieurs administrateurs avec rôles propriétaire/gestionnaire) n’est pas implémenté : le code conserve le modèle existant d’administrateur d’établissement.",
+  "La copie hors connexion des lectures d’API est chiffrée, mais la copie séparée de la carte d’urgence ouverte par QR est conservée jusqu’à 24 heures dans IndexedDB sans chiffrement applicatif. Utilisez cette carte uniquement sur un appareil de confiance.",
+  "Le mode faible débit PAT-21 et les essais avec cinq personnes sur de vrais appareils (dont une personne âgée) ne sont pas déclarés comme réalisés.",
+  "Le déploiement, la recette staging, la validation indépendante de sécurité et les validations médicales/juridiques ne sont pas établis par la présence du code.",
 ];
 
 const flows = [
-  { title: "Patient", href: "/patient", text: "Carnet, pré-consultation, consentement et historique client." },
-  { title: "Professionnel", href: "/professionnel", text: "Profil, vérification, établissement actif et demandes d’accès." },
-  { title: "V1", href: "/v1", text: "Positionnement produit, périmètre et critères de présentation." },
-  { title: "Connexion", href: "/connexion", text: "Accès rapide au parcours principal pour démonstration." },
+  { title: "Patient", href: "/patient", text: "Carnet et paramètres du compte, lorsque l’environnement est disponible." },
+  { title: "Professionnel", href: "/professionnel", text: "Parcours professionnel avec autorisations patient et rattachements actifs." },
+  { title: "Établissement", href: "/etablissement", text: "Espace établissement ; l’accès clinique administratif reste fermé par défaut." },
+  { title: "Aide", href: "/aide", text: "Réponses sur la connexion, les sessions et le mode hors connexion." },
 ];
 
 export default function V1Page() {
@@ -52,25 +44,26 @@ export default function V1Page() {
         </p>
         <div className="header-links">
           <Link href="/" className="button small">Accueil</Link>
-          <Link href="/inscription" className="button primary small">Créer mon carnet</Link>
+          <Link href="/connexion" className="button primary small">Se connecter</Link>
         </div>
       </header>
 
       <section className="hero hero-page">
-        <span className="eyebrow">V1 — Cœur sûr et utilisable</span>
-        <h1>Un socle fiable pour un usage pilotable.</h1>
+        <span className="eyebrow">V1 — état du périmètre</span>
+        <h1>Un projet en construction, avec des limites explicites.</h1>
         <p className="muted">
-          La V1 n’est pas un produit complet de santé. Elle est la base sûre du système : consentement,
-          sécurité, traçabilité et autorisation du patient avant tout accès clinique.
+          Cette page décrit des fonctions présentes dans le dépôt, pas une mise en production ni une autorisation
+          d’utiliser des données de santé réelles. Les validations opérationnelles, médicales, juridiques et de sécurité
+          restent distinctes du code.
         </p>
         <div className="actions">
           <Link href="/connexion" className="button primary">Se connecter</Link>
-          <Link href="/patient" className="button">Voir le parcours patient</Link>
-          <Link href="/professionnel" className="button">Voir le parcours pro</Link>
+          <Link href="/securite" className="button">Lire les informations de sécurité</Link>
+          <Link href="/aide" className="button">Consulter l’aide</Link>
         </div>
       </section>
 
-      <section className="grid" aria-label="Parcours V1">
+      <section className="grid" aria-label="Espaces de l’application">
         {flows.map((flow) => (
           <Link key={flow.title} href={flow.href} className="card" style={{ textDecoration: "none" }}>
             <span className="eyebrow">{flow.title}</span>
@@ -80,46 +73,29 @@ export default function V1Page() {
         ))}
       </section>
 
-      <section className="grid" aria-label="Contenu de la V1" style={{ marginTop: 24 }}>
+      <section className="grid" aria-label="Périmètre et limites" style={{ marginTop: 24 }}>
         <article className="card">
-          <h2>Ce qui est inclus</h2>
-          <ul>
-            {included.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
+          <h2>Fonctions présentes dans le code</h2>
+          <ul>{included.map((item) => <li key={item}>{item}</li>)}</ul>
         </article>
-
         <article className="card">
-          <h2>Ce qui est hors scope</h2>
-          <ul>
-            {excluded.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
+          <h2>Limites et validations en attente</h2>
+          <ul>{limitations.map((item) => <li key={item}>{item}</li>)}</ul>
         </article>
       </section>
 
       <section className="card" style={{ marginTop: 24 }}>
-        <h2>Critères de présentation</h2>
-        <ul>
-          {readiness.map((item) => (
-            <li key={item}>{item}</li>
-          ))}
-        </ul>
-      </section>
-
-      <section className="card" style={{ marginTop: 24 }}>
-        <h2>Positionnement produit</h2>
+        <h2>Connexion et mode hors connexion</h2>
         <p className="muted">
-          La V1 est conçue pour démontrer un cœur de confiance opérationnel : le patient garde la maîtrise du
-          carnet, le professionnel n’accède à des données que s’il est vérifié, rattaché à un établissement actif et
-          autorisé par le patient. Toute lecture ou validation reste auditable.
+          Sans déconnexion explicite, le cookie de session persiste après fermeture de la PWA selon la durée réglée
+          pour l’environnement (30 jours sans activité dans les configurations de référence). Une connexion Internet
+          reste nécessaire pour interroger le serveur. Sans réseau, seuls les écrans et les lectures déjà enregistrés
+          localement peuvent s’ouvrir en lecture seule, jusqu’à leur expiration.
         </p>
       </section>
 
       <footer className="footer">
-        V1 stable et utilisable — socle sécurisé, consentement explicite et traçabilité.
+        Mon E-Carnet est en phase de test. Seules des données fictives sont autorisées dans l’état documenté du projet.
       </footer>
     </main>
   );

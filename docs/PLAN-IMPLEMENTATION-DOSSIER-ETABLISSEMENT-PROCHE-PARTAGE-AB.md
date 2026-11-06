@@ -1,4 +1,4 @@
-> **Référence d’état auditée le 05/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`../ETAT-REEL-PROJET-2026-11-05.md`](../ETAT-REEL-PROJET-2026-11-05.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
+> **Référence d’état auditée le 06/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`../ETAT-REEL-PROJET-2026-11-06.md`](ETAT-REEL-PROJET-2026-11-06.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
 
 # Plan d'implémentation — dossier établissement, proche de confiance, partage A → B
 
@@ -128,7 +128,7 @@ Règles serveur :
 - patient : voit l'ouverture avec le **nom de la structure** (régression du libellé par défaut)
 
 ### A6. Documents à aligner dans le même lot
-`FLOW-ETABLISSEMENT.md`, `ETAT-REEL-V1.md`, README, `ADMIN-GOVERNANCE-AND-MONITORING.md`, `CDC` (règle d'accès admin), politique de confidentialité et CGU (le patient doit être informé que l'administrateur peut ouvrir son dossier de soins, avec motif et notification), tableau comparatif du business plan (section 5).
+`FLOW-ETABLISSEMENT.md`, `ETAT-REEL-V1.md`, README, `ADMIN-GOVERNANCE-AND-MONITORING.md`, `CDC` (règle d’accès admin), politique de confidentialité et CGU, tableau comparatif du business plan (section 5). **Mise à jour 06/11 :** ce plan prévoyait d’informer le patient d’une ouverture admin motivée et notifiée ; cette capacité est maintenant désactivée par défaut et la décision A8/le rôle autorisé restent à confirmer. Les textes actuels doivent dire qu’elle est désactivée, puis être revus si une décision ultérieure autorise son activation.
 
 ### A7. Risques propres au chantier
 - Notifications trop fréquentes → fenêtre de coalescence ; l'audit, lui, reste exhaustif.

@@ -1,8 +1,8 @@
-> **Référence d’état auditée le 05/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-05.md`](ETAT-REEL-PROJET-2026-11-05.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
+> **Référence d’état auditée le 06/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-06.md`](ETAT-REEL-PROJET-2026-11-06.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
 
 # Développement, Docker et déploiement
 
-**Revu le 08/10/2026.** Les données restent fictives. PostgreSQL 16 local et restauration isolée ont une preuve réussie ; aucun staging/production n’est déclaré prêt.
+**Mise à jour le 06/11/2026.** Les données restent fictives. Les exemples du dépôt décrivent Render pour l’API et Vercel/Neon dans l’architecture documentée ; ils ne prouvent ni un déploiement actuel ni une recette staging.
 
 ## Prérequis
 
@@ -72,7 +72,7 @@ Lier une identité secondaire doit se faire après connexion au compte existant;
 
 ## Invitations établissement — finition avant production
 
-Le flow d’invitation est présent côté API/UI : lien hashé à usage unique valable 48 h, activation et choix du mot de passe par le destinataire. L’API n’inclut jamais le jeton brut dans sa réponse staff ; l’e-mail d’invitation le transporte. L’envoi utilise le backend SMTP configurable : configurer et tester les identifiants SMTP, SPF/DKIM/DMARC et le domaine expéditeur en staging avant production. Les preuves légales de la structure sont examinées hors application ; leur rétention, leurs accès et leur suppression restent à décider avec conseil juridique. Les justificatifs professionnels des médecins ne sont pas collectés par la plateforme. La cible d’hébergement retenue par le CDC est désormais Hodi Site Pro pour un staging/pilote fictif, sous réserve des confirmations écrites sur les données de santé, le stockage privé, les sauvegardes et la copie en Europe. Aucun basculement de données réelles n’est autorisé sur cette seule décision.
+Le flow d’invitation est présent côté API/UI : lien hashé à usage unique valable 48 h, activation et choix du mot de passe par le destinataire. L’API n’inclut jamais le jeton brut dans sa réponse staff ; l’e-mail d’invitation le transporte. L’envoi utilise le backend SMTP configurable : configurer et tester les identifiants SMTP, SPF/DKIM/DMARC et le domaine expéditeur en staging avant production. Les preuves légales de la structure sont examinées hors application ; leur rétention, leurs accès et leur suppression restent à décider avec conseil juridique. Les justificatifs professionnels des médecins ne sont pas collectés par la plateforme. Le Blueprint présent dans le dépôt (`render.yaml`) configure Render ; `prod.md` conserve une décision d’architecture datée Vercel/Render/Neon, tandis que Hodi apparaît dans des notes d’étude. Le fournisseur réellement utilisé et les confirmations d’hébergement ne sont pas établis par ces fichiers. Aucune donnée réelle n’est autorisée sur la seule base d’un modèle de déploiement.
 
 ## Tâches planifiées, surveillance et limites de débit
 
@@ -114,7 +114,7 @@ Sans `DATABASE_URL`, Django utilise SQLite pour le local/tests seulement; le pil
 
 ## Séparation environnements et mise en production
 
-Local, preview et staging utilisent uniquement des données synthétiques. La cible V1 est Hodi Site Pro, avec une seule instance API au départ, un reverse proxy/TLS, PostgreSQL partagé et stockage privé persistant ; une configuration multi-instance/load balancer n’est envisagée qu’après mesure et confirmation de la capacité Hodi. Une preuve locale de restauration PostgreSQL existe depuis le 08/10 (voir les rapports ci-dessus), mais elle ne vaut pas preuve Hodi. Avant toute donnée réelle : cartographie des lieux de traitement/sauvegarde/journaux, validations juridique et médicale, politique de conservation approuvée, domaine/HTTPS, cookies/CSRF, PostgreSQL/trigger, sauvegardes/restaurations et RPO/RTO mesurés, procédure d’incident, sécurité SVG, revue de dépendances, OAuth configuré, console staff et espace établissement privés, SMTP vérifié et invitation testée. Aucun Compose local ne remplace ces preuves. Voir [`AKATECH-PLAN-OPTIMISATION-CHARGE-HODI.md`](AKATECH-PLAN-OPTIMISATION-CHARGE-HODI.md) pour les seuils et l’ordre de montée en charge.
+Local, preview et staging doivent utiliser uniquement des données synthétiques. Le code d’exemple actuel décrit Render pour l’API et une architecture documentée Vercel/Render/Neon ; le plan Hodi reste une étude séparée et aucune connexion à un fournisseur n’est prouvée par cette archive. Les décisions de capacité, reverse proxy, PostgreSQL et stockage privé doivent être prises et vérifiées dans l’environnement retenu. Une preuve locale de restauration PostgreSQL existe depuis le 08/10 (voir les rapports ci-dessus), mais elle ne vaut pas preuve d’un hébergeur. Avant toute donnée réelle : cartographie des lieux de traitement/sauvegarde/journaux, validations juridique et médicale, politique de conservation approuvée, domaine/HTTPS, cookies/CSRF, PostgreSQL/trigger, sauvegardes/restaurations et RPO/RTO mesurés, procédure d’incident, sécurité SVG, revue de dépendances, OAuth configuré, console staff et espace établissement privés, SMTP vérifié et invitation testée. Aucun Compose local ne remplace ces preuves. Voir [`AKATECH-PLAN-OPTIMISATION-CHARGE-HODI.md`](AKATECH-PLAN-OPTIMISATION-CHARGE-HODI.md) pour les seuils de cette étude de charge.
 
 
 ## Domaine et cookies — requis avant le staging
@@ -133,6 +133,12 @@ Configurer ensuite les variables suivantes (sans slash final) :
 - Enregistrer auprès de chaque fournisseur OAuth le callback exact `https://app.mon-carnet.ci/api/v1/identity/oauth/<fournisseur>/callback/` (l'API est atteinte via le proxy Next.js).
 
 La configuration CORS/CSRF reste nécessaire, car `app.` et `api.` sont deux origines différentes même s'ils sont same-site. Tester connexion, déconnexion, rafraîchissement de page et OAuth dans Safari sur iOS avant ouverture.
+
+La session Django est persistante après fermeture du navigateur et glissante à chaque requête. Le code, `.env.production.example` et `render.yaml` définissent une durée de référence de **30 jours sans activité** (`ECARNET_SESSION_AGE_SECONDS=2592000`). Une valeur saisie dans le tableau de bord peut la remplacer ; vérifier la valeur réelle du service et ne pas annoncer sa durée avant cette vérification. Fermer la PWA sans choisir « Déconnexion » ne supprime pas à elle seule le cookie.
+
+`ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ` reste explicitement à `false` dans les exemples et dans le Blueprint de référence. Ne pas passer cette valeur à `true` avant la décision A8, l’écran d’ouverture et les validations requises ; la valeur d’un service déjà déployé doit être vérifiée séparément.
+
+`ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ` reste explicitement à `false` dans les exemples et dans le Blueprint de référence. Ne pas passer cette valeur à `true` avant la décision A8, l’écran d’ouverture et les validations requises ; la valeur de tout service déjà déployé est à vérifier séparément.
 
 ## Configuration production (valeurs par défaut sûres)
 

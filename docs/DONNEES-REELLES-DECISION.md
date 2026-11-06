@@ -1,6 +1,14 @@
-> **Référence d’état auditée le 05/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-05.md`](ETAT-REEL-PROJET-2026-11-05.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
+> **Référence d’état auditée le 06/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-06.md`](ETAT-REEL-PROJET-2026-11-06.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
 
 # Décision « données de santé réelles » — état au 04/11/2026
+
+## Complément factuel — 06/11/2026
+
+Le verdict `REAL_HEALTH_DATA_ALLOWED = false` n’a pas changé. La valeur serveur par défaut de `ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ` est également `false`; les modèles `.env.example`, `apps/api/.env.production.example` et `render.yaml` le fixent maintenant explicitement à `false`. Le mécanisme d’ouverture côté API ne doit pas être activé avant la décision A8 ; l’environnement hébergé n’a pas été inspecté.
+
+Les configurations de référence règlent la session persistante glissante à 30 jours sans activité (`2592000` secondes). Cela ne prouve pas la valeur effectivement appliquée à une instance hébergée.
+
+Le cache chiffré des lectures API ne couvre pas la carte d’urgence QR : celle-ci est conservée séparément jusqu’à 24 h dans IndexedDB sans chiffrement applicatif. Le détail et sa conséquence pour les données réelles sont maintenant décrits dans `PWA-HORS-CONNEXION.md` et l’état réel du 06/11. ETA-13/E4 (plusieurs administrateurs avec rôles propriétaire/gestionnaire) n’est pas implémenté. Le rapport détaillé ci-dessous demeure une photographie datée du 04/11 : ses chiffres de tests, versions de dépendances et autres constats ne sont pas réputés actuels par ce complément.
 
 **Verdict affiché par le code : NON.** Mon E-Carnet est en phase de test, données fictives uniquement. Tous les textes publics (FAQ de l'accueil, Aide, politique de confidentialité, page `/v1`) lisent **un seul interrupteur** : `REAL_HEALTH_DATA_ALLOWED` dans `apps/web/src/lib/data-policy.ts` (`false`). Le NO-GO de `GO-NO-GO-2026-10-05.md` est donc respecté partout.
 

@@ -7,7 +7,7 @@ import { Figure, Line, Node, Svg } from "./parts";
    « plain » = reçoit d'autres données (demandes et statuts ; données nécessaires à l'hébergement) : aucun cadenas, pour ne pas laisser croire que ces données sont inaccessibles. */
 const ROWS: { id: string; icon: IconName; title: string; sub: string; gate: "open" | "closed" | "plain"; open: boolean }[] = [
   { id: "pro", icon: "stethoscope", title: "Professionnel autorisé", sub: "périmètre autorisé, durée limitée", gate: "open", open: true },
-  { id: "admin", icon: "building", title: "Administrateur d’établissement", sub: "dossiers associés à sa structure", gate: "open", open: true },
+  { id: "admin", icon: "building", title: "Administrateur d’établissement", sub: "ouverture clinique désactivée par défaut", gate: "closed", open: false },
   { id: "team", icon: "users", title: "Équipe de Mon E‑Carnet", sub: "demandes d’établissements et statuts", gate: "plain", open: false },
   { id: "tech", icon: "sliders", title: "Prestataires techniques", sub: "hébergement, base et e‑mails", gate: "plain", open: false },
 ];
@@ -19,8 +19,8 @@ export function RecipientsFigure() {
   const mids = ROWS.map((_, index) => TOP + index * STEP + 28);
   return (
     <Figure
-      label="Schéma : le professionnel consulte uniquement le dossier du cas qui lui est attribué, selon le périmètre et la durée de l’autorisation patient. L’administrateur d’établissement consulte les dossiers associés à sa structure. Aucun accès automatique aux données d’un autre établissement."
-      caption="Chaque rôle est limité à son périmètre; les données d’un autre établissement ne sont pas ouvertes automatiquement."
+      label="Schéma : le professionnel consulte uniquement le dossier du cas qui lui est attribué, selon le périmètre et la durée de l’autorisation patient. Dans la configuration de référence, l’accès clinique administratif est fermé par défaut ; les données d’un autre établissement ne sont pas ouvertes automatiquement."
+      caption="Le mécanisme d’ouverture par un administrateur reste désactivé par défaut, en attente de décision et de validation."
     >
       <Svg viewBox={`0 0 360 ${TOP + (ROWS.length - 1) * STEP + 56}`}>
         <Line d={`M180 56 V80 H22 V${mids[mids.length - 1]}`} />
