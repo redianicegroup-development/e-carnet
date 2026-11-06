@@ -44,7 +44,7 @@ const sections: LegalSectionDef[] = [
           head={["Rôle", "Hébergeur", "Coordonnées", "Région d’hébergement"]}
           rows={HOSTS.map((host) => [host.role, host.name, <Fill key="d" k={host.detailsKey} />, <Fill key="r" k={host.regionKey} />])}
         />
-        <p>Cette liste ne garantit pas que les données soient conservées en Côte d’Ivoire. Les lieux de traitement et de sauvegarde sont décrits dans la <Link href="/confidentialite#sous-traitants">politique de confidentialité</Link>.</p>
+        <p>Les fichiers (photos de profil, logos et en-têtes d’établissement, documents médicaux, images de cachet et de signature) sont hébergés par Cloudinary ; ses coordonnées et sa région d’hébergement ne sont pas confirmées à ce jour. Cette liste ne garantit pas que les données soient conservées en Côte d’Ivoire. Les lieux de traitement et de sauvegarde sont décrits dans la <Link href="/confidentialite#sous-traitants">politique de confidentialité</Link>.</p>
       </>
     ),
   },
@@ -80,7 +80,7 @@ const sections: LegalSectionDef[] = [
     id: "liens",
     title: "Éléments provenant de sites tiers",
     body: (
-      <p>Le service peut afficher des éléments hébergés ailleurs, par exemple une image de profil dont l’utilisateur fournit l’adresse. L’éditeur ne contrôle pas ces sites. La connexion avec Google, Facebook ou Apple est soumise aux conditions de ces fournisseurs.</p>
+      <p>Le service s’appuie sur Cloudinary pour héberger des fichiers et peut afficher des éléments hébergés ailleurs, par exemple l’image de profil fournie par un fournisseur de connexion. L’éditeur ne contrôle pas ces sites. La connexion avec Google, Facebook ou Apple est soumise aux conditions de ces fournisseurs.</p>
     ),
   },
   {

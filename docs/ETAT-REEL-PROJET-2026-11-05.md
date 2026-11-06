@@ -17,11 +17,10 @@ L’état « présent dans le dépôt » ne signifie pas « validé en staging �
 - Contrôles serveur de permissions, cloisonnement des établissements, journalisation des opérations sensibles et migrations d’audit append-only avec protection PostgreSQL contre `TRUNCATE`.
 - Données patient : profil titulaire, profils représentés, carte d’urgence, déclarations, contacts de confiance, transferts soumis à vérification et mécanismes d’accès contrôlé.
 - Parcours professionnel : profil, spécialités déclaratives, rattachements établissement, demandes d’accès et credentials ; aucun justificatif professionnel n’est collecté automatiquement par le code observé.
-- Pré-consultations : modèles configurables par établissement, brouillon jusqu’à validation médicale, champ `EstablishmentMembership.is_medical_referent` aligné sur la migration `establishments.0015`, désignation réservée à l’administrateur actif et notification push du professionnel concerné.
-- Parcours de soins : pré-consultations, consultations signées, documents, vaccinations avec confirmation professionnelle, mesures de santé structurées, rendez-vous (agenda professionnel avec prénom/nom minimal du profil patient ; endpoints patient et établissement sans nom ; validation C3 et transitions C4 pour propositions depuis un rendez-vous demandé ou confirmé), notifications, rappels, plans de suivi, prescriptions et export XLSX.
+- Parcours de soins : pré-consultations, consultations signées, documents, vaccinations avec confirmation professionnelle, mesures de santé structurées, rendez-vous, notifications, rappels, plans de suivi, prescriptions et export XLSX.
 - QR d’accès opaque, hashé, à usage unique, durée configurée par défaut à 300 secondes, invalidation des anciens jetons, limitation de création et commande de purge.
 - Uploads de documents prévus pour Cloudinary privé en environnement configuré ; le stockage local est conservé pour les tests et les environnements sans configuration. L’URL média publique ne sert pas les documents privés.
-- Service worker et hors connexion limités aux instantanés explicitement prévus : profils/déclarations par profil et préférences ; les consultations, documents, agenda et réponses médicales ne sont pas mis en cache hors connexion par le code documenté.
+- Hors connexion (version 1.5, 05/11/2026) : bandeau « hors connexion / connexion rétablie » dans toute l’application ; le service worker garde la coquille HTML des écrans (sans donnée personnelle) et les pages d’information ; les lectures de l’API des trois espaces sont copiées **chiffrées** sur l’appareil (AES-GCM 256, clé non extractible de l’appareil, noms hachés), en lecture seule, 7 jours pour le patient et 24 heures pour les données de tiers, effacées à la déconnexion, au changement de compte/profil/espace et à la demande ; aucune écriture hors connexion. Les documents (fichiers), jetons, QR, signatures, administration et journal d’audit ne sont jamais copiés. Voir `PWA-HORS-CONNEXION.md`. La clé étant sur l’appareil, ce chiffrement ne suffit pas pour des données de santé réelles (voir `DONNEES-REELLES-DECISION.md`).
 
 ### Frontend
 
@@ -46,16 +45,11 @@ L’état « présent dans le dépôt » ne signifie pas « validé en staging �
 - `python3 ops/test-monitoring-event.py` : signature, refus, mauvais usage et API injoignable vérifiés.
 - Simulation locale saine → panne readiness → rétablissement réussie.
 - Le ZIP différentiel ADM-10 est testable, mais aucune recette staging réelle n’a été exécutée depuis ce sandbox.
-- La suite Django complète a été rejouée sur SQLite et passe ; `manage.py check`, `makemigrations --check --dry-run` et le test intégré de cohérence des migrations passent également. Six tests ont été ignorés, dont le test C8 réservé à PostgreSQL.
-- `npm run test:web` passe après l’application des suppressions C6 listées dans `MANIFEST-TESTS-C6.txt`. Le nombre de définitions source est généré par `scripts/count-api-tests.py` et le résultat exécuté doit être consulté dans les journaux CI, plutôt que recopié dans les documents.
-- Le contrôle `scripts/check-openapi-routes.py` passe : chemins et méthodes C7 couverts par OpenAPI ; le YAML OpenAPI a aussi été parsé avec succès. Les routes professionnelles de pré-consultation n’exposent que GET pour la liste en attente et POST pour l’approbation.
-- Le test ciblé `apps.care.test_migration_0026_postgres` a réussi sur PostgreSQL 16.15. La suite Django complète PostgreSQL n’a pas été exécutée ; la matrice CI reste à vérifier pour C7. Tests staging non exécutés. La durée de proposition et l’avertissement de chevauchement restent à trancher.
 
 ## Ce qui n’est pas démontré par cette archive
 
 - Déploiement effectif sur Hodi, Render, Vercel, Neon ou un autre fournisseur.
 - Configuration réelle de `ECARNET_OPERATIONS_ADMIN_EMAILS`, des secrets webhook, du SMTP, de Cloudinary, des OAuth et des domaines HTTPS.
-- Exécution de la suite Django complète sur PostgreSQL 16 ; seul le test ciblé C8 de migration a été exécuté localement.
 - Exécution de la recette staging ADM-10 avec coupure réelle de base, incident créé/résolu dans l’instance déployée et accusé audité.
 - RPO/RTO, sauvegarde externe, restauration de la cible managée, disponibilité, latence et capacité en production.
 - Essais mobiles Android/iOS/4G, test navigateur complet, certification WCAG ou validation médicale/juridique.
@@ -69,9 +63,6 @@ python3 ops/test-monitoring-check.py
 python3 ops/test-monitoring-event.py
 
 # Contrôles de dépôt lorsque les dépendances sont installées
-python scripts/check-openapi-routes.py
-python scripts/count-api-tests.py
-python apps/api/manage.py makemigrations --check --dry-run
 npm run check:api
 npm run test:api
 npm run test:web
@@ -79,7 +70,7 @@ npm run lint
 npm run build
 ```
 
-Les validations ci-dessus sont locales et utilisent SQLite ; elles ne constituent pas une recette sur PostgreSQL ou en staging. Les résultats de CI restent la source de référence pour le décompte de tests et l’exécution PostgreSQL.
+Dans le sandbox audité, la suite Django n’a pas démarré car le module `django` n’était pas installé. Ce blocage d’environnement ne doit pas être présenté comme un échec fonctionnel du code ni comme une suite verte.
 
 ## Règle de mise à jour documentaire
 

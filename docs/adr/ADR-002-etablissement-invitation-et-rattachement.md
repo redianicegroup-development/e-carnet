@@ -29,7 +29,7 @@ La V1 actuelle laisse un établissement soumettre une fiche via l’application,
 - **Mot de passe temporaire envoyé par e-mail :** rejeté; lien à usage unique et définition du secret par son destinataire sont préférés.
 - **Code médecin permanent ou rattachement activé à sa saisie :** rejetés; un code de 48 h ouvre une demande, ensuite approuvée par l’établissement.
 - **Dépôt de pièces professionnelles du médecin dans E‑Carnet :** rejeté pour le flow V1; cette vérification reste interne à l’établissement.
-- **Accès illimité aux dossiers pour administrateur établissement :** rejeté; seul un accès motivé, audité et notifié, valable jusqu’à la clôture du motif (ou jusqu’à une expiration positive configurée), est admis par le chantier A. Le périmètre inter-établissements reste fermé à l’administrateur.
+- **Accès illimité aux dossiers pour administrateur établissement :** rejeté; seul un accès local temporaire, motivé, audité et notifié est admis par le chantier A. Le périmètre inter-établissements reste fermé à l’administrateur.
 - **Rôle global nommé `root` :** non retenu; l’appellation produit est « administrateur établissement ».
 
 ## État livré le 08/10/2026

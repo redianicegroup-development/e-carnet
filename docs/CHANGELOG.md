@@ -1,64 +1,22 @@
 > **Référence d’état auditée le 05/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-05.md`](ETAT-REEL-PROJET-2026-11-05.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
 
-## 2026-11-05 — C8 : essai de care.0026 sur PostgreSQL 16
+## Version 1.5 — 05/11/2026 (base V1_4_4)
 
-- Ajout de `apps/care/test_migration_0026_postgres.py`, un test d’intégration qui part de `care.0025`, insère des données historiques actives et inactives avec deux actifs dans le même établissement, avance à `care.0027`, vérifie la remise en brouillon et les deux contraintes, puis revient à `care.0025`.
-- Essai exécuté sur PostgreSQL 16.15 : réussi. La migration d’origine n’a pas produit de « pending trigger events » ; aucun découpage ou nouvelle migration corrective n’est nécessaire.
-- Le test restaure les migrations terminales et supprime ses lignes synthétiques sans utiliser le flush global, car l’audit du projet interdit volontairement `TRUNCATE`.
-- Le rejeu complet de la suite Django sur PostgreSQL et la recette staging restent à exécuter.
+Regroupe le travail « Hors connexion » ci-dessous et la mise à jour des textes d'information sur l'état réel du code.
 
-## 2026-11-05 — C7 : contrats OpenAPI, registre de routes et décompte API
+- **Textes légaux** (version `2026-11-05-v3`) : la politique de confidentialité décrit désormais toutes les données réellement enregistrées (documents, vaccinations, mesures, plans de suivi, rappels, rendez-vous, prescriptions et examens, carte d'urgence, profils représentés, notifications, avis, messages, enquêtes, demandes sur le compte, récupération de compte), les prestataires réels (Cloudinary pour les fichiers, services de notification des navigateurs), la mesure de fréquentation **après accord**, la photo de profil chez Cloudinary (adresse accessible sans connexion) et ce que la suppression de compte efface. CGU : objet, copie hors connexion, suspension et suppression à l'initiative de l'utilisateur. Mentions légales : hébergeur de fichiers. Page Sécurité : copie hors connexion, mesure soumise à l'accord.
+- **Aide** : 9 questions ajoutées (informations du carnet, conservation des fichiers, vaccinations, rendez-vous/rappels/notifications, plans de suivi, export, suspension/suppression, mot de passe oublié, notifications sur l'appareil). La page `/faq`, doublon de `/aide` déjà redirigé, est supprimée.
+- **Tests** : la déclaration du stockage de session du pied de page est reconnue ; le garde-fou « données réelles » précise que le chiffrement par clé de l'appareil ne suffit pas.
+- Version `1.5.0` (racine et `@ecarnet/web`).
 
-- OpenAPI complétée pour les rendez-vous, les pré-consultations, les ouvertures de dossier, le référent médical, le compteur de codes actifs et le webhook signé/idempotent. Les limites d’exposition de données et l’accès clinique désactivé par défaut sont documentés.
-- Le garde-fou `scripts/check-openapi-routes.py` compare les routes et méthodes Django C7 à OpenAPI. Les routes professionnelles de pré-consultation sont explicitement limitées à GET (liste en attente) et POST (approbation), avec un test des méthodes refusées.
-- `scripts/count-api-tests.py` génère le nombre de définitions de tests API et la CI le journalise ; les documents actifs renvoient aux journaux CI plutôt que de maintenir un compte recopié.
-- Ajout du test Django de cohérence des migrations et d’une matrice CI SQLite/PostgreSQL. Suite Django complète SQLite, suite web, `manage.py check`, contrôle de migrations, parse OpenAPI et garde-fou de routes réussis localement ; le job PostgreSQL complet et toute recette staging restent à exécuter. Le test ciblé PostgreSQL de C8 est consigné ci-dessus.
-- Le manifeste C6 est appliqué à l’archive : suppression de la page FAQ redondante, du composant inutilisé et du répertoire FAQ vide. Le test C1 des notifications couvre maintenant l’exécution du callback après commit.
+## 2026-11-05 — Hors connexion : bandeau, copie chiffrée, navigation sans réseau
 
-## 2026-11-05 — C6 : toutes les suites web incluses dans `npm test`
-
-- Le script web utilise `tests/*.test.mjs`, qui ajoute automatiquement tout fichier de test, y compris `measurement-series.test.mjs` et les quatre anciennes suites oubliées.
-- Ajout de `tests/test-registry.test.mjs` contre toute liste d’exécution incomplète.
-- Assertions historiques mises en phase avec les routes et composants actuels ; retrait de la page FAQ redondante et du composant public de scroll non référencé. Déclaration de `sessionStorage` de navigation ajoutée à la politique.
-- Vérification avec les dépendances installées : 38 fichiers, 331 tests réussis, aucun échec ni test ignoré.
-
-## 2026-11-05 — C5 / PAT-16 : cohérence, audit et notification des propositions
-
-- Confirmation et fin de rendez-vous bloquées en 409 pendant une proposition en attente ; ajout de `withdraw-proposal` professionnel et interdiction d’écraser une proposition non résolue.
-- Acceptation, refus, retrait et annulation patient/professionnel effacent les champs `proposed_*` ; le refus conserve statut et créneau initial.
-- Ajout des événements d’audit `appointment.proposal_confirmed` et `appointment.proposal_declined`, ainsi que `appointment.proposal_withdrawn`. L’identifiant technique du rendez-vous est admis dans les métadonnées d’audit ; aucun contenu clinique ni motif n’y figure.
-- Acceptation et refus notifient le professionnel par push après commit (si push configurée et abonnement actif). Interface professionnelle : retrait d’une proposition en attente.
-- Tests Django C5 ajoutés, non exécutés (Django absent). Tests web d’agenda : 9/9 réussis. Recette staging non exécutée.
-
-## 2026-11-05 — C4 / PAT-16 : déplacement d’un rendez-vous confirmé
-
-- Ajout de `APPOINTMENT_TRANSITIONS`, matrice explicite des actions patient/professionnel et états source/cible.
-- Le professionnel peut proposer un autre créneau depuis un rendez-vous demandé ou confirmé. Pour un rendez-vous confirmé, la date et le statut initiaux restent intacts jusqu’à l’acceptation du patient.
-- Le patient peut accepter la proposition depuis les deux statuts ou la refuser ; le refus retire les champs proposés sans modifier le statut ni le créneau original.
-- Les interfaces professionnel et patient exposent les actions correspondantes ; tests de matrice et d’intégration ajoutés. Tests web d’agenda : 8/8 réussis ; tests Django non exécutés (Django absent).
-- Durée de validité 48 h et avertissement non bloquant en cas de chevauchement restent des choix à confirmer ; non implémentés.
-
-## 2026-11-05 — C3 / PAT-16 : entrées invalides et réponses 400
-
-- Le catalogue valide `establishment_id` comme UUID (400 si invalide ; établissement inconnu : professionnels vides, sans énumération).
-- Les bornes de l’agenda professionnel acceptent date ISO ou date-heure ISO, rejettent les valeurs invalides, les bornes inversées et les fenêtres de plus de 92 jours ; maximum 500 rendez-vous renvoyés.
-- L’action `propose` valide `starts_at` futur avec fuseau, `ends_at` facultatif/postérieur et motif ≤ 500 caractères avant d’écrire les dates.
-- Ajout de `config.exception_handler` pour convertir les `django.core.exceptions.ValidationError` en réponses DRF 400.
-- Tests ajoutés dans `test_pat16_input_validation.py`. `py_compile` réussi ; tests Django non exécutés (Django absent) ; staging non exécuté.
-
-## 2026-11-05 — C2 / PAT-16 : identité minimale dans l’agenda professionnel
-
-- `ProfessionalAppointmentSerializer` ajoute uniquement le prénom et le nom du profil patient dans les réponses de l’agenda professionnel ; les profils d’enfant utilisent leur propre profil.
-- L’API patient conserve `AppointmentSerializer` sans nom ; la vue établissement reste limitée à l’identifiant technique, aux dates et au statut. L’OpenAPI précise ces frontières.
-- `ProfessionalAgenda.tsx` affiche le nom du patient dans chaque rendez-vous.
-- Tests ciblés ajoutés : cloisonnement par professionnel, profil enfant, absence du nom côté patient et champs limités côté établissement. Syntaxe Python vérifiée ; tests Django et recette staging non exécutés.
-
-## 2026-11-05 — C1 / ETA-11 : référent médical
-
-- Ajout du champ `EstablishmentMembership.is_medical_referent`, conforme à la migration `establishments.0015` déjà présente.
-- Ajout de l’endpoint POST de désignation/retrait, réservé à l’administrateur actif et limité aux rattachements actifs de professionnels vérifiés ; auto-désignation et valeurs non booléennes refusées.
-- Audit `establishment.medical_referent_changed` et notification push du professionnel après validation de la transaction.
-- Tests ciblés ajoutés dans `apps/api/apps/establishments/test_eta_11_medical_referent.py`. Leur exécution et `makemigrations --check` restent à lancer dans un environnement avec Django installé.
+- **Bandeau** « Vous êtes hors connexion » en haut de toute l'application, puis « Connexion rétablie » (avec « Actualiser » si des données venaient de la copie). Un serveur lent ou qui se réveille n'est pas « hors connexion ».
+- **Plus de « Failed to fetch »** : les erreurs réseau de l'API sont lisibles dans tous les écrans (relais `fetch` global).
+- **Navigation sans réseau** dans les trois espaces : coquilles des écrans gardées par le service worker (v5) avec préchauffage, pages d'information précachées, lectures de l'API copiées **chiffrées** (AES‑GCM 256, clé non extractible, noms hachés) — 7 jours pour le patient, 24 h pour les données de tiers. Aucune écriture hors connexion.
+- Rubrique « Hors connexion » ajoutée aux paramètres des espaces professionnel et établissement ; effacement à la déconnexion, au changement de compte/profil/espace.
+- L'ancienne copie en clair des déclarations est retirée. Textes de la politique de confidentialité, de l'aide et de l'accueil mis en accord.
+- Détail : `PWA-HORS-CONNEXION.md`, `MODIFICATIONS-2026-11-05-hors-connexion.md`.
 
 ## 2026-11-05 — PAT-16 : rendez-vous de la demande aux rappels
 
@@ -68,7 +26,7 @@
 - **Notifications** : notification applicative et push au patient lors des changements ; commande `send_due_reminders` étendue aux rappels neutres la veille et quelques heures avant, avec clé d’idempotence.
 - **Sécurité** : les rendez-vous ne créent aucun accès au dossier ; l’accès clinique reste exclusivement gouverné par QR et consentement, avec cloisonnement par établissement.
 - **Migration** : `care.0027_appointment_workflow` ajoute les créneaux proposés, le motif de changement et les dispatches de rappel.
-- **Validation historique** : cette entrée rapporte une vérification antérieure à la correction C1. La dérive du champ `is_medical_referent` est corrigée par l’alignement du modèle sur `establishments.0015` ; la suite Django et `makemigrations --check` doivent encore être exécutés dans l’environnement de dépendances.
+- **Validation** : syntaxe Python OK, `manage.py check` OK, tests ciblés Django 14/14 OK, tests agenda web 7/7 OK. La vérification complète des migrations reste bloquée par une dérive préexistante `establishments.0016_remove_establishmentmembership_is_medical_referent`.
 
 ## 2026-11-05 — PRO-13 : saisie de mesures par le médecin
 
@@ -81,7 +39,7 @@
 
 - **Dépendances** : Next.js 16.3.8 → **16.4.4** (avec `eslint-config-next`), `cryptography` 47.0.0 → **50.0.0** (`requirements.in` : `>=50,<51` ; empreintes de `requirements.txt` régénérées depuis PyPI). Restant : `zod` < 4.6.6 signalé par `npm audit` (voir `DONNEES-REELLES-DECISION.md`).
 - **Export Excel** : `?format=xlsx` répondait 404 (DRF réserve `?format=` à la négociation de contenu) ; `URL_FORMAT_OVERRIDE: None`. Les 4 tests d'export, en échec depuis v1.4-final, passent.
-- **Ouverture de dossier par l'administrateur d'établissement** : durée indéterminée par défaut, jusqu’à clôture du motif (expiration positive plafonnée à 4 h), lecture clinique **désactivée par défaut**. Corrige l'écart n° 2 et n° 3 du CDC v13 ; l'écran d'ouverture reste à construire avant d'activer la lecture.
+- **Ouverture de dossier par l'administrateur d'établissement** : durée de 30 minutes par défaut (4 h au plus, jamais illimitée), anciennes ouvertures sans échéance refusées à la lecture, lecture clinique **désactivée par défaut**. Corrige l'écart n° 2 et n° 3 du CDC v13 ; l'écran d'ouverture reste à construire avant d'activer la lecture.
 - **Données réelles** : FAQ de l'accueil, Aide, politique de confidentialité et `/v1` lisent un interrupteur unique (`lib/data-policy.ts`, `false`) et disent « phase de test, données fictives » ; nouveau `DONNEES-REELLES-DECISION.md`. Corrige l'écart n° 1 du CDC v13.
 - Tests : `donnees-reelles-2026-11-04.test.mjs` (7), `test_patient_records.py` (20, dont 4 nouveaux). Suite API : 492 réussis.
 

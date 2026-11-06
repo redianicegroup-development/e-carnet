@@ -27,7 +27,7 @@ const sections: LegalSectionDef[] = [
     body: (
       <>
         <p>Les présentes conditions encadrent l’utilisation du service « Mon E‑Carnet », édité par <Fill k="publisher.name" /> (voir les <Link href="/mentions-legales">mentions légales</Link>).</p>
-        <p>Le service permet de tenir un carnet de santé personnel, de préparer une consultation et de gérer des autorisations d’accès dans les limites décrites dans le service.</p>
+        <p>Le service permet de tenir un carnet de santé personnel (déclarations, documents, vaccinations, mesures, rappels de médicaments, rendez-vous), de préparer une consultation et de gérer des autorisations d’accès ; pour les professionnels autorisés, il permet aussi d’enregistrer des consultations, des prescriptions et des plans de suivi, dans les limites décrites dans le service.</p>
         <p>La version actuellement disponible est une <strong>version actuellement disponible</strong>. Elle n’est pas destinée à recevoir des dossiers de santé réels. Elle n’a pas fait l’objet d’une validation juridique, médicale et technique complète.</p>
       </>
     ),
@@ -166,6 +166,7 @@ const sections: LegalSectionDef[] = [
     body: (
       <>
         <p>Le service peut évoluer ; les informations et les conditions applicables sont précisées dans les documents du service.</p>
+        <p>Sans réseau, le service permet de relire, en lecture seule, les écrans déjà consultés, au moyen d’une copie chiffrée gardée sur l’appareil. Cette copie peut ne pas refléter les dernières modifications, et aucune action (création, modification, validation) n’est possible sans réseau. Sur un appareil partagé, l’utilisateur désactive cette copie ou se déconnecte ; les modalités sont décrites dans la politique de confidentialité.</p>
         <p>Le service ne remplace pas un avis médical, une prise en charge urgente ou les services de secours.</p>
       </>
     ),
@@ -191,6 +192,7 @@ const sections: LegalSectionDef[] = [
     body: (
       <>
         <p>L’éditeur peut suspendre un accès en cas d’atteinte à la sécurité, d’usage contraire aux présentes conditions ou de demande d’une autorité compétente.</p>
+        <p>L’utilisateur peut demander, depuis les paramètres de son compte, une suspension temporaire (pour une durée proposée, 90 jours au plus, traitée par l’équipe) ou la suppression de son compte. Après sa confirmation, la suppression désactive immédiatement l’accès et anonymise l’identité ; ses effets sur les données sont décrits dans la politique de confidentialité, section « Vos droits ».</p>
         <p>Modalités et effets de la clôture d’un compte : <Fill k="terms.closure" />.</p>
       </>
     ),

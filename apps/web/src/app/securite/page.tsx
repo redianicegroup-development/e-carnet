@@ -16,7 +16,8 @@ const PRINCIPLES: SecurityPrinciple[] = [
   { icon: "check", title: "Décision explicite", text: "Un professionnel doit être rattaché à son établissement et recevoir l’accord du patient avant de consulter le carnet. Un administrateur ne peut ouvrir que les soins de sa propre structure, avec un motif enregistré et une notification au patient." },
   { icon: "document", title: "Historique conservé", text: "Les demandes, décisions et consultations validées laissent une trace dans le carnet pour garder le fil." },
   { icon: "shield", title: "Compte personnel", text: "Gardez vos identifiants confidentiels et utilisez uniquement votre compte. Les services d’urgence restent indépendants du carnet." },
-  { icon: "chart", title: "Suivi mesuré", text: "Les statistiques du site utilisent des catégories de pages et des clics publics, sans conserver les URL complètes ni les adresses IP." },
+  { icon: "chart", title: "Suivi mesuré", text: "Avec votre accord seulement, les statistiques du site utilisent des catégories de pages et des clics publics, sans conserver les URL complètes ni les adresses IP." },
+  { icon: "lock", title: "Copie hors connexion", text: "Sans réseau, l’application relit en lecture seule une copie chiffrée gardée sur l’appareil. Elle s’efface à la déconnexion et se désactive dans les paramètres. La clé étant sur l’appareil, elle protège le stockage, pas un navigateur resté ouvert : sur un appareil partagé, désactivez-la." },
 ];
 
 export default function SecurityPage() {

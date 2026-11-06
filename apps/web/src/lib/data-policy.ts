@@ -5,7 +5,8 @@
  *
  * Ne le passer à `true` qu'après la décision écrite et signée (produit, médicale, juridique/ARTCI, sécurité, hébergement, recette
  * staging et restauration). Le code seul ne suffit pas : ces conditions ne se vérifient pas dans le dépôt. Les tests refusent aussi la
- * combinaison « données réelles autorisées + copie hors connexion activée par défaut et non chiffrée ».
+ * combinaison « données réelles autorisées + copie hors connexion activée par défaut et non chiffrée par un code de l'utilisateur » : la copie
+ * actuelle est chiffrée par une clé de l'appareil (05/11/2026), ce qui ne suffit pas pour des données réelles.
  * Sans dépendance (testable en Node).
  */
 export const REAL_HEALTH_DATA_ALLOWED = false;

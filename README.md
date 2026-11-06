@@ -2,6 +2,8 @@
 
 # Mon E-Carnet — V1 en construction
 
+**Version 1.5 — 05/11/2026** (hors connexion, textes légaux et aide mis à jour sur l’état réel) : voir [`docs/CHANGELOG.md`](docs/CHANGELOG.md). Toujours en phase de test : données fictives uniquement.
+
 Monorepo d’une application web/PWA mobile-first : Next.js 16, API Django/DRF et PostgreSQL cible.
 
 > **Documentation mise à jour le 14/10/2026. V1 en construction, non acceptée et non autorisée pour des données de santé réelles.**

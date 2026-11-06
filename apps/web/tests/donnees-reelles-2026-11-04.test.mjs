@@ -60,10 +60,12 @@ test("la FAQ de l'accueil et celle de l'Aide donnent la même réponse sur les v
 });
 
 test("garde-fou : on ne peut pas autoriser les données réelles avec une copie hors connexion activée par défaut et non chiffrée", () => {
-  // Tant qu'aucun chiffrement local n'existe, passer REAL_HEALTH_DATA_ALLOWED à true exige que la copie des déclarations ne soit plus active
-  // par défaut (ou qu'un chiffrement soit livré et ce test adapté en le disant clairement dans docs/DONNEES-REELLES-DECISION.md).
-  const encryptedAtRest = false;
-  assert.equal(policy.REAL_HEALTH_DATA_ALLOWED && offline.OFFLINE_DECLARATIONS_DEFAULT_ENABLED && !encryptedAtRest, false);
+  // Depuis le 05/11/2026 la copie est chiffrée (AES-GCM, clé non extractible), mais la clé est celle de l'APPAREIL : une personne qui utilise le
+  // navigateur ouvert la lit. Le critère de docs/DONNEES-REELLES-DECISION.md reste donc : copie désactivée par défaut OU chiffrée avec un code
+  // de l'utilisateur. Passer REAL_HEALTH_DATA_ALLOWED à true exige l'un des deux ; ce test ne sera adapté qu'en le disant dans ce document.
+  const encryptedWithUserSecret = false;
+  assert.match(read("src/lib/offline-cache.ts"), /generateKey\(\{ name: "AES-GCM", length: 256 \}, false,/, "la copie est chiffrée par une clé non extractible de l'appareil");
+  assert.equal(policy.REAL_HEALTH_DATA_ALLOWED && offline.OFFLINE_DECLARATIONS_DEFAULT_ENABLED && !encryptedWithUserSecret, false);
   assert.equal(offline.OFFLINE_DECLARATIONS_DEFAULT_ENABLED, true, "phase de test : active par défaut (données fictives)");
   assert.match(read("src/lib/offline-policy.ts"), /OFFLINE_DECLARATIONS_DEFAULT_ENABLED = true/);
 });
