@@ -3,7 +3,7 @@ import type { ConsultationVitals } from "./vitals";
 
 export type PrescriptionLine = { id: string; drug_name: string; dosage: string; posology: string; duration: string; instructions: string };
 export type ExamKind = "analysis" | "imaging" | "other";
-export type ExamRequest = { id: string; kind: ExamKind; label: string; status: "requested" | "result_received" };
+export type ExamRequest = { id: string; kind: ExamKind; label: string; status: "requested" | "result_received"; proof_document_id?: string | null };
 
 export const EXAM_KIND_LABELS: Record<ExamKind, string> = { analysis: "Analyse biologique", imaging: "Imagerie", other: "Autre examen" };
 export const EXAM_STATUS_LABELS: Record<ExamRequest["status"], string> = { requested: "Demandé", result_received: "Résultat reçu" };

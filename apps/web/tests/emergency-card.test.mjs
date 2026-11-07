@@ -82,7 +82,11 @@ test("le QR temporaire de visite reste dans Partage et le compte ne porte aucun 
   assert.match(grants, /id="qr"/);
   assert.match(grants, /vos documents \(lecture seule\)/);
   assert.doesNotMatch(settings, /ActiveAccessQr|usePatientAccessQr|access-qr\/|visit-qr/);
-  assert.match(home, /href="\/patient\/consultations"[^>]*>[^<]*<Icon name="qr"[^>]*\/> Partager en QR/, "« Partager en QR » mène à l'onglet Consultations");
+  assert.match(home, /<PatientShareQrButton \/>/, "« Partager en QR » génère le QR temporaire de l'étape 2 à chaque clic");
+  const share = read("src/components/PatientShareQr.tsx");
+  assert.match(share, /access-qr\//);
+  assert.match(share, /Partager en QR/);
+  assert.match(share, /usePatientAccessQr/, "le QR généré est celui de l'étape 2 (état partagé)");
   assert.doesNotMatch(styles, /settings-account-summary__visit-qr|settings-visit-qr-modal/);
   assert.doesNotMatch(styles, /\.patient-active-qr \{[^}]*position: sticky/);
 });

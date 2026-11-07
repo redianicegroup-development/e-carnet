@@ -1,0 +1,2 @@
+.person-avatar { flex: 0 0 auto; display: inline-block; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); background: var(--surface-tint); }
+.person-avatar--initials { display: inline-grid; place-items: center; font-weight: 800; color: var(--primary); background: color-mix(in srgb, var(--primary) 14%, var(--surface)); line-height: 1; }

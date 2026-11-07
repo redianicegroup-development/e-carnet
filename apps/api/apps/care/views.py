@@ -25,7 +25,7 @@ from apps.cloudinary_storage import CLOUDINARY_CONFIGURED, destroy as cloudinary
 from .models import AccessGrant, Appointment, CareEncounter, Consultation, ExamRequest, FollowUpPlan, FollowUpPlanItem, FollowUpPlanRevision, HealthMeasurement, MedicalDocument, MedicationIntake, MedicationReminder, PatientNotification, PreconsultationTemplate, PushSubscription, Vaccination
 from .pdf_compression import compress_pdf_lossless
 from .serializers import AccessGrantSerializer, AppointmentSerializer, CareEncounterSerializer, ConsultationSerializer, FollowUpPlanSerializer, HealthMeasurementSerializer, MedicalDocumentSerializer, MedicationIntakeSerializer, MedicationReminderSerializer, PatientNotificationSerializer, PreconsultationTemplateSerializer, ProfessionalAccessGrantSerializer, ProfessionalAppointmentSerializer, ProfessionalConsultationCreateSerializer, ProposeAppointmentSerializer, VaccinationSerializer
-from .services import QR_TOKEN_TTL_SECONDS, SelfAccessRefused, create_patient_qr_token, create_professional_grant, is_own_patient_file, require_scope
+from .services import QR_TOKEN_TTL_SECONDS, SELF_ACCESS_MESSAGE, SelfAccessRefused, create_patient_qr_token, create_professional_grant, is_own_patient_file, require_scope
 from .notifications import notify_patient, notify_professional
 from .push import is_allowed_endpoint, push_enabled, vapid_public_key
 from .consultation_services import validate_consultation
@@ -287,6 +287,77 @@ class ProfessionalMedicalDocumentListView(APIView):
         for row in data:
             row["download_url"] = f"/api/v1/patient/care/professional/access-grants/{grant.id}/documents/{row['id']}/download/"
         return Response({"success": True, "data": data})
+
+
+class ProfessionalExamProofCreateView(APIView):
+    """Photo de la demande d’examen (bon papier, ordonnance d’examen) prise par le médecin pendant la consultation.
+
+    La photo reste une preuve : elle entre dans le carnet du patient comme document validé par l’établissement du médecin,
+    mais n’est jamais un résultat (le lien « résultat reçu » reste `MedicalDocument.exam_request`). Elle n’est rattachée à
+    l’examen qu’à la signature de la consultation. Images seulement (PNG, JPG/JPEG, WebP)."""
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+    throttle_classes = [WriteScopedThrottle]
+    throttle_scope = "documents_upload"
+
+    @transaction.atomic
+    def post(self, request, grant_id):
+        profile = getattr(request.user, "professional_profile", None)
+        access_error = professional_clinical_access_error(profile)
+        if access_error:
+            return Response({"success": False, "message": access_error}, status=403)
+        grant = AccessGrant.objects.select_related("patient", "establishment").filter(pk=grant_id, professional=profile, establishment=profile.active_establishment).first()
+        if not grant:
+            return Response({"success": False, "message": "AccessGrant introuvable dans votre périmètre."}, status=404)
+        grant.refresh_expiration()
+        if grant.status != "active":
+            return Response({"success": False, "message": "L’autorisation du patient n’est plus active."}, status=403)
+        try:
+            require_scope(grant, "preconsultation")
+        except PermissionDenied as exc:
+            return Response({"success": False, "message": str(exc.detail)}, status=403)
+        if is_own_patient_file(profile, grant.patient):
+            return Response({"success": False, "message": SELF_ACCESS_MESSAGE}, status=403)
+        uploaded = request.FILES.get("file")
+        if not uploaded:
+            raise ValidationError({"file": "Ajoutez la photo de la demande d’examen."})
+        filename = uploaded.name.rsplit("/", 1)[-1].replace("\\", "_")
+        extension = "." + filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+        if extension not in (".png", ".jpg", ".jpeg", ".webp"):
+            raise ValidationError({"file": "Format refusé : envoyez une photo PNG, JPG/JPEG ou WebP."})
+        try:
+            uploaded.seek(0, 2)
+            actual_size = uploaded.tell()
+            uploaded.seek(0)
+        except (AttributeError, OSError):
+            actual_size = uploaded.size
+        if actual_size > DOCUMENT_MAX_SIZE:
+            raise ValidationError({"file": "La photo ne doit pas dépasser 10 MiB."})
+        content_type = _document_signature(uploaded, extension)
+        if not content_type:
+            raise ValidationError({"file": "Format refusé : l’extension et la signature réelle du fichier doivent correspondre à PNG, JPG/JPEG ou WebP."})
+        patient = PatientProfile.objects.select_for_update().get(pk=grant.patient_id)
+        existing = MedicalDocument.objects.filter(patient=patient)
+        if existing.count() >= DOCUMENT_MAX_COUNT:
+            raise ValidationError({"file": "La limite de 100 documents par patient est atteinte."})
+        if (existing.aggregate(total=Sum("size_bytes"))["total"] or 0) + actual_size > DOCUMENT_TOTAL_MAX_SIZE:
+            raise ValidationError({"file": "Le quota cumulé de 200 MiB par patient serait dépassé."})
+        now = timezone.now()
+        values = dict(patient=patient, establishment=grant.establishment, professional=profile, validated_at=now, verified=True,
+                      original_name=f"demande-examen-{now:%Y%m%d-%H%M}{extension}"[:180], document_type="other",
+                      issuer=grant.establishment.name[:180], content_type=content_type, size_bytes=actual_size)
+        if CLOUDINARY_CONFIGURED:
+            uploaded.seek(0)
+            result = cloudinary_upload(uploaded, folder="medical-documents", public_id=f"{patient.id}/{uuid.uuid4()}", resource_type="image")
+            values.update(cloudinary_public_id=result["public_id"], cloudinary_resource_type="image", cloudinary_version=result.get("version"))
+        elif settings.DEBUG or getattr(settings, "RUNNING_TESTS", False):
+            uploaded.seek(0)
+            values["file"] = uploaded
+        else:
+            raise ValidationError({"file": "Le stockage Cloudinary n’est pas configuré."})
+        item = MedicalDocument.objects.create(**values)
+        record_event(event_type="medical_document.exam_proof_uploaded", actor=request.user, actor_role="professional", patient=patient, establishment=grant.establishment, access_grant=grant, metadata={"action": "exam_proof_uploaded", "document_id": str(item.id), "size_bytes": item.size_bytes})
+        return Response({"success": True, "data": {"id": str(item.id), "original_name": item.original_name}}, status=status.HTTP_201_CREATED)
 
 
 class ProfessionalMedicalDocumentDownloadView(APIView):
@@ -1118,7 +1189,7 @@ class ProfessionalAccessGrantListCreateView(APIView):
         access_error = professional_clinical_access_error(profile)
         if access_error:
             return Response({"success": False, "message": access_error}, status=403)
-        items = AccessGrant.objects.filter(professional=profile, establishment=profile.active_establishment).exclude(patient__user_id=profile.user_id).select_related("patient", "establishment")
+        items = AccessGrant.objects.filter(professional=profile, establishment=profile.active_establishment).exclude(patient__user_id=profile.user_id).select_related("patient", "patient__user__account_profile", "establishment")
         for item in items:
             item.refresh_expiration()
         return Response({"success": True, "data": ProfessionalAccessGrantSerializer(items, many=True).data})

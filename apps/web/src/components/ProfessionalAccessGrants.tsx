@@ -4,6 +4,10 @@ import { useEffect, useState } from "react";
 import { ApiError } from "../infrastructure/api/client";
 import { listProfessionalGrants, ProfessionalGrant, requestProfessionalGrant } from "../application/professional-access-grants";
 import { QrScanner } from "./QrScanner";
+import { PersonAvatar } from "./ui/PersonAvatar";
+import { EstablishmentLogo } from "./EstablishmentLogo";
+import "./establishment-logo.css";
+import "./consultation-flow.css";
 
 const MOCK_GRANTS: ProfessionalGrant[] = [];
 const STATUS_LABELS: Record<string, string> = { pending: "En attente du patient", active: "Autorisé", refused: "Refusé", expired: "Expiré", revoked: "Révoqué" };
@@ -76,7 +80,7 @@ export function ProfessionalAccessGrants() {
         <p className="muted">Vous demandez la pré-consultation, les déclarations et la lecture des documents. Rien n’est ouvert avant l’accord du patient.</p>
         <button className="button primary" type="submit" disabled={submitting || !qrToken.trim()}>{submitting ? "Envoi…" : "Envoyer la demande"}</button>
       </form>
-      <section id="historique" className="card"><span className="eyebrow">Historique</span><h2>Mes demandes</h2>{loading ? <p className="empty" role="status">Chargement…</p> : items.length === 0 ? <p className="empty">Aucune demande pour le moment.</p> : <div className="stack">{items.map((item) => <article className="record" key={item.id}><div><strong>{item.professional_name}</strong><p className="muted">{item.facility_label} · {item.scope.map((scope) => SCOPE_LABELS[scope] ?? scope).join(", ")}</p></div><span className={`badge ${item.status === "active" ? "verified" : "declared"}`}>{STATUS_LABELS[item.status] ?? item.status}</span></article>)}</div>}</section>
+      <section id="historique" className="card"><span className="eyebrow">Historique</span><h2>Mes demandes</h2>{loading ? <p className="empty" role="status">Chargement…</p> : items.length === 0 ? <p className="empty">Aucune demande pour le moment.</p> : <div className="stack">{items.map((item) => <article className="record request-row" key={item.id}><div className="request-row__who"><span className="request-row__avatars"><PersonAvatar src={item.patient_avatar} name={item.patient_name || item.reference} size={46} /><EstablishmentLogo logo={item.establishment_logo} name={item.facility_label} size={22} /></span><div><strong>{item.patient_name || `Patient · accès ${item.reference}`}</strong><p className="muted">{item.facility_label} · {item.scope.map((scope) => SCOPE_LABELS[scope] ?? scope).join(", ")}</p></div></div><span className={`badge ${item.status === "active" ? "verified" : "declared"}`}>{STATUS_LABELS[item.status] ?? item.status}</span></article>)}</div>}</section>
     </section>
   </div>;
 }

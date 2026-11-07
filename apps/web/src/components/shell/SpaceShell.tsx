@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, Fragment, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { ApiError, apiGet, apiPost } from "../../infrastructure/api/client";
 import { isSessionMissing } from "../../lib/session";
 import { SPACES, contextToActivate, spaceSwitchTarget, visibleTabsFor, type SpaceId } from "../../lib/spaces";
@@ -21,7 +21,8 @@ import { ScrollToTopOnNavigate } from "../ScrollToTopOnNavigate";
 import { cleanUpBeforeLogout } from "../../lib/logout";
 import { purgeOfflineSnapshot } from "../../lib/offline-snapshot";
 import { purgeOfflineCache } from "../../lib/offline-cache";
-import { OFFLINE_NO_COPY_MESSAGE } from "../../lib/network-status";
+import { NETWORK_RESTORED_EVENT, OFFLINE_NO_COPY_MESSAGE } from "../../lib/network-status";
+import { useNetwork } from "../network/NetworkProvider";
 
 export type SpaceAccount = {
   id: string;
@@ -83,6 +84,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
   const config = SPACES[space];
   const [state, setState] = useState<State>({ status: "loading", label: "Chargement de votre espace…" });
   const [loadAttempt, setLoadAttempt] = useState(0);
+  const { refreshKey } = useNetwork();
   const [patientAccessQr, setPatientAccessQr] = useState<PatientAccessQr | null>(null);
   const [navCollapsed, setNavCollapsed] = useState(true);
   // Médecin : les onglets cliniques n'apparaissent qu'avec un rattachement actif. `null` = pas encore su (même présentation que « pas rattaché »).
@@ -113,7 +115,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
     }
   }
   async function logout() {
-    const ok = await confirm({ title: "Se déconnecter ?", message: "Vous allez être déconnecté de cet appareil.", note: "Vos données restent enregistrées dans votre compte.", confirmLabel: "Me déconnecter", cancelLabel: "Rester connecté", tone: "neutral", mood: "decision" });
+    const ok = await confirm({ title: "Se déconnecter ?", message: "Vous allez être déconnecté de cet appareil.", note: "Vos données restent enregistrées dans votre compte.", confirmLabel: "Me déconnecter", cancelLabel: "Rester connecté", tone: "danger", mood: "farewell" });
     if (!ok) return;
     setSigningOut(true);
     setLogoutMessage("");
@@ -220,6 +222,14 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
     return () => { active = false; controller.abort(); };
   }, [loadAttempt, space]);
 
+  // Retour de la connexion alors que l'espace n'avait pas pu s'ouvrir : on réessaie tout seul, sans demander à la personne de recharger.
+  useEffect(() => {
+    if (state.status !== "error") return;
+    const retry = () => setLoadAttempt((attempt) => attempt + 1);
+    window.addEventListener(NETWORK_RESTORED_EVENT, retry);
+    return () => window.removeEventListener(NETWORK_RESTORED_EVENT, retry);
+  }, [state.status]);
+
   useEffect(() => {
     if (state.status !== "anonymous" || bare) return;
     const requested = `${window.location.pathname}${window.location.search}${window.location.hash}`;
@@ -296,7 +306,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
         {state.status === "loading" && <ScreenLoader label={state.label} />}
         {state.status === "anonymous" && !bare && <div className="skeleton" role="status" aria-live="polite"><span className="sr-only">Redirection vers la connexion…</span><i /><i /><i /></div>}
         {state.status === "error" && !bare && (
-          <section className="card gate" role="alert"><h1>Service momentanément indisponible</h1><p className="muted">{state.message}</p><div className="actions"><button type="button" className="button primary" onClick={() => setLoadAttempt((attempt) => attempt + 1)}>Réessayer</button></div></section>
+          <section className="card gate" role="alert"><h1>{state.message === OFFLINE_NO_COPY_MESSAGE ? "Vous êtes hors connexion" : "Service momentanément indisponible"}</h1><p className="muted">{state.message}</p><div className="actions"><button type="button" className="button primary" onClick={() => setLoadAttempt((attempt) => attempt + 1)}>Réessayer</button></div></section>
         )}
         {passwordChangePending && <ScreenLoader label="Redirection vers le choix de votre mot de passe…" />}
         {((state.status === "ready" && !passwordChangePending) || bare) && (
@@ -304,7 +314,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
             <PatientAccessQrContext.Provider value={{ qr: patientAccessQr, setQr: setPatientAccessQr }}>
               {space === "patient" && state.status === "ready" && !bare && <TrustedDelegationBanner />}
               {state.status === "ready" && !bare && <OfflineCacheKeeper space={space} />}
-              {children}
+              <Fragment key={refreshKey}>{children}</Fragment>
             </PatientAccessQrContext.Provider>
           </AccountContext.Provider>
         )}

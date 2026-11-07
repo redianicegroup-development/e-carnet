@@ -80,7 +80,7 @@ function eventDescription(event: AccessEvent): string {
   return labels[event.action] ?? actionLabels[event.action] ?? "Événement lié à un accès.";
 }
 
-function ActiveAccessQr({ token, expiresAt, busy, onRenew }: { token: string; expiresAt: number; busy: boolean; onRenew: () => void }) {
+export function ActiveAccessQr({ token, expiresAt, busy, onRenew }: { token: string; expiresAt: number; busy: boolean; onRenew: () => void }) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
@@ -237,7 +237,7 @@ export function PatientAccessGrants({ part = "all" }: { part?: "all" | "qr" | "l
                   </>}
                   {item.status === "active" && <>
                     <button type="button" className="button" disabled={busyId === item.id || item.extension_count >= 2} onClick={() => void decide(item, "extend")}>Prolonger 1 h ({Math.max(0, 2 - item.extension_count)} restante{item.extension_count === 1 ? "" : "s"})</button>
-                    <button type="button" className="button" disabled={busyId === item.id} onClick={() => void confirm({ title: "Révoquer cet accès maintenant ?", message: `${item.professional_name} perdra immédiatement l’accès à votre carnet.`, note: "L’autorisation apparaîtra comme « Révoquée » dans votre liste.", confirmLabel: "Révoquer l’accès", cancelLabel: "Garder l’accès", tone: "danger", mood: "question" }).then((ok) => { if (ok) void act(item.id, "revoke"); })}>Révoquer maintenant</button>
+                    <button type="button" className="button primary danger" disabled={busyId === item.id} onClick={() => void confirm({ title: "Révoquer cet accès maintenant ?", message: `${item.professional_name} perdra immédiatement l’accès à votre carnet.`, note: "L’autorisation apparaîtra comme « Révoquée » dans votre liste.", confirmLabel: "Révoquer l’accès", cancelLabel: "Garder l’accès", tone: "danger", mood: "question" }).then((ok) => { if (ok) void act(item.id, "revoke"); })}>Révoquer maintenant</button>
                   </>}
                 </div>
               </article>

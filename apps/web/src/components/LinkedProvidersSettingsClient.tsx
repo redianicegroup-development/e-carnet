@@ -84,7 +84,7 @@ export function LinkedProvidersSettingsClient({ nextPath }: Props) {
           <div className="record settings-provider" key={provider.id}>
             <div><strong>{provider.label}</strong><p className="muted">{loading ? "Vérification…" : linked.has(provider.id) ? "Lié à ce compte" : provider.hint}</p></div>
             {loading ? <span className="muted">Chargement…</span> : linked.has(provider.id) ? (
-              <button type="button" className="button small" disabled={loading || busyProvider !== null} onClick={() => void askUnlink(provider.id)}>
+              <button type="button" className="button small primary danger" disabled={loading || busyProvider !== null} onClick={() => void askUnlink(provider.id)}>
                 {busyProvider === provider.id ? "Déliaison…" : "Délier"}
               </button>
             ) : (

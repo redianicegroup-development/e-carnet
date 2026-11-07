@@ -1,9 +1,9 @@
-import { apiGet, apiPost } from "../infrastructure/api/client";
+import { apiGet, apiPost, apiUpload } from "../infrastructure/api/client";
 import type { ConsultationRecord, ExamKind } from "../lib/care-records";
 import type { HealthMeasurementRecord, MeasurementKind } from "../lib/measurement-types";
 import type { StoredVitals, VitalPayload } from "../lib/vitals";
 
-export type ProfessionalGrant = { id: string; reference: string; professional_id: string | null; establishment_id: string | null; professional_name: string; facility_label: string; scope: string[]; source_establishments: string[]; status: "pending" | "active" | "refused" | "expired" | "revoked"; starts_at: string | null; expires_at: string | null; extension_count: number };
+export type ProfessionalGrant = { id: string; reference: string; professional_id: string | null; establishment_id: string | null; professional_name: string; facility_label: string; scope: string[]; source_establishments: string[]; status: "pending" | "active" | "refused" | "expired" | "revoked"; starts_at: string | null; expires_at: string | null; extension_count: number; patient_name?: string; patient_avatar?: string; establishment_logo?: string };
 export type Encounter = { id: string; reason: string; observations: string; vitals?: StoredVitals; recorded_with_help?: string; status: "draft" | "closed"; facility_label: string; provenance: { label: string }; template_responses?: Record<string, string | number | boolean | null>; template_fields?: Array<{ key: string; label: string; type: string; unit?: string }> };
 export type Consultation = ConsultationRecord;
 export type ProfessionalVaccination = { id: string; vaccine_name: string; dose_number: number | null; administered_on: string | null; batch_number: string; facility: string; professional: string; next_due_on: string | null; document_id: string | null; confirmed_by_name: string; confirmed_at: string | null; status: "declared" | "documented" | "confirmed"; status_label: string; notes: string; created_at: string };
@@ -21,5 +21,12 @@ export function createProfessionalMeasurement(grantId: string, input: Profession
 export function listCareHistory(grantId: string): Promise<unknown[]> { return apiGet<unknown[]>(`/api/v1/patient/care/professional/access-grants/${grantId}/care-history/`); }
 export function confirmProfessionalVaccination(grantId: string, vaccinationId: string): Promise<ProfessionalVaccination> { return apiPost<ProfessionalVaccination>(`/api/v1/patient/care/professional/access-grants/${grantId}/vaccinations/${vaccinationId}/confirm/`, {}); }
 
-export type ConsultationInput = { access_grant_id: string; source_encounter_id: string; reason?: string; symptoms?: string; clinical_exam?: string; diagnosis?: string; vitals?: VitalPayload; prescription_lines?: Array<{ drug_name: string; dosage?: string; posology: string; duration?: string; instructions?: string }>; requested_exams?: Array<{ kind: ExamKind; label: string }>; conclusion: string; care_plan: string; attestation_svg: string };
+export type ConsultationInput = { access_grant_id: string; source_encounter_id: string; reason?: string; symptoms?: string; clinical_exam?: string; diagnosis?: string; vitals?: VitalPayload; prescription_lines?: Array<{ drug_name: string; dosage?: string; posology: string; duration?: string; instructions?: string }>; requested_exams?: Array<{ kind: ExamKind; label: string; proof_document_id?: string | null }>; conclusion: string; care_plan: string; attestation_svg: string };
 export function validateProfessionalConsultation(input: ConsultationInput): Promise<Consultation> { return apiPost<Consultation>("/api/v1/patient/care/professional/consultations/", input); }
+
+/** Photo de la demande d’examen (preuve) : envoyée avant la signature, puis rattachée à l’examen par son identifiant. */
+export function uploadExamProof(grantId: string, file: File): Promise<{ id: string; original_name: string }> {
+  const form = new FormData();
+  form.append("file", file, file.name || "demande-examen.jpg");
+  return apiUpload<{ id: string; original_name: string }>(`/api/v1/patient/care/professional/access-grants/${grantId}/exam-proofs/`, form);
+}

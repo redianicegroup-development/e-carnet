@@ -85,13 +85,31 @@ class ProfessionalAccessGrantSerializer(AccessGrantSerializer):
     Un identifiant de patient connu du professionnel permettrait de renvoyer des demandes sans QR ; le QR du patient
     reste donc la seule porte d’entrée, à chaque demande."""
     reference = serializers.SerializerMethodField()
+    patient_name = serializers.SerializerMethodField()
+    patient_avatar = serializers.SerializerMethodField()
+    establishment_logo = serializers.SerializerMethodField()
 
     class Meta(AccessGrantSerializer.Meta):
-        fields = tuple(name for name in AccessGrantSerializer.Meta.fields if name != "patient_id") + ("reference",)
+        fields = tuple(name for name in AccessGrantSerializer.Meta.fields if name != "patient_id") + ("reference", "patient_name", "patient_avatar", "establishment_logo")
         read_only_fields = fields
 
     def get_reference(self, obj):
         return str(obj.id)[:8].upper()
+
+    def get_patient_name(self, obj):
+        """Nom du patient que ce professionnel a lui-même présenté par QR : sert à reconnaître la personne dans « Mes demandes »."""
+        patient = obj.patient
+        return f"{patient.display_first_name()} {patient.display_last_name()}".strip()
+
+    def get_patient_avatar(self, obj):
+        """Photo du compte du patient (URL externe ou Cloudinary seulement) ; jamais la route authentifiée de son propre avatar."""
+        user = obj.patient.user if obj.patient.user_id else None
+        profile = getattr(user, "account_profile", None) if user else None
+        return profile.avatar_url if profile and profile.avatar_url else ""
+
+    def get_establishment_logo(self, obj):
+        from apps.establishments.serializers import logo_for
+        return logo_for(obj.establishment) if obj.establishment_id else ""
 
 
 class PrescriptionLineSerializer(serializers.ModelSerializer):
@@ -102,9 +120,11 @@ class PrescriptionLineSerializer(serializers.ModelSerializer):
 
 
 class ExamRequestSerializer(serializers.ModelSerializer):
+    proof_document_id = serializers.UUIDField(read_only=True, allow_null=True)
+
     class Meta:
         model = ExamRequest
-        fields = ("id", "kind", "label", "status")
+        fields = ("id", "kind", "label", "status", "proof_document_id")
         read_only_fields = fields
 
 
@@ -432,7 +452,14 @@ class PrescriptionLineInputSerializer(serializers.Serializer):
 
 class ExamRequestInputSerializer(serializers.Serializer):
     kind = serializers.ChoiceField(choices=ExamRequest.KIND_CHOICES)
-    label = serializers.CharField(max_length=160)
+    # Le libellé peut manquer quand le médecin joint la photo de la demande à la place.
+    label = serializers.CharField(max_length=160, required=False, allow_blank=True)
+    proof_document_id = serializers.UUIDField(required=False, allow_null=True)
+
+    def validate(self, attrs):
+        if not (attrs.get("label") or "").strip() and not attrs.get("proof_document_id"):
+            raise serializers.ValidationError("Indiquez l’examen ou joignez la photo de la demande.")
+        return attrs
 
 
 class ProfessionalConsultationCreateSerializer(serializers.Serializer):

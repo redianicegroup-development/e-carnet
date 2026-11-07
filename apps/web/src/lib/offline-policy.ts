@@ -173,9 +173,11 @@ export function cacheArea(path: string): CacheArea | null {
   return CACHEABLE_PREFIXES.find((item) => route.startsWith(item.prefix))?.area ?? null;
 }
 
-/** Durée de conservation : 7 jours pour le patient et son compte, 24 h pour les données de tiers. */
+/** Durée de conservation : 7 jours pour le patient, son compte et le profil du médecin, 24 h pour les données de tiers. */
 export function cacheTtlMs(path: string): number {
   const area = cacheArea(path);
+  // Le profil du médecin (rattachements, établissement actif) sert à ouvrir l'espace : il tient 7 jours comme la session. Les données de patients restent à 24 h.
+  if (splitPath(path).route === "/api/v1/professionals/me/") return SNAPSHOT_MAX_AGE_MS;
   return area === "professional" || area === "establishment" ? THIRD_PARTY_CACHE_MAX_AGE_MS : SNAPSHOT_MAX_AGE_MS;
 }
 

@@ -6,7 +6,7 @@ import { useNetwork } from "./NetworkProvider";
 
 /** Bandeau en haut de l'application (tous les espaces et les pages publiques) : coupure, puis retour de la connexion. */
 export function OfflineBanner() {
-  const { phase, servedFromCopyAt } = useNetwork();
+  const { phase, servedFromCopyAt, refreshPending, refreshed, refreshNow } = useNetwork();
   const barRef = useRef<HTMLDivElement>(null);
   const visible = phase !== "online";
 
@@ -45,9 +45,9 @@ export function OfflineBanner() {
           </svg>
           <p className="net-banner__text">
             <strong>{RESTORED_BANNER_TITLE}</strong>{" "}
-            <span>{servedFromCopyAt ? "Actualisez la page pour afficher les données à jour." : "Vous êtes de nouveau en ligne."}</span>
+            <span>{refreshPending ? "Vos saisies en cours sont conservées : actualisez quand vous aurez terminé." : refreshed ? "Vos données ont été mises à jour." : "Vous êtes de nouveau en ligne."}</span>
           </p>
-          {servedFromCopyAt ? <button type="button" className="net-banner__action" onClick={() => window.location.reload()}>Actualiser</button> : null}
+          {refreshPending ? <button type="button" className="net-banner__action" onClick={refreshNow}>Actualiser</button> : null}
         </div>
       )}
     </div>

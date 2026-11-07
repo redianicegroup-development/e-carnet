@@ -79,7 +79,8 @@ test("la pré-consultation propose des constantes facultatives et des valeurs li
 
 test("le médecin relit les constantes libres, rédige trois blocs et prescrit en lignes structurées avant de signer", () => {
   const consultation = read("src/components/ProfessionalConsultations.tsx");
-  for (const text of [/Motif et symptômes/, /Examen et diagnostic/, /Conduite à tenir/, /prescription_lines/, /requested_exams/, /parseVitalsForm/, /Tension et glycémie/]) assert.match(consultation, text);
+  for (const text of [/Quel est le motif de la consultation/, /Quelles constantes ont été relevées/, /Examen clinique/, /Diagnostic/, /Conduite à tenir/, /Conclusion/, /prescription_lines/, /requested_exams/, /parseVitalsForm/, /<VitalsPicker/]) assert.match(consultation, text);
+  assert.match(read("src/components/consultation/ConsultationParts.tsx"), /Tension et glycémie/);
 });
 
 test("le patient retrouve chaque consultation comme une page « Visites » du carnet papier", () => {

@@ -179,6 +179,9 @@ class ExamRequest(models.Model):
     kind = models.CharField(max_length=16, choices=KIND_CHOICES)
     label = models.CharField(max_length=160)
     status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="requested")
+    # Photo de la demande (ex. le bon d'examen papier), prise par le médecin comme preuve. Ce n'est PAS un résultat :
+    # `MedicalDocument.exam_request` reste le seul lien « résultat reçu ».
+    proof_document = models.ForeignKey("MedicalDocument", null=True, blank=True, on_delete=models.SET_NULL, related_name="exam_request_proofs")
 
     class Meta:
         ordering = ("position",)

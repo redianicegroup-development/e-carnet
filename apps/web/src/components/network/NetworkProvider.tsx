@@ -25,9 +25,38 @@ export type NetworkValue = {
   /** Date (ms) de la copie locale affichée pendant la coupure, sinon `null`. */
   servedFromCopyAt: number | null;
   recheck: () => Promise<boolean>;
+  /** Change à chaque actualisation automatique au retour de la connexion : l'espace remonte ses pages, qui relisent leurs données. */
+  refreshKey: number;
+  /** Vrai quand des saisies en cours empêchent l'actualisation automatique (rien n'est effacé) : le bandeau propose « Actualiser ». */
+  refreshPending: boolean;
+  /** Vrai juste après une actualisation automatique. */
+  refreshed: boolean;
+  refreshNow: () => void;
 };
 
-const NetworkContext = createContext<NetworkValue>({ online: true, phase: "online", servedFromCopyAt: null, recheck: async () => true });
+const NetworkContext = createContext<NetworkValue>({ online: true, phase: "online", servedFromCopyAt: null, recheck: async () => true, refreshKey: 0, refreshPending: false, refreshed: false, refreshNow: () => {} });
+
+/* Saisies en cours : un champ de formulaire modifié par la personne. À la reconnexion, on n'actualise pas automatiquement tant qu'une saisie
+   non enregistrée est à l'écran (une consultation rédigée hors connexion ne doit jamais disparaître). */
+type EditableField = HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
+const editedFields = new Set<EditableField>();
+function trackEdit(event: Event) {
+  const field = event.target;
+  if (!(field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement || field instanceof HTMLSelectElement)) return;
+  if (field instanceof HTMLInputElement && ["search", "button", "submit", "reset"].includes(field.type)) return;
+  if (field.closest("form")) editedFields.add(field);
+}
+function hasUnsavedInput(): boolean {
+  for (const field of Array.from(editedFields)) {
+    if (!field.isConnected) { editedFields.delete(field); continue; }
+    if (field instanceof HTMLInputElement && (field.type === "checkbox" || field.type === "radio")) { if (field.checked) return true; continue; }
+    if (field instanceof HTMLInputElement && field.type === "file") { if (field.files && field.files.length > 0) return true; continue; }
+    if (field.value.trim()) return true;
+  }
+  return false;
+}
+/** Une coupure plus courte que cela n'est qu'un battement de réseau : pas d'actualisation. */
+const MIN_OFFLINE_FOR_REFRESH_MS = 2_000;
 export const useNetwork = () => useContext(NetworkContext);
 
 async function ping(): Promise<PingVerdict> {
@@ -47,6 +76,10 @@ export function NetworkProvider({ children }: { children: ReactNode }) {
   const [online, setOnline] = useState(true);
   const [phase, setPhase] = useState<NetworkPhase>("online");
   const [servedFromCopyAt, setServedFromCopyAt] = useState<number | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [refreshPending, setRefreshPending] = useState(false);
+  const [refreshed, setRefreshed] = useState(false);
+  const offlineSince = useRef<number | null>(null);
   const onlineRef = useRef(true);
   const failuresRef = useRef(0);
   const servedRef = useRef<number | null>(null);
@@ -59,12 +92,34 @@ export function NetworkProvider({ children }: { children: ReactNode }) {
     setOnline(next);
     window.clearTimeout(restoreTimer.current);
     if (next) {
+      // Retour de la connexion : les pages relisent leurs données TOUTES SEULES, sauf s'il y a une saisie non enregistrée à l'écran.
+      const offlineFor = offlineSince.current ? Date.now() - offlineSince.current : 0;
+      offlineSince.current = null;
+      let pending = false;
+      let didRefresh = false;
+      if (offlineFor >= MIN_OFFLINE_FOR_REFRESH_MS || servedRef.current !== null) {
+        if (hasUnsavedInput()) pending = true;
+        else { setRefreshKey((value) => value + 1); servedRef.current = null; setServedFromCopyAt(null); didRefresh = true; }
+      }
+      setRefreshPending(pending);
+      setRefreshed(didRefresh);
       setPhase("restored");
-      restoreTimer.current = window.setTimeout(() => { setPhase("online"); servedRef.current = null; setServedFromCopyAt(null); }, servedRef.current ? RESTORED_WITH_REFRESH_MS : RESTORED_BANNER_MS);
+      restoreTimer.current = window.setTimeout(() => { setPhase("online"); servedRef.current = null; setServedFromCopyAt(null); setRefreshPending(false); setRefreshed(false); }, pending ? RESTORED_WITH_REFRESH_MS : RESTORED_BANNER_MS);
       window.dispatchEvent(new Event(NETWORK_RESTORED_EVENT));
     } else {
+      if (offlineSince.current === null) offlineSince.current = Date.now();
       setPhase("offline");
     }
+  }, []);
+
+  const refreshNow = useCallback(() => {
+    window.clearTimeout(restoreTimer.current);
+    servedRef.current = null;
+    setServedFromCopyAt(null);
+    setRefreshPending(false);
+    setRefreshed(false);
+    setRefreshKey((value) => value + 1);
+    setPhase(onlineRef.current ? "online" : "offline");
   }, []);
 
   const recheck = useCallback(async (): Promise<boolean> => {
@@ -99,6 +154,8 @@ export function NetworkProvider({ children }: { children: ReactNode }) {
       setServedFromCopyAt(oldest);
     };
     const onVisible = () => { if (document.visibilityState === "visible") void recheck(); };
+    document.addEventListener("input", trackEdit, true);
+    document.addEventListener("change", trackEdit, true);
     window.addEventListener("offline", goOffline);
     window.addEventListener("online", goOnline);
     window.addEventListener(NETWORK_FAILURE_EVENT, onFailure);
@@ -106,6 +163,8 @@ export function NetworkProvider({ children }: { children: ReactNode }) {
     document.addEventListener("visibilitychange", onVisible);
     const interval = window.setInterval(() => { if (document.visibilityState === "visible") void recheck(); }, HEARTBEAT_INTERVAL_MS);
     return () => {
+      document.removeEventListener("input", trackEdit, true);
+      document.removeEventListener("change", trackEdit, true);
       window.removeEventListener("offline", goOffline);
       window.removeEventListener("online", goOnline);
       window.removeEventListener(NETWORK_FAILURE_EVENT, onFailure);
@@ -117,6 +176,6 @@ export function NetworkProvider({ children }: { children: ReactNode }) {
     };
   }, [recheck, setConnected]);
 
-  const value = useMemo<NetworkValue>(() => ({ online, phase, servedFromCopyAt, recheck }), [online, phase, servedFromCopyAt, recheck]);
+  const value = useMemo<NetworkValue>(() => ({ online, phase, servedFromCopyAt, recheck, refreshKey, refreshPending, refreshed, refreshNow }), [online, phase, servedFromCopyAt, recheck, refreshKey, refreshPending, refreshed, refreshNow]);
   return <NetworkContext.Provider value={value}>{children}</NetworkContext.Provider>;
 }

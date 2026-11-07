@@ -53,7 +53,7 @@ test("copie chiffrée : seules les lectures de l'API du patient, du professionne
 test("copie chiffrée : 7 jours pour le patient et son compte, 24 h pour les données de tiers ; groupe = ressource sans identifiant", () => {
   assert.equal(policy.cacheTtlMs("/api/v1/patient/declarations/"), 7 * DAY);
   assert.equal(policy.cacheTtlMs("/api/v1/identity/me/"), 7 * DAY);
-  assert.equal(policy.cacheTtlMs("/api/v1/professionals/me/"), DAY);
+  assert.equal(policy.cacheTtlMs("/api/v1/professionals/me/"), 7 * DAY, "le profil du médecin ouvre l'espace : 7 jours comme la session");
   assert.equal(policy.cacheTtlMs("/api/v1/establishments/"), DAY);
   assert.equal(policy.cacheArea("/api/v1/establishments/x/"), "establishment");
   assert.equal(policy.cacheArea("/api/v1/admin/x/"), null);
@@ -115,9 +115,9 @@ test("copie chiffrée : relecture exacte, mais ni le contenu ni l'adresse n'appa
 test("copie chiffrée : périmée = supprimée ; 7 jours pour le patient, 24 h pour les données de tiers", async () => {
   const idb = freshBrowser();
   await cache.rememberResponse("/api/v1/patient/declarations/", json([1]), NOW);
-  await cache.rememberResponse("/api/v1/professionals/me/", json({ x: 1 }), NOW);
+  await cache.rememberResponse("/api/v1/establishments/", json({ x: 1 }), NOW);
   assert.ok(await cache.recallResponse("/api/v1/patient/declarations/", NOW + 6 * DAY));
-  assert.equal(await cache.recallResponse("/api/v1/professionals/me/", NOW + 25 * HOUR), null, "tiers : 24 h");
+  assert.equal(await cache.recallResponse("/api/v1/establishments/", NOW + 25 * HOUR), null, "tiers : 24 h");
   assert.equal(idb.rows(CACHE_DB, "entries").length, 1, "la copie périmée est SUPPRIMÉE, pas seulement ignorée");
   assert.equal(await cache.recallResponse("/api/v1/patient/declarations/", NOW + 8 * DAY), null, "patient : 7 jours");
   assert.equal(idb.rows(CACHE_DB, "entries").length, 0);

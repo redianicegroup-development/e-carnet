@@ -6,6 +6,7 @@ import { apiGet } from "../infrastructure/api/client";
 import { displayName, useSpaceAccount } from "./shell/SpaceShell";
 import { Icon, type IconName } from "./ui/Icon";
 import { PatientHomeIdentity } from "./PatientHomeIdentity";
+import { PatientShareQrButton } from "./PatientShareQr";
 import { PatientToday } from "./PatientToday";
 import { SetupCard, type SetupStep } from "./SetupCard";
 
@@ -76,7 +77,7 @@ export function PatientHome() {
           <h1 className="hero-title">Votre carnet,<em>toujours avec vous</em></h1>
           <div className="button-row">
             <Link className="button" href="/patient/carnet"><Icon name="document" size={18} /> Mon carnet</Link>
-            <Link className="button dark" href="/patient/consultations"><Icon name="qr" size={18} /> Partager en QR</Link>
+            <PatientShareQrButton />
           </div>
         </header>
       )}

@@ -23,7 +23,7 @@ export function SettingsDirectory({ items, activeId, onSelect, onLogout, logoutD
   const confirm = useConfirm();
   async function askLogout() {
     if (!onLogout) return;
-    const ok = await confirm({ title: "Se déconnecter ?", message: "Vous allez être déconnecté de cet appareil.", note: "Vos données restent enregistrées dans votre compte.", confirmLabel: "Me déconnecter", cancelLabel: "Rester connecté", tone: "neutral", mood: "decision" });
+    const ok = await confirm({ title: "Se déconnecter ?", message: "Vous allez être déconnecté de cet appareil.", note: "Vos données restent enregistrées dans votre compte.", confirmLabel: "Me déconnecter", cancelLabel: "Rester connecté", tone: "danger", mood: "farewell" });
     if (!ok) return;
     clearGreetingSession();
     onLogout();

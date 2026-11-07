@@ -5,7 +5,7 @@ from xml.etree import ElementTree
 from rest_framework.exceptions import ValidationError
 
 from apps.professionals.access import professional_clinical_access_error
-from .models import AccessGrant, CareEncounter, Consultation, ConsultationRevision, ExamRequest, PreConsultationRevision, PrescriptionLine
+from .models import AccessGrant, CareEncounter, Consultation, ConsultationRevision, ExamRequest, MedicalDocument, PreConsultationRevision, PrescriptionLine
 from .services import SELF_ACCESS_MESSAGE, is_own_patient_file, require_scope
 from .vitals import build_consultation_vitals
 
@@ -80,10 +80,19 @@ def validate_consultation(*, professional, data):
         )
         for index, line in enumerate(data.get("prescription_lines", []))
     ]
-    exam_requests = [
-        ExamRequest(consultation=consultation, position=index, kind=exam["kind"], label=exam["label"].strip())
-        for index, exam in enumerate(data.get("requested_exams", []))
-    ]
+    exam_requests = []
+    used_proofs = set()
+    for index, exam in enumerate(data.get("requested_exams", [])):
+        proof = None
+        proof_id = exam.get("proof_document_id")
+        if proof_id:
+            # La photo doit avoir été envoyée par ce médecin, pour ce patient, et ne servir qu'une fois.
+            proof = MedicalDocument.objects.filter(id=proof_id, patient=grant.patient, professional=professional, exam_request_proofs__isnull=True).first()
+            if not proof or proof_id in used_proofs:
+                raise ValidationError("La photo de la demande d’examen est introuvable ou déjà utilisée.")
+            used_proofs.add(proof_id)
+        label = (exam.get("label") or "").strip() or "Examen (voir la photo jointe)"
+        exam_requests.append(ExamRequest(consultation=consultation, position=index, kind=exam["kind"], label=label, proof_document=proof))
     PrescriptionLine.objects.bulk_create(prescription_lines)
     ExamRequest.objects.bulk_create(exam_requests)
     # Clôture par le médecin : l’établissement vient de la session du médecin, jamais d’un choix du patient.
@@ -93,5 +102,5 @@ def validate_consultation(*, professional, data):
     encounter.facility_label = establishment.name
     encounter.save(update_fields=("status", "closed_at", "establishment", "facility_label", "updated_at"))
     PreConsultationRevision.objects.create(encounter=encounter, snapshot={"reason": encounter.reason, "observations": encounter.observations, "vitals": encounter.vitals, "facility_label": encounter.facility_label, "recorded_with_help": encounter.recorded_with_help, "closed_by": "professional", "professional_id": str(professional.id), "access_grant_id": str(grant.id)})
-    ConsultationRevision.objects.create(consultation=consultation, snapshot={"reason": consultation.reason, "symptoms": consultation.symptoms, "clinical_exam": consultation.clinical_exam, "diagnosis": consultation.diagnosis, "observations": consultation.observations, "vitals": consultation.vitals, "prescription_lines": [{"drug_name": line.drug_name, "dosage": line.dosage, "posology": line.posology, "duration": line.duration, "instructions": line.instructions} for line in prescription_lines], "requested_exams": [{"kind": exam.kind, "label": exam.label} for exam in exam_requests], "conclusion": consultation.conclusion, "care_plan": consultation.care_plan, "professional_id": str(professional.id), "establishment_id": str(establishment.id), "access_grant_id": str(grant.id), "source_encounter_id": str(encounter.id)})
+    ConsultationRevision.objects.create(consultation=consultation, snapshot={"reason": consultation.reason, "symptoms": consultation.symptoms, "clinical_exam": consultation.clinical_exam, "diagnosis": consultation.diagnosis, "observations": consultation.observations, "vitals": consultation.vitals, "prescription_lines": [{"drug_name": line.drug_name, "dosage": line.dosage, "posology": line.posology, "duration": line.duration, "instructions": line.instructions} for line in prescription_lines], "requested_exams": [{"kind": exam.kind, "label": exam.label, "proof_document_id": str(exam.proof_document_id) if exam.proof_document_id else None} for exam in exam_requests], "conclusion": consultation.conclusion, "care_plan": consultation.care_plan, "professional_id": str(professional.id), "establishment_id": str(establishment.id), "access_grant_id": str(grant.id), "source_encounter_id": str(encounter.id)})
     return consultation

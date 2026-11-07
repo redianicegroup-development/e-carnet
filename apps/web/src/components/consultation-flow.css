@@ -1,3 +1,23 @@
 /* Consultations du patient : étape 2 (accès temporaire) verrouillée tant que la pré-consultation n'est pas enregistrée. */
 .flow-locked { display: flex; align-items: flex-start; gap: 10px; margin: 0; }
 .flow-locked .icon { flex: 0 0 auto; margin-top: 2px; }
+
+/* Consultation du médecin : choix en liste, photo de la demande d'examen, patient et établissement reconnaissables */
+.pick-or-other { display: grid; gap: 8px; min-width: 0; }
+.pick-or-other .field select { min-height: 48px; font-size: 1rem; }
+.exam-photo { display: grid; gap: 8px; margin-top: 10px; }
+.exam-photo__preview { display: flex; align-items: center; gap: 12px; }
+.exam-photo__preview img { width: 84px; height: 84px; object-fit: cover; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-tint); }
+.exam-photo__preview p { margin: 2px 0 8px; }
+.consult-context { display: grid; gap: 12px; }
+.consult-establishment { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface-tint); }
+.consult-establishment > div { min-width: 0; display: grid; gap: 2px; }
+.patient-picker { display: grid; gap: 8px; }
+.patient-option { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); color: var(--text); text-align: left; cursor: pointer; }
+.patient-option > span:last-child { min-width: 0; display: grid; gap: 2px; overflow-wrap: anywhere; }
+.patient-option[aria-pressed="true"] { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 12%, var(--surface)); }
+.request-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.request-row__who { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.request-row__who > div { min-width: 0; overflow-wrap: anywhere; }
+.request-row__avatars { position: relative; display: inline-flex; flex: 0 0 auto; }
+.request-row__avatars .establishment-logo { position: absolute; right: -6px; bottom: -6px; border-width: 2px; border-color: var(--surface); }

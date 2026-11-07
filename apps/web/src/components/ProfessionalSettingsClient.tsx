@@ -15,10 +15,12 @@ import { AccountActionRequestsSettingsClient } from "./AccountActionRequestsSett
 import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
 import { cleanUpBeforeLogout } from "../lib/logout";
 import { ProfessionalCredentialsSettings } from "./ProfessionalCredentialsSettings";
+import { EstablishmentLogo } from "./EstablishmentLogo";
+import "./establishment-logo.css";
 import "./establishment-settings.css";
 
 type Profile = { professional_title: string; specialty: string; professional_identifier: string; active_establishment: string | null; stamp_uploaded: boolean; signature_uploaded: boolean };
-type Establishment = { id: string; name: string; status: string };
+type Establishment = { id: string; name: string; status: string; logo?: string };
 type Account = { email: string; first_name: string; last_name: string; avatar_url?: string; is_privileged: boolean; contexts: { role: string; is_active: boolean }[] };
 type Envelope<T> = { data?: T; message?: string; detail?: string };
 const API = "";
@@ -98,7 +100,7 @@ export function ProfessionalSettingsClient() {
 
       {activeSection === "professionnel" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Profil professionnel</span><dl className="settings-details"><div><dt>Profession</dt><dd>{profile?.professional_title || "À renseigner"}</dd></div><div><dt>Spécialité</dt><dd>{profile?.specialty || "À renseigner"}</dd></div></dl><p className="settings-note muted">La spécialité est déclarée par vous. Les justificatifs médicaux ne sont pas collectés par Mon E‑Carnet : leur vérification relève de l’établissement.</p><div className="actions"><Link className="button" href="/professionnel/onboarding?retour=parametres">Modifier mon profil</Link></div></div>{profile && <ProfessionalCredentialsSettings profile={profile} onSaved={(saved) => setProfile((current) => current ? { ...current, ...saved } : current)} />}</SettingsModal>}
 
-      {activeSection === "etablissement" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Rattachement</span><dl className="settings-details"><div><dt>Établissement actif</dt><dd>{activeEstablishment?.name ?? (profile?.active_establishment ? "Établissement actif" : "Aucun établissement actif")}</dd></div><div><dt>Email de connexion</dt><dd>{account?.email ?? (loading ? "Chargement…" : "Non disponible")}</dd></div></dl><div className="actions"><Link className="button" href="/professionnel/acces">Gérer les rattachements</Link></div></div></SettingsModal>}
+      {activeSection === "etablissement" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Rattachement</span><dl className="settings-details"><div><dt>Établissement actif</dt><dd>{activeEstablishment ? <span className="professional-dossier__etab"><EstablishmentLogo logo={activeEstablishment.logo} name={activeEstablishment.name} size={32} />{activeEstablishment.name}</span> : (profile?.active_establishment ? "Établissement actif" : "Aucun établissement actif")}</dd></div><div><dt>Email de connexion</dt><dd>{account?.email ?? (loading ? "Chargement…" : "Non disponible")}</dd></div></dl><div className="actions"><Link className="button" href="/professionnel/acces">Gérer les rattachements</Link></div></div></SettingsModal>}
 
       {activeSection === "compte" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Préférences personnelles</span><p className="muted">Responsable du compte : {fullName} · {account?.email ?? "Email non disponible"}</p><ThemeSettingsClient compact space="professional" /></div></SettingsModal>}
 

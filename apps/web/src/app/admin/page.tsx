@@ -159,7 +159,7 @@ export default function AdminPage() {
   }
 
   async function askSignOut() {
-    const ok = await confirm({ title: "Fermer la session administrateur ?", message: "Vous devrez vous reconnecter pour revoir la console.", confirmLabel: "Me déconnecter", cancelLabel: "Rester connecté", tone: "neutral", mood: "decision" });
+    const ok = await confirm({ title: "Fermer la session administrateur ?", message: "Vous devrez vous reconnecter pour revoir la console.", confirmLabel: "Me déconnecter", cancelLabel: "Rester connecté", tone: "danger", mood: "farewell" });
     if (ok) await signOut();
   }
 

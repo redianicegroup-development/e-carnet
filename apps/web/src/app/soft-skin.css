@@ -244,3 +244,10 @@ body .greeting-toast__character, body .cookie-consent__illustration { background
   body .gm__item { filter: none; }
 }
 @media print { body .card, body .record, body .ecard { box-shadow: none; background: #fff; } }
+
+/* Déconnexion, révocation, fin de rattachement : toujours en rouge plein, avec leur confirmation rouge (11/2026). */
+body .settings-directory > .setting-item--danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+body .settings-directory > .setting-item--danger .setting-item__icon { background: rgba(255, 255, 255, .2); color: #fff; }
+body .sb__menu-item.sb__menu-item--danger, body .gm .sb__menu-item.sb__menu-item--danger { background: var(--danger); color: #fff; }
+body .sb__menu-item.sb__menu-item--danger:hover, body .sb__menu-item.sb__menu-item--danger:focus-visible, body .gm .sb__menu-item.sb__menu-item--danger:hover { background: color-mix(in srgb, var(--danger) 90%, #000); color: #fff; }
+body .sb__menu-item.sb__menu-item--danger .icon { color: #fff; }

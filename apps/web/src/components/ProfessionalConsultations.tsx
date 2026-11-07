@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ApiError } from "../infrastructure/api/client";
 import { useConfirm } from "./modal/ConfirmProvider";
@@ -7,59 +8,56 @@ import { ConsultationSeal } from "./ConsultationSeal";
 import { ProfessionalMeasurementEntry } from "./ProfessionalMeasurementEntry";
 import { ProfessionalTemplateApprovals } from "./ProfessionalTemplateApprovals";
 import { CollapsibleSection } from "./ui/CollapsibleSection";
-import { Encounter, listAuthorizedEncounters, listProfessionalConsultations, listProfessionalGrants, ProfessionalGrant, Consultation, validateProfessionalConsultation, type ConsultationInput } from "../application/professional-access-grants";
-import { EXAM_KIND_LABELS, type ExamKind } from "../lib/care-records";
-import { emptyVitalsForm, parseVitalsForm, vitalsToForm, VITAL_FIELDS, type VitalsForm } from "../lib/vitals";
+import { PersonAvatar } from "./ui/PersonAvatar";
+import { EstablishmentLogo } from "./EstablishmentLogo";
+import { useProfessionalProfile } from "./ClinicalGate";
+import { ChipPicker, FormSection, VitalsPicker } from "./consultation/ConsultationParts";
+import { ExamPicker, PrescriptionPicker, type ExamDraft, type LineDraft } from "./consultation/OrderPickers";
+import { Encounter, listAuthorizedEncounters, listProfessionalConsultations, listProfessionalGrants, ProfessionalGrant, Consultation, uploadExamProof, validateProfessionalConsultation, type ConsultationInput } from "../application/professional-access-grants";
+import { CARE_PLAN_ITEMS, CLINICAL_FINDINGS, CONCLUSION_ITEMS, DIAGNOSES, buildPicked } from "../lib/consultation-options";
+import { buildObservations, OBSERVATIONS_MAX, OTHER_MAX, parseObservations, SYMPTOMS, type SymptomsForm } from "../lib/preconsult";
+import { emptyVitalsForm, parseVitalsForm, vitalsToForm, type VitalsForm } from "../lib/vitals";
+import "./consultation-flow.css";
 
-type LineDraft = { drug_name: string; dosage: string; posology: string; duration: string; instructions: string };
-type ExamDraft = { kind: ExamKind; label: string };
-const EMPTY_LINE: LineDraft = { drug_name: "", dosage: "", posology: "", duration: "", instructions: "" };
-const MAX_ORDER_LINES = 15;
+/* Consultation du médecin. Même expérience que la pré-consultation du patient : on SÉLECTIONNE (puces, listes), on n'écrit que l'« Autre ».
+   Le patient est choisi parmi ses autorisations actives DANS L'ÉTABLISSEMENT ACTIF, qui se règle depuis « Mon rattachement ». */
 
-/** Lignes d'ordonnance et examens demandés → charge utile. Une ligne entièrement vide est ignorée ; une ligne à moitié remplie est refusée. */
-function buildOrders(lines: LineDraft[], exams: ExamDraft[]): { ok: true; prescription_lines: NonNullable<ConsultationInput["prescription_lines"]>; requested_exams: NonNullable<ConsultationInput["requested_exams"]> } | { ok: false; message: string } {
+type PickState = { selected: string[]; other: string };
+const EMPTY_PICK: PickState = { selected: [], other: "" };
+
+type OrdersResult = { ok: true; prescription_lines: NonNullable<ConsultationInput["prescription_lines"]>; exams: ExamDraft[] } | { ok: false; message: string };
+
+/** Lignes d'ordonnance et examens → charge utile. Une ligne entièrement vide est ignorée ; une ligne à moitié remplie est refusée. */
+function checkOrders(lines: LineDraft[], exams: ExamDraft[]): OrdersResult {
   const prescription_lines: NonNullable<ConsultationInput["prescription_lines"]> = [];
   for (const line of lines) {
     const draft = { drug_name: line.drug_name.trim(), dosage: line.dosage.trim(), posology: line.posology.trim(), duration: line.duration.trim(), instructions: line.instructions.trim() };
     if (!Object.values(draft).some(Boolean)) continue;
-    if (!draft.drug_name) return { ok: false, message: "Ordonnance : indiquez le nom du médicament pour chaque ligne." };
-    if (!draft.posology) return { ok: false, message: `Ordonnance : précisez la posologie de ${draft.drug_name} (ex. 1 cp × 3/jour).` };
+    if (!draft.drug_name) return { ok: false, message: "Ordonnance : choisissez le médicament pour chaque ligne." };
+    if (!draft.posology) return { ok: false, message: `Ordonnance : choisissez la posologie de ${draft.drug_name}.` };
     prescription_lines.push(draft);
   }
-  const requested_exams = exams.map((exam) => ({ kind: exam.kind, label: exam.label.trim() })).filter((exam) => exam.label);
-  return { ok: true, prescription_lines, requested_exams };
-}
-
-function VitalsFields({ value, onChange }: { value: VitalsForm; onChange: (next: VitalsForm) => void }) {
-  return <fieldset className="visit-block"><legend>Constantes</legend><p className="muted">Relevées en pré-consultation : relisez-les, corrigez ou complétez. Laissez vide ce qui n&apos;a pas été mesuré. Tension et glycémie restent libres, sans conversion.</p><div className="vitals-grid">{VITAL_FIELDS.map((field) => <label className="field" key={field.key}><span>{field.label}{field.unit ? ` (${field.unit})` : ""}</span><input type={field.freeText ? "text" : "number"} inputMode={field.freeText ? "text" : "decimal"} autoComplete="off" maxLength={field.freeText ? 24 : undefined} step={field.freeText ? undefined : field.step} min={field.freeText ? undefined : field.min} max={field.freeText ? undefined : field.max} value={value[field.key]} onChange={(event) => onChange({ ...value, [field.key]: event.target.value })} placeholder={field.placeholder} /></label>)}</div><p className="muted vitals-grid__hint">Tension et glycémie : conserve la valeur et l’unité écrites sur le carnet, sans les convertir.</p></fieldset>;
-}
-
-function PrescriptionEditor({ lines, onChange }: { lines: LineDraft[]; onChange: (next: LineDraft[]) => void }) {
-  const update = (index: number, patch: Partial<LineDraft>) => onChange(lines.map((line, position) => (position === index ? { ...line, ...patch } : line)));
-  return <fieldset className="visit-block"><legend>Ordonnance</legend>{lines.length === 0 && <p className="muted">Aucun médicament prescrit.</p>}{lines.map((line, index) => <div className="order-line" key={index}><div className="order-line__fields"><label className="field"><span>Médicament</span><input maxLength={160} value={line.drug_name} onChange={(event) => update(index, { drug_name: event.target.value })} placeholder="Ex. Paracétamol" /></label><label className="field"><span>Dosage</span><input maxLength={80} value={line.dosage} onChange={(event) => update(index, { dosage: event.target.value })} placeholder="Ex. 1 g" /></label><label className="field"><span>Posologie</span><input maxLength={160} value={line.posology} onChange={(event) => update(index, { posology: event.target.value })} placeholder="Ex. 1 cp × 3/jour" /></label><label className="field"><span>Durée</span><input maxLength={80} value={line.duration} onChange={(event) => update(index, { duration: event.target.value })} placeholder="Ex. 5 jours" /></label><label className="field order-line__wide"><span>Instructions (facultatif)</span><input maxLength={240} value={line.instructions} onChange={(event) => update(index, { instructions: event.target.value })} placeholder="Ex. après les repas" /></label></div><button type="button" className="button order-line__remove" onClick={() => onChange(lines.filter((_, position) => position !== index))} aria-label={`Retirer la ligne ${index + 1}`}>Retirer</button></div>)}<button type="button" className="button" disabled={lines.length >= MAX_ORDER_LINES} onClick={() => onChange([...lines, { ...EMPTY_LINE }])}>Ajouter un médicament</button></fieldset>;
-}
-
-function ExamEditor({ exams, onChange }: { exams: ExamDraft[]; onChange: (next: ExamDraft[]) => void }) {
-  const update = (index: number, patch: Partial<ExamDraft>) => onChange(exams.map((exam, position) => (position === index ? { ...exam, ...patch } : exam)));
-  return <fieldset className="visit-block"><legend>Examens demandés</legend>{exams.length === 0 && <p className="muted">Aucun examen demandé.</p>}{exams.map((exam, index) => <div className="order-line order-line--exam" key={index}><div className="order-line__fields"><label className="field"><span>Type</span><select value={exam.kind} onChange={(event) => update(index, { kind: event.target.value as ExamKind })}>{(Object.keys(EXAM_KIND_LABELS) as ExamKind[]).map((kind) => <option key={kind} value={kind}>{EXAM_KIND_LABELS[kind]}</option>)}</select></label><label className="field order-line__wide"><span>Examen</span><input maxLength={160} value={exam.label} onChange={(event) => update(index, { label: event.target.value })} placeholder="Ex. NFS, radiographie du thorax" /></label></div><button type="button" className="button order-line__remove" onClick={() => onChange(exams.filter((_, position) => position !== index))} aria-label={`Retirer l&apos;examen ${index + 1}`}>Retirer</button></div>)}<button type="button" className="button" disabled={exams.length >= MAX_ORDER_LINES} onClick={() => onChange([...exams, { kind: "analysis", label: "" }])}>Ajouter un examen</button><p className="muted">Un examen reste « demandé » tant que son résultat n&apos;est pas arrivé dans le carnet.</p></fieldset>;
+  // Un examen sans libellé ni photo est ignoré ; avec une photo seule, la demande reste valable (la photo est la preuve).
+  return { ok: true, prescription_lines, exams: exams.filter((exam) => exam.label.trim() || exam.photo) };
 }
 
 const MOCK_CONSULTATIONS: Consultation[] = [];
 
 export function ProfessionalConsultations() {
   const confirm = useConfirm();
+  const profile = useProfessionalProfile();
   const [grants, setGrants] = useState<ProfessionalGrant[]>([]);
   const [consultations, setConsultations] = useState<Consultation[]>(MOCK_CONSULTATIONS);
   const [encounters, setEncounters] = useState<Encounter[]>([]);
   const [grantId, setGrantId] = useState("");
   const [encounterId, setEncounterId] = useState("");
-  const [conclusion, setConclusion] = useState("");
-  const [carePlan, setCarePlan] = useState("");
   const [reason, setReason] = useState("");
-  const [symptoms, setSymptoms] = useState("");
-  const [clinicalExam, setClinicalExam] = useState("");
-  const [diagnosis, setDiagnosis] = useState("");
+  const [symptoms, setSymptoms] = useState<SymptomsForm>({ selected: [], other: "" });
   const [vitalsForm, setVitalsForm] = useState<VitalsForm>(emptyVitalsForm());
+  const [clinical, setClinical] = useState<PickState>(EMPTY_PICK);
+  const [diagnosis, setDiagnosis] = useState<PickState>(EMPTY_PICK);
+  const [carePlan, setCarePlan] = useState<PickState>(EMPTY_PICK);
+  const [conclusion, setConclusion] = useState<PickState>(EMPTY_PICK);
   const [lines, setLines] = useState<LineDraft[]>([]);
   const [exams, setExams] = useState<ExamDraft[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,6 +66,10 @@ export function ProfessionalConsultations() {
   const [message, setMessage] = useState("Chargement des autorisations actives…");
   const [search, setSearch] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
+  // Photos déjà envoyées : si la signature échoue après l'envoi, un nouvel essai réutilise la photo au lieu de la renvoyer.
+  const uploadedProofs = useRef(new WeakMap<File, string>());
+
+  const activeMembership = profile.status === "ready" ? profile.profile.memberships.find((item) => item.establishment_id === profile.profile.active_establishment && item.status === "active") ?? null : null;
 
   useEffect(() => {
     function onShortcut(event: KeyboardEvent) {
@@ -90,14 +92,23 @@ export function ProfessionalConsultations() {
     let active = true;
     Promise.all([listProfessionalGrants(), listProfessionalConsultations()]).then(([allGrants, allConsultations]) => {
       if (!active) return;
-      setGrants(allGrants.filter((grant) => grant.status === "active" && grant.scope.includes("preconsultation")));
+      const usable = allGrants.filter((grant) => grant.status === "active" && grant.scope.includes("preconsultation"));
+      setGrants(usable);
       setConsultations(allConsultations);
-      setMessage("Données chargées.");
+      setMessage(usable.length === 1 ? "Un patient a autorisé son accès." : "Données chargées.");
+      // Un seul patient autorisé : inutile de le choisir, sa pré-consultation s'ouvre directement.
+      if (usable.length === 1) void chooseGrant(usable[0].id);
     }).catch((error: unknown) => {
       if (active) setMessage(error instanceof ApiError ? error.message : "Impossible de charger les consultations.");
     }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, []);
+
+  function resetForm() {
+    setReason(""); setSymptoms({ selected: [], other: "" }); setVitalsForm(emptyVitalsForm());
+    setClinical(EMPTY_PICK); setDiagnosis(EMPTY_PICK); setCarePlan(EMPTY_PICK); setConclusion(EMPTY_PICK);
+    setLines([]); setExams([]);
+  }
 
   async function chooseGrant(value: string) {
     setGrantId(value);
@@ -111,7 +122,7 @@ export function ProfessionalConsultations() {
       setEncounterId(drafts[0]?.id ?? "");
       // Le brouillon du patient (ou de l'infirmier) préremplit la consultation : on relit, corrige et complète au lieu de ressaisir.
       setReason(drafts[0]?.reason ?? "");
-      setSymptoms(drafts[0]?.observations ?? "");
+      setSymptoms(parseObservations(drafts[0]?.observations));
       setVitalsForm(vitalsToForm(drafts[0]?.vitals));
       setMessage(drafts.length ? "Pré-consultation du patient chargée." : "Le patient n’a pas encore préparé de pré-consultation.");
     } catch (error) {
@@ -124,10 +135,12 @@ export function ProfessionalConsultations() {
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     if (!grantId || !encounterId) return;
-    if (!conclusion.trim() && !diagnosis.trim()) { setMessage("Renseignez au moins le diagnostic ou la conclusion avant de signer."); return; }
+    const diagnosisText = buildPicked(diagnosis.selected, DIAGNOSES, diagnosis.other);
+    const conclusionText = buildPicked(conclusion.selected, CONCLUSION_ITEMS, conclusion.other);
+    if (!conclusionText && !diagnosisText) { setMessage("Choisissez au moins le diagnostic ou la conclusion avant de signer."); return; }
     const parsedVitals = parseVitalsForm(vitalsForm);
     if (!parsedVitals.ok) { setMessage(parsedVitals.message); return; }
-    const orders = buildOrders(lines, exams);
+    const orders = checkOrders(lines, exams);
     if (!orders.ok) { setMessage(orders.message); return; }
     const accepted = await confirm({
       title: "Terminer et signer la consultation ?",
@@ -139,30 +152,31 @@ export function ProfessionalConsultations() {
     if (!accepted) return;
     setSubmitting(true);
     try {
+      const requested_exams: NonNullable<ConsultationInput["requested_exams"]> = [];
+      for (const exam of orders.exams) {
+        let proof: string | null = null;
+        if (exam.photo) {
+          proof = uploadedProofs.current.get(exam.photo) ?? null;
+          if (!proof) { proof = (await uploadExamProof(grantId, exam.photo)).id; uploadedProofs.current.set(exam.photo, proof); }
+        }
+        requested_exams.push({ kind: exam.kind, label: exam.label.trim(), ...(proof ? { proof_document_id: proof } : {}) });
+      }
       const consultation = await validateProfessionalConsultation({
         access_grant_id: grantId,
         source_encounter_id: encounterId,
         reason: reason.trim(),
-        symptoms: symptoms.trim(),
-        clinical_exam: clinicalExam.trim(),
-        diagnosis: diagnosis.trim(),
+        symptoms: buildObservations(symptoms),
+        clinical_exam: buildPicked(clinical.selected, CLINICAL_FINDINGS, clinical.other),
+        diagnosis: diagnosisText,
         vitals: parsedVitals.vitals,
         prescription_lines: orders.prescription_lines,
-        requested_exams: orders.requested_exams,
-        conclusion,
-        care_plan: carePlan,
+        requested_exams,
+        conclusion: conclusionText,
+        care_plan: buildPicked(carePlan.selected, CARE_PLAN_ITEMS, carePlan.other),
         attestation_svg: "<svg></svg>",
       });
       setConsultations((current) => [consultation, ...current]);
-      setConclusion("");
-      setCarePlan("");
-      setReason("");
-      setSymptoms("");
-      setClinicalExam("");
-      setDiagnosis("");
-      setVitalsForm(emptyVitalsForm());
-      setLines([]);
-      setExams([]);
+      resetForm();
       setEncounters([]);
       setEncounterId("");
       setGrantId("");
@@ -176,6 +190,27 @@ export function ProfessionalConsultations() {
 
   const filteredConsultations = consultations.filter((item) => `${item.facility_label} ${item.reason} ${item.professional_name}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()));
   const selectedGrant = grants.find((grant) => grant.id === grantId) ?? null;
+  const symptomsTooLong = buildObservations(symptoms).length > OBSERVATIONS_MAX;
 
-  return <div className="stack-lg"><ProfessionalTemplateApprovals /><section className="hero-page"><span className="eyebrow">Provenance conservée</span><h1>Compléter sans ressaisir.</h1><p className="muted">La dernière pré-consultation préparée par le patient (ou par l’infirmier avec son téléphone) s’affiche dès que son autorisation est active. En signant, vous la clôturez : l’auteur et l’établissement sont imposés par le serveur.</p><p className="notice" role="status" aria-live="polite">{message}</p></section><section className="patient-grid"><form className="card" onSubmit={submit}><span className="eyebrow">Nouvelle validation</span><h2>Terminer la consultation</h2>{loading ? <p className="empty">Chargement des autorisations…</p> : grants.length === 0 ? <p className="empty">Aucune autorisation active permettant de reprendre une pré-consultation.</p> : <><label className="field"><span>Autorisation active</span><select required value={grantId} onChange={(event) => chooseGrant(event.target.value)}><option value="">Choisir une autorisation</option>{grants.map((grant) => <option key={grant.id} value={grant.id}>{grant.facility_label} · accès {grant.reference}</option>)}</select></label><div className="preconsult-read" aria-live="polite"><span className="preconsult-read__label">Pré-consultation du patient</span>{loadingEncounters ? <p className="muted">Chargement…</p> : !grantId ? <p className="muted">Choisissez une autorisation pour lire la dernière pré-consultation.</p> : encounters.length === 0 ? <p className="empty">Aucune pré-consultation en préparation pour ce patient.</p> : encounters.map((encounter) => <article className="record preconsult-read__item" key={encounter.id}><div><strong>{encounter.reason || "Sans motif"}</strong>{encounter.observations && <p>{encounter.observations}</p>}{Object.keys(encounter.template_responses ?? {}).length > 0 && <dl className="kv">{Object.entries(encounter.template_responses ?? {}).map(([key, value]) => { const field = encounter.template_fields?.find((entry) => entry.key === key); return <div key={key}><dt>{field?.label ?? key}</dt><dd>{typeof value === "boolean" ? (value ? "Oui" : "Non") : String(value)}{field?.unit ? ` ${field.unit}` : ""}</dd></div>; })}</dl>}{encounter.recorded_with_help && <p className="muted">Rempli avec l’aide de : {encounter.recorded_with_help}</p>}</div><span className="badge pending">Brouillon</span></article>)}</div><VitalsFields value={vitalsForm} onChange={setVitalsForm} /><fieldset className="visit-block"><legend>Motif et symptômes</legend><label className="field"><span>Motif</span><input maxLength={240} value={reason} onChange={(event) => setReason(event.target.value)} /></label><label className="field"><span>Symptômes</span><textarea maxLength={4000} rows={3} value={symptoms} onChange={(event) => setSymptoms(event.target.value)} /></label></fieldset><fieldset className="visit-block"><legend>Examen et diagnostic</legend><label className="field"><span>Examen clinique</span><textarea maxLength={4000} rows={3} value={clinicalExam} onChange={(event) => setClinicalExam(event.target.value)} /></label><label className="field"><span>Diagnostic</span><textarea maxLength={2000} rows={2} value={diagnosis} onChange={(event) => setDiagnosis(event.target.value)} /></label></fieldset><fieldset className="visit-block"><legend>Conduite à tenir</legend><label className="field"><span>Conclusion</span><textarea maxLength={4000} rows={3} value={conclusion} onChange={(event) => setConclusion(event.target.value)} /></label><label className="field"><span>Conduite à tenir</span><textarea maxLength={4000} rows={3} value={carePlan} onChange={(event) => setCarePlan(event.target.value)} /></label></fieldset><PrescriptionEditor lines={lines} onChange={setLines} /><ExamEditor exams={exams} onChange={setExams} /><p className="muted">Une attestation SVG est enregistrée avec la validation. Elle ne constitue pas une signature électronique qualifiée.</p><ConsultationSeal /><button className="button primary" type="submit" disabled={submitting || !encounterId}>{submitting ? "Signature…" : "Terminer et signer"}</button></>}</form>{selectedGrant && <ProfessionalMeasurementEntry grant={selectedGrant} />}<div className="section-grid"><CollapsibleSection title="Mes consultations" icon="stethoscope" hint="Historique signé"><div className="professional-history"><div className="professional-history__heading"><label className="professional-quick-search"><span className="sr-only">Rechercher établissement ou motif</span><input ref={searchRef} type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Établissement, motif…" /><kbd aria-hidden="true">/</kbd></label></div>{loading ? <p className="empty">Chargement…</p> : filteredConsultations.length === 0 ? <p className="empty">{consultations.length ? "Aucun résultat pour cette recherche." : "Aucune consultation validée."}</p> : <div className="professional-compact-list" aria-live="polite">{filteredConsultations.map((item) => <article className="professional-compact-record" key={item.id}><div><strong>{item.reason}</strong><p>{item.facility_label} · {item.provenance.label}</p></div><span className="badge verified">Validée</span></article>)}</div>}</div></CollapsibleSection></div></section></div>;
+  return <div className="stack-lg"><ProfessionalTemplateApprovals /><section className="hero-page"><span className="eyebrow">Provenance conservée</span><h1>Compléter sans ressaisir.</h1><p className="muted">La dernière pré-consultation préparée par le patient (ou par l’infirmier avec son téléphone) s’affiche dès que son autorisation est active. En signant, vous la clôturez : l’auteur et l’établissement sont imposés par le serveur.</p><p className="notice" role="status" aria-live="polite">{message}</p></section><section className="patient-grid"><form className="card preconsult-form" onSubmit={submit}><span className="eyebrow">Nouvelle validation</span><h2>Terminer la consultation</h2>{loading ? <p className="empty">Chargement des autorisations…</p> : grants.length === 0 ? <p className="empty">Aucune autorisation active permettant de reprendre une pré-consultation.</p> : <>
+    <div className="consult-context">
+      {activeMembership && <div className="consult-establishment"><EstablishmentLogo logo={activeMembership.establishment_logo} name={activeMembership.establishment_name} size={40} /><div><span className="muted">Établissement actif</span><strong>{activeMembership.establishment_name}</strong></div><Link className="button small" href="/professionnel/acces">Changer</Link></div>}
+      {grants.length > 1 && <div className="patient-picker" role="group" aria-label="Patient"><span className="eyebrow">Patient</span>{grants.map((grant) => <button type="button" key={grant.id} className="patient-option" aria-pressed={grant.id === grantId} onClick={() => void chooseGrant(grant.id)}><PersonAvatar src={grant.patient_avatar} name={grant.patient_name || grant.reference} size={40} /><span><strong>{grant.patient_name || `Accès ${grant.reference}`}</strong><small className="muted">Accès {grant.reference}</small></span></button>)}</div>}
+      {grants.length === 1 && <div className="patient-picker"><span className="eyebrow">Patient</span><div className="patient-option" aria-current="true"><PersonAvatar src={grants[0].patient_avatar} name={grants[0].patient_name || grants[0].reference} size={40} /><span><strong>{grants[0].patient_name || `Accès ${grants[0].reference}`}</strong><small className="muted">Accès {grants[0].reference}</small></span></div></div>}
+    </div>
+    {!grantId ? <p className="muted">Choisissez le patient pour lire sa dernière pré-consultation.</p> : <>
+    <div className="preconsult-read" aria-live="polite"><span className="preconsult-read__label">Pré-consultation du patient</span>{loadingEncounters ? <p className="muted">Chargement…</p> : !grantId ? <p className="muted">Choisissez une autorisation pour lire la dernière pré-consultation.</p> : encounters.length === 0 ? <p className="empty">Aucune pré-consultation en préparation pour ce patient.</p> : encounters.map((encounter) => <article className="record preconsult-read__item" key={encounter.id}><div><strong>{encounter.reason || "Sans motif"}</strong>{encounter.observations && <p>{encounter.observations}</p>}{Object.keys(encounter.template_responses ?? {}).length > 0 && <dl className="kv">{Object.entries(encounter.template_responses ?? {}).map(([key, value]) => { const field = encounter.template_fields?.find((entry) => entry.key === key); return <div key={key}><dt>{field?.label ?? key}</dt><dd>{typeof value === "boolean" ? (value ? "Oui" : "Non") : String(value)}{field?.unit ? ` ${field.unit}` : ""}</dd></div>; })}</dl>}{encounter.recorded_with_help && <p className="muted">Rempli avec l’aide de : {encounter.recorded_with_help}</p>}</div><span className="badge pending">Brouillon</span></article>)}</div>
+    <FormSection num={1} title="Quel est le motif de la consultation ?"><label className="field"><span>Motif</span><input maxLength={240} value={reason} onChange={(event) => setReason(event.target.value)} /></label></FormSection>
+    <FormSection num={2} title="Quels symptômes ou maux le patient ressent-il ?" hint="Cochez ce qui correspond (facultatif).">
+      <ChipPicker label="Symptômes les plus fréquents" options={SYMPTOMS} selected={symptoms.selected} other={symptoms.other} onSelected={(selected) => setSymptoms({ ...symptoms, selected })} onOther={(other) => setSymptoms({ ...symptoms, other })} otherLabel="Autre symptôme, depuis quand, intensité (facultatif)" otherPlaceholder="Si le symptôme n’est pas dans la liste, écrivez-le ici." maxOther={OTHER_MAX} rows={3} />
+      {symptomsTooLong && <p className="status" role="alert">Le texte est trop long : raccourcissez-le.</p>}
+    </FormSection>
+    <FormSection num={3} title="Quelles constantes ont été relevées ?" hint="Relevées en pré-consultation : relisez, corrigez ou complétez. Tension et glycémie restent telles qu’écrites, sans conversion ni unité supposée."><VitalsPicker value={vitalsForm} onChange={setVitalsForm} /></FormSection>
+    <FormSection num={4} title="Examen clinique" hint="Cochez les constats de votre examen (facultatif)."><ChipPicker label="Constats de l’examen clinique" options={CLINICAL_FINDINGS} selected={clinical.selected} other={clinical.other} onSelected={(selected) => setClinical({ ...clinical, selected })} onOther={(other) => setClinical({ ...clinical, other })} otherLabel="Autre constat (facultatif)" /></FormSection>
+    <FormSection num={5} title="Diagnostic" hint="Diagnostic ou conclusion : l’un des deux est nécessaire pour signer."><ChipPicker label="Diagnostics les plus fréquents" options={DIAGNOSES} selected={diagnosis.selected} other={diagnosis.other} onSelected={(selected) => setDiagnosis({ ...diagnosis, selected })} onOther={(other) => setDiagnosis({ ...diagnosis, other })} otherLabel="Autre diagnostic (facultatif)" /></FormSection>
+    <FormSection num={6} title="Conduite à tenir"><ChipPicker label="Conduite à tenir" options={CARE_PLAN_ITEMS} selected={carePlan.selected} other={carePlan.other} onSelected={(selected) => setCarePlan({ ...carePlan, selected })} onOther={(other) => setCarePlan({ ...carePlan, other })} otherLabel="Autre consigne (facultatif)" /></FormSection>
+    <FormSection num={7} title="Conclusion"><ChipPicker label="Conclusion" options={CONCLUSION_ITEMS} selected={conclusion.selected} other={conclusion.other} onSelected={(selected) => setConclusion({ ...conclusion, selected })} onOther={(other) => setConclusion({ ...conclusion, other })} otherLabel="Autre conclusion (facultatif)" /></FormSection>
+    <FormSection num={8} title="Ordonnance" hint="Choisissez dans les listes ; « Autre » pour ce qui n’y figure pas."><PrescriptionPicker lines={lines} onChange={setLines} /></FormSection>
+    <FormSection num={9} title="Examens demandés" hint="Choisissez l’examen, ou joignez la photo de la demande si vous préférez ne pas le saisir."><ExamPicker exams={exams} onChange={setExams} /></FormSection>
+    <p className="muted">Une attestation SVG est enregistrée avec la validation. Elle ne constitue pas une signature électronique qualifiée.</p><ConsultationSeal /><button className="button primary" type="submit" disabled={submitting || !encounterId}>{submitting ? "Signature…" : "Terminer et signer"}</button></>}</>}</form>{selectedGrant && <ProfessionalMeasurementEntry grant={selectedGrant} />}<div className="section-grid"><CollapsibleSection title="Mes consultations" icon="stethoscope" hint="Historique signé"><div className="professional-history"><div className="professional-history__heading"><label className="professional-quick-search"><span className="sr-only">Rechercher établissement ou motif</span><input ref={searchRef} type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Établissement, motif…" /><kbd aria-hidden="true">/</kbd></label></div>{loading ? <p className="empty">Chargement…</p> : filteredConsultations.length === 0 ? <p className="empty">{consultations.length ? "Aucun résultat pour cette recherche." : "Aucune consultation validée."}</p> : <div className="professional-compact-list" aria-live="polite">{filteredConsultations.map((item) => <article className="professional-compact-record" key={item.id}><div><strong>{item.reason}</strong><p>{item.facility_label} · {item.provenance.label}</p></div><span className="badge verified">Validée</span></article>)}</div>}</div></CollapsibleSection></div></section></div>;
 }
