@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { apiGet, apiPost } from "../infrastructure/api/client";
 import { AvatarBadge, displayName, useSpaceAccount } from "./shell/SpaceShell";
+import { EstablishmentLogo } from "./EstablishmentLogo";
+import "./establishment-logo.css";
 import { useConfirm } from "./modal/ConfirmProvider";
 import { useDialogBehavior } from "./modal/useDialogBehavior";
 import { Icon } from "./ui/Icon";
@@ -13,7 +15,7 @@ import { EstablishmentKpis } from "./EstablishmentKpis";
 import { EstablishmentJoinCodes } from "./EstablishmentJoinCodes";
 import { splitFullName } from "../lib/join-codes";
 
-type Establishment = { id: string; name: string; city: string; status: "pending" | "active" | "suspended" | "rejected" | string };
+type Establishment = { id: string; name: string; city: string; logo?: string | null; status: "pending" | "active" | "suspended" | "rejected" | string };
 type Membership = { id: string; status: "pending" | "active" | "refused" | "suspended" | string; professional_name?: string; professional_first_name?: string; professional_last_name?: string; professional_email?: string; professional_avatar_url?: string; professional_title?: string; professional_specialty?: string; professional_age?: number | null; requested_at?: string | null; reviewed_at?: string | null };
 type OpeningSummary = { opening_id: string; reason_label: string; opened_at: string; status: string };
 type AppointmentSummary = { id: string; starts_at: string; ends_at: string | null; status: string };
@@ -144,7 +146,7 @@ export function EstablishmentConsole({ view }: { view: "home" | "requests" | "do
 
   const requestRows = (
     <section className="card" aria-labelledby="requests-title">
-      <div className="section-heading"><div><span className="eyebrow">À traiter</span><h2 id="requests-title">Demandes de rattachement</h2></div><span className="count-badge">{pending.length}</span></div>
+      <div className="section-heading"><div><h2 id="requests-title">Demandes de rattachement</h2></div><span className="count-badge">{pending.length}</span></div>
       {pending.length === 0 ? <p className="empty">Aucune demande en attente.</p> : (
         <div className="stack">
           {pending.map((item) => (
@@ -161,7 +163,7 @@ export function EstablishmentConsole({ view }: { view: "home" | "requests" | "do
 
   const doctorRows = (
     <section className="card" aria-labelledby="doctors-title">
-      <div className="section-heading"><div><span className="eyebrow">Équipe</span><h2 id="doctors-title">Médecins de l’établissement</h2></div><span className="count-badge">{doctors.length}</span></div>
+      <div className="section-heading"><div><h2 id="doctors-title">Médecins de l’établissement</h2></div><span className="count-badge">{doctors.length}</span></div>
       {doctors.length === 0 ? <p className="empty">Aucun médecin rattaché pour le moment.</p> : (
         <ul className="team-grid" aria-label="Médecins de l’établissement">
           {doctors.map((item) => <li key={item.id}><button type="button" className="team-photo" aria-label={`Voir la fiche de ${item.professional_name || "ce médecin"}`} title={item.professional_name || "Médecin"} onClick={() => setOpenMemberId(item.id)}><MemberAvatar member={item} size={64} /></button></li>)}
@@ -173,17 +175,17 @@ export function EstablishmentConsole({ view }: { view: "home" | "requests" | "do
 
   const status = <p className="status" role="status" aria-live="polite">{message}</p>;
 
-  if (view === "requests") return <div className="stack-lg"><PageHeader eyebrow={establishment.name} title="Demandes" lead="Un médecin qui saisit votre code apparaît ici. Vous confirmez ou refusez." />{!active && <Pending establishment={establishment} />}{requestRows}{status}</div>;
-  if (view === "doctors") return <div className="stack-lg"><PageHeader eyebrow={establishment.name} title="Médecins" lead="Les médecins de votre établissement. Touchez une photo pour voir sa fiche." />{codeCard}{doctorRows}{status}</div>;
+  if (view === "requests") return <div className="stack-lg"><PageHeader eyebrow={establishment.name} title="Demandes" lead="Confirmez ou refusez les médecins qui saisissent votre code." />{!active && <Pending establishment={establishment} />}{requestRows}{status}</div>;
+  if (view === "doctors") return <div className="stack-lg"><PageHeader eyebrow={establishment.name} title="Médecins" lead="Touchez une photo pour voir la fiche." />{codeCard}{doctorRows}{status}</div>;
 
   return (
     <div className="stack-lg">
-      <div className="greeting">{account && <AvatarBadge account={account} size={52} />}<div className="greeting__text"><small>{establishment.name} · {establishment.city}</small><h1>{account ? displayName(account) : "Administrateur"}</h1></div></div>
+      <div className="greeting"><EstablishmentLogo logo={establishment.logo} name={establishment.name} size={56} /><div className="greeting__text"><small>{establishment.name} · {establishment.city}</small><h1>{account ? displayName(account) : "Administrateur"}</h1></div></div>
       {!active && <Pending establishment={establishment} />}
       <EstablishmentKpis memberships={memberships} activeJoinCodeCount={activeJoinCodeCount} />
-      {active && <section className="card" aria-labelledby="openings-list-title"><div className="section-heading"><div><span className="eyebrow">Accès aux dossiers</span><h2 id="openings-list-title">Ouvertures récentes</h2></div></div>{openings.length === 0 ? <p className="empty">Aucune ouverture enregistrée.</p> : <ul className="stack">{openings.map((item) => <li className="record" key={item.opening_id}><strong>{item.reason_label}</strong><p className="muted">Depuis le {new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(item.opened_at))} · {item.status}</p></li>)}</ul>}</section>}
-      {active && <section className="card" aria-labelledby="appointments-list-title"><div className="section-heading"><div><span className="eyebrow">Organisation des soins</span><h2 id="appointments-list-title">Rendez-vous</h2></div></div>{appointments.length === 0 ? <p className="empty">Aucun rendez-vous.</p> : <ul className="stack">{appointments.map((item) => <li className="record" key={item.id}><strong>{new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(item.starts_at))}</strong><span className="badge">{item.status}</span></li>)}</ul>}</section>}
-      {!active && <section className="card progress-card"><div className="section-heading"><div><span className="eyebrow">Mise en route</span><h2>Activer l’espace établissement</h2></div></div><p className="muted">L’équipe Mon E‑Carnet doit d’abord valider votre structure.</p><div className="progress-card__line" role="progressbar" aria-valuemin={0} aria-valuemax={2} aria-valuenow={establishment.status === "pending" ? 1 : 0}><span style={{ width: `${establishment.status === "pending" ? 50 : 0}%` }} /></div><div className="progress-card__meta"><span>{establishment.status === "pending" ? "Demande reçue" : "Fiche à préparer"}</span><Link className="text-link" href="/etablissement/parametres">Voir les paramètres</Link></div></section>}
+      {active && <section className="card" aria-labelledby="openings-list-title"><div className="section-heading"><div><h2 id="openings-list-title">Ouvertures récentes</h2></div></div>{openings.length === 0 ? <p className="empty">Aucune ouverture enregistrée.</p> : <ul className="stack">{openings.map((item) => <li className="record" key={item.opening_id}><strong>{item.reason_label}</strong><p className="muted">Depuis le {new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(item.opened_at))} · {item.status}</p></li>)}</ul>}</section>}
+      {active && <section className="card" aria-labelledby="appointments-list-title"><div className="section-heading"><div><h2 id="appointments-list-title">Rendez-vous</h2></div></div>{appointments.length === 0 ? <p className="empty">Aucun rendez-vous.</p> : <ul className="stack">{appointments.map((item) => <li className="record" key={item.id}><strong>{new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(item.starts_at))}</strong><span className="badge">{item.status}</span></li>)}</ul>}</section>}
+      {!active && <section className="card progress-card"><div className="section-heading"><div><h2>Activer l’espace établissement</h2></div></div><p className="muted">L’équipe Mon E‑Carnet doit d’abord valider votre structure.</p><div className="progress-card__line" role="progressbar" aria-valuemin={0} aria-valuemax={2} aria-valuenow={establishment.status === "pending" ? 1 : 0}><span style={{ width: `${establishment.status === "pending" ? 50 : 0}%` }} /></div><div className="progress-card__meta"><span>{establishment.status === "pending" ? "Demande reçue" : "Fiche à préparer"}</span><Link className="text-link" href="/etablissement/parametres">Voir les paramètres</Link></div></section>}
       {pending.length > 0 && <section className="card alert-card"><h2>{pending.length} médecin{pending.length > 1 ? "s attendent" : " attend"} votre confirmation</h2><div className="actions"><Link className="button" href="/etablissement/demandes">Traiter les demandes</Link></div></section>}
       {codeCard}
       {status}

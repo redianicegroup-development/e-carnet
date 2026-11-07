@@ -25,3 +25,18 @@
 .dossier-section__head h3 { margin: 0; font-size: 1.05rem; }
 .dossier-section__head small { display: block; }
 .dossier-section__body { min-width: 0; }
+
+/* Bloc unique (accueils patient et médecin) : l'en-tête puis les rubriques dans la MÊME carte, séparées par un filet.
+   Une colonne sur mobile ; sur grand écran, les rubriques se répartissent en colonnes de 280 px minimum. */
+.dossier--unified { gap: 6px; padding: clamp(16px, 3.4vw, 28px); }
+.dossier--unified .dossier__head { gap: 16px; padding-bottom: 8px; }
+.dossier--unified .dossier__head .avatar { flex: 0 0 auto; }
+.dossier-inlines { display: grid; grid-template-columns: minmax(0, 1fr); column-gap: clamp(20px, 3vw, 40px); }
+.dossier-inline { display: grid; gap: 12px; align-content: start; min-width: 0; padding-block: 18px; border-top: 1px solid color-mix(in srgb, var(--text) 10%, transparent); }
+.dossier-inline__head { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.dossier-inline__head h3 { margin: 0; font-size: 1.05rem; }
+.dossier-inline__head small { display: block; }
+.dossier-inline__body { min-width: 0; }
+.dossier--unified .dossier__note { padding-top: 14px; border-top: 1px solid color-mix(in srgb, var(--text) 10%, transparent); }
+.dossier--unified .dossier__list { grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 900px) { .dossier-inlines { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); } }

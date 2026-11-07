@@ -229,14 +229,14 @@ export function PatientAccessGrants({ part = "all" }: { part?: "all" | "qr" | "l
                 </div>
                 <p className="muted">Accès demandé : {item.scope.map((scope) => scopeLabels[scope] ?? scope).join(", ") || "À préciser"}</p>
                 {item.status === "pending" && <p className="consent-explanation">Si vous autorisez : accès pendant <strong>2 heures</strong> (prolongeable deux fois d’une heure), limité à ce qui est listé ci-dessus. <strong>Rien n’est accessible avant votre décision.</strong></p>}
-                <p className="muted">Durée initiale : 2 h, prolongeable deux fois d’1 h. {item.status === "active" && item.expires_at ? `Expiration : ${new Date(item.expires_at).toLocaleString("fr-FR")}.` : ""}</p>
+                {item.status === "active" && item.expires_at && <p className="muted">Expire le {new Date(item.expires_at).toLocaleString("fr-FR")}.</p>}
                 <div className="actions">
                   {item.status === "pending" && <>
                     <button type="button" className="button consent-decision" disabled={busyId === item.id} onClick={() => void decide(item, "accept")}>Autoriser pendant 2 h</button>
                     <button type="button" className="button consent-decision" disabled={busyId === item.id} onClick={() => void decide(item, "refuse")}>Refuser</button>
                   </>}
                   {item.status === "active" && <>
-                    <button type="button" className="button" disabled={busyId === item.id || item.extension_count >= 2} onClick={() => void decide(item, "extend")}>Prolonger 1 h ({Math.max(0, 2 - item.extension_count)} restante{item.extension_count === 1 ? "" : "s"})</button>
+                    <button type="button" className="button" disabled={busyId === item.id || item.extension_count >= 2} onClick={() => void decide(item, "extend")}>Prolonger 1 h ({Math.max(0, 2 - item.extension_count)} restante{item.extension_count === 0 ? "s" : ""})</button>
                     <button type="button" className="button primary danger" disabled={busyId === item.id} onClick={() => void confirm({ title: "Révoquer cet accès maintenant ?", message: `${item.professional_name} perdra immédiatement l’accès à votre carnet.`, note: "L’autorisation apparaîtra comme « Révoquée » dans votre liste.", confirmLabel: "Révoquer l’accès", cancelLabel: "Garder l’accès", tone: "danger", mood: "question" }).then((ok) => { if (ok) void act(item.id, "revoke"); })}>Révoquer maintenant</button>
                   </>}
                 </div>

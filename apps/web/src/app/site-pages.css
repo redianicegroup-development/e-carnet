@@ -38,11 +38,14 @@
 }
 
 /* =====================================================================================================================
-   Marque : logo stéthoscope-cadenas en WebP versionné, servi depuis Cloudinary.
+   Marque : logo soignant + patient en WebP local (version complète à partir de 32 px, version simplifiée en dessous).
    ===================================================================================================================== */
 .brand-mark.brand-mark--logo { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; width: 34px; height: 34px; overflow: hidden; border-radius: 9px; background: #fff7e6; }
 .brand--compact .brand-mark.brand-mark--logo { width: 28px; height: 28px; }
 .brand-mark__image { display: block; width: 100%; height: 100%; object-fit: cover; }
+/* Logo « duo » (soignant + patient) : seul, sans tuile, 44 px de haut. Sous 32 px on utilise la version simplifiée (voir BrandMark). */
+.brand-mark.brand-mark--duo { display: inline-flex; flex: 0 0 auto; width: auto; height: 44px; aspect-ratio: 640 / 562; border-radius: 0; background: none; overflow: visible; }
+.brand-mark--duo .brand-mark__image { object-fit: contain; }
 .brand-logo { display: inline-flex; align-items: center; gap: 12px; max-width: 100%; width: auto; color: var(--text); font-family: var(--font-heading, var(--font-body)); font-size: 1.25rem; font-weight: 800; line-height: 1.1; }
 .brand-logo img { display: block; flex: 0 0 auto; height: 100%; width: auto; aspect-ratio: 1; border-radius: 10px; object-fit: cover; }
 .public-scroll-top { position: fixed; z-index: 840; right: max(18px, env(safe-area-inset-right)); bottom: calc(74px + env(safe-area-inset-bottom)); display: grid; place-items: center; width: 48px; height: 48px; min-height: 48px; padding: 0; border-radius: 50%; box-shadow: 0 8px 24px -10px color-mix(in srgb, var(--text) 42%, transparent); }
@@ -143,6 +146,11 @@ body .public-scroll-top { position: fixed; }
 /* Place comptée : le sous-titre de la marque disparaît sur mobile et sur les écrans où la barre de liens est juste. */
 @media (max-width: 479px), (min-width: 1200px) and (max-width: 1319px) {
   .pub-header .brand-text small { display: none; }
+}
+/* Téléphone : l'en-tête garde l'essentiel — le logo seul à gauche, « Commencer » à droite. Pas de nom de marque ni de menu burger :
+   les liens du site (comment ça marche, sécurité, à propos, aide, connexion) sont dans le pied de page. Dès 720 px, le menu revient. */
+@media (max-width: 719px) {
+  .pub-header .brand-text, .pub-burger, .pub-menu { display: none; }
 }
 .pub-header--connected { min-height: 60px; }
 .pub-return-link { display: inline-flex; align-items: center; gap: 9px; min-height: 42px; color: var(--primary-text); font-weight: 700; text-decoration: none; }

@@ -14,7 +14,7 @@ import "./professional-dossier.css";
 
 type Credentials = { professional_identifier: string; stamp_uploaded: boolean; signature_uploaded: boolean };
 
-/* « Dossier médecin » : tout ce que le médecin a déclaré, en un coup d'œil, à l'accueil. Lecture seule ; la modification se fait dans les paramètres. */
+/* « Dossier médecin » : un SEUL bloc (photo, profil, cachet et signature, établissement actif), en un coup d'œil, à l'accueil. Lecture seule ; la modification se fait dans les paramètres. */
 export function ProfessionalDossier({ account, profile }: { account: SpaceAccount; profile: ProfessionalProfile | null }) {
   const [credentials, setCredentials] = useState<Credentials | null>(null);
   useEffect(() => {
@@ -34,14 +34,14 @@ export function ProfessionalDossier({ account, profile }: { account: SpaceAccoun
   const role = profile?.professional_title ? [profile.professional_title, profile.specialty].filter(Boolean).join(" · ") : undefined;
   const tiles: DossierTile[] = [
     { key: "profile", title: "Profil professionnel", icon: "stethoscope", hint: "Profession, spécialité", content: <DossierRows rows={profileRows} /> },
-    { key: "establishment", title: "Établissement actif", icon: "building", hint: active ? active.establishment_name : "Aucun pour le moment", content: active ? <span className="professional-dossier__etab"><EstablishmentLogo logo={active.establishment_logo} name={active.establishment_name} size={28} />{active.establishment_name}</span> : <p className="muted">Aucun établissement actif pour le moment.</p> },
     { key: "seals", title: "Cachet et signature", icon: "pencil", hint: "Pour vos ordonnances", content: <div className="professional-dossier__seals" aria-label="Cachet et signature">
       <div><span className="dossier__label">Cachet</span>{credentials?.stamp_uploaded ? <div className="seal-preview">{stamp ? <img src={stamp} alt="Votre cachet" /> : <span>…</span>}</div> : <p className="muted">Non ajouté</p>}</div>
       <div><span className="dossier__label">Signature</span>{credentials?.signature_uploaded ? <div className="seal-preview">{signature ? <img src={signature} alt="Votre signature" /> : <span>…</span>}</div> : <p className="muted">Non ajoutée</p>}</div>
     </div> },
+    { key: "establishment", title: "Établissement actif", icon: "building", hint: active ? active.establishment_name : "Aucun pour le moment", content: active ? <span className="professional-dossier__etab"><EstablishmentLogo logo={active.establishment_logo} name={active.establishment_name} size={40} />{active.establishment_name}</span> : <p className="muted">Aucun établissement actif pour le moment.</p> },
   ];
   return <DossierCard
-    account={account} eyebrow="Dossier médecin" titleId="dossier-title" role={role} sections={tiles} className="professional-dossier"
+    account={account} eyebrow="Dossier médecin" titleId="dossier-title" role={role} sections={tiles} unified className="professional-dossier"
     note="Informations déclarées par vous : Mon E‑Carnet ne les certifie pas, la vérification relève de l’établissement."
     actions={<Link className="button" href="/professionnel/parametres">Modifier dans mes paramètres</Link>}
   />;

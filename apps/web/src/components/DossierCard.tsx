@@ -17,7 +17,7 @@ export function DossierRows({ rows }: { rows: DossierRow[] }) {
 /** « Dossier médecin » et « Dossier patient » : même présentation. Un bloc d'en-tête (photo, nom en titre, métier si c'est un professionnel),
     puis tout ce qui a été déclaré, sous forme de rubriques toujours ouvertes (`sections`) ; `tiles` reste disponible pour des tuiles carrées pliables.
     `rows` : lignes d'information laissées visibles sous le nom ; `tiles` : les tuiles ; `children` : blocs sous les lignes de l'en-tête. */
-export function DossierCard({ account, eyebrow, titleId, role, rows, tiles, sections, note, actions, className = "", children }: {
+export function DossierCard({ account, eyebrow, titleId, role, rows, tiles, sections, note, actions, className = "", unified = false, children }: {
   account: Pick<SpaceAccount, "first_name" | "last_name" | "email" | "avatar_url">;
   eyebrow: string;
   titleId: string;
@@ -30,12 +30,14 @@ export function DossierCard({ account, eyebrow, titleId, role, rows, tiles, sect
   note?: string;
   actions?: ReactNode;
   className?: string;
+  /** Un seul bloc : les rubriques vivent dans la même carte que l'en-tête, séparées par un filet (accueils patient et médecin). */
+  unified?: boolean;
   children?: ReactNode;
 }) {
-  return <div className="dossier-group stack">
+  return <div className={`dossier-group stack${unified ? " dossier-group--unified" : ""}`}>
     <section className={`card dossier ${className}`.trim()} aria-labelledby={titleId}>
       <div className="dossier__head">
-        <AvatarBadge account={account} size={56} />
+        <AvatarBadge account={account} size={unified ? 72 : 56} />
         <div>
           <span className="eyebrow">{eyebrow}</span>
           <h2 id={titleId}>{displayName(account)}</h2>
@@ -44,10 +46,23 @@ export function DossierCard({ account, eyebrow, titleId, role, rows, tiles, sect
       </div>
       {rows && rows.length > 0 && <DossierRows rows={rows} />}
       {children}
+      {unified && sections && sections.length > 0 && (
+        <div className="dossier-inlines">
+          {sections.map((section) => (
+            <div className="dossier-inline" role="group" key={section.key} aria-labelledby={`${titleId}-${section.key}`}>
+              <div className="dossier-inline__head">
+                <span className="orb orb--sm" aria-hidden="true"><Icon name={section.icon} size={18} /></span>
+                <div><h3 id={`${titleId}-${section.key}`}>{section.title}</h3>{section.hint && <small className="muted">{section.hint}</small>}</div>
+              </div>
+              <div className="dossier-inline__body">{section.content}</div>
+            </div>
+          ))}
+        </div>
+      )}
       {note && <p className="muted dossier__note">{note}</p>}
       {actions && <div className="actions">{actions}</div>}
     </section>
-    {sections && sections.length > 0 && (
+    {!unified && sections && sections.length > 0 && (
       <div className="dossier-sections">
         {sections.map((section) => (
           <section className="card dossier-section" key={section.key} aria-labelledby={`${titleId}-${section.key}`}>

@@ -18,7 +18,7 @@ export const HERO = {
   eyebrow: "Carnet de santé numérique",
   title: "Votre carnet de santé, sous votre contrôle.",
   lead: "Organisez vos informations, préparez vos consultations et choisissez qui peut consulter votre carnet.",
-  primary: { href: "/connexion?mode=register", label: "Créer mon espace patient" },
+  primary: { href: "/connexion", label: "Commencer" },
   secondary: { href: "/connexion?mode=register&profil=professionnel", label: "Je suis professionnel" },
   note: "Organisez vos informations de santé dans votre espace sécurisé.",
   /** Texte qui apparaît par-dessus l'image quand elle occupe tout l'écran. Décoratif : repris par la section « confiance ». */
@@ -47,9 +47,9 @@ export const STEPS: Step[] = [
   { icon: "folder", title: "Retrouvez", text: "Les consultations validées et l’historique des accès rejoignent votre carnet." },
 ];
 
-export type Profile = { icon: IconName; label: string; title: string; points: string[]; cta: { href: string; text: string; subject?: string } };
+export type Profile = { icon: IconName; label: string; title: string; points: string[]; cta: { href: string; text: string; subject?: string; track?: "signup" | "professional_signup" } };
 export const PROFILES: Profile[] = [
-  { icon: "user", label: "Patients", title: "Votre santé, organisée", points: ["Préparez vos consultations", "Gardez la maîtrise des accès"], cta: { href: "/connexion?mode=register", text: "Créer mon carnet" } },
+  { icon: "user", label: "Patients", title: "Votre santé, organisée", points: ["Préparez vos consultations", "Gardez la maîtrise des accès"], cta: { href: "/connexion", text: "Commencer", track: "signup" } },
   { icon: "stethoscope", label: "Professionnels", title: "Un accès patient par patient", points: ["Demandez une autorisation", "Consultez selon le périmètre accordé"], cta: { href: "/connexion?mode=register&profil=professionnel", text: "Créer mon profil" } },
   { icon: "building", label: "Établissements", title: "Gérez vos rattachements", points: ["Invitez les professionnels", "Traitez les demandes de rattachement"], cta: { href: "#contact", text: "Contacter l’équipe", subject: "establishment" } },
 ];
@@ -84,7 +84,7 @@ export const FAQ_ITEMS: FaqItem[] = [
 export const FINAL = {
   title: "Commencez avec votre carnet.",
   lead: "Créez votre espace patient ou professionnel depuis une seule page. Utilisez des informations exactes et gardez votre compte personnel.",
-  primary: { href: "/connexion?mode=register", label: "Créer mon espace patient" },
+  primary: { href: "/connexion", label: "Commencer" },
   secondary: { href: "/connexion", label: "Se connecter" },
 } as const;
 

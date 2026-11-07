@@ -9,22 +9,10 @@ import { ProfessionalToday } from "./ProfessionalToday";
 import { listProfessionalConsultations, listProfessionalGrants } from "../application/professional-access-grants";
 import { ProfessionalDashboardChart } from "./RoleDashboards";
 import { ProfessionalDossier } from "./ProfessionalDossier";
-import { VirtualCardPanel } from "./emergency-card/VirtualCardPanel";
-import { useEmergencyCard } from "./emergency-card/useEmergencyCard";
-import type { ProfessionalProfile } from "./ClinicalGate";
-import type { SpaceAccount } from "./shell/SpaceShell";
 import { SetupCard, type SetupStep } from "./SetupCard";
-import { CollapsibleSection } from "./ui/CollapsibleSection";
-
-/* Carte virtuelle du médecin : son identité de patient et son métier déclaré, même carte et même image PNG que dans l'espace patient. */
-function ProfessionalVirtualCard({ account, profile }: { account: SpaceAccount; profile: ProfessionalProfile }) {
-  const { card, loading, error } = useEmergencyCard();
-  const profession = { title: profile.professional_title, specialty: profile.specialty || undefined };
-  return <div className="section-grid"><CollapsibleSection title="Ma carte virtuelle" icon="idcard" hint="Carte et QR"><VirtualCardPanel account={account} card={card} profession={profession} loading={loading} error={error} /></CollapsibleSection></div>;
-}
 
 /* Accueil médecin, dans l'ordre où on en a besoin : bonjour · « Mise en route » (comme chez le patient : elle disparaît une fois tout configuré) ·
-   « Aujourd'hui » (consultations du jour) · dossier médecin, toujours ouvert · carte virtuelle · activité. Pas de grille de raccourcis. Tant que le rattachement n'est pas validé, seul le rattachement est proposé. */
+   « Aujourd'hui » (consultations du jour) · dossier médecin (un seul bloc) · activité. Pas de grille de raccourcis. Tant que le rattachement n'est pas validé, seul le rattachement est proposé. */
 export function ProfessionalHome() {
   const account = useSpaceAccount();
   const state = useProfessionalProfile();
@@ -65,7 +53,6 @@ export function ProfessionalHome() {
       {state.status !== "loading" && state.status !== "error" && <SetupCard title="Quelques étapes avant d’ouvrir un carnet" steps={steps} actionLabel={actionLabel} />}
       {ready && <ProfessionalToday />}
       {account && hasProfile && <ProfessionalDossier account={account} profile={profile} />}
-      {account && profile && <ProfessionalVirtualCard account={account} profile={profile} />}
       {activity && ready && <div className="role-dashboard-grid"><ProfessionalDashboardChart metrics={[{ label: "Demandes", value: activity.grants }, { label: "Accès actifs", value: activity.activeGrants }, { label: "Consultations", value: activity.consultations }]} /></div>}
     </div>
   );

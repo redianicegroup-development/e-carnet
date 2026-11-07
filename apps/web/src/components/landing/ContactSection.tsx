@@ -153,7 +153,7 @@ export function ContactSection({ privacyHref }: { privacyHref: string }) {
             <h2 id="contact-title">{FINAL.title}</h2>
             <p className="lead">{FINAL.lead}</p>
             <div className="actions">
-              <Link className="button primary" href={FINAL.primary.href}>{FINAL.primary.label}</Link>
+              <Link className="button primary" href={FINAL.primary.href} data-track="signup">{FINAL.primary.label}</Link>
               <Link className="button" href={FINAL.secondary.href}>{FINAL.secondary.label}</Link>
             </div>
           </div>

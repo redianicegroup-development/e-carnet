@@ -131,7 +131,7 @@ function ItemBody({ item }: { item: SidebarItem }) {
 function NavItem({ item, tabs }: { item: SidebarItem; tabs: boolean }) {
   const className = `sb__item${item.active ? " is-active" : ""}${item.account ? " sb__item--account" : ""}${item.featured ? " sb__item--featured" : ""}`;
   // `data-tour` : repère de la visite guidée (components/tour) ; un onglet = une étape.
-  const common = { className, "aria-label": item.ariaLabel ?? item.long, "data-tip": item.long, "data-tour": `nav-${item.id}` };
+  const common = { className, "aria-label": item.ariaLabel ?? item.label, "data-tip": item.label, "data-tour": `nav-${item.id}` };
   if (tabs) {
     return <button type="button" role="tab" id={item.domId} aria-selected={item.active} aria-controls={item.controls} tabIndex={item.active ? 0 : -1} onClick={item.onSelect} {...common}><ItemBody item={item} /></button>;
   }

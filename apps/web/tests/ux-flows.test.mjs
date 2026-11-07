@@ -125,13 +125,13 @@ test("l’âge et le genre se renseignent à l’étape 3 de l’onboarding pati
   assert.match(fields, /<legend>Âge et genre/);
 });
 
-test("le dossier patient et le QR de la carte virtuelle forment une seule section d’accueil", () => {
+test("le dossier patient forme une seule section d’accueil (bloc unique)", () => {
   const home = read("src/components/PatientHomeIdentity.tsx");
   assert.equal((home.match(/<section /g) ?? []).length, 0, "la section vient du composant commun DossierCard");
   assert.equal((read("src/components/DossierCard.tsx").match(/<section /g) ?? []).length, 2, "la carte du dossier et le gabarit d'une rubrique ouverte");
   assert.match(home, /<DossierCard/);
   assert.match(home, /className="patient-dossier"/);
-  assert.match(home, /patient-dossier__qr/);
+  assert.match(home, /unified/, "en-tête et rubriques dans la même carte");
   assert.doesNotMatch(home, /patient-home-qr|patient-home-profile/);
 });
 
@@ -182,7 +182,7 @@ test("UX-02 : l’accueil regroupe les alertes en « À faire » et ne répète 
 });
 
 test("UX-04 : deux QR, deux noms — carte virtuelle (secours) et accès temporaire de 5 minutes (professionnel)", () => {
-  const identity = read("src/components/PatientHomeIdentity.tsx");
+  const identity = read("src/components/PatientEmergencyCardSettingsClient.tsx");
   const grants = read("src/components/PatientAccessGrants.tsx");
   const home = read("src/components/PatientHome.tsx");
   assert.match(identity, /voit votre carte virtuelle, sans se connecter/);
@@ -191,7 +191,8 @@ test("UX-04 : deux QR, deux noms — carte virtuelle (secours) et accès tempora
   assert.match(grants, /Accès temporaire pour un professionnel/);
   assert.match(grants, /Ce n’est pas le QR de votre carte virtuelle/);
   assert.match(read("src/components/PatientConsultationFlow.tsx"), /Accès temporaire pour le professionnel/);
-  for (const text of [identity, grants, home]) assert.doesNotMatch(text, /QR d’accès|QR d'accès|QR public/);
+  for (const text of [grants, home]) assert.doesNotMatch(text, /QR d’accès|QR d'accès|QR public/);
+  assert.doesNotMatch(identity, /QR d’accès|QR d'accès/);
 });
 
 test("titres en double : une rubrique « solo » masque le titre répété sous son bouton", () => {

@@ -53,12 +53,12 @@ export function CreditsStackFigure() {
 }
 
 /** Le signe de la marque (un carnet relié et un interrupteur), tracé comme dans BrandLogo ; le bouton glisse d'un bout à l'autre. */
-/** Le logo actuel du projet (stéthoscope dont la boucle forme un cadenas). Remplace l'ancien dessin du carnet relié à interrupteur, devenu obsolète. */
+/** Le logo actuel du projet : un soignant et un patient côte à côte. */
 export function BrandLogoFigure() {
   return (
     <figure className="fig brand-logo-fig" data-figure>
       {/* eslint-disable-next-line @next/next/no-img-element -- logo WebP versionné et servi depuis Cloudinary */}
-      <img src={PROJECT_LOGO_WEBP} alt="Le logo de Mon E‑Carnet : un stéthoscope dont la boucle forme un cadenas" width={132} draggable={false} referrerPolicy="no-referrer" />
+      <img src={PROJECT_LOGO_WEBP} alt="Le logo de Mon E‑Carnet : un soignant, stéthoscope autour du cou, et un patient côte à côte" width={132} draggable={false} referrerPolicy="no-referrer" />
     </figure>
   );
 }

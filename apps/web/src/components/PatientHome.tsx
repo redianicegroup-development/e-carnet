@@ -13,7 +13,7 @@ import { SetupCard, type SetupStep } from "./SetupCard";
 /* Accueil patient (maquette) : peu de blocs, dans l'ordre où on en a besoin.
    1. le titre et deux boutons (Mon carnet, Partager en QR) · 2. la prochaine consultation, et « Aujourd'hui » quand quelque chose est prévu ·
    3. « Mise en route » (tant que le carnet essentiel n'est pas commencé) · 4. ce qui attend une réponse (un seul bloc « À faire ») ·
-   5. mon dossier patient, toujours ouvert, et ma carte virtuelle (tuile carrée). Les rubriques du carnet, les consultations et l'historique sont dans la barre de navigation.
+   5. mon dossier patient : un seul bloc (photo, identité, déclarations). La carte virtuelle et son QR sont dans Moi. Les rubriques du carnet, les consultations et l'historique sont dans la barre de navigation.
    Pas de grille de raccourcis ni de « préparer la consultation » : décrire ce qui ne va pas est le travail du médecin ou de l'infirmier, pas celui du patient. */
 
 /** Chaque information est indépendante : `null` = n'a pas pu être chargée (on n'invente pas un zéro). */

@@ -39,7 +39,7 @@ export function ProfessionalAccess() {
 
   return (
     <div className="stack-lg">
-      <PageHeader eyebrow="Établissement" title="Mon rattachement" lead="Votre établissement vérifie votre profil. Une fois votre rattachement confirmé, vous accédez à vos patients." />
+      <PageHeader title="Mon rattachement" lead="Vous accédez à vos patients dès que votre établissement confirme votre rattachement." />
 
       <section className="card" aria-labelledby="code-title">
         <span className="eyebrow">Rattachement</span>

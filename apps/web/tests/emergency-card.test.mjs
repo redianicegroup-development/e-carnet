@@ -19,7 +19,7 @@ test("la carte d’urgence affiche identité, groupe sanguin, ville, allergies, 
   assert.match(styles, /@container ecard \(max-width: 430px\) \{[^}]*\.ecard__body \{ grid-template-columns: minmax\(0, 1fr\)/);
 });
 
-test("les réglages gardent l’aperçu privé tandis que l’accueil affiche le QR public", () => {
+test("les réglages portent la carte virtuelle et le QR public ; l’accueil n’en affiche plus", () => {
   const settings = read("src/components/PatientEmergencyCardSettingsClient.tsx");
   const image = read("src/components/emergency-card/emergency-card-image.ts");
   const visual = read("src/components/emergency-card/EmergencyCardVisual.tsx");
@@ -34,14 +34,14 @@ test("les réglages gardent l’aperçu privé tandis que l’accueil affiche le
   // Le QR public ne fait plus partie de l’accordéon de la carte : ni renouvellement ni panneau QR local.
   assert.doesNotMatch(settings, /Renouveler|rotate|offline|Carte imprimable|<details|ecard-details/i);
   assert.doesNotMatch(read("src/components/emergency-card/emergency-card.css"), /ecard-details|ecard-offline/);
-  assert.doesNotMatch(settings, /QRCodeSVG|ecard-qr|qrOpen|qrPanelId|publicUrl/);
-  assert.match(settings, /Le QR public de cette carte se trouve sur l’accueil patient/);
-  // L’activation et la désactivation du QR stable sont maintenant sur l’accueil patient.
+  assert.doesNotMatch(settings, /ecard-qr|qrOpen|qrPanelId/);
+  assert.match(settings, /Le QR public de cette carte se gère ici/);
+  // L’activation et la désactivation du QR stable se font dans Moi (paramètres) : l’accueil patient n’affiche plus la carte.
   assert.doesNotMatch(account, /QRCodeSVG|settings-account-summary__emergency-qr|emergency-card\//);
-  assert.match(home, /<QRCodeSVG value=\{publicUrl\}/);
+  assert.match(settings, /<QRCodeSVG value=\{publicUrl\}/);
   assert.match(read("src/components/emergency-card/useEmergencyCard.ts"), /apiGet<EmergencyCardData>\("\/api\/v1\/patient\/emergency-card\//);
-  assert.match(home, /apiPatch<EmergencyCardData>\("\/api\/v1\/patient\/emergency-card\//);
-  assert.match(home, /qr_enabled/);
+  assert.match(settings, /apiPatch<EmergencyCard>\("\/api\/v1\/patient\/emergency-card\//);
+  assert.match(settings, /qr_enabled/);
   assert.match(visual, /Taille déclarée/);
   assert.match(visual, /Poids déclaré/);
   assert.match(home, /home-profile-title/);

@@ -19,6 +19,7 @@ media/
 backups/
 *.dump
 *.cdc
+*.prototypes
 *.dump.*
 .coverage
 .coverage.*
@@ -69,3 +70,4 @@ akatech-v3.1.zip
 private-media/
 Fichier.txt
 phase2-celery/README.md
+akatech-v6-1.zip

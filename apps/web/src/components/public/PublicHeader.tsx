@@ -124,7 +124,7 @@ export function PublicHeader() {
   return (
     <header className="pub-header" ref={headerRef}>
       <Link className="brand" href="/" aria-label="Mon E-Carnet, accueil" onClick={close}>
-        <BrandMark />
+        <BrandMark variant="duo" />
         <span className="brand-text"><strong>Mon E‑Carnet</strong><small>Carnet de santé numérique</small></span>
       </Link>
       <div className="pub-menu" id="pub-menu" ref={menuRef} data-open={menuOpen ? "true" : "false"}>
@@ -140,7 +140,7 @@ export function PublicHeader() {
       </div>
       <div className="pub-actions">
         <Link className="button ghost small" href="/connexion">Se connecter</Link>
-        <Link className="button primary small" href="/connexion?mode=register">Créer mon carnet</Link>
+        <Link className="button primary small" href="/connexion" data-track="signup">Commencer</Link>
       </div>
       <button
         ref={burgerRef}

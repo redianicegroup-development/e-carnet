@@ -60,7 +60,7 @@ export default function HomePage() {
             <h1 id="hero-title">{HERO.title}</h1>
             <p className="lead" data-hero-item>{HERO.lead}</p>
             <div className="actions" data-hero-item>
-              <Link className="button primary" href={HERO.primary.href}>{HERO.primary.label}<Icon name="chevron" size={18} /></Link>
+              <Link className="button primary" href={HERO.primary.href} data-track="signup">{HERO.primary.label}<Icon name="chevron" size={18} /></Link>
               <Link className="button" href={HERO.secondary.href}>{HERO.secondary.label}</Link>
             </div>
             <p className="lp-hero__note" data-hero-item><Icon name="shield" size={16} />{HERO.note}</p>
@@ -107,7 +107,7 @@ export default function HomePage() {
             <ul>{profile.points.map((point) => <li key={point}><Icon name="check" size={16} />{point}</li>)}</ul>
             {profile.cta.subject
               ? <a className={className} href={profile.cta.href} data-contact-subject={profile.cta.subject}>{profile.cta.text}</a>
-              : <Link className={className} href={profile.cta.href}>{profile.cta.text}</Link>}
+              : <Link className={className} href={profile.cta.href} data-track={profile.cta.track}>{profile.cta.text}</Link>}
           </article>;
         })}</div>
       </section>

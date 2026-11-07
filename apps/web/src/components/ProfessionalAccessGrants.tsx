@@ -67,10 +67,10 @@ export function ProfessionalAccessGrants() {
   }
 
   return <div className="stack-lg">
-    <section className="hero-page"><span className="eyebrow">Accès au carnet</span><h1>Demander l’accès à un patient.</h1><p className="notice" role="status" aria-live="polite">{message}</p></section>
+    <section className="hero-page"><h1>Demander l’accès à un patient.</h1><p className="notice" role="status" aria-live="polite">{message}</p></section>
     <section className="patient-grid" aria-label="Demandes d’accès">
       <form id="nouvelle-demande" className="card" onSubmit={submit}>
-        <span className="eyebrow">Nouvelle demande</span><h2>Présenter un patient</h2>
+        <h2>Présenter un patient</h2>
         <p className="muted">Scannez le QR affiché sur le téléphone du patient. Il est valable 5 minutes.</p>
         {scanning
           ? <QrScanner onResult={onScanned} onClose={() => setScanning(false)} />
@@ -80,7 +80,7 @@ export function ProfessionalAccessGrants() {
         <p className="muted">Vous demandez la pré-consultation, les déclarations et la lecture des documents. Rien n’est ouvert avant l’accord du patient.</p>
         <button className="button primary" type="submit" disabled={submitting || !qrToken.trim()}>{submitting ? "Envoi…" : "Envoyer la demande"}</button>
       </form>
-      <section id="historique" className="card"><span className="eyebrow">Historique</span><h2>Mes demandes</h2>{loading ? <p className="empty" role="status">Chargement…</p> : items.length === 0 ? <p className="empty">Aucune demande pour le moment.</p> : <div className="stack">{items.map((item) => <article className="record request-row" key={item.id}><div className="request-row__who"><span className="request-row__avatars"><PersonAvatar src={item.patient_avatar} name={item.patient_name || item.reference} size={46} /><EstablishmentLogo logo={item.establishment_logo} name={item.facility_label} size={22} /></span><div><strong>{item.patient_name || `Patient · accès ${item.reference}`}</strong><p className="muted">{item.facility_label} · {item.scope.map((scope) => SCOPE_LABELS[scope] ?? scope).join(", ")}</p></div></div><span className={`badge ${item.status === "active" ? "verified" : "declared"}`}>{STATUS_LABELS[item.status] ?? item.status}</span></article>)}</div>}</section>
+      <section id="historique" className="card"><h2>Mes demandes</h2>{loading ? <p className="empty" role="status">Chargement…</p> : items.length === 0 ? <p className="empty">Aucune demande pour le moment.</p> : <div className="stack">{items.map((item) => <article className="record request-row" key={item.id}><div className="request-row__who"><span className="request-row__avatars"><PersonAvatar src={item.patient_avatar} name={item.patient_name || item.reference} size={46} /><EstablishmentLogo logo={item.establishment_logo} name={item.facility_label} size={22} /></span><div><strong>{item.patient_name || `Patient · accès ${item.reference}`}</strong><p className="muted">{item.facility_label} · {item.scope.map((scope) => SCOPE_LABELS[scope] ?? scope).join(", ")}</p></div></div><span className={`badge ${item.status === "active" ? "verified" : "declared"}`}>{STATUS_LABELS[item.status] ?? item.status}</span></article>)}</div>}</section>
     </section>
   </div>;
 }

@@ -1,4 +1,4 @@
-const CACHE_NAME = "ecarnet-public-v5";
+const CACHE_NAME = "ecarnet-public-v6";
 const ASSET_CACHE = "ecarnet-assets-v1";
 const SHELL_CACHE = "ecarnet-shells-v1";
 const OFFLINE_URL = "/hors-connexion.html";

@@ -19,7 +19,7 @@ export function PatientHistory() {
   const openAccess = hash === "#acces";
   return (
     <div className="stack-lg">
-      <PageHeader eyebrow="Historique" title="Tout ce qui s’est passé" lead="Vos consultations, vos vaccins, vos mesures et les accès donnés à vos données. Pour ajouter ou corriger, ouvrez Mon carnet." />
+      <PageHeader title="Tout ce qui s’est passé" lead="Consultations, vaccins, mesures et accès donnés à vos données." />
       <div className="section-grid" id="acces">
         <CollapsibleSection key={openAccess ? "acces-ouvert" : "acces-ferme"} title="Accès à mes données" solo icon="eye" hint="Qui, quand, combien de temps" initiallyOpen={openAccess}><PatientAccessGrants part="log" /></CollapsibleSection>
         <CollapsibleSection title="Mes consultations" solo icon="stethoscope" hint="À venir, passées, pré-consultations"><PatientConsultations /></CollapsibleSection>

@@ -85,7 +85,7 @@ export function PatientCarnet() {
   const physicalKind = form.kind === "height" || form.kind === "weight";
   return (
     <div className="stack-lg">
-      <PageHeader eyebrow="Mon carnet" title="Ce que je déclare" lead="Ce que vous déclarez reste « déclaré » tant qu’un médecin ne l’a pas confirmé." />
+      <PageHeader title="Ce que je déclare" lead="Ce que vous déclarez reste « déclaré » tant qu’un médecin ne l’a pas confirmé." />
 
       <div className="section-grid">
       <CollapsibleSection title="Informations de ma carte virtuelle" icon="idcard" hint="Ce que la carte affiche">

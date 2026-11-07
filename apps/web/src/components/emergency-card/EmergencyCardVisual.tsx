@@ -1,6 +1,6 @@
 import { QRCodeSVG } from "qrcode.react";
 import { Icon } from "../ui/Icon";
-import { PROJECT_LOGO_WEBP } from "../../lib/brand";
+import { PROJECT_LOGO_MINI_WEBP } from "../../lib/brand";
 import "./emergency-card.css";
 
 export type EmergencyCardItem = { label: string; details?: string };
@@ -56,7 +56,7 @@ export function EmergencyCardVisual({ card, qrUrl = "", showQr = true, photo }: 
         <header className="ecard__band">
           <span className="ecard__brand"><span className="ecard__mark" aria-hidden="true">
             {/* eslint-disable-next-line @next/next/no-img-element -- logo WebP versionné sur Cloudinary */}
-            <img src={PROJECT_LOGO_WEBP} alt="" draggable={false} referrerPolicy="no-referrer" />
+            <img src={PROJECT_LOGO_MINI_WEBP} alt="" draggable={false} />
           </span>Mon E‑Carnet</span>
           <span className="ecard__tag">Carte d’urgence</span>
         </header>

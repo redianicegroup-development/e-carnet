@@ -25,7 +25,6 @@ import { CookieConsentBanner } from "../components/CookieConsentBanner";
 import { NetworkProvider } from "../components/network/NetworkProvider";
 import { OfflineBanner } from "../components/network/OfflineBanner";
 import "../components/network/network-banner.css";
-import { PROJECT_LOGO_WEBP } from "../lib/brand";
 import "./cookie-consent.css";
 import "./screen-loader.css";
 import "../components/modal/modal.css";
@@ -57,7 +56,12 @@ export const metadata: Metadata = {
   applicationName: "Mon E-Carnet",
   manifest: "/manifest.webmanifest",
   icons: {
-    icon: [{ url: PROJECT_LOGO_WEBP, type: "image/webp" }],
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/brand/favicon.svg", type: "image/svg+xml" },
+      { url: "/brand/favicon-32.png", type: "image/png", sizes: "32x32" },
+      { url: "/brand/favicon-16.png", type: "image/png", sizes: "16x16" },
+    ],
     apple: [{ url: "/brand/apple-touch-icon.png", type: "image/png", sizes: "180x180" }],
   },
 };

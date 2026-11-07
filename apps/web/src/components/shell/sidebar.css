@@ -88,8 +88,8 @@
   .sb__item.is-active { background: var(--sb-active); color: var(--text); font-weight: 650; }
   .sb__item.is-active .icon { color: var(--primary-text); }
   .sb__item--account { display: none; }
-  .sb__label { display: none; }
-  .sb__long { display: inline; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sb__long { display: none; }
+  .sb__label { display: inline; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .sb__badge { position: static; margin-left: auto; min-width: 20px; height: 20px; padding-inline: 6px; font-size: .72rem; }
 
   .sb__foot, .sb.is-bare .sb__foot { position: relative; display: block; padding-top: 8px; border-top: 1px solid var(--sb-line); }
@@ -106,6 +106,7 @@
   .sb.is-collapsed { padding-inline: 8px; }
   .sb.is-collapsed .sb__head { flex-direction: column; justify-content: flex-start; gap: 4px; height: auto; padding: 4px 0 8px; }
   .sb.is-collapsed .sb__brand-text, .sb.is-collapsed .sb__account-copy, .sb.is-collapsed .sb__account > .icon, .sb.is-collapsed .sb__long { display: none; }
+  .sb.is-collapsed .sb__label { display: none; }
   .sb.is-collapsed .sb__scroll { overflow: visible; }
   .sb.is-collapsed .sb__heading { height: 1px; margin: 10px 10px; padding: 0; overflow: hidden; background: var(--sb-line); font-size: 0; }
   .sb.is-collapsed .sb__row:first-child .sb__heading { display: none; }

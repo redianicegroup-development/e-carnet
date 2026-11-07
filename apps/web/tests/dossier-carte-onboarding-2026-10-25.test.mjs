@@ -18,9 +18,9 @@ test("la carte virtuelle du médecin : métier sur la carte, même PNG, sur les 
   assert.match(panel, /downloadEmergencyCardPng\(view, photo\)/);
   assert.match(hook, /\/api\/v1\/professionals\/me\//);
   assert.match(hook, /isProfessionalAccount\(account\.contexts\)/, "pas d’appel professionnel pour un patient simple");
-  assert.match(read("src/components/PatientHomeIdentity.tsx"), /<VirtualCardPanel /);
+  assert.doesNotMatch(read("src/components/PatientHomeIdentity.tsx"), /VirtualCardPanel/, "la carte virtuelle a quitté l’accueil patient");
   const proHome = read("src/components/ProfessionalHome.tsx");
-  assert.match(proHome, /<ProfessionalVirtualCard account=\{account\} profile=\{profile\} \/>/);
+  assert.doesNotMatch(proHome, /VirtualCardPanel|ProfessionalVirtualCard/, "la carte virtuelle a quitté l’accueil professionnel");
   assert.match(proHome, /professional_title/);
 });
 
@@ -58,15 +58,17 @@ test("dossier patient et dossier médecin : une seule présentation commune (Dos
   for (const title of ["Profil professionnel", "Établissement actif", "Cachet et signature"]) assert.match(doctor, new RegExp(`title: "${title}"`), title);
 });
 
-test("la carte virtuelle et son QR sont un bloc à part : une tuile pliable, sur les deux accueils", () => {
+test("accueils patient et professionnel : un seul bloc (dossier unifié), sans carte virtuelle ; le QR se gère dans Moi", () => {
   const home = read("src/components/PatientHomeIdentity.tsx");
-  const pro = read("src/components/ProfessionalHome.tsx");
+  const pro = read("src/components/ProfessionalDossier.tsx");
   for (const [name, source] of [["patient", home], ["professionnel", pro]]) {
-    assert.match(source, /<CollapsibleSection title="Ma carte virtuelle" icon="idcard"/, name);
-    assert.match(source, /<VirtualCardPanel /, name);
+    assert.match(source, /sections=\{tiles\} unified /, name);
+    assert.doesNotMatch(source, /CollapsibleSection|VirtualCardPanel/, name);
   }
-  assert.doesNotMatch(read("src/components/DossierCard.tsx"), /VirtualCardPanel/, "la carte n'est plus dans le bloc du dossier");
-  assert.match(home, /patient-dossier__qr/);
+  assert.match(read("src/components/DossierCard.tsx"), /dossier-inlines/, "les rubriques sont dans la même carte que l'en-tête");
+  const settings = read("src/components/PatientEmergencyCardSettingsClient.tsx");
+  assert.match(settings, /patient-dossier__qr/);
+  assert.match(settings, /toggleQr/);
 });
 
 test("le métier d'un professionnel s'affiche sous son nom sur les deux accueils et sur sa carte", () => {

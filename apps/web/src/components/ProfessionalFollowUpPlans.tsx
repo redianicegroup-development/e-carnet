@@ -60,7 +60,7 @@ export function ProfessionalFollowUpPlans() {
   }
 
   return <section className="card" aria-labelledby="professional-follow-up-title">
-    <div className="section-heading"><div><span className="eyebrow">Suivi des patients</span><h2 id="professional-follow-up-title">Plans de suivi</h2></div><span className="count-badge">{plans.length}</span></div>
+    <div className="section-heading"><div><h2 id="professional-follow-up-title">Plans de suivi</h2></div><span className="count-badge">{plans.length}</span></div>
     <p className="muted">Créez un objectif de suivi pour un patient autorisé. La fréquence, le statut et chaque évolution restent visibles dans l’historique.</p>
     <form className="stack" onSubmit={create}>
       <label className="field"><span>Patient / autorisation active</span><select value={grantId} onChange={(event) => setGrantId(event.target.value)}><option value="">Choisir une autorisation</option>{grants.map((grant) => <option key={grant.id} value={grant.id}>{grant.facility_label} · accès {grant.reference}</option>)}</select></label>

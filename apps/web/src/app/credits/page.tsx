@@ -77,7 +77,7 @@ export default function CreditsPage() {
           <h2 id="identite">Identité visuelle</h2>
           <div className="credits__identity">
             <BrandLogoFigure />
-            <p>Le logo et l’identité visuelle sont l’œuvre de l’équipe. Le stéthoscope en forme de cadenas relie la santé à la confidentialité et au contrôle des accès ; il accompagne désormais l’application, de la page d’accueil aux paramètres.</p>
+            <p>Le logo et l’identité visuelle sont l’œuvre de l’équipe. Il montre un soignant et un patient côte à côte, et accompagne l’application de la page d’accueil aux paramètres.</p>
           </div>
         </section>
 

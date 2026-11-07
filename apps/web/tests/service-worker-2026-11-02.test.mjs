@@ -88,10 +88,10 @@ test("installation : pages publiques, page hors connexion et son script sont pr�
   const env = createEnv();
   env.store.set("ecarnet-public-v4", new Map([[`${ORIGIN}/vieux`, new Response("x")]]));
   await env.lifecycle("install");
-  assert.deepEqual(env.cached("ecarnet-public-v5").sort(), [...PRECACHED].sort());
+  assert.deepEqual(env.cached("ecarnet-public-v6").sort(), [...PRECACHED].sort());
   await env.lifecycle("activate");
   assert.equal(env.store.has("ecarnet-public-v4"), false, "l'ancien cache doit disparaître");
-  assert.equal(env.store.has("ecarnet-public-v5"), true);
+  assert.equal(env.store.has("ecarnet-public-v6"), true);
 });
 
 test("pages privées : la coquille (HTML sans donnée) est gardée par adresse ; sans réseau elle est rejouée, sinon la page hors connexion (tous les espaces)", async () => {
@@ -102,7 +102,7 @@ test("pages privées : la coquille (HTML sans donnée) est gardée par adresse ;
     assert.equal(online.response.status, 200, path);
   }
   assert.deepEqual(env.cached("ecarnet-shells-v1").sort(), ["/etablissement/dossiers", "/patient/carnet", "/professionnel/patients"]);
-  assert.equal(env.cached("ecarnet-public-v5").some((path) => /^\/(patient|professionnel|etablissement)/.test(path)), false, "une coquille privée ne va pas dans le cache des pages publiques");
+  assert.equal(env.cached("ecarnet-public-v6").some((path) => /^\/(patient|professionnel|etablissement)/.test(path)), false, "une coquille privée ne va pas dans le cache des pages publiques");
   env.state.online = false;
   assert.equal((await env.request("/patient/carnet")).text, "<html>espace patient</html>", "coquille déjà ouverte : rejouée sans réseau");
   assert.equal((await env.request("/patient/carnet?onglet=vaccins")).text, "<html>espace patient</html>", "la requête (query) ne change pas la coquille");
@@ -126,7 +126,7 @@ test("pages publiques non précachées : copie gardée à chaque visite, rejoué
   const env = createEnv();
   await env.lifecycle("install");
   await env.request("/faq");
-  assert.ok(env.cached("ecarnet-public-v5").includes("/faq"));
+  assert.ok(env.cached("ecarnet-public-v6").includes("/faq"));
   env.state.online = false;
   assert.equal((await env.request("/faq")).text, "<html>/faq</html>");
 });
@@ -167,14 +167,14 @@ test("API : jamais interceptée ni gardée, quelle que soit la méthode", async 
   assert.equal((await env.request("/api/v1/patient/declarations/", { mode: "cors" })).handled, false);
   assert.equal((await env.request("/api/v1/patient/declarations/", { mode: "cors", method: "POST" })).handled, false);
   assert.equal((await env.request("https://autre-site.test/script.js", { mode: "no-cors" })).handled, false);
-  assert.equal(env.cached("ecarnet-assets-v1").length + env.cached("ecarnet-public-v5").filter((path) => path.startsWith("/api")).length, 0);
+  assert.equal(env.cached("ecarnet-assets-v1").length + env.cached("ecarnet-public-v6").filter((path) => path.startsWith("/api")).length, 0);
 });
 
 test("carte d'urgence : la coquille se recharge sans réseau, avec ses fichiers /_next/static/", async () => {
   const env = createEnv();
   await env.lifecycle("install");
   await env.request("/urgence/jeton-1");
-  assert.ok(env.cached("ecarnet-public-v5").includes("/urgence/jeton-1"));
+  assert.ok(env.cached("ecarnet-public-v6").includes("/urgence/jeton-1"));
   await env.request("/_next/static/chunks/app.js", { mode: "no-cors" });
   env.state.online = false;
   const page = await env.request("/urgence/jeton-1");
@@ -203,7 +203,7 @@ test("message de la page /urgence : seules des adresses du site sont acceptées 
   const env = createEnv();
   await env.lifecycle("install");
   await env.message({ type: "CACHE_EMERGENCY_PAGE", url: "/urgence/jeton-2", assets: ["/_next/static/a.js", "/_next/static/media/f.woff2?dpl=1", "//pirate.test/_next/static/x.js", "/_next/static/../../api/secret", "/api/v1/patient/declarations/", "https://pirate.test/_next/static/y.js", 42] });
-  assert.ok(env.cached("ecarnet-public-v5").includes("/urgence/jeton-2"));
+  assert.ok(env.cached("ecarnet-public-v6").includes("/urgence/jeton-2"));
   assert.deepEqual(env.cached("ecarnet-assets-v1").sort(), ["/_next/static/a.js", "/_next/static/media/f.woff2"].sort());
   assert.equal(env.state.fetched.some((url) => /pirate|api\/v1|secret/.test(url)), false, "aucune adresse hors du site ne doit être demandée");
   for (const url of ["/patient", "/patient/carnet", "/urgence/", "/urgence/a/b", "https://pirate.test/urgence/x", 7, undefined]) {
@@ -212,18 +212,18 @@ test("message de la page /urgence : seules des adresses du site sont acceptées 
     assert.equal(env.state.fetched.length, before, `${String(url)} : rien ne doit être demandé`);
   }
   await env.message({ type: "AUTRE", url: "/urgence/jeton-3", assets: [] });
-  assert.equal(env.cached("ecarnet-public-v5").includes("/urgence/jeton-3"), false);
+  assert.equal(env.cached("ecarnet-public-v6").includes("/urgence/jeton-3"), false);
 });
 
 test("les coquilles de carte d'urgence sont plafonnées (les plus anciennes disparaissent)", async () => {
   const env = createEnv();
   await env.lifecycle("install");
   for (let i = 0; i < 25; i += 1) await env.request(`/urgence/jeton-${i}`);
-  const kept = env.cached("ecarnet-public-v5").filter((path) => path.startsWith("/urgence/"));
+  const kept = env.cached("ecarnet-public-v6").filter((path) => path.startsWith("/urgence/"));
   assert.equal(kept.length, 20);
   assert.equal(kept.includes("/urgence/jeton-0"), false);
   assert.equal(kept.includes("/urgence/jeton-24"), true);
-  assert.equal(env.cached("ecarnet-public-v5").includes("/hors-connexion.html"), true, "le plafond ne touche pas aux pages précachées");
+  assert.equal(env.cached("ecarnet-public-v6").includes("/hors-connexion.html"), true, "le plafond ne touche pas aux pages précachées");
 });
 
 test("un QR désactivé (404) n'est pas gardé : sans réseau, la coquille d'une carte révoquée n'existe pas", async () => {
@@ -231,7 +231,7 @@ test("un QR désactivé (404) n'est pas gardé : sans réseau, la coquille d'une
   await env.lifecycle("install");
   const online = await env.request("/urgence/revoque");
   assert.equal(online.response.status, 404, "la réponse du serveur est transmise telle quelle");
-  assert.equal(env.cached("ecarnet-public-v5").includes("/urgence/revoque"), false);
+  assert.equal(env.cached("ecarnet-public-v6").includes("/urgence/revoque"), false);
   env.state.online = false;
   assert.equal((await env.request("/urgence/revoque")).response.status, 503);
 });

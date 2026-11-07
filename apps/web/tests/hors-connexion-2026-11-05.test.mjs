@@ -348,7 +348,7 @@ test("branchement : bandeau et relais montés pour toute l'application, barres c
   const toggle = read("src/components/OfflineDataToggle.tsx");
   assert.match(toggle, /purgeOfflineCache\(\)/);
   assert.match(toggle, /resetOfflineCacheEnabledMemo\(\)/);
-  assert.match(read("public/sw.js"), /ecarnet-public-v5/);
+  assert.match(read("public/sw.js"), /ecarnet-public-v6/);
 });
 
 test("sécurité : le service worker ne garde jamais de réponse d'API ; la copie ne dépend d'aucune clé écrite dans le code", () => {

@@ -46,9 +46,9 @@ export function EstablishmentJoinCodes({ establishmentId, active, onChange }: { 
   const codes = active && loadedCodes?.establishmentId === establishmentId ? loadedCodes.codes : null;
   const shown = usableCodes(codes ?? [], now);
   return <section className="card join-codes" aria-labelledby="code-title">
-    <span className="eyebrow">Nouveau médecin</span>
+    
     <h2 id="code-title">Code à remettre à un médecin</h2>
-    <p className="muted">Un code est à usage unique et reste affiché 48 h, puis disparaît. Transmettez-le directement au médecin.</p>
+    <p className="muted">Code à usage unique, il reste affiché 48 h. Remettez-le directement au médecin.</p>
     {codes === null && active ? <p className="empty" role="status">Chargement…</p> : shown.length > 0 && <ul className="join-codes__list" aria-live="polite">{shown.map((item) => <li key={item.id} className="join-codes__item">
       <p className="code-box">{item.code}</p>
       <div className="join-codes__meta"><span className="muted">{expiryLabel(item.expires_at, now)} · valable jusqu’au {new Date(item.expires_at).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}</span><button type="button" className="button small" onClick={() => void copy(item.code)}>{copied === item.code ? "Copié" : "Copier"}</button></div>
