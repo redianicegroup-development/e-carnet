@@ -1,0 +1,133 @@
+/* =====================================================================================================
+   Tableau de bord de l'accueil établissement (EstablishmentDashboard).
+   Aucune couleur propre : verts dérivés de --primary, fonds de --surface / --bg, textes de --text. Les sélecteurs sont préfixés par
+   `body` comme le reste des couches de style, pour passer devant les règles génériques (.card, .button…).
+   ===================================================================================================== */
+body .edash {
+  --edash-dark: color-mix(in srgb, var(--primary) 58%, #0b1a12);
+  --edash-mid: var(--primary);
+  --edash-soft: color-mix(in srgb, var(--primary) 16%, var(--surface));
+  --edash-track: color-mix(in srgb, var(--primary) 12%, var(--surface));
+  --edash-hatch: color-mix(in srgb, var(--primary) 55%, transparent);
+  --edash-ink: var(--text);
+  --edash-line: color-mix(in srgb, var(--text) 9%, transparent);
+  display: grid; gap: 18px; min-width: 0;
+}
+
+/* ---------- En-tête : titre + actions ---------- */
+body .edash__head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 14px 20px; }
+body .edash__title { margin: 0; font-size: clamp(1.6rem, 5vw, 2.1rem); line-height: 1.1; letter-spacing: -.02em; }
+body .edash__head .muted { margin: 6px 0 0; max-width: 52ch; }
+body .edash__actions { display: flex; flex-wrap: wrap; gap: 10px; }
+body .edash__actions .button { border-radius: 999px; padding-inline: 20px; }
+body .edash__actions .button.primary { background: var(--edash-dark); border-color: transparent; color: #fff; box-shadow: none; }
+
+/* ---------- Grille : 1 colonne sur téléphone, 2 sur tablette, 4 sur grand écran ---------- */
+body .edash__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: stretch; min-width: 0; }
+body .edash-card {
+  position: relative; display: grid; align-content: start; gap: 10px; min-width: 0; padding: 18px; border: 1px solid var(--edash-line); border-radius: 22px;
+  background: var(--surface, var(--bg)); color: var(--text); box-shadow: none; text-decoration: none;
+}
+body .edash-card__title { margin: 0; font-size: 1.02rem; font-weight: 750; line-height: 1.2; }
+body .edash-card__bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+body .edash-card__note { margin: 0; padding: 14px; border: 1px dashed var(--edash-line); border-radius: 14px; color: var(--text-muted); font-size: .88rem; text-align: center; }
+body .edash-pill { display: inline-flex; align-items: center; gap: 5px; flex: none; min-height: 32px; padding: 0 12px; border: 1.5px solid var(--edash-dark); border-radius: 999px; color: var(--edash-dark); font-size: .78rem; font-weight: 700; text-decoration: none; }
+body .edash-pill:hover { background: var(--edash-soft); }
+body .edash-more { color: var(--edash-dark); font-size: .86rem; font-weight: 700; text-decoration: none; }
+
+/* ---------- Indicateurs ---------- */
+body .edash-stat { gap: 4px; min-height: 132px; transition: transform .2s ease, box-shadow .2s ease; }
+body .edash-stat.is-link:hover { transform: translateY(-2px); box-shadow: var(--raise-sm); }
+body .edash-stat.is-link:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+body .edash-stat__top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; min-height: 30px; }
+body .edash-stat__label { font-size: .92rem; font-weight: 700; line-height: 1.25; }
+body .edash-stat__go { display: grid; place-items: center; flex: none; width: 30px; height: 30px; border: 1.5px solid currentColor; border-radius: 50%; }
+body .edash-stat__value { margin-top: 2px; font-family: var(--font-heading, inherit); font-size: clamp(2.2rem, 7vw, 3rem); font-weight: 700; line-height: 1; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+body .edash-stat__hint { display: flex; align-items: center; gap: 6px; margin-top: auto; padding-top: 6px; color: var(--text-muted); font-size: .76rem; font-weight: 600; line-height: 1.25; }
+body .edash-stat__chip { display: grid; place-items: center; flex: none; width: 20px; height: 20px; border-radius: 6px; background: var(--edash-soft); color: var(--edash-dark); }
+body .edash-stat--featured { border-color: transparent; background: linear-gradient(150deg, color-mix(in srgb, var(--primary) 78%, #0b1a12), color-mix(in srgb, var(--primary) 42%, #0b1a12)); color: #fff; }
+body .edash-stat--featured .edash-stat__go { background: #fff; border-color: #fff; color: var(--edash-dark); }
+body .edash-stat--featured .edash-stat__hint { color: rgb(255 255 255 / .86); }
+body .edash-stat--featured .edash-stat__chip { background: rgb(255 255 255 / .18); color: #fff; }
+
+/* ---------- Rendez-vous de la semaine : barres en pilules ---------- */
+body .edash-week { grid-column: 1 / -1; }
+body .edash-week__bars { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; height: 190px; padding-top: 6px; }
+body .edash-week__col { display: grid; grid-template-rows: 18px minmax(0, 1fr) 18px; justify-items: center; align-items: end; gap: 6px; min-width: 0; }
+body .edash-week__count { color: var(--text-muted); font-size: .72rem; font-weight: 700; line-height: 18px; font-variant-numeric: tabular-nums; }
+body .edash-week__bar { width: min(100%, 44px); min-height: 28px; border: 1.5px solid var(--edash-hatch); border-radius: 999px; background: repeating-linear-gradient(135deg, var(--edash-hatch) 0 1.5px, transparent 1.5px 6px); transition: height .4s ease; }
+body .edash-week__bar.has-data { border-color: transparent; background: var(--edash-dark); }
+body .edash-week__bar.has-data.is-today { background: color-mix(in srgb, var(--primary) 70%, var(--surface)); }
+body .edash-week__bar:not(.has-data).is-today { border-color: var(--edash-dark); }
+body .edash-week__day { color: var(--text-muted); font-size: .76rem; font-weight: 700; line-height: 18px; }
+body .edash-week__day.is-today { color: var(--text); }
+
+/* ---------- Rappel (« À faire ») ---------- */
+body .edash-reminder { gap: 6px; }
+body .edash-reminder__headline { margin: 6px 0 0; font-size: 1.35rem; font-weight: 800; line-height: 1.15; letter-spacing: -.01em; }
+body .edash-reminder__text { margin: 0; color: var(--text-muted); font-size: .88rem; line-height: 1.35; }
+body .edash-cta { display: inline-flex; align-items: center; justify-content: center; gap: 8px; align-self: end; margin-top: 12px; min-height: 46px; padding: 0 18px; border-radius: 999px; background: linear-gradient(135deg, var(--edash-mid), var(--edash-dark)); color: #fff; font-size: .92rem; font-weight: 750; text-decoration: none; }
+body .edash-cta:hover { filter: brightness(1.08); }
+body .edash-cta:focus-visible, body .edash-codes__cta:focus-visible, body .edash-pill:focus-visible, body .edash-more:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+
+/* ---------- Listes (demandes récentes, équipe) ---------- */
+body .edash-list { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+body .edash-list li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; min-width: 0; }
+body .edash-list__main { display: grid; gap: 1px; min-width: 0; }
+body .edash-list__main strong { overflow: hidden; font-size: .9rem; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
+body .edash-list__main small { overflow: hidden; color: var(--text-muted); font-size: .74rem; text-overflow: ellipsis; white-space: nowrap; }
+body .edash-list .avatar { flex: none; border-radius: 50%; object-fit: cover; }
+body .edash-badge { padding: 3px 10px; border: 1px solid transparent; border-radius: 999px; font-size: .7rem; font-weight: 700; line-height: 1.3; white-space: nowrap; }
+body .edash-badge--active { background: var(--status-verified-bg, var(--edash-soft)); color: var(--status-verified-fg, var(--edash-dark)); }
+body .edash-badge--pending { background: var(--status-declared-bg, #fff3d6); color: var(--status-declared-fg, #8a6100); }
+body .edash-badge--refused, body .edash-badge--suspended { background: var(--status-contested-bg, #fbeae8); color: var(--status-contested-fg, #a32d2d); }
+
+/* ---------- Progression : demi-cercle ---------- */
+body .edash-progress__plot { position: relative; width: min(100%, 300px); margin: 6px auto 0; }
+body .edash-gauge { display: block; width: 100%; height: auto; }
+body .edash-progress__center { position: absolute; inset: auto 0 4px; display: grid; justify-items: center; gap: 0; text-align: center; }
+body .edash-progress__center strong { font-family: var(--font-heading, inherit); font-size: clamp(1.6rem, 6vw, 2.2rem); line-height: 1; letter-spacing: -.02em; }
+body .edash-progress__center span { color: var(--text-muted); font-size: .76rem; font-weight: 600; }
+body .edash-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; margin: 8px 0 0; padding: 0; list-style: none; color: var(--text-muted); font-size: .78rem; font-weight: 600; }
+body .edash-legend li { display: inline-flex; align-items: center; gap: 6px; }
+body .edash-legend strong { color: var(--text); }
+body .edash-dot { width: 10px; height: 10px; flex: none; border-radius: 50%; }
+body .edash-dot--dark { background: var(--edash-dark); }
+body .edash-dot--mid { background: var(--edash-mid); }
+body .edash-dot--hatch { border: 1px solid var(--edash-hatch); background: repeating-linear-gradient(135deg, var(--edash-hatch) 0 1.5px, transparent 1.5px 4px); }
+
+/* ---------- Carte sombre : codes médecin ---------- */
+body .edash-codes { align-content: space-between; gap: 6px; border-color: transparent; background: radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--primary) 55%, #0b1a12), color-mix(in srgb, var(--primary) 30%, #07110b) 70%); color: #fff; overflow: hidden; }
+body .edash-codes__title { margin: 0; font-size: 1.02rem; font-weight: 750; }
+body .edash-codes__value { margin: 4px 0 0; font-family: var(--font-heading, inherit); font-size: clamp(2.6rem, 8vw, 3.4rem); font-weight: 700; line-height: 1; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+body .edash-codes__text { margin: 0; color: rgb(255 255 255 / .84); font-size: .8rem; line-height: 1.35; }
+body .edash-codes__cta { display: inline-flex; align-items: center; justify-content: center; gap: 8px; margin-top: 10px; min-height: 44px; border-radius: 999px; background: #fff; color: color-mix(in srgb, var(--primary) 55%, #0b1a12); font-size: .9rem; font-weight: 750; text-decoration: none; }
+body .edash-codes__cta:hover { background: color-mix(in srgb, #fff 90%, var(--primary)); }
+
+/* ---------- Tablette et grand écran ---------- */
+@media (min-width: 700px) {
+  body .edash__grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+  body .edash-week { grid-column: span 2; }
+  body .edash-reminder { grid-column: span 1; }
+  body .edash-requests { grid-column: span 1; }
+  body .edash-team { grid-column: span 2; }
+  body .edash-progress { grid-column: span 1; }
+  body .edash-codes { grid-column: span 1; }
+  body .edash-week__bars { height: 200px; }
+}
+@media (min-width: 700px) and (max-width: 1099px) {
+  /* tablette : la semaine prend toute la largeur, puis deux cartes par rangée */
+  body .edash-week { grid-column: 1 / -1; }
+  body .edash-reminder, body .edash-requests { grid-column: span 2; }
+  body .edash-team { grid-column: 1 / -1; }
+  body .edash-progress, body .edash-codes { grid-column: span 2; }
+}
+@media (max-width: 699px) {
+  body .edash__actions { width: 100%; }
+  body .edash__actions .button { flex: 1 1 auto; }
+  body .edash-reminder, body .edash-requests, body .edash-team, body .edash-progress, body .edash-codes { grid-column: 1 / -1; }
+  body .edash-codes { min-height: 190px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body .edash-stat, body .edash-week__bar { transition: none; }
+}

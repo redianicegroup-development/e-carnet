@@ -41,7 +41,8 @@ function Kpi({ href, icon, tone, label, value, hint }: { href?: string; icon: Ic
   return href ? <Link className="kpi card-link" href={href}>{body}</Link> : <div className="kpi">{body}</div>;
 }
 
-export function EstablishmentKpis({ memberships, activeJoinCodeCount = 0 }: { memberships: KpiMembership[]; activeJoinCodeCount?: number }) {
+/* `showCards={false}` : l'accueil établissement affiche déjà ses indicateurs dans EstablishmentDashboard ; on ne garde que les graphiques détaillés. */
+export function EstablishmentKpis({ memberships, activeJoinCodeCount = 0, showCards = true }: { memberships: KpiMembership[]; activeJoinCodeCount?: number; showCards?: boolean }) {
   const gradientId = useId().replace(/:/g, "");
   const stats = useMemo(() => {
     const now = Date.now();
@@ -87,13 +88,13 @@ export function EstablishmentKpis({ memberships, activeJoinCodeCount = 0 }: { me
 
   return (
     <>
-      <section className="kpi-grid" aria-label="Indicateurs de l’équipe">
+      {showCards && <section className="kpi-grid" aria-label="Indicateurs de l’équipe">
         <Kpi href="/etablissement/medecins" icon="users" tone="" label={`Médecin${stats.active > 1 ? "s" : ""} actif${stats.active > 1 ? "s" : ""}`} value={String(stats.active)} hint={stats.recentActivations ? `+${stats.recentActivations} en 30 j` : undefined} />
         <Kpi href="/etablissement/demandes" icon="document" tone="orb--green" label={`Demande${stats.pending > 1 ? "s" : ""} à traiter`} value={String(stats.pending)} hint={stats.recentRequests ? `+${stats.recentRequests} en 30 j` : undefined} />
         <Kpi icon="check" tone="orb--cream" label="Rattachements confirmés" value={confirmedShare} hint={stats.total ? `${stats.active} sur ${stats.total}` : undefined} />
         <Kpi icon="clock" tone="orb--mint" label="Délai moyen de réponse" value={formatDelay(stats.averageDelay)} />
         <Kpi icon="qr" tone="orb--cream" label="Codes médecin actifs" value={String(activeJoinCodeCount)} hint="Non utilisés · valables 48 h" />
-      </section>
+      </section>}
 
       <div className="role-dashboard-grid">
         <article className="card role-chart-card role-chart-card--wide">

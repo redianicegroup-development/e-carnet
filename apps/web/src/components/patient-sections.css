@@ -74,6 +74,38 @@ body .section-grid > .card.carnet-accordion[data-open="true"] .carnet-accordion_
 body .section-grid > .card.carnet-accordion[data-open="true"] .carnet-accordion__label { align-self: center; }
 body .section-grid > .card.carnet-accordion[data-open="true"] .carnet-accordion__panel { padding: 8px 14px 18px; }
 
+/* ---------- Tuile fermée : présentation « carte » du plan (PLAN APP) ----------
+   Fond clair, bordure fine d'encre, titre centré en haut, icône dans un cercle de couleur au milieu, description centrée en bas.
+   Seule la tuile fermée change : ouverte, elle garde l'en-tête coloré ci-dessus. Couleurs toujours tirées du thème actif. */
+body .section-grid > .card.carnet-accordion[data-open="false"] {
+  min-height: 196px; border: 1.5px solid color-mix(in srgb, var(--text) 78%, transparent); border-radius: 28px;
+  background: var(--surface, var(--bg)); box-shadow: none;
+}
+body .section-grid > .card.carnet-accordion[data-open="false"]:not(:active):hover { box-shadow: var(--raise-sm); }
+body .section-grid > .card.carnet-accordion[data-open="false"] .carnet-accordion__toggle {
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 10px; min-height: 196px; padding: 18px 12px 16px; text-align: center;
+}
+/* le libellé se « dissout » pour que titre, cercle et description se rangent dans la même colonne */
+body .section-grid > .card.carnet-accordion[data-open="false"] .carnet-accordion__label { display: contents; }
+body .section-grid > .card.carnet-accordion[data-open="false"] .carnet-accordion__name {
+  order: 1; display: flex; align-items: center; justify-content: center; min-height: 2.4em; font-size: 1.02rem; font-weight: 800; line-height: 1.2; text-align: center; text-wrap: balance;
+}
+body .section-grid > .card.carnet-accordion[data-open="false"] .carnet-accordion__badge {
+  order: 2; width: 68px; height: 68px; border-radius: 50%; background: color-mix(in srgb, var(--primary) 46%, var(--surface, var(--bg))); color: var(--text);
+}
+body .section-grid > .card.carnet-accordion[data-open="false"] .carnet-accordion__badge .icon { width: 32px; height: 32px; color: var(--text); }
+body .section-grid > .card.carnet-accordion[data-open="false"] .carnet-accordion__hint {
+  order: 3; max-width: 17ch; color: color-mix(in srgb, var(--text) 78%, transparent); font-size: .76rem; font-weight: 600; line-height: 1.3; text-align: center; text-wrap: balance;
+}
+/* pas de flèche sur la carte fermée (comme sur le plan) : toute la carte est le bouton */
+body .section-grid > .card.carnet-accordion[data-open="false"] .carnet-accordion__toggle > .icon { display: none; }
+body .section-grid > .card.carnet-accordion[data-open="false"] .carnet-accordion__toggle:hover { background: transparent; outline: 0; }
+body .section-grid > .card.carnet-accordion[data-open="false"] .carnet-accordion__toggle:focus-visible { background: transparent; border-radius: 26px; outline: 3px solid var(--focus); outline-offset: -5px; }
+@media (min-width: 820px) {
+  body .section-grid > .card.carnet-accordion[data-open="false"], body .section-grid > .card.carnet-accordion[data-open="false"] .carnet-accordion__toggle { min-height: 216px; }
+  body .section-grid > .card.carnet-accordion[data-open="false"] .carnet-accordion__badge { width: 76px; height: 76px; }
+}
+
 /* une rubrique seule dans sa grille reste une tuile carrée (ex. « Ma carte virtuelle ») : seule sa version ouverte prend toute la largeur */
 
 @media (min-width: 820px) {

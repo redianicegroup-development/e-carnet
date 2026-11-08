@@ -12,6 +12,8 @@ import { Icon } from "./ui/Icon";
 import "./join-codes.css";
 import { PageHeader } from "./ui/PageHeader";
 import { EstablishmentKpis } from "./EstablishmentKpis";
+import { EstablishmentDashboard } from "./EstablishmentDashboard";
+import { CollapsibleSection } from "./ui/CollapsibleSection";
 import { EstablishmentJoinCodes } from "./EstablishmentJoinCodes";
 import { splitFullName } from "../lib/join-codes";
 
@@ -175,19 +177,23 @@ export function EstablishmentConsole({ view }: { view: "home" | "requests" | "do
 
   const status = <p className="status" role="status" aria-live="polite">{message}</p>;
 
-  if (view === "requests") return <div className="stack-lg"><PageHeader eyebrow={establishment.name} title="Demandes" lead="Confirmez ou refusez les médecins qui saisissent votre code." />{!active && <Pending establishment={establishment} />}{requestRows}{status}</div>;
-  if (view === "doctors") return <div className="stack-lg"><PageHeader eyebrow={establishment.name} title="Médecins" lead="Touchez une photo pour voir la fiche." />{codeCard}{doctorRows}{status}</div>;
+  /* Même présentation en tuiles que les espaces patient et professionnel (section-grid + CollapsibleSection). */
+  if (view === "requests") return <div className="stack-lg"><PageHeader eyebrow={establishment.name} title="Demandes" lead="Confirmez ou refusez les médecins qui saisissent votre code." />{!active && <Pending establishment={establishment} />}<div className="section-grid"><CollapsibleSection title="Demandes de rattachement" solo initiallyOpen={pending.length > 0} icon="document" hint={pending.length ? `${pending.length} en attente` : "Aucune en attente"}>{requestRows}</CollapsibleSection></div>{status}</div>;
+  if (view === "doctors") return <div className="stack-lg"><PageHeader eyebrow={establishment.name} title="Médecins" lead="Touchez une photo pour voir la fiche." /><div className="section-grid"><CollapsibleSection title="Codes médecin" icon="qr" hint="Valables 48 h">{codeCard}</CollapsibleSection><CollapsibleSection title="Médecins de l’établissement" solo initiallyOpen icon="users" hint={`${doctors.length} rattaché${doctors.length > 1 ? "s" : ""}`}>{doctorRows}</CollapsibleSection></div>{status}</div>;
 
   return (
     <div className="stack-lg">
       <div className="greeting"><EstablishmentLogo logo={establishment.logo} name={establishment.name} size={56} /><div className="greeting__text"><small>{establishment.name} · {establishment.city}</small><h1>{account ? displayName(account) : "Administrateur"}</h1></div></div>
       {!active && <Pending establishment={establishment} />}
-      <EstablishmentKpis memberships={memberships} activeJoinCodeCount={activeJoinCodeCount} />
-      {active && <section className="card" aria-labelledby="openings-list-title"><div className="section-heading"><div><h2 id="openings-list-title">Ouvertures récentes</h2></div></div>{openings.length === 0 ? <p className="empty">Aucune ouverture enregistrée.</p> : <ul className="stack">{openings.map((item) => <li className="record" key={item.opening_id}><strong>{item.reason_label}</strong><p className="muted">Depuis le {new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(item.opened_at))} · {item.status}</p></li>)}</ul>}</section>}
-      {active && <section className="card" aria-labelledby="appointments-list-title"><div className="section-heading"><div><h2 id="appointments-list-title">Rendez-vous</h2></div></div>{appointments.length === 0 ? <p className="empty">Aucun rendez-vous.</p> : <ul className="stack">{appointments.map((item) => <li className="record" key={item.id}><strong>{new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(item.starts_at))}</strong><span className="badge">{item.status}</span></li>)}</ul>}</section>}
+      {active && <EstablishmentDashboard establishmentName={establishment.name} memberships={memberships} activeJoinCodeCount={activeJoinCodeCount} appointments={appointments} openingCount={openings.length} />}
+      {active && <EstablishmentKpis memberships={memberships} activeJoinCodeCount={activeJoinCodeCount} showCards={false} />}
+      {active && <div className="section-grid">
+        <CollapsibleSection title="Ouvertures récentes" solo icon="eye" hint="Dossiers ouverts par l’établissement"><section className="card" aria-labelledby="openings-list-title"><div className="section-heading"><div><h2 id="openings-list-title">Ouvertures récentes</h2></div></div>{openings.length === 0 ? <p className="empty">Aucune ouverture enregistrée.</p> : <ul className="stack">{openings.map((item) => <li className="record" key={item.opening_id}><strong>{item.reason_label}</strong><p className="muted">Depuis le {new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(item.opened_at))} · {item.status}</p></li>)}</ul>}</section></CollapsibleSection>
+        <CollapsibleSection title="Rendez-vous" solo icon="clock" hint="Pris dans l’établissement"><section className="card" aria-labelledby="appointments-list-title"><div className="section-heading"><div><h2 id="appointments-list-title">Rendez-vous</h2></div></div>{appointments.length === 0 ? <p className="empty">Aucun rendez-vous.</p> : <ul className="stack">{appointments.map((item) => <li className="record" key={item.id}><strong>{new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(item.starts_at))}</strong><span className="badge">{item.status}</span></li>)}</ul>}</section></CollapsibleSection>
+        <CollapsibleSection title="Codes médecin" icon="qr" hint="Valables 48 h">{codeCard}</CollapsibleSection>
+      </div>}
       {!active && <section className="card progress-card"><div className="section-heading"><div><h2>Activer l’espace établissement</h2></div></div><p className="muted">L’équipe Mon E‑Carnet doit d’abord valider votre structure.</p><div className="progress-card__line" role="progressbar" aria-valuemin={0} aria-valuemax={2} aria-valuenow={establishment.status === "pending" ? 1 : 0}><span style={{ width: `${establishment.status === "pending" ? 50 : 0}%` }} /></div><div className="progress-card__meta"><span>{establishment.status === "pending" ? "Demande reçue" : "Fiche à préparer"}</span><Link className="text-link" href="/etablissement/parametres">Voir les paramètres</Link></div></section>}
-      {pending.length > 0 && <section className="card alert-card"><h2>{pending.length} médecin{pending.length > 1 ? "s attendent" : " attend"} votre confirmation</h2><div className="actions"><Link className="button" href="/etablissement/demandes">Traiter les demandes</Link></div></section>}
-      {codeCard}
+      {!active && codeCard}
       {status}
       <section className="notice"><strong>Dossiers.</strong> Vous voyez les dossiers qui ont une pré-consultation clôturée ou une consultation dans votre établissement. Un médecin ne voit que le dossier que le patient l’a autorisé à ouvrir.</section>
     </div>
