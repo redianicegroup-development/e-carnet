@@ -83,6 +83,7 @@ REST_FRAMEWORK = {
         "documents_upload": os.environ.get("ECARNET_RATE_DOCUMENTS_UPLOAD", "20/hour"),
         "establishment_record_open": os.environ.get("ECARNET_RATE_ESTABLISHMENT_RECORD_OPEN", "30/hour"),
         "push_subscription": os.environ.get("ECARNET_RATE_PUSH_SUBSCRIPTION", "30/hour"),
+        "notification_changes": os.environ.get("ECARNET_RATE_NOTIFICATION_CHANGES", "120/hour"),
     },
     # Nombre de proxys de confiance devant l'API (Render, Vercel rewrite…). Mal réglé, l'IP client est falsifiable.
     "NUM_PROXIES": int(os.environ["DRF_NUM_PROXIES"]) if os.environ.get("DRF_NUM_PROXIES", "").isdigit() else (None if DEBUG else 1),

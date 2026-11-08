@@ -225,13 +225,18 @@ self.addEventListener("push", (event) => {
   try { payload = event.data ? event.data.json() : {}; } catch { payload = {}; }
   const data = payload.data || {};
   const url = typeof payload.url === "string" && payload.url.startsWith("/") && !payload.url.startsWith("//") ? payload.url : "/patient";
-  event.waitUntil(self.registration.showNotification(payload.title || "Mon E‑Carnet", {
-    body: payload.body || "Vous avez une nouvelle notification.",
-    icon: "/favicon.ico",
-    // Un tag par notification : deux rappels à la même heure restent deux notifications (un tag par « kind » les écraserait).
-    tag: data.notification_id || `ecarnet-${Date.now()}`,
-    data: { url },
-  }));
+  event.waitUntil((async () => {
+    // Temps réel : une fenêtre de l'app déjà ouverte relit sa boîte tout de suite (la cloche écoute ce message), sans attendre son prochain pouls.
+    const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    windows.forEach((client) => client.postMessage({ type: "ecarnet:push-received" }));
+    await self.registration.showNotification(payload.title || "Mon E‑Carnet", {
+      body: payload.body || "Vous avez une nouvelle notification.",
+      icon: "/favicon.ico",
+      // Un tag par notification : deux rappels à la même heure restent deux notifications (un tag par « kind » les écraserait).
+      tag: data.notification_id || `ecarnet-${Date.now()}`,
+      data: { url },
+    });
+  })());
 });
 
 self.addEventListener("notificationclick", (event) => {

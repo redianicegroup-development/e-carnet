@@ -4,7 +4,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.files.base import ContentFile
 from django.db import transaction
-from django.db.models import Q, Sum
+from django.db.models import Count, Max, Q, Sum
 from django.http import FileResponse, HttpResponse
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_datetime
@@ -24,8 +24,8 @@ from apps.audit.services import record_event
 from apps.cloudinary_storage import CLOUDINARY_CONFIGURED, destroy as cloudinary_destroy, extension_from_name, signed_download, upload as cloudinary_upload
 from .models import AccessGrant, Appointment, CareEncounter, Consultation, ExamRequest, FollowUpPlan, FollowUpPlanItem, FollowUpPlanRevision, HealthMeasurement, MedicalDocument, MedicationIntake, MedicationReminder, PatientNotification, PreconsultationTemplate, PushSubscription, Vaccination
 from .pdf_compression import compress_pdf_lossless
-from .serializers import AccessGrantSerializer, AppointmentSerializer, CareEncounterSerializer, ConsultationSerializer, FollowUpPlanSerializer, HealthMeasurementSerializer, MedicalDocumentSerializer, MedicationIntakeSerializer, MedicationReminderSerializer, PatientNotificationSerializer, PreconsultationTemplateSerializer, ProfessionalAccessGrantSerializer, ProfessionalAppointmentSerializer, ProfessionalConsultationCreateSerializer, ProposeAppointmentSerializer, VaccinationSerializer
-from .services import QR_TOKEN_TTL_SECONDS, SELF_ACCESS_MESSAGE, SelfAccessRefused, create_patient_qr_token, create_professional_grant, is_own_patient_file, require_scope
+from .serializers import AccessGrantSerializer, PatientAccessGrantSerializer, account_avatar_url, ProfessionalConsultationSerializer, AppointmentSerializer, CareEncounterSerializer, ConsultationSerializer, FollowUpPlanSerializer, HealthMeasurementSerializer, MedicalDocumentSerializer, MedicationIntakeSerializer, MedicationReminderSerializer, PatientNotificationSerializer, PreconsultationTemplateSerializer, ProfessionalAccessGrantSerializer, ProfessionalAppointmentSerializer, ProfessionalConsultationCreateSerializer, ProposeAppointmentSerializer, VaccinationSerializer
+from .services import ANOTHER_PROFESSIONAL_CONNECTED_MESSAGE, AUTO_GRANT_DURATION, QR_TOKEN_TTL_SECONDS, SELF_ACCESS_MESSAGE, SelfAccessRefused, create_patient_qr_token, create_professional_grant, is_own_patient_file, other_professional_connected, require_scope
 from .notifications import notify_patient, notify_professional
 from .push import is_allowed_endpoint, push_enabled, vapid_public_key
 from .consultation_services import validate_consultation
@@ -91,10 +91,10 @@ class EncounterDetailView(APIView):
 class PatientAccessGrantListView(APIView):
     permission_classes = [IsAuthenticated]
     def get(self, request):
-        items = AccessGrant.objects.filter(patient=profile_for(request.user, request))
+        items = AccessGrant.objects.filter(patient=profile_for(request.user, request)).select_related("professional__user__account_profile", "establishment")
         for item in items:
             item.refresh_expiration()
-        return Response({"success": True, "data": AccessGrantSerializer(items, many=True).data})
+        return Response({"success": True, "data": PatientAccessGrantSerializer(items, many=True).data})
 
 
 DOCUMENT_FORMATS = {
@@ -579,21 +579,39 @@ class PatientAccessSummaryPreferenceView(APIView):
         return Response({"success": True, "data": {"frequency": preference.frequency, "last_sent_at": preference.last_sent_at}})
 
 
+INBOX_SIZE = 30
+
+
 class PatientNotificationInboxView(APIView):
-    """Résumé privé destiné à la cloche de l’espace patient."""
+    """Résumé privé destiné à la cloche de l’espace patient : les 30 plus récentes, avec le total et le nombre de non lues."""
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         notifications = PatientNotification.objects.filter(patient=profile_for(request.user, request))
-        unread_count = notifications.filter(read_at__isnull=True).count()
-        recent = notifications.order_by("-created_at")[:10]
+        counts = notifications.aggregate(total=Count("id"), unread=Count("id", filter=Q(read_at__isnull=True)))
+        recent = notifications.order_by("-created_at")[:INBOX_SIZE]
         response = Response({
             "success": True,
             "data": {
                 "items": PatientNotificationSerializer(recent, many=True).data,
-                "unread_count": unread_count,
+                "unread_count": counts["unread"],
+                "total_count": counts["total"],
             },
         })
+        response["Cache-Control"] = "private, no-store"
+        return response
+
+
+class PatientNotificationPulseView(APIView):
+    """Pouls de la cloche : une seule requête agrégée, quelques octets. Le navigateur l'interroge toutes les quelques secondes et ne
+    recharge la boîte complète que si quelque chose a changé (nouvelle notification, lecture, suppression)."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        counts = PatientNotification.objects.filter(patient=profile_for(request.user, request)).aggregate(
+            total=Count("id"), unread=Count("id", filter=Q(read_at__isnull=True)), latest=Max("created_at"),
+        )
+        response = Response({"success": True, "data": {"unread_count": counts["unread"], "total_count": counts["total"], "latest_at": counts["latest"]}})
         response["Cache-Control"] = "private, no-store"
         return response
 
@@ -612,6 +630,38 @@ class PatientNotificationListView(APIView):
         item.read_at = timezone.now()
         item.save(update_fields=("read_at",))
         return Response({"success": True, "data": PatientNotificationSerializer(item).data})
+
+
+class PatientNotificationDetailView(APIView):
+    """Effacer une notification de sa boîte. Le journal des accès (historique) n'est pas touché : une notification n'est qu'un avertissement."""
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [WriteScopedThrottle]
+    throttle_scope = "notification_changes"
+
+    def delete(self, request, pk):
+        deleted, _ = PatientNotification.objects.filter(pk=pk, patient=profile_for(request.user, request)).delete()
+        if not deleted:
+            return Response({"success": False, "message": "Notification introuvable."}, status=404)
+        return Response({"success": True, "data": {"deleted": 1}})
+
+
+class PatientNotificationBulkView(APIView):
+    """Actions groupées sur la boîte : `read-all` (tout marquer comme lu) ou `clear` (tout effacer, ou seulement les lues avec `only_read`)."""
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [WriteScopedThrottle]
+    throttle_scope = "notification_changes"
+
+    def post(self, request, action):
+        notifications = PatientNotification.objects.filter(patient=profile_for(request.user, request))
+        if action == "read-all":
+            changed = notifications.filter(read_at__isnull=True).update(read_at=timezone.now())
+            return Response({"success": True, "data": {"updated": changed}})
+        if action == "clear":
+            if request.data.get("only_read") is True:
+                notifications = notifications.filter(read_at__isnull=False)
+            deleted, _ = notifications.delete()
+            return Response({"success": True, "data": {"deleted": deleted}})
+        return Response({"success": False, "message": "Action inconnue."}, status=404)  # pragma: no cover — les routes n'exposent que ces deux actions
 
 
 class PatientAppointmentOptionsView(APIView):
@@ -955,8 +1005,8 @@ class PatientAccessAuditView(APIView):
                 | Q(event_type__startswith="delegation.")
                 | Q(event_type__startswith="referral.")
             )
-            .select_related("access_grant", "establishment")
-            .order_by("-created_at")[:100]
+            .select_related("access_grant__professional__user__account_profile", "establishment")
+            .order_by("-created_at")[:200]
         )
         data = []
         for event in events:
@@ -977,7 +1027,11 @@ class PatientAccessAuditView(APIView):
                 "delegation_id": metadata.get("delegation_id"),
                 "referral_id": metadata.get("referral_id"),
                 "counterparty_establishment_id": metadata.get("counterparty_establishment_id"),
+                "method": metadata.get("method"),
+                "access_grant_id": str(grant.id) if grant else None,
+                "professional_id": str(grant.professional_id) if grant else None,
                 "professional_name": grant.professional_name if grant else "Professionnel",
+                "professional_avatar": account_avatar_url(grant.professional.user) if grant else "",
                 "facility_label": grant.facility_label if grant else (event.establishment.name if event.establishment else "Établissement"),
                 "created_at": event.created_at,
             })
@@ -1001,6 +1055,8 @@ class PatientAccessGrantActionView(APIView):
             return Response({"success": False, "message": "Cette autorisation a expiré."}, status=409)
         update_fields = []
         if action == "accept" and item.status == "pending":
+            if other_professional_connected(item.patient, item.professional, exclude_grant_id=item.pk):
+                return Response({"success": False, "message": ANOTHER_PROFESSIONAL_CONNECTED_MESSAGE}, status=409)
             if "care_history" in (item.scope or []):
                 selected_sources = {str(source) for source in request.data.get("source_establishments", item.source_establishments or [])}
                 proposed_sources = {str(source) for source in (item.source_establishments or [])}
@@ -1028,7 +1084,7 @@ class PatientAccessGrantActionView(APIView):
         record_event(event_type=f"access_grant.{action}", actor=request.user, actor_role=patient_actor_role(request), patient=item.patient, establishment=item.establishment, access_grant=item, metadata={"action": action, "status": item.status, "extension_count": item.extension_count})
         if action == "accept":
             notify_patient(item.patient, kind="access.accepted", title="Accès accepté", body=f"Vous avez autorisé {item.professional_name} de {item.facility_label}.", metadata={"access_grant_id": str(item.id)})
-        return Response({"success": True, "data": AccessGrantSerializer(item).data})
+        return Response({"success": True, "data": PatientAccessGrantSerializer(item).data})
 
 
 class PatientConsultationListView(APIView):
@@ -1211,9 +1267,38 @@ class ProfessionalAccessGrantListCreateView(APIView):
             detail = exc.detail
             message = detail[0] if isinstance(detail, list) else detail
             return Response({"success": False, "message": str(message)}, status=400)
-        record_event(event_type="access_grant.requested", actor=request.user, actor_role="professional", patient=item.patient, establishment=item.establishment, access_grant=item, metadata={"action": "requested", "scope": item.scope, "status": item.status})
-        notify_patient(item.patient, kind="access.requested", title="Nouvelle demande d’accès", body=f"{item.professional_name} de {item.facility_label} demande l’accès à votre carnet.", metadata={"access_grant_id": str(item.id)})
+        if item.status == "active":
+            # Règle du 08/11/2026 : le patient a montré son QR, l'accès est ouvert sans autre validation (2 h, un seul professionnel à la fois).
+            record_event(event_type="access_grant.requested", actor=request.user, actor_role="professional", patient=item.patient, establishment=item.establishment, access_grant=item, metadata={"action": "requested", "scope": item.scope, "status": "active", "method": "qr_scan"})
+            record_event(event_type="access_grant.accept", actor=request.user, actor_role="professional", patient=item.patient, establishment=item.establishment, access_grant=item, metadata={"action": "accept", "status": "active", "method": "qr_scan", "authorized_until": item.expires_at.isoformat(), "access_duration_minutes": int(AUTO_GRANT_DURATION.total_seconds() // 60)})
+            notify_patient(item.patient, kind="access.opened", title="Accès ouvert", body=f"{item.professional_name} de {item.facility_label} a scanné votre QR : il peut consulter votre carnet pendant 2 h.", metadata={"access_grant_id": str(item.id)})
+        else:
+            record_event(event_type="access_grant.requested", actor=request.user, actor_role="professional", patient=item.patient, establishment=item.establishment, access_grant=item, metadata={"action": "requested", "scope": item.scope, "status": item.status})
+            notify_patient(item.patient, kind="access.requested", title="Nouvelle demande d’accès", body=f"{item.professional_name} de {item.facility_label} demande l’accès à votre carnet.", metadata={"access_grant_id": str(item.id)})
         return Response({"success": True, "data": ProfessionalAccessGrantSerializer(item).data}, status=status.HTTP_201_CREATED)
+
+
+class ProfessionalAccessGrantEndView(APIView):
+    """Le professionnel met fin à son propre accès (fin de consultation) : le patient peut alors se connecter à quelqu'un d'autre sans attendre l'expiration."""
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [WriteScopedThrottle]
+    throttle_scope = "grant_request"
+
+    @transaction.atomic
+    def post(self, request, pk):
+        profile = getattr(request.user, "professional_profile", None)
+        item = AccessGrant.objects.select_for_update(of=("self",)).select_related("patient", "establishment").filter(pk=pk, professional=profile).first() if profile else None
+        if not item:
+            return Response({"success": False, "message": "Autorisation introuvable."}, status=404)
+        item.refresh_expiration()
+        if item.status != "active":
+            return Response({"success": False, "message": "Cet accès n’est plus actif."}, status=409)
+        now = timezone.now()
+        item.status, item.expires_at = "expired", now
+        item.save(update_fields=("status", "expires_at"))
+        record_event(event_type="access_grant.ended", actor=request.user, actor_role="professional", patient=item.patient, establishment=item.establishment, access_grant=item, metadata={"action": "ended", "status": "expired"})
+        notify_patient(item.patient, kind="access.ended", title="Accès terminé", body=f"{item.professional_name} de {item.facility_label} a mis fin à son accès à votre carnet.", metadata={"access_grant_id": str(item.id)})
+        return Response({"success": True, "data": ProfessionalAccessGrantSerializer(item).data})
 
 
 class ProfessionalRecentPatientsView(APIView):
@@ -1324,7 +1409,7 @@ class ProfessionalConsultationListCreateView(APIView):
         access_error = professional_clinical_access_error(profile)
         if access_error:
             return Response({"success": False, "message": access_error}, status=403)
-        items = list(Consultation.objects.filter(professional=profile, establishment=profile.active_establishment).select_related("establishment", "source_encounter", "patient", "access_grant").prefetch_related("prescription_lines", "exam_requests"))
+        items = list(Consultation.objects.filter(professional=profile, establishment=profile.active_establishment).select_related("establishment", "source_encounter", "patient__user__account_profile", "access_grant").prefetch_related("prescription_lines", "exam_requests"))
         # Un événement par patient concerné (et non un par consultation) : le patient doit pouvoir retrouver chaque lecture de son
         # dossier dans son journal, mais une liste de vingt consultations ne doit pas écrire vingt lignes à chaque chargement.
         groups = {}
@@ -1335,7 +1420,7 @@ class ProfessionalConsultationListCreateView(APIView):
             grant = first.access_grant
             duration = int(round((grant.expires_at - grant.starts_at).total_seconds() / 60)) if grant and grant.starts_at and grant.expires_at else None
             record_event(event_type="clinical_data.read", actor=request.user, actor_role="professional", patient=first.patient, establishment=first.establishment, access_grant=grant, metadata={"action": "read_consultations", "resource_type": "consultation", "resource_count": len(group), "authorized_until": grant.expires_at.isoformat() if grant and grant.expires_at else None, "access_duration_minutes": duration})
-        return Response({"success": True, "data": ConsultationSerializer(items, many=True).data})
+        return Response({"success": True, "data": ProfessionalConsultationSerializer(items, many=True).data})
 
     @transaction.atomic
     def post(self, request):
@@ -1354,7 +1439,7 @@ class ProfessionalConsultationListCreateView(APIView):
             return Response({"success": False, "message": str(exc.detail)}, status=403)
         record_event(event_type="consultation.validated", actor=request.user, actor_role="professional", patient=consultation.patient, establishment=consultation.establishment, access_grant=consultation.access_grant, consultation=consultation, metadata={"action": "validated", "source_type": "preconsultation"})
         record_event(event_type="preconsultation.closed", actor=request.user, actor_role="professional", patient=consultation.patient, establishment=consultation.establishment, access_grant=consultation.access_grant, consultation=consultation, metadata={"action": "closed", "encounter_id": str(consultation.source_encounter_id), "status": "closed"})
-        return Response({"success": True, "data": ConsultationSerializer(consultation).data}, status=status.HTTP_201_CREATED)
+        return Response({"success": True, "data": ProfessionalConsultationSerializer(consultation).data}, status=status.HTTP_201_CREATED)
 
 
 class ProfessionalAuthorizedEncounterListView(APIView):

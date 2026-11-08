@@ -97,7 +97,7 @@ const sections: LegalSectionDef[] = [
         <ul>
           <li>Créer, authentifier et sécuriser les comptes.</li>
           <li>Permettre au patient de tenir son carnet : déclarations de santé, documents, vaccinations, mesures, rappels de médicaments, rendez-vous et préparation d’une consultation.</li>
-          <li>Gérer les demandes d’accès : demande d’un professionnel, décision du patient, périmètre, durée, prolongation, refus et révocation.</li>
+          <li>Gérer les accès : ouverture par le scan du QR code présenté par le patient, demandes de périmètre élargi et décision du patient, durée, prolongation, fin d’accès, refus et révocation.</li>
           <li>Gérer les délégations limitées à un proche de confiance et permettre leur retrait.</li>
           <li>Gérer les adressages ciblés entre établissements avec le consentement granulaire du patient.</li>
           <li>Tracer les ouvertures motivées de dossiers locaux par un administrateur d’établissement et informer le patient.</li>
@@ -127,7 +127,7 @@ const sections: LegalSectionDef[] = [
           head={["Destinataire", "Ce qu’il peut recevoir", "Condition"]}
           rows={[
             ["Vous", "Les informations de votre compte et de votre carnet.", "Connexion à votre compte."],
-            ["Professionnel autorisé", "Le périmètre autorisé : pré-consultation, déclarations et documents en lecture seule (demandés avec le QR) ; consultations si le patient les sélectionne. Rien n’est accessible avant l’accord du patient.", `Rattachement actif à un établissement actif, autorisation du patient, durée limitée (${TECH_VALIDITY.accessInitial}, ${TECH_VALIDITY.accessExtension}).`],
+            ["Professionnel autorisé", "Le périmètre autorisé : pré-consultation, déclarations et documents en lecture seule (ouverts par le scan du QR que le patient présente lui-même, à un seul professionnel à la fois) ; consultations si le patient les accepte. Rien n’est accessible avant que le patient ait présenté son QR.", `Rattachement actif à un établissement actif, autorisation du patient, durée limitée (${TECH_VALIDITY.accessInitial}, ${TECH_VALIDITY.accessExtension}).`],
             ["Administrateur d’établissement", "Les demandes de rattachement et, après motif obligatoire, les soins produits dans sa propre structure pendant une ouverture temporaire.", "Liste sans contenu avant ouverture; audit et notification au patient; aucune donnée d’un autre établissement."],
             ["Proche de confiance", "La fiche d’urgence dans le périmètre choisi par le patient, en lecture seule.", "Compte propre du proche, mot de rattachement à usage unique, délégation active et non révoquée."],
             ["Professionnel de l’établissement destinataire", "Les éléments d’un adressage ou les soins historiques des structures sources sélectionnées par le patient, en lecture seule.", "Rattachement actif, autorisation du patient, durée limitée et audit ; aucune copie conservée en V1."],

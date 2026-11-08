@@ -21,3 +21,11 @@
 .request-row__who > div { min-width: 0; overflow-wrap: anywhere; }
 .request-row__avatars { position: relative; display: inline-flex; flex: 0 0 auto; }
 .request-row__avatars .establishment-logo { position: absolute; right: -6px; bottom: -6px; border-width: 2px; border-color: var(--surface); }
+/* 08/11/2026 : accès ouvert côté professionnel (temps restant + « Terminer l'accès ») */
+.request-row__side { display: grid; justify-items: end; gap: 6px; flex: 0 0 auto; text-align: right; }
+.request-row__side small { font-variant-numeric: tabular-nums; }
+/* « Mes consultations » (professionnel) : la personne reçue en tête de chaque ligne */
+.professional-compact-record--person { align-items: center; }
+.professional-compact-record__who { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.professional-compact-record__who > span:last-child { display: grid; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+.professional-compact-record__reason { font-size: .9rem; line-height: 1.35; }

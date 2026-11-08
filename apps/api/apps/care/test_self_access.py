@@ -50,7 +50,7 @@ class ProfessionalCannotOpenOwnFileTests(TestCase):
         self.assertEqual(response.status_code, 201)
         grant = AccessGrant.objects.get(patient=self.own_patient)
         self.assertEqual(grant.professional, self.colleague_profile)
-        self.assertEqual(grant.status, "pending")
+        self.assertEqual(grant.status, "active")
         self.assertIsNotNone(PatientAccessQrToken.objects.get(patient=self.own_patient).consumed_at)
 
     def test_another_patient_is_unaffected(self):

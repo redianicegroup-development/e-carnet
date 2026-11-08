@@ -358,8 +358,11 @@ class PatientAccessTests(TestCase):
         self.client.force_authenticate(doctor)
         created = self.client.post("/api/v1/patient/care/professional/access-grants/", {"qr_token": self.qr(patient), "scope": ["preconsultation", "declarations"]}, format="json")
         self.assertEqual(created.status_code, 201)
-        self.assertEqual(created.data["data"]["status"], "pending")
+        # Règle du 08/11/2026 : présenter son QR vaut accord, l'accès est actif tout de suite (2 h).
+        self.assertEqual(created.data["data"]["status"], "active")
         self.assertEqual(created.data["data"]["establishment_id"], str(establishment.id))
+        grant = AccessGrant.objects.get(pk=created.data["data"]["id"])
+        self.assertEqual(grant.expires_at - grant.starts_at, timedelta(hours=2))
 
     def test_professional_can_request_with_qr_token_alone_without_patient_uuid(self):
         from .models import PatientAccessQrToken
@@ -400,15 +403,24 @@ class PatientAccessTests(TestCase):
         self.assertEqual(first.status_code, 201)
         duplicate = self.client.post("/api/v1/patient/care/professional/access-grants/", {"qr_token": self.qr(), "scope": ["preconsultation"]}, format="json")
         self.assertEqual(duplicate.status_code, 400)
+        self.assertIn("déjà connecté", duplicate.data["message"])
+        # Le patient met fin à cet accès ; un périmètre plus large (consultations passées) reste une demande qu'il doit accepter ou refuser.
         grant = AccessGrant.objects.get(patient=self.profile)
         self.client.force_authenticate(self.user)
-        refused = self.client.post(f"/api/v1/patient/care/access-grants/{grant.id}/refuse/")
+        self.assertEqual(self.client.post(f"/api/v1/patient/care/access-grants/{grant.id}/revoke/").status_code, 200)
+        self.client.force_authenticate(doctor)
+        wide = self.client.post("/api/v1/patient/care/professional/access-grants/", {"qr_token": self.qr(), "scope": ["preconsultation", "consultations"]}, format="json")
+        self.assertEqual(wide.status_code, 201)
+        self.assertEqual(wide.data["data"]["status"], "pending")
+        wide_grant = AccessGrant.objects.get(pk=wide.data["data"]["id"])
+        self.client.force_authenticate(self.user)
+        refused = self.client.post(f"/api/v1/patient/care/access-grants/{wide_grant.id}/refuse/")
         self.assertEqual(refused.status_code, 200)
         self.client.force_authenticate(doctor)
-        retry = self.client.post("/api/v1/patient/care/professional/access-grants/", {"qr_token": self.qr(), "scope": ["preconsultation"]}, format="json")
+        retry = self.client.post("/api/v1/patient/care/professional/access-grants/", {"qr_token": self.qr(), "scope": ["preconsultation", "consultations"]}, format="json")
         self.assertEqual(retry.status_code, 400)
-        AccessGrant.objects.filter(pk=grant.pk).update(refused_at=timezone.now() - timedelta(days=31))
-        allowed = self.client.post("/api/v1/patient/care/professional/access-grants/", {"qr_token": self.qr(), "scope": ["preconsultation"]}, format="json")
+        AccessGrant.objects.filter(pk=wide_grant.pk).update(refused_at=timezone.now() - timedelta(days=31))
+        allowed = self.client.post("/api/v1/patient/care/professional/access-grants/", {"qr_token": self.qr(), "scope": ["preconsultation", "consultations"]}, format="json")
         self.assertEqual(allowed.status_code, 201)
 
     def test_doctor_signature_closes_the_draft_and_binds_it_to_the_doctors_establishment(self):
@@ -528,11 +540,12 @@ class PatientAccessTests(TestCase):
 
         request = professional_client.post(
             "/api/v1/patient/care/professional/access-grants/",
-            {"qr_token": self.qr(), "scope": ["preconsultation"]},
+            {"qr_token": self.qr(), "scope": ["preconsultation", "consultations"]},
             format="json",
         )
         self.assertEqual(request.status_code, 201)
         grant_id = request.data["data"]["id"]
+        # Un périmètre au-delà du QR de base (ici les consultations passées) reste une demande que le patient doit accepter.
         self.assertEqual(request.data["data"]["status"], "pending")
 
         denied_before_consent = professional_client.get(
@@ -701,9 +714,9 @@ class QrOnlyAndSingleUseTests(TestCase):
     def test_after_revocation_a_new_request_needs_a_new_qr_from_the_patient(self):
         created = self.request_access(self.client_a, {"qr_token": self.new_qr(), "scope": ["preconsultation"]})
         grant_id = created.data["data"]["id"]
+        self.assertEqual(created.data["data"]["status"], "active")
         patient_client = APIClient()
         patient_client.force_authenticate(self.patient_user)
-        self.assertEqual(patient_client.post(f"/api/v1/patient/care/access-grants/{grant_id}/accept/").status_code, 200)
         self.assertEqual(patient_client.post(f"/api/v1/patient/care/access-grants/{grant_id}/revoke/").status_code, 200)
         # Rien de ce que le professionnel a reçu ne permet de redemander : sans QR, la demande est refusée.
         retry = self.request_access(self.client_a, {"patient_id": str(self.profile.id), "scope": ["preconsultation"]})

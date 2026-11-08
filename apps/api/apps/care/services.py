@@ -15,6 +15,12 @@ DEFAULT_SCOPES = ["preconsultation", "declarations"]
 # Le QR professionnel propose toujours les documents en lecture seule ; le patient voit ce périmètre et doit encore l'accepter.
 REQUIRED_SCOPES = ("documents",)
 PENDING_GRANT_TTL = timedelta(days=7)
+# Règle du 08/11/2026 : présenter son QR vaut accord. Le scan ouvre l'accès tout de suite, pour deux heures, à UN SEUL professionnel à la fois
+# (comme une connexion Bluetooth : tant qu'une personne est connectée, personne d'autre ne peut se connecter).
+AUTO_GRANT_DURATION = timedelta(hours=2)
+# Ce que le QR ouvre sans autre décision du patient. Au-delà (consultations passées, historique d'autres structures), le patient décide encore.
+AUTO_GRANT_SCOPES = frozenset({"preconsultation", "declarations", "documents"})
+ANOTHER_PROFESSIONAL_CONNECTED_MESSAGE = "Ce patient est déjà connecté à un autre professionnel. L’accès en cours doit se terminer (par le patient ou par ce professionnel) avant d’en ouvrir un nouveau."
 REFUSED_GRANT_COOLDOWN = timedelta(days=30)
 # Les jetons expirés ou utilisés ne servent plus à rien : ils sont purgés après ce délai (commande `cleanup_access_qr_tokens`).
 QR_TOKEN_RETENTION = timedelta(days=1)
@@ -35,6 +41,19 @@ def is_own_patient_file(professional, patient):
     """Vrai quand le dossier patient appartient au compte du professionnel (même utilisateur, deux espaces)."""
     user_id = getattr(professional, "user_id", None)
     return bool(user_id) and getattr(patient, "user_id", None) == user_id
+
+
+def other_professional_connected(patient, professional, *, exclude_grant_id=None):
+    """Retourne l'accès actif d'un AUTRE professionnel sur ce patient (expiré = ignoré), ou None : la « connexion » est exclusive."""
+    now = timezone.now()
+    queryset = AccessGrant.objects.filter(patient=patient, status="active").exclude(professional=professional)
+    if exclude_grant_id:
+        queryset = queryset.exclude(pk=exclude_grant_id)
+    for grant in queryset.select_for_update(of=("self",)):
+        grant.refresh_expiration()
+        if grant.status == "active" and grant.expires_at and grant.expires_at > now:
+            return grant
+    return None
 
 
 def require_scope(grant, scope):
@@ -100,7 +119,11 @@ def consume_qr_token(token):
 
 @transaction.atomic
 def create_professional_grant(*, professional, qr_token=None, scope=None, source_establishments=None):
-    """Ouvre une demande d’accès. Le QR du patient est exigé à chaque demande : aucun identifiant de patient n’est accepté."""
+    """Ouvre l’accès d’un professionnel à un patient. Le QR du patient est exigé à chaque fois : aucun identifiant de patient n’est accepté.
+
+    Le scan vaut accord : pour le périmètre de base (pré-consultation, déclarations, documents en lecture seule) l’accès est actif tout de suite,
+    deux heures, et un seul professionnel peut être connecté à la fois. Un périmètre plus large (consultations passées, historique d’autres
+    structures) reste une demande en attente que le patient doit accepter."""
     access_error = professional_clinical_access_error(professional)
     if access_error:
         raise ValidationError(access_error)
@@ -126,6 +149,13 @@ def create_professional_grant(*, professional, qr_token=None, scope=None, source
         available_sources.update(Vaccination.objects.filter(patient=patient, establishment__isnull=False, status="confirmed").values_list("establishment_id", flat=True))
         if not set(selected_sources).issubset({str(item) for item in available_sources}):
             raise ValidationError("Une structure source ne possède aucun soin validé partageable pour ce patient.")
+    auto_accept = set(requested_scope) <= AUTO_GRANT_SCOPES
+    if auto_accept:
+        # Sérialise les ouvertures concurrentes sur ce patient : deux professionnels ne peuvent pas se connecter en même temps.
+        from apps.patients.models import PatientProfile
+        PatientProfile.objects.select_for_update().get(pk=patient.pk)
+        if other_professional_connected(patient, professional):
+            raise ValidationError(ANOTHER_PROFESSIONAL_CONNECTED_MESSAGE)
     stale_pending = AccessGrant.objects.select_for_update().filter(
         patient=patient,
         professional=professional,
@@ -137,9 +167,10 @@ def create_professional_grant(*, professional, qr_token=None, scope=None, source
         grant.refresh_expiration()
     existing = AccessGrant.objects.filter(patient=patient, professional=professional, establishment=establishment, status__in=("pending", "active")).first()
     if existing:
-        raise ValidationError("Une demande active existe déjà pour ce patient et cet établissement.")
+        raise ValidationError("Vous êtes déjà connecté à ce patient dans cet établissement." if existing.status == "active" else "Une demande active existe déjà pour ce patient et cet établissement.")
     cutoff = timezone.now() - REFUSED_GRANT_COOLDOWN
-    if AccessGrant.objects.filter(
+    # Le délai de 30 jours protège le patient des demandes répétées ; un QR qu'il présente lui-même est, au contraire, sa propre initiative.
+    if not auto_accept and AccessGrant.objects.filter(
         patient=patient,
         professional=professional,
         establishment=establishment,
@@ -147,6 +178,7 @@ def create_professional_grant(*, professional, qr_token=None, scope=None, source
         refused_at__gt=cutoff,
     ).exists():
         raise ValidationError("Une nouvelle demande est possible 30 jours après le refus.")
+    now = timezone.now()
     try:
         with transaction.atomic():
             grant = AccessGrant.objects.create(
@@ -157,7 +189,9 @@ def create_professional_grant(*, professional, qr_token=None, scope=None, source
                 facility_label=establishment.name,
                 scope=requested_scope,
                 source_establishments=selected_sources,
-                expires_at=timezone.now() + PENDING_GRANT_TTL,
+                status="active" if auto_accept else "pending",
+                starts_at=now if auto_accept else None,
+                expires_at=now + (AUTO_GRANT_DURATION if auto_accept else PENDING_GRANT_TTL),
             )
     except IntegrityError:
         if AccessGrant.objects.filter(

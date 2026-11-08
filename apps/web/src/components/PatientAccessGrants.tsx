@@ -1,84 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { notifyProductActionCompleted, primeCsrf, readCsrfToken } from "../infrastructure/api/client";
 import { useConfirm } from "./modal/ConfirmProvider";
 import { usePatientAccessQr } from "./shell/SpaceShell";
-
-type Grant = {
-  id: string;
-  professional_name: string;
-  facility_label: string;
-  scope: string[];
-  status: string;
-  starts_at: string | null;
-  expires_at: string | null;
-  extension_count: number;
-};
-
-type AccessEvent = {
-  id: string;
-  event_type: string;
-  action: string;
-  status: string | null;
-  extension_count: number | null;
-  resource_type?: string | null;
-  resource_count?: number | null;
-  access_duration_minutes?: number | null;
-  authorized_until?: string | null;
-  professional_name: string;
-  facility_label: string;
-  created_at: string;
-};
+import { AccessWho, ProfessionalHistoryDialog, ProfessionalHistoryList } from "./access/AccessHistory";
+import { SCOPE_LABELS, STATUS_LABELS, formatClock, groupByProfessional, splitGrants, timeLeft, type AccessEvent, type Grant } from "./access/access-history";
+import { concernsAccess, useNewNotifications } from "./notifications/notification-events";
 
 const API = "";
-const statusLabels: Record<string, string> = {
-  pending: "En attente de votre décision",
-  active: "Accès actif",
-  refused: "Refusée",
-  expired: "Expirée",
-  revoked: "Révoquée",
-};
-const scopeLabels: Record<string, string> = {
-  preconsultation: "Pré-consultation",
-  declarations: "Déclarations",
-  consultations: "Consultations",
-  documents: "Documents médicaux (lecture seule)",
-};
-const actionLabels: Record<string, string> = {
-  requested: "Demande créée",
-  accept: "Accès autorisé",
-  refuse: "Accès refusé",
-  extend: "Accès prolongé",
-  revoke: "Accès révoqué",
-  expired: "Accès expiré",
-};
-const resourceLabels: Record<string, string> = {
-  preconsultation: "vos pré-consultations",
-  consultation: "vos consultations",
-  declaration: "vos déclarations",
-};
-
-function eventDescription(event: AccessEvent): string {
-  if (event.event_type === "clinical_data.read") {
-    const resourceNoun = event.resource_type === "preconsultation" ? "pré-consultation" : event.resource_type === "consultation" ? "consultation" : event.resource_type === "declaration" ? "déclaration" : "élément de votre carnet";
-    const count = event.resource_count;
-    const quantity = typeof count === "number" ? `${count} ${resourceNoun}${count === 1 ? "" : "s"}` : resourceLabels[event.resource_type ?? ""] ?? "des éléments de votre carnet";
-    const duration = event.access_duration_minutes;
-    const durationText = typeof duration === "number" ? ` L’autorisation était valable ${duration / 60} h` : "";
-    return `${event.professional_name} a consulté ${quantity} dans le cadre de son accès autorisé.${durationText}.`;
-  }
-  const labels: Record<string, string> = {
-    requested: `${event.professional_name} a demandé un accès à votre carnet.`,
-    accept: "Vous avez autorisé cet accès.",
-    refuse: "Vous avez refusé cette demande d’accès.",
-    extend: "Vous avez prolongé cet accès.",
-    revoke: "Vous avez révoqué cet accès.",
-    expired: "Cet accès a expiré.",
-  };
-  return labels[event.action] ?? actionLabels[event.action] ?? "Événement lié à un accès.";
-}
+const LOADED_MESSAGE = "Demandes et historique chargés.";
 
 export function ActiveAccessQr({ token, expiresAt, busy, onRenew }: { token: string; expiresAt: number; busy: boolean; onRenew: () => void }) {
   const [now, setNow] = useState(() => Date.now());
@@ -116,6 +48,8 @@ export function PatientAccessGrants({ part = "all" }: { part?: "all" | "qr" | "l
   const [items, setItems] = useState<Grant[]>([]);
   const [events, setEvents] = useState<AccessEvent[]>([]);
   const [message, setMessage] = useState("Chargement des demandes…");
+  const [openKey, setOpenKey] = useState<string | null>(null);
+  const [now, setNow] = useState(() => new Date());
   const [busyId, setBusyId] = useState<string | null>(null);
   const { qr, setQr } = usePatientAccessQr();
   const [qrBusy, setQrBusy] = useState(false);
@@ -128,8 +62,17 @@ export function PatientAccessGrants({ part = "all" }: { part?: "all" | "qr" | "l
     ]);
     setItems(grants);
     setEvents(history);
-    setMessage("Demandes et historique chargés.");
+    setMessage(LOADED_MESSAGE);
   }
+
+  // « Il reste 1 h 24 » se met à jour sans recharger la page.
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  // Temps réel : dès que la cloche reçoit une notification d'accès (QR scanné, accès terminé…), les listes se rechargent d'elles-mêmes.
+  useNewNotifications(({ kinds }) => { if (concernsAccess(kinds)) void refresh().catch(() => undefined); });
 
   useEffect(() => {
     let active = true;
@@ -140,7 +83,7 @@ export function PatientAccessGrants({ part = "all" }: { part?: "all" | "qr" | "l
           getData<AccessEvent[]>("/api/v1/patient/care/access-audit/"),
         ]);
         if (!active) return;
-        setItems(grants); setEvents(history); setMessage("Demandes et historique chargés.");
+        setItems(grants); setEvents(history); setMessage(LOADED_MESSAGE);
       } catch (error) {
         if (active) setMessage(error instanceof Error ? error.message : "Demandes indisponibles.");
       }
@@ -151,7 +94,7 @@ export function PatientAccessGrants({ part = "all" }: { part?: "all" | "qr" | "l
 
   /* Autoriser, refuser ou prolonger un accès à son carnet : une décision de consentement, confirmée avant d'être envoyée. */
   async function decide(item: Grant, action: "accept" | "refuse" | "extend") {
-    const shared = item.scope.map((entry) => scopeLabels[entry] ?? entry).join(", ");
+    const shared = item.scope.map((entry) => SCOPE_LABELS[entry] ?? entry).join(", ");
     const copy = {
       accept: { title: "Autoriser cet accès ?", message: `${item.professional_name} (${item.facility_label}) pourra consulter ${shared ? `ces éléments de votre carnet : ${shared}` : "les éléments demandés de votre carnet"} pendant 2 heures.`, note: "Vous pourrez le révoquer à tout moment.", confirmLabel: "Autoriser 2 h" },
       refuse: { title: "Refuser cette demande ?", message: `${item.professional_name} (${item.facility_label}) ne recevra aucun accès à votre carnet.`, note: "Le professionnel pourra renvoyer une nouvelle demande.", confirmLabel: "Refuser la demande" },
@@ -197,19 +140,24 @@ export function PatientAccessGrants({ part = "all" }: { part?: "all" | "qr" | "l
     } finally { setQrBusy(false); }
   }
 
+  const histories = useMemo(() => groupByProfessional(events, items), [events, items]);
+  const opened = histories.find((history) => history.key === openKey) ?? null;
+  const { current, past } = useMemo(() => splitGrants(items), [items]);
+  const historyOf = (grantId: string) => histories.find((history) => history.sessions.some((session) => session.id === grantId)) ?? null;
+
   return (
     <section className={part === "all" ? "hero-page" : "stack"}>
       {part === "all" && <>
         <span className="eyebrow">Mon carnet · consentement</span>
         <h1>Qui peut accéder à mon carnet ?</h1>
-        <p className="muted">Rien n’est ouvert sans votre accord. Chaque demande indique qui, quoi et pour combien de temps.</p>
+        <p className="muted">Montrer votre QR vaut accord : le professionnel qui le scanne accède à votre carnet pendant 2 h (lecture seule), et lui seul. Vous pouvez mettre fin à l’accès depuis cet historique.</p>
       </>}
-      <p className="notice" role="status" aria-live="polite">{message}</p>
+      <p className={message === LOADED_MESSAGE ? "sr-only" : "notice"} role="status" aria-live="polite">{message}</p>
 
       {part !== "log" && <section id="qr" className="card" aria-labelledby="qr-heading">
         <span className="eyebrow">Accès temporaire</span>
         <h2 id="qr-heading">Accès temporaire pour un professionnel</h2>
-        <p className="muted">Ce n’est pas le QR de votre carte virtuelle : celui-ci expire au bout de 5 minutes. Le professionnel qui le scanne demande à voir vos informations et vos documents (lecture seule) ; c’est vous qui décidez ensuite.</p>
+        <p className="muted">Ce n’est pas le QR de votre carte virtuelle : celui-ci expire au bout de 5 minutes. Dès qu’un professionnel le scanne, il peut consulter vos informations et vos documents (lecture seule) pendant 2 heures, sans autre validation de votre part. Un seul professionnel peut être connecté à la fois, et vous pouvez mettre fin à son accès depuis l’historique.</p>
         {!qr
           ? <button type="button" className="button primary" onClick={() => void createQr()} disabled={qrBusy}>{qrBusy ? "Génération…" : "Générer un QR temporaire"}</button>
           : <ActiveAccessQr token={qr.token} expiresAt={qr.expiresAt} busy={qrBusy} onRenew={() => void createQr()} />}
@@ -218,47 +166,62 @@ export function PatientAccessGrants({ part = "all" }: { part?: "all" | "qr" | "l
       {part !== "qr" && <section aria-labelledby="active-access-heading">
         <h2 id="active-access-heading">Demandes et autorisations</h2>
         {items.length === 0 ? (
-          <div className="card empty">Aucune demande d’accès pour le moment.</div>
+          <div className="card empty">Aucun accès pour le moment. Quand un professionnel scannera votre QR, il apparaîtra ici avec sa photo.</div>
         ) : (
           <div className="stack">
-            {items.map((item) => (
-              <article className="card" key={item.id}>
-                <div className="section-heading">
-                  <div><h3>{item.professional_name}</h3><p className="muted">{item.facility_label}</p></div>
-                  <span className={item.status === "active" ? "badge verified" : "badge declared"}>{statusLabels[item.status] ?? item.status}</span>
-                </div>
-                <p className="muted">Accès demandé : {item.scope.map((scope) => scopeLabels[scope] ?? scope).join(", ") || "À préciser"}</p>
-                {item.status === "pending" && <p className="consent-explanation">Si vous autorisez : accès pendant <strong>2 heures</strong> (prolongeable deux fois d’une heure), limité à ce qui est listé ci-dessus. <strong>Rien n’est accessible avant votre décision.</strong></p>}
-                {item.status === "active" && item.expires_at && <p className="muted">Expire le {new Date(item.expires_at).toLocaleString("fr-FR")}.</p>}
-                <div className="actions">
-                  {item.status === "pending" && <>
-                    <button type="button" className="button consent-decision" disabled={busyId === item.id} onClick={() => void decide(item, "accept")}>Autoriser pendant 2 h</button>
-                    <button type="button" className="button consent-decision" disabled={busyId === item.id} onClick={() => void decide(item, "refuse")}>Refuser</button>
-                  </>}
-                  {item.status === "active" && <>
-                    <button type="button" className="button" disabled={busyId === item.id || item.extension_count >= 2} onClick={() => void decide(item, "extend")}>Prolonger 1 h ({Math.max(0, 2 - item.extension_count)} restante{item.extension_count === 0 ? "s" : ""})</button>
-                    <button type="button" className="button primary danger" disabled={busyId === item.id} onClick={() => void confirm({ title: "Révoquer cet accès maintenant ?", message: `${item.professional_name} perdra immédiatement l’accès à votre carnet.`, note: "L’autorisation apparaîtra comme « Révoquée » dans votre liste.", confirmLabel: "Révoquer l’accès", cancelLabel: "Garder l’accès", tone: "danger", mood: "question" }).then((ok) => { if (ok) void act(item.id, "revoke"); })}>Révoquer maintenant</button>
-                  </>}
-                </div>
-              </article>
-            ))}
+            {current.map((item) => {
+              const left = item.status === "active" ? timeLeft(item.expires_at, now) : null;
+              const history = historyOf(item.id);
+              return (
+                <article className="card access-card" key={item.id}>
+                  <div className="access-card__top">
+                    <AccessWho name={item.professional_name} avatar={item.professional_avatar} logo={item.establishment_logo} facility={item.facility_label} subtitle={item.professional_title} size={56} />
+                    <span className={item.status === "active" ? "badge verified" : "badge declared"}>{STATUS_LABELS[item.status] ?? item.status}</span>
+                  </div>
+                  <p className="muted">{item.status === "active" ? "Peut consulter" : "Accès demandé"} : {item.scope.map((scope) => SCOPE_LABELS[scope] ?? scope).join(", ") || "À préciser"}</p>
+                  {item.status === "pending" && <p className="consent-explanation">Si vous autorisez : accès pendant <strong>2 heures</strong> (prolongeable deux fois d’une heure), limité à ce qui est listé ci-dessus. <strong>Rien n’est accessible avant votre décision.</strong></p>}
+                  {item.status === "active" && item.expires_at && <p className="access-card__time">{left ? `Il reste ${left}` : "Se termine à l’instant"} · jusqu’à {formatClock(item.expires_at)}</p>}
+                  <div className="actions">
+                    {item.status === "pending" && <>
+                      <button type="button" className="button consent-decision" disabled={busyId === item.id} onClick={() => void decide(item, "accept")}>Autoriser pendant 2 h</button>
+                      <button type="button" className="button consent-decision" disabled={busyId === item.id} onClick={() => void decide(item, "refuse")}>Refuser</button>
+                    </>}
+                    {item.status === "active" && <>
+                      <button type="button" className="button" disabled={busyId === item.id || item.extension_count >= 2} onClick={() => void decide(item, "extend")}>Prolonger 1 h ({Math.max(0, 2 - item.extension_count)} restante{item.extension_count === 0 ? "s" : ""})</button>
+                      <button type="button" className="button primary danger" disabled={busyId === item.id} onClick={() => void confirm({ title: "Révoquer cet accès maintenant ?", message: `${item.professional_name} perdra immédiatement l’accès à votre carnet.`, note: "L’accès apparaîtra comme « Révoquée » dans votre historique.", confirmLabel: "Révoquer l’accès", cancelLabel: "Garder l’accès", tone: "danger", mood: "question" }).then((ok) => { if (ok) void act(item.id, "revoke"); })}>Révoquer maintenant</button>
+                    </>}
+                    {history && <button type="button" className="button" onClick={() => setOpenKey(history.key)} aria-haspopup="dialog">Voir son historique</button>}
+                  </div>
+                </article>
+              );
+            })}
+            {past.length > 0 && <>
+              <h3 className="access-past__title">Accès terminés</h3>
+              <ul className="access-past">
+                {past.map((item) => {
+                  const history = historyOf(item.id);
+                  const row = <>
+                    <AccessWho name={item.professional_name} avatar={item.professional_avatar} logo={item.establishment_logo} facility={item.facility_label} subtitle={item.professional_title} size={40} />
+                    <span className="badge declared">{STATUS_LABELS[item.status] ?? item.status}</span>
+                  </>;
+                  return <li key={item.id}>{history
+                    ? <button type="button" className="access-past__row" onClick={() => setOpenKey(history.key)} aria-haspopup="dialog" aria-label={`Voir l’historique de ${item.professional_name}`}>{row}</button>
+                    : <div className="access-past__row">{row}</div>}</li>;
+                })}
+              </ul>
+            </>}
           </div>
         )}
       </section>}
 
       {part !== "qr" && <section aria-labelledby="access-history-heading" className="card">
         <h2 id="access-history-heading">Historique des accès</h2>
-        {events.length === 0 ? <p className="empty">Les décisions et changements d’accès apparaîtront ici.</p> : (
-          <ol className="stack">
-            {events.map((event) => (
-              <li className="record" key={event.id}>
-                <div><strong>{eventDescription(event)}</strong><p className="muted">{event.facility_label}{event.authorized_until ? ` · accès valable jusqu’au ${new Date(event.authorized_until).toLocaleString("fr-FR")}` : ""}{event.status ? ` · statut : ${statusLabels[event.status] ?? event.status}` : ""}</p></div>
-                <time className="muted" dateTime={event.created_at}>{new Date(event.created_at).toLocaleString("fr-FR")}</time>
-              </li>
-            ))}
-          </ol>
-        )}
+        {histories.length === 0 ? <p className="empty">Les décisions et changements d’accès apparaîtront ici.</p> : <>
+          <p className="muted">Touchez un professionnel pour voir tout ce qu’il a fait avec vos accès.</p>
+          <ProfessionalHistoryList histories={histories} onOpen={(history) => setOpenKey(history.key)} />
+        </>}
       </section>}
+      {opened && <ProfessionalHistoryDialog history={opened} onClose={() => setOpenKey(null)} />}
     </section>
   );
 }

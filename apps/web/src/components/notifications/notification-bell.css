@@ -42,3 +42,21 @@
   .notification-bell *, .notification-bell { transition: none !important; animation: none !important; }
   .notification-bell__panel-head, .notification-bell__status, .notification-bell__item, .notification-bell__all { filter: none; }
 }
+
+/* ---- 08/11/2026 : onglets « Les nouvelles / Voir toutes », effacement, barre d'actions groupées ---- */
+.notification-bell__tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 999px; background: color-mix(in srgb, var(--bg) 82%, var(--surface)); box-shadow: inset 0 1px 3px color-mix(in srgb, var(--text) 14%, transparent); }
+.notification-bell__tab { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 34px; padding: 0 10px; border: 0; border-radius: 999px; background: transparent; color: var(--text-muted); font: inherit; font-size: .8rem; font-weight: 700; cursor: pointer; transition: background .2s ease, color .2s ease, box-shadow .2s ease; }
+.notification-bell__tab[aria-selected="true"] { background: var(--bg); color: var(--primary-text); box-shadow: var(--raise-sm, var(--shadow-sm)); }
+.notification-bell__tab:focus-visible, .notification-bell__bulk:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.notification-bell__tab-count { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--danger); color: #fff; font-size: .68rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.notification-bell__tab-count.is-muted { background: color-mix(in srgb, var(--text) 12%, transparent); color: var(--text-muted); }
+.notification-bell__item-buttons { display: inline-flex; align-items: center; gap: 12px; }
+.notification-bell__item-actions .notification-bell__delete { color: var(--danger); }
+.notification-bell__toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; padding: 8px 4px 0; border-top: 1px solid var(--border); }
+.notification-bell__bulk { min-height: 34px; padding: 0 12px; border: 1px solid var(--border); border-radius: 999px; background: transparent; color: var(--primary-text); font: inherit; font-size: .78rem; font-weight: 700; cursor: pointer; }
+.notification-bell__bulk:disabled { opacity: .5; cursor: default; }
+.notification-bell__bulk--danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, var(--border)); }
+.notification-bell__bulk--danger.is-confirming { background: var(--danger); border-color: var(--danger); color: #fff; }
+.notification-bell__tabs, .notification-bell__toolbar { opacity: 0; transform: translateY(14px); filter: blur(6px); transition: opacity .2s ease, transform .2s ease, filter .2s ease; }
+.notification-bell[data-open="true"] .notification-bell__tabs, .notification-bell[data-open="true"] .notification-bell__toolbar { opacity: 1; transform: none; filter: blur(0); transition: opacity .4s ease calc(.16s + var(--i, 0) * .055s), transform .5s var(--spring-soft, cubic-bezier(.2, .8, .2, 1)) calc(.16s + var(--i, 0) * .055s), filter .4s ease calc(.16s + var(--i, 0) * .055s); }
+@media (prefers-reduced-motion: reduce) { .notification-bell__tabs, .notification-bell__toolbar { filter: none; } }

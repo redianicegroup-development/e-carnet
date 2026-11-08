@@ -58,6 +58,15 @@ export function PatientHome() {
     return () => { active = false; };
   }, [attempt]);
 
+  // Plus de carte « Réessayer » sur l'accueil (08/11/2026) : l'écran se recharge de lui-même dès que le réseau revient ou que l'application reprend le focus.
+  useEffect(() => {
+    if (!error) return;
+    const reloadWhenBack = () => { if (document.visibilityState === "visible" && navigator.onLine !== false) retry(); };
+    window.addEventListener("online", reloadWhenBack);
+    document.addEventListener("visibilitychange", reloadWhenBack);
+    return () => { window.removeEventListener("online", reloadWhenBack); document.removeEventListener("visibilitychange", reloadWhenBack); };
+  }, [error, retry]);
+
   const todos: Todo[] = [];
   if (summary && summary.pending > 0) todos.unshift({ key: "grants", href: "/patient/historique#acces", icon: "share", urgent: true, title: `${summary.pending} demande${summary.pending > 1 ? "s" : ""} d’accès en attente`, text: "Un professionnel attend votre décision. Rien n’est partagé tant que vous n’avez pas accepté." });
   if (account && !account.patient_profile.completed) todos.push({ key: "profile", href: "/onboarding/patient", icon: "user", title: "Terminer mon profil", text: "Téléphone, naissance, couverture : utile pour préparer vos consultations." });
@@ -81,8 +90,6 @@ export function PatientHome() {
           </div>
         </header>
       )}
-
-      {error && <div className="card alert-card" role="alert"><p>{error}</p><div className="actions"><button className="button" type="button" onClick={retry}>Réessayer</button></div></div>}
 
       <PatientToday />
 

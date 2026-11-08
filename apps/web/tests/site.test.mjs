@@ -334,11 +334,16 @@ test("admin : les nouveaux retours sont annoncés dans la navigation et les indi
   assert.match(styles, /\.space--admin \.admin-metric::before/);
 });
 
-test("scanner le QR demande aussi la lecture seule des documents : plus de case à cocher, et le patient voit ce périmètre avant de décider", () => {
+test("scanner le QR ouvre aussi la lecture seule des documents : plus de case à cocher, le patient voit ce périmètre dans son accès et l’ouverture est immédiate (08/11/2026)", () => {
   const professional = read("src/components/ProfessionalAccessGrants.tsx");
   const patient = read("src/components/PatientAccessGrants.tsx");
   assert.doesNotMatch(professional, /includeDocuments|type="checkbox"/);
   assert.match(professional, /requestProfessionalGrant\(\["preconsultation", "declarations", "documents"\]/);
   assert.match(professional, /Documents médicaux \(lecture seule\)/);
-  assert.match(patient, /documents: "Documents médicaux \(lecture seule\)"/);
+  assert.match(read("src/components/access/access-history.ts"), /documents: "Documents médicaux \(lecture seule\)"/);
+  assert.match(patient, /SCOPE_LABELS\[scope\]/);
+  // Règle du 08/11/2026 : présenter son QR vaut accord, plus d'envoi de demande à valider côté professionnel.
+  assert.doesNotMatch(professional, /Envoyer la demande|avant l’accord du patient/);
+  assert.match(professional, /Ouvrir l’accès/);
+  assert.match(professional, /Il reste/);
 });

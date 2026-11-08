@@ -56,8 +56,9 @@ class V2TrackingTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response["Cache-Control"], "private, no-store")
         self.assertEqual(response.data["data"]["unread_count"], 11)
+        self.assertEqual(response.data["data"]["total_count"], 12)
         items = response.data["data"]["items"]
-        self.assertEqual(len(items), 10)
+        self.assertEqual(len(items), 12)
         self.assertNotIn("Ne pas exposer", [item["title"] for item in items])
 
     def test_patient_can_request_and_cancel_appointment(self):

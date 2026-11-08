@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { ApiError } from "../infrastructure/api/client";
-import { listProfessionalGrants, ProfessionalGrant, requestProfessionalGrant } from "../application/professional-access-grants";
+import { endProfessionalGrant, listProfessionalGrants, ProfessionalGrant, requestProfessionalGrant } from "../application/professional-access-grants";
+import { useConfirm } from "./modal/ConfirmProvider";
+import { formatClock, timeLeft } from "./access/access-history";
 import { QrScanner } from "./QrScanner";
 import { PersonAvatar } from "./ui/PersonAvatar";
 import { EstablishmentLogo } from "./EstablishmentLogo";
@@ -10,7 +12,7 @@ import "./establishment-logo.css";
 import "./consultation-flow.css";
 
 const MOCK_GRANTS: ProfessionalGrant[] = [];
-const STATUS_LABELS: Record<string, string> = { pending: "En attente du patient", active: "Autorisé", refused: "Refusé", expired: "Expiré", revoked: "Révoqué" };
+const STATUS_LABELS: Record<string, string> = { pending: "En attente du patient", active: "Accès ouvert", refused: "Refusé", expired: "Expiré", revoked: "Révoqué" };
 const SCOPE_LABELS: Record<string, string> = { preconsultation: "Pré-consultation", declarations: "Déclarations", consultations: "Consultations", documents: "Documents médicaux (lecture seule)" };
 
 export function ProfessionalAccessGrants() {
@@ -20,6 +22,8 @@ export function ProfessionalAccessGrants() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("Chargement de vos demandes…");
+  const [endingId, setEndingId] = useState<string | null>(null);
+  const confirm = useConfirm();
 
   // Le bouton principal de la barre de navigation (« Scanner ») arrive ici avec #scanner : la caméra démarre et le formulaire passe au premier plan.
   useEffect(() => {
@@ -48,11 +52,11 @@ export function ProfessionalAccessGrants() {
     if (!qrToken.trim()) { setMessage("Scannez d’abord le QR du patient."); return; }
     setSubmitting(true);
     try {
-      // Scanner le QR ouvre aussi la lecture seule des documents : le serveur l'ajoute toujours, le patient voit ce périmètre avant de décider.
+      // Scanner le QR ouvre aussi la lecture seule des documents : le serveur l'ajoute toujours. Le patient a présenté son QR lui-même : l'accès s'ouvre tout de suite (2 h), à un seul professionnel à la fois.
       const created = await requestProfessionalGrant(["preconsultation", "declarations", "documents"], qrToken.trim());
       setItems((current) => [created, ...current]);
       setQrToken("");
-      setMessage("Demande envoyée. Le patient doit l’accepter.");
+      setMessage(created.status === "active" ? "Accès ouvert pour 2 h. Vous pouvez consulter la pré-consultation du patient." : "Demande envoyée. Le patient doit l’accepter.");
     } catch (error) {
       setMessage(error instanceof ApiError ? error.message : "Demande refusée.");
     } finally {
@@ -63,11 +67,27 @@ export function ProfessionalAccessGrants() {
   function onScanned(token: string) {
     setQrToken(token);
     setScanning(false);
-    setMessage("QR lu. Vérifiez l’identité du patient, puis envoyez la demande.");
+    setMessage("QR lu. Vérifiez l’identité du patient, puis ouvrez l’accès.");
+  }
+
+  /** Fin de consultation : libère le patient pour un autre professionnel sans attendre l'expiration des 2 h. */
+  async function endGrant(item: ProfessionalGrant) {
+    const ok = await confirm({ title: "Terminer l’accès à ce patient ?", message: `Vous ne pourrez plus consulter le carnet de ${item.patient_name || "ce patient"}. Le patient pourra se connecter à un autre professionnel.`, note: "Pour revenir, le patient devra présenter un nouveau QR.", confirmLabel: "Terminer l’accès", cancelLabel: "Garder l’accès", tone: "danger", mood: "question" });
+    if (!ok) return;
+    setEndingId(item.id);
+    try {
+      const ended = await endProfessionalGrant(item.id);
+      setItems((current) => current.map((entry) => entry.id === ended.id ? { ...entry, ...ended } : entry));
+      setMessage("Accès terminé. Le patient peut se connecter à un autre professionnel.");
+    } catch (error) {
+      setMessage(error instanceof ApiError ? error.message : "Impossible de terminer l’accès.");
+    } finally {
+      setEndingId(null);
+    }
   }
 
   return <div className="stack-lg">
-    <section className="hero-page"><h1>Demander l’accès à un patient.</h1><p className="notice" role="status" aria-live="polite">{message}</p></section>
+    <section className="hero-page"><h1>Ouvrir l’accès à un patient.</h1><p className="notice" role="status" aria-live="polite">{message}</p></section>
     <section className="patient-grid" aria-label="Demandes d’accès">
       <form id="nouvelle-demande" className="card" onSubmit={submit}>
         <h2>Présenter un patient</h2>
@@ -77,10 +97,10 @@ export function ProfessionalAccessGrants() {
           : qrToken
             ? <div className="qr-read" role="status"><strong>✓ QR du patient lu</strong><button type="button" className="button small" onClick={() => { setQrToken(""); setScanning(true); }}>Scanner à nouveau</button></div>
             : <div className="actions"><button type="button" className="button primary" onClick={() => setScanning(true)}>Scanner le QR du patient</button></div>}
-        <p className="muted">Vous demandez la pré-consultation, les déclarations et la lecture des documents. Rien n’est ouvert avant l’accord du patient.</p>
-        <button className="button primary" type="submit" disabled={submitting || !qrToken.trim()}>{submitting ? "Envoi…" : "Envoyer la demande"}</button>
+        <p className="muted">En scannant ce QR, vous ouvrez pour 2 heures la pré-consultation, les déclarations et la lecture des documents. Le patient l’a présenté lui-même : c’est son accord. Un seul professionnel peut être connecté à un patient à la fois.</p>
+        <button className="button primary" type="submit" disabled={submitting || !qrToken.trim()}>{submitting ? "Ouverture…" : "Ouvrir l’accès"}</button>
       </form>
-      <section id="historique" className="card"><h2>Mes demandes</h2>{loading ? <p className="empty" role="status">Chargement…</p> : items.length === 0 ? <p className="empty">Aucune demande pour le moment.</p> : <div className="stack">{items.map((item) => <article className="record request-row" key={item.id}><div className="request-row__who"><span className="request-row__avatars"><PersonAvatar src={item.patient_avatar} name={item.patient_name || item.reference} size={46} /><EstablishmentLogo logo={item.establishment_logo} name={item.facility_label} size={22} /></span><div><strong>{item.patient_name || `Patient · accès ${item.reference}`}</strong><p className="muted">{item.facility_label} · {item.scope.map((scope) => SCOPE_LABELS[scope] ?? scope).join(", ")}</p></div></div><span className={`badge ${item.status === "active" ? "verified" : "declared"}`}>{STATUS_LABELS[item.status] ?? item.status}</span></article>)}</div>}</section>
+      <section id="historique" className="card"><h2>Mes demandes</h2>{loading ? <p className="empty" role="status">Chargement…</p> : items.length === 0 ? <p className="empty">Aucune demande pour le moment.</p> : <div className="stack">{items.map((item) => <article className="record request-row" key={item.id}><div className="request-row__who"><span className="request-row__avatars"><PersonAvatar src={item.patient_avatar} name={item.patient_name || item.reference} size={46} /><EstablishmentLogo logo={item.establishment_logo} name={item.facility_label} size={22} /></span><div><strong>{item.patient_name || `Patient · accès ${item.reference}`}</strong><p className="muted">{item.facility_label} · {item.scope.map((scope) => SCOPE_LABELS[scope] ?? scope).join(", ")}</p></div></div><span className="request-row__side"><span className={`badge ${item.status === "active" ? "verified" : "declared"}`}>{STATUS_LABELS[item.status] ?? item.status}</span>{item.status === "active" && <><small className="muted">{timeLeft(item.expires_at) ? `Il reste ${timeLeft(item.expires_at)} · jusqu’à ${formatClock(item.expires_at)}` : "Se termine à l’instant"}</small><button type="button" className="button small danger" onClick={() => void endGrant(item)} disabled={endingId === item.id}>{endingId === item.id ? "Fin de l’accès…" : "Terminer l’accès"}</button></>}</span></article>)}</div>}</section>
     </section>
   </div>;
 }

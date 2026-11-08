@@ -9,7 +9,7 @@ export function ActorsFigure({ variant }: { variant: "about" | "terms" }) {
   return (
     <Figure
       className={terms ? undefined : "fig--card"}
-      label={`Schéma : l’établissement confirme le rattachement du professionnel ; le professionnel demande l’accès ; le patient autorise ou refuse.${terms ? " L’éditeur fournit le service." : ""}`}
+      label={`Schéma : l’établissement confirme le rattachement du professionnel ; le professionnel scanne le QR du patient ; l’accès s’ouvre pour 2 heures, à lui seul.${terms ? " L’éditeur fournit le service." : ""}`}
       caption={terms
         ? "L’éditeur fournit le service. Il ne remplace ni le patient, ni le professionnel, ni l’établissement dans leurs décisions."
         : "Le patient décide. Le professionnel ne consulte que ce que le patient a autorisé."}
@@ -27,11 +27,11 @@ export function ActorsFigure({ variant }: { variant: "about" | "terms" }) {
 
         <Line d="M160 180 V241" />
         <Arrow x={160} y={241} />
-        <text className="fg-label fg-fade" x="148" y="216" textAnchor="end">demande l’accès</text>
+        <text className="fg-label fg-fade" x="148" y="216" textAnchor="end">scanne le QR</text>
 
         <Line d="M204 248 V187" />
         <Arrow x={204} y={187} dir="up" />
-        <text className="fg-label fg-fade" x="216" y="216">autorise ou refuse</text>
+        <text className="fg-label fg-fade" x="216" y="216">ouvre l’accès</text>
 
         <Node x={65} y={0} w={230} h={56} icon="building" title="Établissement" sub="gère les rattachements" />
         <Node x={65} y={124} w={230} h={56} icon="stethoscope" title="Professionnel" sub="consulte ce qui est autorisé" />

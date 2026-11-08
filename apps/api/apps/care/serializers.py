@@ -79,6 +79,34 @@ class AccessGrantSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+def account_avatar_url(user):
+    """Photo du compte (URL externe ou Cloudinary seulement) ; jamais la route authentifiée de l'avatar de son propre compte."""
+    profile = getattr(user, "account_profile", None) if user else None
+    return profile.avatar_url if profile and profile.avatar_url else ""
+
+
+class PatientAccessGrantSerializer(AccessGrantSerializer):
+    """Vue du patient sur un accès : qui (nom, photo, fonction) et où (établissement, logo), pour reconnaître la personne d'un coup d'œil."""
+    professional_avatar = serializers.SerializerMethodField()
+    professional_title = serializers.SerializerMethodField()
+    establishment_logo = serializers.SerializerMethodField()
+
+    class Meta(AccessGrantSerializer.Meta):
+        fields = AccessGrantSerializer.Meta.fields + ("professional_avatar", "professional_title", "establishment_logo")
+        read_only_fields = fields
+
+    def get_professional_avatar(self, obj):
+        return account_avatar_url(obj.professional.user)
+
+    def get_professional_title(self, obj):
+        professional = obj.professional
+        return " · ".join(part for part in (professional.professional_title, professional.specialty) if part)
+
+    def get_establishment_logo(self, obj):
+        from apps.establishments.serializers import logo_for
+        return logo_for(obj.establishment) if obj.establishment_id else ""
+
+
 class ProfessionalAccessGrantSerializer(AccessGrantSerializer):
     """Vue professionnelle d’un accès : jamais d’identifiant de patient, seulement une référence propre à cet accès.
 
@@ -103,9 +131,7 @@ class ProfessionalAccessGrantSerializer(AccessGrantSerializer):
 
     def get_patient_avatar(self, obj):
         """Photo du compte du patient (URL externe ou Cloudinary seulement) ; jamais la route authentifiée de son propre avatar."""
-        user = obj.patient.user if obj.patient.user_id else None
-        profile = getattr(user, "account_profile", None) if user else None
-        return profile.avatar_url if profile and profile.avatar_url else ""
+        return account_avatar_url(obj.patient.user if obj.patient.user_id else None)
 
     def get_establishment_logo(self, obj):
         from apps.establishments.serializers import logo_for
@@ -148,6 +174,22 @@ class ConsultationSerializer(serializers.ModelSerializer):
 
     def get_vitals(self, obj):
         return present_consultation_vitals(obj.vitals)
+
+
+class ProfessionalConsultationSerializer(ConsultationSerializer):
+    """« Mes consultations » côté professionnel : la personne reçue (nom et photo) apparaît sur chaque ligne, donc l'historique se parcourt sans l'ouvrir."""
+    patient_name = serializers.SerializerMethodField()
+    patient_avatar = serializers.SerializerMethodField()
+
+    class Meta(ConsultationSerializer.Meta):
+        fields = ConsultationSerializer.Meta.fields + ("patient_name", "patient_avatar")
+        read_only_fields = fields
+
+    def get_patient_name(self, obj):
+        return f"{obj.patient.display_first_name()} {obj.patient.display_last_name()}".strip()
+
+    def get_patient_avatar(self, obj):
+        return account_avatar_url(obj.patient.user if obj.patient.user_id else None)
 
 
 class MedicalDocumentSerializer(serializers.ModelSerializer):

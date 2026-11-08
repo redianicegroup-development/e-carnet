@@ -11,6 +11,7 @@ import { GreetingModal } from "../modal/GreetingModal";
 import { BrandMark } from "../ui/BrandMark";
 import { ScreenLoader } from "../ui/ScreenLoader";
 import { NotificationBell } from "../notifications/NotificationBell";
+import { useNewNotifications } from "../notifications/notification-events";
 import { ProductTour } from "../tour/ProductTour";
 import { TOUR_RESTART_EVENT } from "../../lib/tour";
 import { GooeyAccountMenu } from "./GooeyAccountMenu";
@@ -138,6 +139,9 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
     const timer = window.setTimeout(() => setPatientAccessQr(null), Math.max(0, patientAccessQr.expiresAt - Date.now()));
     return () => window.clearTimeout(timer);
   }, [space, patientAccessQr]);
+
+  // Le QR est à usage unique : dès qu'un professionnel l'a scanné (accès ouvert), il disparaît partout au lieu de rester affiché jusqu'à son expiration.
+  useNewNotifications(({ kinds }) => { if (space === "patient" && kinds.includes("access.opened")) setPatientAccessQr(null); });
 
   useEffect(() => {
     if (space !== "professional" || state.status !== "ready") return;

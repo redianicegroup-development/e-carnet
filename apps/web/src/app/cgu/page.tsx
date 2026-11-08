@@ -98,10 +98,10 @@ const sections: LegalSectionDef[] = [
           ]}
         />
         <ol>
-          <li>Le patient peut présenter un QR code. Ce QR code ne contient aucune donnée médicale : il permet seulement d’initier une demande. Sa validité est de {TECH_VALIDITY.qr}.</li>
-          <li>Le professionnel adresse une demande d’accès. Le patient reçoit cette demande, qui indique le professionnel, l’établissement et le périmètre demandé, avant de décider.</li>
-          <li>Si le patient accepte, l’autorisation est valable {TECH_VALIDITY.accessInitial}, avec {TECH_VALIDITY.accessExtension}. Elle prend fin à son expiration ou si le patient la révoque.</li>
-          <li>La demande inclut la lecture seule des documents du patient. Le patient voit ce périmètre avant de décider et aucun document n’est accessible avant son accord.</li>
+          <li>Le patient peut présenter un QR code. Ce QR code ne contient aucune donnée médicale : il permet seulement d’ouvrir un accès. Sa validité est de {TECH_VALIDITY.qr} et il ne sert qu’une fois.</li>
+          <li>Lorsque le professionnel scanne le QR code, l’accès au périmètre de base s’ouvre sans autre validation : en présentant lui-même son QR code, le patient donne son accord. Un seul professionnel peut être connecté à un patient à la fois. Un périmètre plus large (consultations passées, historique d’autres établissements) fait l’objet d’une demande que le patient accepte ou refuse, après avoir vu le professionnel, l’établissement et le périmètre.</li>
+          <li>L’accès est valable {TECH_VALIDITY.accessInitial}, avec {TECH_VALIDITY.accessExtension}. Il prend fin à son expiration, si le patient le révoque ou si le professionnel y met fin.</li>
+          <li>L’accès inclut la lecture seule des documents du patient. Aucun document n’est accessible avant que le patient ait présenté son QR code.</li>
         </ol>
         <p>Le patient vérifie le professionnel, l’établissement, le périmètre et la durée avant d’autoriser. Il peut aussi remettre à un proche de confiance un mot de rattachement à usage unique : le proche utilise son propre compte et ne reçoit qu’un accès en lecture seule à la fiche d’urgence dans le périmètre prévu. Cette délégation n’est ni un partage de mot de passe ni une représentation légale. La révocation ou l’expiration d’une autorisation ou d’un adressage n’efface pas les consultations déjà validées ni les traces d’audit.</p>
         <p>Un adressage vers un autre établissement reste ciblé et soumis à la décision du patient. En V1, l’établissement destinataire ne peut pas rechercher librement des patients, son administrateur ne reçoit pas automatiquement le contenu clinique et aucune copie n’est conservée après la fenêtre de lecture.</p>

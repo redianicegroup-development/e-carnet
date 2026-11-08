@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { notifyProductActionCompleted, primeCsrf, readCsrfToken } from "../infrastructure/api/client";
 import { ActiveAccessQr } from "./PatientAccessGrants";
 import { useDialogBehavior } from "./modal/useDialogBehavior";
+import { useNewNotifications } from "./notifications/notification-events";
 import { usePatientAccessQr } from "./shell/SpaceShell";
 import { Icon } from "./ui/Icon";
 import "./modal/modal.css";
@@ -24,6 +25,7 @@ export function PatientShareQrButton() {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [connected, setConnected] = useState("");
   const dialog = useRef<HTMLElement>(null);
   useDialogBehavior({ open, container: dialog, onEscape: () => setOpen(false) });
 
@@ -40,8 +42,15 @@ export function PatientShareQrButton() {
     }
   }
 
+  // Le QR est scanné : l'accès s'ouvre tout de suite, sans validation. La fenêtre le confirme en quelques secondes (le QR disparaît, il est à usage unique).
+  useNewNotifications(({ items }) => {
+    const opened = items.find((item) => item.kind === "access.opened");
+    if (opened && open) setConnected(opened.body);
+  });
+
   function openAndGenerate() {
     // Un QR déjà expiré n'est jamais montré comme valable : chaque ouverture repart d'un QR neuf.
+    setConnected("");
     setOpen(true);
     void generate();
   }
@@ -54,9 +63,9 @@ export function PatientShareQrButton() {
           <section ref={dialog} className="modal-dialog share-qr-dialog" role="dialog" aria-modal="true" aria-labelledby="share-qr-title">
             <div className="modal-copy">
               <h2 id="share-qr-title">Partager en QR</h2>
-              <p className="modal-message">Montrez ce QR au professionnel : il lui permet de demander l’accès à votre carnet, et c’est vous qui décidez ensuite. Chaque clic sur « Partager en QR » en génère un nouveau.</p>
+              <p className="modal-message">Montrez ce QR au professionnel : dès qu’il le scanne, il accède à votre carnet pendant 2 h (lecture seule), sans autre validation. Un seul professionnel peut être connecté à la fois, et vous pouvez mettre fin à son accès dans l’historique. Chaque clic sur « Partager en QR » en génère un nouveau.</p>
             </div>
-            {busy && !qr ? <p className="muted" role="status">Génération du QR…</p> : error ? <p className="status" role="alert">{error}</p> : qr ? <ActiveAccessQr token={qr.token} expiresAt={qr.expiresAt} busy={busy} onRenew={() => void generate()} /> : null}
+            {connected ? <p className="share-qr-connected" role="status"><Icon name="check" size={18} /> <span><strong>Accès ouvert.</strong> {connected}</span></p> : busy && !qr ? <p className="muted" role="status">Génération du QR…</p> : error ? <p className="status" role="alert">{error}</p> : qr ? <ActiveAccessQr token={qr.token} expiresAt={qr.expiresAt} busy={busy} onRenew={() => void generate()} /> : null}
             <div className="modal-actions">
               {error && <button type="button" className="button primary" onClick={() => void generate()} disabled={busy}>Réessayer</button>}
               <button type="button" className="button" onClick={() => setOpen(false)}>Fermer</button>

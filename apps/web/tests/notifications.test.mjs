@@ -17,10 +17,7 @@ test("la cloche patient utilise l’inbox et conserve un panneau accessible", ()
   assert.match(bell, /notifications\/\$\{encodeURIComponent\(notification\.id\)\}\/read/);
   assert.match(bell, /role="dialog"/);
   assert.match(bell, /aria-haspopup="dialog"/);
-  assert.match(bell, /Voir toutes les notifications/);
-  assert.match(bell, /\/patient\/carnet#notifications/);
   assert.match(bell, /visibilitychange/);
-  assert.match(bell, /60_000/);
   assert.match(bell, /AudioContext/);
   assert.match(bell, /playNotificationChime/);
   assert.match(bell, /aria-pressed=\{soundEnabled\}/);
@@ -49,4 +46,32 @@ test("les chemins de contexte des notifications restent statiques", () => {
   assert.match(bell, /patient\/historique#acces/);
   assert.match(bell, /patient\/carnet#vaccinations/);
   assert.match(bell, /patient\/carnet#medications/);
+});
+
+test("la cloche suit un pouls léger au lieu d’un rechargement toutes les minutes (08/11/2026)", () => {
+  const bell = read("src/components/notifications/NotificationBell.tsx");
+  assert.match(bell, /notifications\/pulse\//);
+  assert.match(bell, /POLL_INTERVAL_MS = 5_000/);
+  assert.doesNotMatch(bell, /REFRESH_INTERVAL_MS/); // plus de rechargement complet toutes les 60 s
+  // Le pouls ne recharge la boîte que si le résumé a changé ; l'écran caché ou hors ligne ne consomme rien.
+  assert.match(bell, /pulseSignature/);
+  assert.match(bell, /document\.visibilityState === "visible" && navigator\.onLine !== false/);
+  assert.match(bell, /window\.addEventListener\("online", wakeUp\)/);
+  assert.match(bell, /SERVICE_WORKER_PUSH_MESSAGE/);
+  assert.match(bell, /announceNewNotifications/);
+  assert.match(read("public/sw.js"), /ecarnet:push-received/);
+});
+
+test("la cloche propose « Les nouvelles », « Voir toutes » et l’effacement (08/11/2026)", () => {
+  const bell = read("src/components/notifications/NotificationBell.tsx");
+  assert.match(bell, /role="tablist"/);
+  assert.match(bell, /Les nouvelles/);
+  assert.match(bell, /Voir toutes/);
+  assert.match(bell, /apiDelete/);
+  assert.match(bell, /notifications\/\$\{encodeURIComponent\(notification\.id\)\}\//);
+  assert.match(bell, /read-all\//);
+  assert.match(bell, /\}clear\//);
+  // Tout effacer exige une seconde pression.
+  assert.match(bell, /Confirmer : tout effacer/);
+  assert.match(read("src/components/notifications/notification-bell.css"), /notification-bell__bulk--danger/);
 });

@@ -70,8 +70,8 @@ paths:
         '403':
           description: Profil professionnel absent
     post:
-      summary: Demander un accès temporaire à un carnet
-      description: Requiert un contexte professionnel, un établissement actif et un rattachement actif, ainsi que le QR temporaire affiché par le patient (jeton opaque à usage unique, 5 minutes). Un identifiant patient seul est refusé et n’est jamais renvoyé au professionnel. Le patient doit encore consentir. La demande expire après 7 jours; un refus bloque une nouvelle demande pendant 30 jours.
+      summary: Ouvrir un accès temporaire à un carnet (scan du QR du patient)
+      description: Requiert un contexte professionnel, un établissement actif et un rattachement actif, ainsi que le QR temporaire affiché par le patient (jeton opaque à usage unique, 5 minutes). Un identifiant patient seul est refusé et n’est jamais renvoyé au professionnel. Règle du 08/11/2026 - le scan vaut accord - pour le périmètre de base (preconsultation, declarations, documents) l’accès est actif tout de suite, 2 heures, et un seul professionnel peut être connecté à un patient à la fois (400 si un autre professionnel est déjà connecté ; le QR n’est pas consommé). Un périmètre plus large (consultations, care_history) reste une demande en attente du consentement du patient (7 jours; un refus bloque une nouvelle demande de ce type pendant 30 jours).
       requestBody:
         required: true
         content:
@@ -90,9 +90,78 @@ paths:
                     enum: [preconsultation, declarations, consultations]
       responses:
         '201':
-          description: Demande créée en attente du consentement patient; demandes pending/active uniques par patient, professionnel et établissement
+          description: Accès actif (périmètre de base) ou demande en attente (périmètre élargi) ; accès pending/active uniques par patient, professionnel et établissement
         '400':
-          description: QR absent, expiré, déjà utilisé ou invalide ; préconditions cliniques, refus récent ou périmètre invalide
+          description: QR absent, expiré, déjà utilisé ou invalide ; autre professionnel déjà connecté ; préconditions cliniques, refus récent (périmètre élargi) ou périmètre invalide
+  /patient/care/professional/access-grants/{pk}/end/:
+    parameters:
+      - name: pk
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      summary: Le professionnel met fin à son propre accès
+      description: Fin de consultation. L’accès passe à « expired », le patient est notifié et peut se connecter à un autre professionnel sans attendre les 2 heures.
+      responses:
+        '200':
+          description: Accès terminé
+        '404':
+          description: Autorisation introuvable ou appartenant à un autre professionnel
+        '409':
+          description: L’accès n’est plus actif
+  /patient/care/notifications/inbox/:
+    get:
+      summary: Boîte de notifications du patient (cloche)
+      description: Les 30 plus récentes, avec unread_count et total_count. Réponse Cache-Control private, no-store.
+      responses:
+        '200':
+          description: Boîte du patient authentifié
+  /patient/care/notifications/pulse/:
+    get:
+      summary: Pouls de la cloche (temps réel par interrogation légère)
+      description: Une requête agrégée de quelques octets (unread_count, total_count, latest_at). Le navigateur l’interroge toutes les 5 s tant que l’écran est visible et ne recharge la boîte que si le résumé change.
+      responses:
+        '200':
+          description: Résumé de la boîte
+  /patient/care/notifications/{pk}/:
+    parameters:
+      - name: pk
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    delete:
+      summary: Effacer une notification
+      description: N’efface que la boîte du patient authentifié ; le journal des accès n’est pas touché.
+      responses:
+        '200':
+          description: Notification effacée
+        '404':
+          description: Notification introuvable
+  /patient/care/notifications/read-all/:
+    post:
+      summary: Marquer toutes les notifications comme lues
+      responses:
+        '200':
+          description: Nombre de notifications mises à jour
+  /patient/care/notifications/clear/:
+    post:
+      summary: Effacer toutes les notifications (ou seulement les lues avec only_read)
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                only_read:
+                  type: boolean
+      responses:
+        '200':
+          description: Nombre de notifications effacées
   /patient/care/professional/access-grants/{grant_id}/measurements/:
     parameters:
       - name: grant_id
