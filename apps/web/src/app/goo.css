@@ -62,6 +62,16 @@ body .goo-layer { display: none; }
   0% { left: calc(60px + var(--goo-w, 0px) / 2 - var(--goo-drop) / 2); top: calc(60px + var(--goo-h, 0px) - var(--goo-drop) - 4px); width: var(--goo-drop); height: var(--goo-drop); border-radius: calc(var(--goo-drop) / 2); }
   100% { left: 60px; top: 60px; width: var(--goo-w, 0px); height: var(--goo-h, 0px); border-radius: var(--goo-r, 26px); }
 }
+/* Bienvenue : le message est au CENTRE de l'écran, donc la goutte naît en son centre (et non au bas du panneau) puis s'étire jusqu'à la carte. */
+@media (prefers-reduced-motion: no-preference) {
+  body .greeting-toast { transform-origin: 50% 50%; }
+  body .greeting-stage .goo-layer__anchor { top: calc(60px + var(--goo-h, 0px) / 2 - var(--goo-drop) / 2); }
+  body .greeting-stage .goo-layer__blob { animation-name: goo-blob-grow-center; }
+}
+@keyframes goo-blob-grow-center {
+  0% { left: calc(60px + var(--goo-w, 0px) / 2 - var(--goo-drop) / 2); top: calc(60px + var(--goo-h, 0px) / 2 - var(--goo-drop) / 2); width: var(--goo-drop); height: var(--goo-drop); border-radius: calc(var(--goo-drop) / 2); }
+  100% { left: 60px; top: 60px; width: var(--goo-w, 0px); height: var(--goo-h, 0px); border-radius: var(--goo-r, 26px); }
+}
 /* le panneau net (texte non filtré) se fond sous la goutte dès qu'elle a pris sa taille */
 @keyframes goo-panel-in {
   0% { opacity: 0; transform: translateY(0) scale(.97); }

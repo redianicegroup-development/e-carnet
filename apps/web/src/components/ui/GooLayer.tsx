@@ -24,10 +24,12 @@ export function GooLayer({ target }: { target: RefObject<HTMLElement | null> }) 
       node.style.setProperty("--goo-r", `${parseFloat(getComputedStyle(panel).borderTopLeftRadius) || 24}px`);
     };
     sync();
-    if (typeof ResizeObserver === "undefined") return;
+    // Une carte centrée change de position (sans changer de taille) quand l'écran tourne ou se redimensionne.
+    window.addEventListener("resize", sync);
+    if (typeof ResizeObserver === "undefined") return () => window.removeEventListener("resize", sync);
     const observer = new ResizeObserver(sync);
     observer.observe(panel);
-    return () => observer.disconnect();
+    return () => { observer.disconnect(); window.removeEventListener("resize", sync); };
   }, [target]);
 
   return <span ref={layer} className="goo-layer" aria-hidden="true"><span className="goo-layer__anchor" /><span className="goo-layer__blob" /></span>;

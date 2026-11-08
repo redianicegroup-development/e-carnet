@@ -56,6 +56,39 @@ def other_professional_connected(patient, professional, *, exclude_grant_id=None
     return None
 
 
+# Pourquoi un accès a été fermé avant son échéance (journal d'audit, metadata.reason_code : clé déjà autorisée par la liste blanche du journal).
+END_REASON_PROFESSIONAL = "professional_ended"
+END_REASON_CONSULTATION_SIGNED = "consultation_signed"
+_END_NOTIFICATIONS = {
+    END_REASON_PROFESSIONAL: ("Accès terminé", "{who} de {where} a mis fin à son accès à votre carnet."),
+    END_REASON_CONSULTATION_SIGNED: ("Consultation terminée", "{who} de {where} a terminé votre consultation. Son accès à votre carnet s’est fermé automatiquement : vous n’avez rien à faire."),
+}
+
+
+@transaction.atomic
+def end_access_grant(grant, *, actor, reason):
+    """Ferme tout de suite un accès ACTIF, sans attendre l'expiration des 2 h : le patient peut se connecter à quelqu'un d'autre.
+
+    Point unique pour les deux façons de finir : le professionnel clique « Terminer l'accès », ou il signe la consultation
+    (l'accès se ferme alors tout seul : le patient n'a pas à le révoquer par oubli du professionnel).
+    La fermeture est une mise à jour conditionnelle : si l'accès n'est plus actif (révoqué, expiré, déjà terminé en parallèle),
+    rien n'est écrit, aucun événement ni notification n'est créé, et la fonction renvoie False.
+    """
+    from apps.audit.services import record_event
+
+    from .notifications import notify_patient
+
+    now = timezone.now()
+    closed = AccessGrant.objects.filter(pk=grant.pk, status="active", expires_at__gt=now).update(status="expired", expires_at=now)
+    if not closed:
+        return False
+    grant.status, grant.expires_at = "expired", now
+    record_event(event_type="access_grant.ended", actor=actor, actor_role="professional", patient=grant.patient, establishment=grant.establishment, access_grant=grant, metadata={"action": "ended", "status": "expired", "reason_code": reason})
+    title, body = _END_NOTIFICATIONS[reason]
+    notify_patient(grant.patient, kind="access.ended", title=title, body=body.format(who=grant.professional_name, where=grant.facility_label), metadata={"access_grant_id": str(grant.id), "reason": reason})
+    return True
+
+
 def require_scope(grant, scope):
     """Porte unique de lecture clinique : l’autorisation est active **et** couvre ce périmètre.
 

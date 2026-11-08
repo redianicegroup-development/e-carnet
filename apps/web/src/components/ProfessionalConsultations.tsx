@@ -96,8 +96,13 @@ export function ProfessionalConsultations() {
       setGrants(usable);
       setConsultations(allConsultations);
       setMessage(usable.length === 1 ? "Un patient a autorisé son accès." : "Données chargées.");
-      // Un seul patient autorisé : inutile de le choisir, sa pré-consultation s'ouvre directement.
-      if (usable.length === 1) void chooseGrant(usable[0].id);
+      // Venu du scan du QR : le patient qui vient de se connecter s'ouvre tout de suite, même s'il y en a d'autres. Le paramètre est retiré de l'adresse.
+      const scanned = new URLSearchParams(window.location.search).get("acces");
+      if (scanned) window.history.replaceState(null, "", window.location.pathname);
+      const target = scanned ? usable.find((grant) => grant.id === scanned) : undefined;
+      // Sinon, un seul patient autorisé : inutile de le choisir, sa pré-consultation s'ouvre directement.
+      if (target) void chooseGrant(target.id, { reveal: true });
+      else if (usable.length === 1) void chooseGrant(usable[0].id);
     }).catch((error: unknown) => {
       if (active) setMessage(error instanceof ApiError ? error.message : "Impossible de charger les consultations.");
     }).finally(() => { if (active) setLoading(false); });
@@ -110,7 +115,7 @@ export function ProfessionalConsultations() {
     setLines([]); setExams([]);
   }
 
-  async function chooseGrant(value: string) {
+  async function chooseGrant(value: string, options: { reveal?: boolean } = {}) {
     setGrantId(value);
     setEncounterId("");
     setEncounters([]);
@@ -125,6 +130,8 @@ export function ProfessionalConsultations() {
       setSymptoms(parseObservations(drafts[0]?.observations));
       setVitalsForm(vitalsToForm(drafts[0]?.vitals));
       setMessage(drafts.length ? "Pré-consultation du patient chargée." : "Le patient n’a pas encore préparé de pré-consultation.");
+      // Le dossier du patient scanné est amené sous les yeux du professionnel (début du formulaire de consultation).
+      if (options.reveal) window.requestAnimationFrame(() => document.getElementById("terminer-consultation")?.scrollIntoView({ block: "start", behavior: "smooth" }));
     } catch (error) {
       setMessage(error instanceof ApiError ? error.message : "Pré-consultations indisponibles.");
     } finally {
@@ -145,7 +152,7 @@ export function ProfessionalConsultations() {
     const accepted = await confirm({
       title: "Terminer et signer la consultation ?",
       message: "La signature clôture la pré-consultation du patient et la rattache à votre établissement. L’ordonnance et les examens demandés sont signés avec la consultation.",
-      note: "Cette action ne peut pas être annulée : le patient verra la consultation dans son carnet.",
+      note: "Cette action ne peut pas être annulée : le patient verra la consultation dans son carnet, et votre accès à son carnet se fermera automatiquement.",
       confirmLabel: "Signer et clôturer",
       cancelLabel: "Continuer à rédiger",
     });
@@ -176,11 +183,14 @@ export function ProfessionalConsultations() {
         attestation_svg: "<svg></svg>",
       });
       setConsultations((current) => [consultation, ...current]);
+      // L'accès s'est fermé de lui-même à la signature (côté serveur) : ce patient quitte la liste des patients connectés.
+      const signedGrantId = grantId;
+      setGrants((current) => current.filter((grant) => grant.id !== signedGrantId));
       resetForm();
       setEncounters([]);
       setEncounterId("");
       setGrantId("");
-      setMessage("Consultation signée. La pré-consultation est clôturée et le carnet du patient est à jour.");
+      setMessage("Consultation signée. La pré-consultation est clôturée, le carnet du patient est à jour et votre accès s’est fermé automatiquement.");
     } catch (error) {
       setMessage(error instanceof ApiError ? error.message : "Validation impossible.");
     } finally {
@@ -192,7 +202,7 @@ export function ProfessionalConsultations() {
   const selectedGrant = grants.find((grant) => grant.id === grantId) ?? null;
   const symptomsTooLong = buildObservations(symptoms).length > OBSERVATIONS_MAX;
 
-  return <div className="stack-lg"><ProfessionalTemplateApprovals /><section className="hero-page"><h1>Compléter sans ressaisir.</h1><p className="muted">La dernière pré-consultation du patient s’affiche dès que son autorisation est active. En signant, vous la clôturez.</p><p className="notice" role="status" aria-live="polite">{message}</p></section><section className="patient-grid"><form className="card preconsult-form" onSubmit={submit}><h2>Terminer la consultation</h2>{loading ? <p className="empty">Chargement des autorisations…</p> : grants.length === 0 ? <p className="empty">Aucune autorisation active permettant de reprendre une pré-consultation.</p> : <>
+  return <div className="stack-lg"><ProfessionalTemplateApprovals /><section className="hero-page"><h1>Compléter sans ressaisir.</h1><p className="muted">La dernière pré-consultation du patient s’affiche dès que son autorisation est active. En signant, vous la clôturez.</p><p className="notice" role="status" aria-live="polite">{message}</p></section><section className="patient-grid"><form id="terminer-consultation" className="card preconsult-form" onSubmit={submit}><h2>Terminer la consultation</h2>{loading ? <p className="empty">Chargement des autorisations…</p> : grants.length === 0 ? <p className="empty">Aucune autorisation active permettant de reprendre une pré-consultation.</p> : <>
     <div className="consult-context">
       {activeMembership && <div className="consult-establishment"><EstablishmentLogo logo={activeMembership.establishment_logo} name={activeMembership.establishment_name} size={40} /><div><span className="muted">Établissement actif</span><strong>{activeMembership.establishment_name}</strong></div><Link className="button small" href="/professionnel/acces">Changer</Link></div>}
       {grants.length > 1 && <div className="patient-picker" role="group" aria-label="Patient"><span className="eyebrow">Patient</span>{grants.map((grant) => <button type="button" key={grant.id} className="patient-option" aria-pressed={grant.id === grantId} onClick={() => void chooseGrant(grant.id)}><PersonAvatar src={grant.patient_avatar} name={grant.patient_name || grant.reference} size={40} /><span><strong>{grant.patient_name || `Accès ${grant.reference}`}</strong><small className="muted">Accès {grant.reference}</small></span></button>)}</div>}

@@ -615,15 +615,17 @@ class PatientAccessTests(TestCase):
             patient_history.data["data"][0]["provenance"]["code"], "verified"
         )
 
+        # Règle du 08/11/2026 : la signature ferme l'accès toute seule. Le patient n'a plus rien à révoquer (l'accès n'est plus actif)
+        # et le professionnel ne relit plus le dossier.
+        self.assertEqual(AccessGrant.objects.get(pk=grant_id).status, "expired")
         revoked = patient_client.post(
             f"/api/v1/patient/care/access-grants/{grant_id}/revoke/"
         )
-        self.assertEqual(revoked.status_code, 200)
-        self.assertEqual(revoked.data["data"]["status"], "revoked")
-        denied_after_revocation = professional_client.get(
+        self.assertEqual(revoked.status_code, 409)
+        denied_after_signature = professional_client.get(
             f"/api/v1/patient/care/professional/access-grants/{grant_id}/encounters/"
         )
-        self.assertEqual(denied_after_revocation.status_code, 403)
+        self.assertEqual(denied_after_signature.status_code, 403)
 
 class PatientQrContractTests(TestCase):
     def test_qr_contract_is_five_minutes_and_single_use_value_is_hashed(self):

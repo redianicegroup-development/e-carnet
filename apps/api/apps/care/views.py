@@ -25,7 +25,7 @@ from apps.cloudinary_storage import CLOUDINARY_CONFIGURED, destroy as cloudinary
 from .models import AccessGrant, Appointment, CareEncounter, Consultation, ExamRequest, FollowUpPlan, FollowUpPlanItem, FollowUpPlanRevision, HealthMeasurement, MedicalDocument, MedicationIntake, MedicationReminder, PatientNotification, PreconsultationTemplate, PushSubscription, Vaccination
 from .pdf_compression import compress_pdf_lossless
 from .serializers import AccessGrantSerializer, PatientAccessGrantSerializer, account_avatar_url, ProfessionalConsultationSerializer, AppointmentSerializer, CareEncounterSerializer, ConsultationSerializer, FollowUpPlanSerializer, HealthMeasurementSerializer, MedicalDocumentSerializer, MedicationIntakeSerializer, MedicationReminderSerializer, PatientNotificationSerializer, PreconsultationTemplateSerializer, ProfessionalAccessGrantSerializer, ProfessionalAppointmentSerializer, ProfessionalConsultationCreateSerializer, ProposeAppointmentSerializer, VaccinationSerializer
-from .services import ANOTHER_PROFESSIONAL_CONNECTED_MESSAGE, AUTO_GRANT_DURATION, QR_TOKEN_TTL_SECONDS, SELF_ACCESS_MESSAGE, SelfAccessRefused, create_patient_qr_token, create_professional_grant, is_own_patient_file, other_professional_connected, require_scope
+from .services import ANOTHER_PROFESSIONAL_CONNECTED_MESSAGE, AUTO_GRANT_DURATION, END_REASON_CONSULTATION_SIGNED, END_REASON_PROFESSIONAL, end_access_grant, QR_TOKEN_TTL_SECONDS, SELF_ACCESS_MESSAGE, SelfAccessRefused, create_patient_qr_token, create_professional_grant, is_own_patient_file, other_professional_connected, require_scope
 from .notifications import notify_patient, notify_professional
 from .push import is_allowed_endpoint, push_enabled, vapid_public_key
 from .consultation_services import validate_consultation
@@ -1293,11 +1293,8 @@ class ProfessionalAccessGrantEndView(APIView):
         item.refresh_expiration()
         if item.status != "active":
             return Response({"success": False, "message": "Cet accès n’est plus actif."}, status=409)
-        now = timezone.now()
-        item.status, item.expires_at = "expired", now
-        item.save(update_fields=("status", "expires_at"))
-        record_event(event_type="access_grant.ended", actor=request.user, actor_role="professional", patient=item.patient, establishment=item.establishment, access_grant=item, metadata={"action": "ended", "status": "expired"})
-        notify_patient(item.patient, kind="access.ended", title="Accès terminé", body=f"{item.professional_name} de {item.facility_label} a mis fin à son accès à votre carnet.", metadata={"access_grant_id": str(item.id)})
+        if not end_access_grant(item, actor=request.user, reason=END_REASON_PROFESSIONAL):
+            return Response({"success": False, "message": "Cet accès n’est plus actif."}, status=409)
         return Response({"success": True, "data": ProfessionalAccessGrantSerializer(item).data})
 
 
@@ -1439,6 +1436,8 @@ class ProfessionalConsultationListCreateView(APIView):
             return Response({"success": False, "message": str(exc.detail)}, status=403)
         record_event(event_type="consultation.validated", actor=request.user, actor_role="professional", patient=consultation.patient, establishment=consultation.establishment, access_grant=consultation.access_grant, consultation=consultation, metadata={"action": "validated", "source_type": "preconsultation"})
         record_event(event_type="preconsultation.closed", actor=request.user, actor_role="professional", patient=consultation.patient, establishment=consultation.establishment, access_grant=consultation.access_grant, consultation=consultation, metadata={"action": "closed", "encounter_id": str(consultation.source_encounter_id), "status": "closed"})
+        # Fin de consultation = fin de l'accès : le professionnel n'a pas à penser à le fermer, et le patient n'a pas à le révoquer.
+        end_access_grant(consultation.access_grant, actor=request.user, reason=END_REASON_CONSULTATION_SIGNED)
         return Response({"success": True, "data": ProfessionalConsultationSerializer(consultation).data}, status=status.HTTP_201_CREATED)
 
 

@@ -16,14 +16,20 @@
 .patient-option { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); color: var(--text); text-align: left; cursor: pointer; }
 .patient-option > span:last-child { min-width: 0; display: grid; gap: 2px; overflow-wrap: anywhere; }
 .patient-option[aria-pressed="true"] { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 12%, var(--surface)); }
-.request-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+/* « Mes demandes » (professionnel) : toutes les cartes sont des rectangles identiques (même hauteur, même disposition), quel que soit le statut.
+   Haut : photo + nom (une ligne chacun, coupés par « … ») · milieu : périmètre (2 lignes au plus) · bas : statut, temps restant et « Terminer l'accès ». */
+.request-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr)); gap: 12px; align-items: stretch; }
+.record.request-row { display: grid; align-items: stretch; justify-content: normal; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(2.7em, 1fr) minmax(64px, auto); gap: 10px; min-height: 184px; box-sizing: border-box; min-width: 0; }
 .request-row__who { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.request-row__who > div { min-width: 0; overflow-wrap: anywhere; }
+.request-row__who > div { min-width: 0; display: grid; gap: 2px; }
+.request-row__who strong, .request-row__facility { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .request-row__avatars { position: relative; display: inline-flex; flex: 0 0 auto; }
 .request-row__avatars .establishment-logo { position: absolute; right: -6px; bottom: -6px; border-width: 2px; border-color: var(--surface); }
-/* 08/11/2026 : accès ouvert côté professionnel (temps restant + « Terminer l'accès ») */
-.request-row__side { display: grid; justify-items: end; gap: 6px; flex: 0 0 auto; text-align: right; }
-.request-row__side small { font-variant-numeric: tabular-nums; }
+.request-row__scope { margin: 0; font-size: .85rem; line-height: 1.35; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
+.request-row__foot { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 10px; }
+.request-row__state { display: grid; gap: 6px; min-width: 0; justify-items: start; align-content: end; }
+.request-row__state small { font-variant-numeric: tabular-nums; line-height: 1.3; }
+.request-row__foot .button { white-space: nowrap; }
 /* « Mes consultations » (professionnel) : la personne reçue en tête de chaque ligne */
 .professional-compact-record--person { align-items: center; }
 .professional-compact-record__who { display: flex; align-items: center; gap: 12px; min-width: 0; }
