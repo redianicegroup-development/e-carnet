@@ -9,7 +9,7 @@ import { PublicHeader } from "./PublicHeader";
 import { BackToTopButton } from "./BackToTopButton";
 import { ScrollToTopOnNavigate } from "../ScrollToTopOnNavigate";
 import { CookiePreferencesLink } from "../CookieConsentBanner";
-import { FooterCredit } from "./FooterCredit";
+import { FooterCredit, RedianiceCredit } from "./FooterCredit";
 
 export function PublicFooter() {
   return (
@@ -46,7 +46,7 @@ export function PublicFooter() {
           <div className="pub-footer__lower">
             <div className="pub-footer__legal">
               <span>© 2026 Mon E‑Carnet</span>
-              <p className="pub-footer__made">Créé par <strong>Redianice</strong> et <FooterCredit /></p>
+              <p className="pub-footer__made">Créé par <RedianiceCredit /> et <FooterCredit /></p>
             </div>
           </div>
         </section>

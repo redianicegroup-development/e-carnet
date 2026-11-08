@@ -1,5 +1,6 @@
 import { CREDITS_ORIGINS, CREDITS_TEAM } from "../../../lib/credits";
 import { Figure, Line, Node, Packet, Svg, wrapText } from "./parts";
+import { RedianiceLogo } from "../RedianiceLogo";
 
 /* Schémas de la page Crédits. Les rôles et les structures viennent de lib/credits.ts : aucun nom de personne n'est dessiné (seuls les rôles sont confirmés). */
 
@@ -22,7 +23,13 @@ export function CreditsTeamFigure() {
         <Line d="M86 176 V196" />
         <Line d="M274 176 V196" />
         <Line d="M274 280 V304" dashed />
-        {redianice && <Node x={60} y={0} w={240} h={52} title={redianice.name} sub="startup porteuse du projet" tone="accent" />}
+        {redianice && (
+          <g className="fg-pop fg-tone--accent">
+            <rect className="fg-node" x={60} y={0} width={240} height={52} rx={16} />
+            <foreignObject x={105} y={6} width={150} height={25}><RedianiceLogo width={150} /></foreignObject>
+            <text textAnchor="middle"><tspan className="fg-sub" x={180} y={44}>startup porteuse du projet</tspan></text>
+          </g>
+        )}
         {CREDITS_TEAM.map((member) => {
           const [x, y] = slot[member.id as keyof typeof slot] ?? [0, 92];
           return <Node key={member.id} x={x} y={y} w={172} h={84} pad={46} icon={member.icon} title={wrapText(member.role, 14)} sub={wrapText(member.org, 18)} tone={member.id === "developpement" ? "soft" : "plain"} />;

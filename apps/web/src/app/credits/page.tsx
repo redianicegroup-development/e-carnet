@@ -6,6 +6,7 @@ import { InfoPageMotion } from "../../components/motion/InfoPageMotion";
 import { BrandLogoFigure, CreditsStackFigure, CreditsTeamFigure } from "../../components/public/figures/CreditsFigures";
 import { DocHero } from "../../components/public/figures/DocHero";
 import { PublicShell } from "../../components/public/PublicShell";
+import { RedianiceLogo } from "../../components/public/RedianiceLogo";
 import { BrandLogo } from "../../components/ui/BrandLogo";
 import { Icon } from "../../components/ui/Icon";
 import { CREDITS_BUILT_WITH, CREDITS_ORIGINS, CREDITS_TEAM, CREDITS_UPDATED } from "../../lib/credits";
@@ -59,7 +60,7 @@ export default function CreditsPage() {
             {CREDITS_ORIGINS.map((entry) => (
               <article className="card credits__card" key={entry.id}>
                 <span className="setting-item__icon" aria-hidden="true" data-draw-icon><Icon name={entry.icon} /></span>
-                <h3>{entry.name}</h3>
+                <h3>{entry.id === "redianice" ? <RedianiceLogo width={150} /> : entry.name}</h3>
                 <span className="credits__role">{entry.role}</span>
                 <p className="muted">{entry.text}</p>
                 {entry.href && <a className="credits__ext" href={entry.href} target="_blank" rel="noopener noreferrer">Visiter le site<span className="sr-only"> d’{entry.name} (s’ouvre dans un nouvel onglet)</span><Icon name="chevron" size={14} /></a>}

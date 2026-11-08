@@ -1,4 +1,4 @@
-import { DEFAULT_THEME, normalizeTheme, type ThemeConfig } from "@ecarnet/ui/themes";
+import { applyTheme, DEFAULT_THEME, normalizeTheme, type ThemeConfig } from "@ecarnet/ui/themes";
 
 const ACTIVE_ACCOUNT_KEY = "ecarnet:theme:v1:active-account";
 const ACCOUNT_THEME_PREFIX = "ecarnet:theme:v1:account:";
@@ -51,4 +51,24 @@ export function clearActiveThemeCache(): void {
 
 export function defaultTheme(): ThemeConfig {
   return { ...DEFAULT_THEME, palette: [...DEFAULT_THEME.palette] as unknown as ThemeConfig["palette"] };
+}
+
+/** Signaux internes : la déconnexion remet le thème par défaut, la connexion recharge celui du compte. */
+export const THEME_RESET_EVENT = "ecarnet:theme-reset";
+export const AUTH_CHANGED_EVENT = "ecarnet:auth-changed";
+
+/** Déconnexion : oublie le thème du dernier compte et remet tout de suite la palette Miel et la police par défaut, pages publiques comprises. */
+export function resetThemeToDefault(): void {
+  clearActiveThemeCache();
+  try {
+    applyTheme(document.documentElement, defaultTheme());
+    window.dispatchEvent(new Event(THEME_RESET_EVENT));
+  } catch {
+    // Hors navigateur (rendu serveur, tests), il n'y a rien à remettre à zéro.
+  }
+}
+
+/** Connexion réussie : demande à l'application de recharger les préférences du compte, sans recharger la page. */
+export function announceAuthChange(): void {
+  try { window.dispatchEvent(new Event(AUTH_CHANGED_EVENT)); } catch { /* hors navigateur */ }
 }

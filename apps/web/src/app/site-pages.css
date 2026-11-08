@@ -315,3 +315,8 @@ body .public-scroll-top { position: fixed; }
 .credits__member h3 { font-size: 1.05rem; }
 .credits__member p { margin: 0; }
 .credits__ext { display: inline-flex; align-items: center; gap: 4px; width: fit-content; min-height: 44px; color: var(--primary-text); font-weight: 700; }
+
+/* Logo Redianice : masque aux couleurs du texte (guide de marque) */
+.rdn-logo { display: block; max-width: 100%; aspect-ratio: 900 / 145; background: currentColor; -webkit-mask: url(/brand/redianice-logo.png) center / contain no-repeat; mask: url(/brand/redianice-logo.png) center / contain no-repeat; }
+.about__rdn { margin: 2px 0 8px; }
+.credit-reveal__link--plain { cursor: default; }

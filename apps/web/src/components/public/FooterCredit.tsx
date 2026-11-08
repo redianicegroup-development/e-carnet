@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { MouseEvent } from "react";
+import type { FocusEvent, MouseEvent, PointerEvent } from "react";
 import { AKATECH_URL } from "../../lib/credits";
 
-const LOGO_SRC = "/brand/akatech-studio-logo.webp";
+const AKATECH_LOGO_SRC = "/brand/akatech-studio-logo.webp";
+const REDIANICE_LOGO_SRC = "/brand/redianice-logo-stack.webp";
 const TOUCH_LINGER_MS = 1400;
 
 type Follow = { x: number; y: number; tx: number; ty: number; raf: number; placed: boolean };
@@ -40,11 +41,13 @@ function aim(card: HTMLElement, follow: Follow, clientX: number, clientY: number
 }
 
 /**
- * Lien « AKATech Studio » du pied de page. Au survol (souris) ou pendant qu'on y pose le doigt, le logo apparaît
- * près du pointeur et le suit. Au clavier, il apparaît au-dessus du lien. Le visuel est décoratif : le lien reste un
- * vrai lien, qui s'ouvre dans un nouvel onglet.
+ * Nom du pied de page (« Créé par … »). Au survol (souris) ou pendant qu'on y pose le doigt, le logo apparaît
+ * près du pointeur et le suit. Au clavier, il apparaît au-dessus du nom. Le visuel est décoratif : avec `href`, le nom reste
+ * un vrai lien qui s'ouvre dans un nouvel onglet ; sans `href`, c'est un simple nom focalisable.
  */
-export function FooterCredit() {
+type CreditRevealProps = { name: string; logoSrc: string; href?: string; label: string };
+
+export function CreditReveal({ name, logoSrc, href, label }: CreditRevealProps) {
   const cardRef = useRef<HTMLSpanElement>(null);
   const follow = useRef<Follow>({ x: 0, y: 0, tx: 0, ty: 0, raf: 0, placed: false });
   const hideTimer = useRef<number | undefined>(undefined);
@@ -53,14 +56,14 @@ export function FooterCredit() {
 
   // Charge le logo quand le navigateur est au repos : la première apparition n'attend pas le réseau.
   useEffect(() => {
-    const preload = () => { const image = new Image(); image.src = LOGO_SRC; };
+    const preload = () => { const image = new Image(); image.src = logoSrc; };
     if (typeof window.requestIdleCallback === "function") {
       const id = window.requestIdleCallback(preload);
       return () => window.cancelIdleCallback(id);
     }
     const id = window.setTimeout(preload, 1200);
     return () => window.clearTimeout(id);
-  }, []);
+  }, [logoSrc]);
 
   useEffect(() => {
     const state = follow.current;
@@ -84,36 +87,45 @@ export function FooterCredit() {
     follow.current.placed = false;
   };
 
+  const triggerProps = {
+    onPointerEnter: (event: PointerEvent<HTMLElement>) => { lastPointer.current = event.pointerType; if (event.pointerType !== "touch") show(event.clientX, event.clientY, 22); },
+    onPointerMove: (event: PointerEvent<HTMLElement>) => { if (event.pointerType === "touch") move(event.clientX, event.clientY, 40); else if (open) move(event.clientX, event.clientY, 22); },
+    onPointerLeave: (event: PointerEvent<HTMLElement>) => { if (event.pointerType !== "touch") hide(); },
+    onPointerDown: (event: PointerEvent<HTMLElement>) => { lastPointer.current = event.pointerType; if (event.pointerType === "touch") show(event.clientX, event.clientY, 40); },
+    onPointerUp: (event: PointerEvent<HTMLElement>) => { if (event.pointerType === "touch") hideTimer.current = window.setTimeout(hide, TOUCH_LINGER_MS); },
+    onPointerCancel: (event: PointerEvent<HTMLElement>) => { if (event.pointerType === "touch") hide(); },
+    onContextMenu: (event: MouseEvent<HTMLElement>) => { if (lastPointer.current === "touch") event.preventDefault(); },
+    onFocus: (event: FocusEvent<HTMLElement>) => {
+      if (!event.currentTarget.matches(":focus-visible")) return;
+      const rect = event.currentTarget.getBoundingClientRect();
+      show(rect.left + rect.width / 2, rect.top, 14);
+    },
+    onBlur: hide,
+  };
+
   return (
     <span className="credit-reveal">
-      <a
-        className="credit-reveal__link"
-        href={AKATECH_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="AKATech Studio, site web (s’ouvre dans un nouvel onglet)"
-        onPointerEnter={(event) => { lastPointer.current = event.pointerType; if (event.pointerType !== "touch") show(event.clientX, event.clientY, 22); }}
-        onPointerMove={(event) => { if (event.pointerType === "touch") move(event.clientX, event.clientY, 40); else if (open) move(event.clientX, event.clientY, 22); }}
-        onPointerLeave={(event) => { if (event.pointerType !== "touch") hide(); }}
-        onPointerDown={(event) => { lastPointer.current = event.pointerType; if (event.pointerType === "touch") show(event.clientX, event.clientY, 40); }}
-        onPointerUp={(event) => { if (event.pointerType === "touch") hideTimer.current = window.setTimeout(hide, TOUCH_LINGER_MS); }}
-        onPointerCancel={(event) => { if (event.pointerType === "touch") hide(); }}
-        onContextMenu={(event: MouseEvent) => { if (lastPointer.current === "touch") event.preventDefault(); }}
-        onFocus={(event) => {
-          if (!event.currentTarget.matches(":focus-visible")) return;
-          const rect = event.currentTarget.getBoundingClientRect();
-          show(rect.left + rect.width / 2, rect.top, 14);
-        }}
-        onBlur={hide}
-      >
-        AKATech Studio
-      </a>
+      {href ? (
+        <a className="credit-reveal__link" href={href} target="_blank" rel="noopener noreferrer" aria-label={`${label}, site web (s’ouvre dans un nouvel onglet)`} {...triggerProps}>{name}</a>
+      ) : (
+        <span className="credit-reveal__link credit-reveal__link--plain" tabIndex={0} aria-label={label} {...triggerProps}>{name}</span>
+      )}
       <span ref={cardRef} className="credit-reveal__card" data-open={open ? "true" : "false"} aria-hidden="true">
         <span className="credit-reveal__frame">
           {/* eslint-disable-next-line @next/next/no-img-element -- petit visuel décoratif local, préchargé au repos */}
-          <img src={LOGO_SRC} alt="" width={176} height={176} decoding="async" draggable={false} />
+          <img src={logoSrc} alt="" width={176} height={176} decoding="async" draggable={false} />
         </span>
       </span>
     </span>
   );
+}
+
+/** Lien « AKATech Studio » du pied de page, avec son logo au survol. */
+export function FooterCredit() {
+  return <CreditReveal name="AKATech Studio" logoSrc={AKATECH_LOGO_SRC} href={AKATECH_URL} label="AKATech Studio" />;
+}
+
+/** « Redianice » du pied de page, avec son logo (guide de marque) au survol ou au toucher, comme AKATech Studio. */
+export function RedianiceCredit() {
+  return <CreditReveal name="Redianice" logoSrc={REDIANICE_LOGO_SRC} label="Redianice" />;
 }

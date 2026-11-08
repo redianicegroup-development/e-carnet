@@ -248,6 +248,7 @@ function logoutEnv({ unsubscribe, purge }) {
     "./offline-snapshot": { purgeOfflineSnapshot: async () => { calls.push("purge"); return purge?.(); } },
     "./offline-cache": { purgeOfflineCache: async () => { calls.push("purge-cache"); } },
     "./push": { unsubscribeFromPush: async () => { calls.push("push"); return unsubscribe?.(); } },
+    "./themeStorage": { resetThemeToDefault: () => { calls.push("theme"); } },
   });
   return { lib, calls };
 }
@@ -255,13 +256,13 @@ function logoutEnv({ unsubscribe, purge }) {
 test("déconnexion : désabonne le push et efface la copie locale", async () => {
   const env = logoutEnv({});
   await env.lib.cleanUpBeforeLogout();
-  assert.deepEqual(env.calls.sort(), ["purge", "purge-cache", "push"]);
+  assert.deepEqual(env.calls.sort(), ["purge", "purge-cache", "push", "theme"]);
 });
 
 test("déconnexion : une erreur ou un blocage du désabonnement ne bloque jamais la déconnexion ni l'effacement", async () => {
   const failing = logoutEnv({ unsubscribe: () => { throw new Error("push indisponible"); } });
   await failing.lib.cleanUpBeforeLogout();
-  assert.deepEqual(failing.calls.sort(), ["purge", "purge-cache", "push"]);
+  assert.deepEqual(failing.calls.sort(), ["purge", "purge-cache", "push", "theme"]);
   const hanging = logoutEnv({ unsubscribe: () => new Promise(() => {}) });
   const started = Date.now();
   await hanging.lib.cleanUpBeforeLogout(); // le plafond de 5 s est ramené à 20 ms par le faux window.setTimeout

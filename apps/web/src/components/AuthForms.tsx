@@ -1,4 +1,5 @@
 "use client";
+import { announceAuthChange } from "../lib/themeStorage";
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -105,7 +106,7 @@ export function AuthForms() {
       setStatus("success"); setMessage("Bienvenue ! Ouverture de votre espace…");
       const destination = destinationFor(account, mode, new URLSearchParams(window.location.search).get("next"));
       const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      redirectTimer.current = window.setTimeout(() => router.replace(destination), calm ? 0 : SUCCESS_DELAY_MS);
+      redirectTimer.current = window.setTimeout(() => { announceAuthChange(); router.replace(destination); }, calm ? 0 : SUCCESS_DELAY_MS);
     } catch { setMessage(""); setStatus("error"); setErrorModal("Le service de connexion est momentanément inaccessible. Vérifiez votre connexion puis réessayez."); }
   }
 

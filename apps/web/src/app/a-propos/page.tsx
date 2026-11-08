@@ -7,6 +7,7 @@ import { PulseLine } from "../../components/motion/PulseLine";
 import { AboutChainFigure } from "../../components/public/figures/AboutChainFigure";
 import { ActorsFigure } from "../../components/public/figures/ActorsFigure";
 import { PublicShell } from "../../components/public/PublicShell";
+import { RedianiceLogo } from "../../components/public/RedianiceLogo";
 import { Icon, type IconName } from "../../components/ui/Icon";
 import { CREDITS_TEAM } from "../../lib/credits";
 
@@ -83,6 +84,7 @@ export default function AboutPage() {
         <section className="about__block" aria-labelledby="equipe">
           <div className="about__intro">
             <h2 id="equipe">L’équipe</h2>
+            <RedianiceLogo width={150} className="about__rdn" />
             <p className="muted">Une petite équipe, réunie autour de la startup Redianice. Le développeur du projet est aussi le fondateur d’AKATech Studio.</p>
           </div>
           <ul className="about-team">

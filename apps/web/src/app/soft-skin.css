@@ -205,6 +205,9 @@ body .button.primary.danger { --goo-tone: var(--danger); border-color: transpare
 body .button.primary.danger:hover { background: color-mix(in srgb, var(--danger) 92%, #fff); }
 /* contrôles flottants et cartes de marque : seule leur position ou leur couleur de fond change, jamais le type de bouton */
 body .feedback-fab { position: fixed; border-radius: 999px; }
+/* « Remonter » : `body .button` (position: relative) l'emportait sur `body .public-scroll-top` et laissait le bouton dans le flux, collé à gauche. Plus spécifique, il reste fixé à droite, au-dessus du bouton d'avis. */
+body .button.public-scroll-top { position: fixed; left: auto; right: max(18px, env(safe-area-inset-right)); bottom: calc(74px + env(safe-area-inset-bottom)); }
+@media (max-width: 600px) { body .button.public-scroll-top { right: max(14px, env(safe-area-inset-right)); } }
 body .pub-footer__card--brand .button.primary, body .pub-footer__card--brand .button.primary:hover:not(:disabled) { --goo-tone: var(--on-primary); background: var(--on-primary); color: var(--primary-text); }
 body .ax-submit { min-height: 54px; font-size: 1rem; }
 /* petits contrôles d'icône : des discrets */

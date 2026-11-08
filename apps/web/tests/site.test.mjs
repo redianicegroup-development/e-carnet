@@ -149,7 +149,7 @@ test("pied de page : colonne des pages légales, copyright et crédit « créé 
   assert.match(footer, /<h3 className="pub-footer__script">Informations légales<\/h3>/);
   assert.match(footer, /href="\/conditions-rattachement"/);
   assert.match(footer, /© 2026 Mon E.Carnet/);
-  assert.match(footer, /Créé par <strong>Redianice<\/strong> et <FooterCredit \/>/);
+  assert.match(footer, /Créé par <RedianiceCredit \/> et <FooterCredit \/>/);
   const credit = read("src/components/public/FooterCredit.tsx");
   assert.match(credit, /AKATECH_URL/);
   assert.match(credit, /rel="noopener noreferrer"/);
@@ -157,6 +157,8 @@ test("pied de page : colonne des pages légales, copyright et crédit « créé 
   assert.match(credit, /onFocus/, "le clavier aussi");
   assert.match(credit, /prefers-reduced-motion/);
   assert.ok(existsSync(`${root}public/brand/akatech-studio-logo.webp`), "logo AKATech Studio manquant dans public/brand");
+  assert.match(credit, /REDIANICE_LOGO_SRC[\s\S]*RedianiceCredit/, "Redianice a le même logo au survol qu'AKATech Studio");
+  assert.ok(existsSync(`${root}public/brand/redianice-logo-stack.webp`) && existsSync(`${root}public/brand/redianice-logo.png`), "logos Redianice manquants dans public/brand");
   const styles = read("src/app/site-pages.css");
   assert.match(styles, /\.credit-reveal__card\[data-open="true"\]/);
   assert.match(styles, /\.credit-reveal__frame \{[^}]*pointer-events|\.credit-reveal__card \{[^}]*pointer-events: none/);
