@@ -126,9 +126,26 @@ export function ContactSection({ privacyHref }: { privacyHref: string }) {
     if (Object.keys(found).length) { focusFirst(found); return; }
     setStatus("sending");
     try {
-      await apiPost<{ id: string }>("/api/v1/identity/contact/", contactPayload(current, decoy.current?.value ?? ""));
+      const payload = contactPayload(current, decoy.current?.value ?? "");
+      await apiPost<{ id: string }>("/api/v1/identity/contact/", payload);
+      let emailWarning = "";
+      try {
+        const emailResponse = await fetch("/api/contact", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          cache: "no-store",
+        });
+        if (!emailResponse.ok) {
+          const result = await emailResponse.json().catch(() => null) as { error?: string } | null;
+          emailWarning = result?.error || "L’e-mail de notification n’a pas pu être envoyé.";
+        }
+      } catch {
+        emailWarning = "Le message est enregistré, mais l’e-mail de notification n’a pas pu être envoyé.";
+      }
       setFields(EMPTY_CONTACT);
       setTouched({});
+      setFailure(emailWarning);
       setStatus("sent");
     } catch (error) {
       setStatus("idle");
@@ -171,6 +188,7 @@ export function ContactSection({ privacyHref }: { privacyHref: string }) {
               <span className="lp-contact__done-icon" aria-hidden="true"><Icon name="check" size={26} /></span>
               <h3 ref={successTitle} tabIndex={-1}>Message envoyé</h3>
               <p>Merci. Nous vous répondons par le moyen que vous avez indiqué.</p>
+              {failure && <p className="field-error" role="status">Votre message est enregistré. {failure}</p>}
               <button type="button" className="button" onClick={() => { setStatus("idle"); setFailure(""); }}>Écrire un autre message</button>
             </div>
           ) : (
