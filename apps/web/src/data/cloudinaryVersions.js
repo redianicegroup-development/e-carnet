@@ -34,6 +34,9 @@ export const CLOUDINARY_VERSIONS = {
   "/illustrations/modal/question.svg": 1792314992,
   "/illustrations/modal/success.svg": 1792314993,
   "/illustrations/modal/welcome.svg": 1792314993,
+  "/landing/hand-carnet.webp": 1794249994,
+  "/landing/hand-preconsultation.webp": 1794249996,
+  "/landing/hand-qr.webp": 1794249997,
   "/landing/hero-desktop.webp": 1793966775,
   "/landing/hero-mobile.webp": 1793966778,
 }
