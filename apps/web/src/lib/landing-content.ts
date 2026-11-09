@@ -34,7 +34,7 @@ export type Feature = {
   figure?: { value: string; unit?: string; label: string };
 };
 export const FEATURES: Feature[] = [
-  { icon: "folder", title: "Mon carnet", text: "Vos antécédents, allergies et traitements, chacun marqué « Déclaré par le patient ». Une pré-consultation prépare votre rendez-vous." },
+  { icon: "folder", title: "Mon carnet", text: "Vos antécédents, allergies et traitements, chacun marqué « Déclaré par le patient ». Le médecin le lit avec votre QR, sans tout vous redemander." },
   { icon: "qr", title: "QR code temporaire", text: "Un code sans donnée médicale. Il lance une demande, il n’ouvre pas votre carnet.", figure: { value: "5", unit: "min", label: "de validité pour un QR code" } },
   { icon: "lock", title: "Autorisations", text: "Un contenu précis, une durée limitée, deux prolongations d’une heure au plus. Vous autorisez ou refusez, demande par demande.", figure: { value: "2", unit: "h", label: "pour un accès autorisé" } },
   { icon: "clock", title: "Historique des accès", text: "Retrouvez qui a demandé quoi, quand, et la décision prise. Les consultations validées rejoignent votre carnet." },
@@ -42,15 +42,15 @@ export const FEATURES: Feature[] = [
 
 export type Step = { icon: IconName; title: string; text: string };
 export const STEPS: Step[] = [
-  { icon: "pencil", title: "Préparez", text: "Notez le motif et vos observations avant le rendez-vous." },
-  { icon: "qr", title: "Autorisez", text: "Présentez votre QR : le professionnel envoie une demande, vous choisissez le contenu et la durée, ou vous refusez." },
-  { icon: "folder", title: "Retrouvez", text: "Les consultations validées et l’historique des accès rejoignent votre carnet." },
+  { icon: "pencil", title: "L’infirmier prépare", text: "Il saisit le motif, les symptômes et les constantes depuis votre espace patient. Sans infirmier, le médecin consulte directement : cette étape est facultative." },
+  { icon: "qr", title: "Le médecin scanne votre QR", text: "Depuis son espace professionnel. Le QR est valable 5 minutes et ne sert qu’une fois ; l’accès dure 2 heures." },
+  { icon: "document", title: "Vous retrouvez ses préconisations", text: "Le médecin lit, consulte, puis établit ses préconisations. Elles rejoignent votre carnet une fois la consultation validée." },
 ];
 
 export type Profile = { icon: IconName; label: string; title: string; points: string[]; cta: { href: string; text: string; subject?: string; track?: "signup" | "professional_signup" } };
 export const PROFILES: Profile[] = [
-  { icon: "user", label: "Patients", title: "Votre santé, organisée", points: ["Préparez vos consultations", "Gardez la maîtrise des accès"], cta: { href: "/connexion", text: "Commencer", track: "signup" } },
-  { icon: "stethoscope", label: "Professionnels", title: "Un accès patient par patient", points: ["Demandez une autorisation", "Consultez selon le périmètre accordé"], cta: { href: "/connexion?mode=register&profil=professionnel", text: "Créer mon profil" } },
+  { icon: "user", label: "Patients", title: "Votre santé, organisée", points: ["Présentez votre QR : le médecin consulte votre carnet", "Gardez la maîtrise des accès"], cta: { href: "/connexion", text: "Commencer", track: "signup" } },
+  { icon: "stethoscope", label: "Professionnels", title: "Un accès patient par patient", points: ["Scannez le QR du patient et consultez depuis votre espace", "Établissez vos préconisations, elles rejoignent son carnet"], cta: { href: "/connexion?mode=register&profil=professionnel", text: "Créer mon profil" } },
   { icon: "building", label: "Établissements", title: "Gérez vos rattachements", points: ["Invitez les professionnels", "Traitez les demandes de rattachement"], cta: { href: "#contact", text: "Contacter l’équipe", subject: "establishment" } },
 ];
 
@@ -80,10 +80,16 @@ export const FAQ_ITEMS: FaqItem[] = [
   { id: "phone", q: "Puis-je l’utiliser sur mon téléphone ?", a: "Oui. Mon E‑Carnet s’ouvre dans le navigateur d’un téléphone ou d’un ordinateur, et peut s’installer comme une application lorsque votre navigateur le permet. Sans réseau, vous pouvez relire en lecture seule ce que vous avez déjà consulté ; toute modification demande la connexion." },
 ];
 
-/** Dernière section : l'invitation à créer son espace, puis le formulaire de contact (une seule section, un seul bouton principal). */
+/** Dernière section : l'invitation à créer son espace, puis le formulaire de contact (une seule section, un seul bouton principal).
+ *  `points` résume la valeur en trois lignes, au-dessus du bouton. */
 export const FINAL = {
-  title: "Commencez avec votre carnet.",
+  title: "Votre prochaine consultation peut commencer autrement.",
   lead: "Créez votre espace patient ou professionnel depuis une seule page. Utilisez des informations exactes et gardez votre compte personnel.",
+  points: [
+    "Votre carnet rempli une fois, prêt pour chaque médecin",
+    "Un infirmier prépare, ou le médecin consulte directement avec votre QR",
+    "Ses préconisations rejoignent votre carnet, vous gardez la main sur les accès",
+  ],
   primary: { href: "/connexion", label: "Commencer" },
   secondary: { href: "/connexion", label: "Se connecter" },
 } as const;

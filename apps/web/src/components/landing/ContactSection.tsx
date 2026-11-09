@@ -169,6 +169,9 @@ export function ContactSection({ privacyHref }: { privacyHref: string }) {
           <div className="lp-cta">
             <h2 id="contact-title">{FINAL.title}</h2>
             <p className="lead">{FINAL.lead}</p>
+            <ul className="lp-cta__points">
+              {FINAL.points.map((point) => <li key={point}><span aria-hidden="true"><Icon name="check" size={16} /></span>{point}</li>)}
+            </ul>
             <div className="actions">
               <Link className="button primary" href={FINAL.primary.href} data-track="signup">{FINAL.primary.label}</Link>
               <Link className="button" href={FINAL.secondary.href}>{FINAL.secondary.label}</Link>

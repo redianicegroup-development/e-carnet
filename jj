@@ -1,6 +1,6 @@
 
 git add .
-git commit -m "v1.7.5 ise a jour hors ligne "
+git commit -m "v1.7.6 mise a jour hors ligne "
 git branch -M main
 git remote add origin https://github.com/redianicegroup-development/e-carnet.git
 git push -u origin main

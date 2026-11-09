@@ -7,8 +7,7 @@ export function DetailRows() {
       <div className="lp2-rows">
         <div className="lp2-row">
           <div className="lp2-copy lp2-rv">
-            <span className="lp2-eyebrow">Mon carnet</span>
-            <h2>Chaque information garde son origine</h2>
+            <h2>Le médecin sait d’où vient chaque information</h2>
             <p className="lp2-lead">Vos antécédents, allergies et traitements sont marqués « Déclaré par le patient ». On distingue d’un coup d’œil ce qui vient de vous et ce qui vient d’un professionnel.</p>
             <ul className="lp2-ticks">
               <li>
@@ -24,7 +23,7 @@ export function DetailRows() {
               <li>
                 <svg className="lp2-i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M8 12l3 3 5-6" /></svg>
                 {" "}
-                Une pré-consultation pour préparer chaque rendez-vous
+                Un carnet prêt à être remis au médecin à chaque consultation
               </li>
             </ul>
           </div>
@@ -98,7 +97,6 @@ export function DetailRows() {
         </div>
         <div className="lp2-row lp2-flip">
           <div className="lp2-copy lp2-rv">
-            <span className="lp2-eyebrow">Carte d’urgence</span>
             <h2>Une carte d’urgence, prête quand il le faut</h2>
             <p className="lp2-lead">Activez un QR public qui ouvre votre carte d’urgence, ou téléchargez-la en image PNG. Les éléments sont déclarés par vous et doivent être vérifiés par les professionnels.</p>
             <ul className="lp2-ticks">
@@ -153,7 +151,6 @@ export function DetailRows() {
         </div>
         <div className="lp2-row">
           <div className="lp2-copy lp2-rv">
-            <span className="lp2-eyebrow">Proches et enfants</span>
             <h2>Vos proches et vos enfants, chacun à leur place</h2>
             <p className="lp2-lead">Un proche de confiance lit votre fiche d’urgence, rien de plus. Un enfant a son propre carnet, distinct du vôtre.</p>
             <ul className="lp2-ticks">

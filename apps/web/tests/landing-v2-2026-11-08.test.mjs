@@ -1,6 +1,6 @@
 // Landing mise à jour depuis la maquette Mon_E-Carnet.html : sections reprises, héro / FAQ / contact / pied de page de l'app conservés, CSS isolé.
 import assert from "node:assert/strict";
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import test from "node:test";
 
 const read = (rel) => readFileSync(new URL(`../${rel}`, import.meta.url), "utf8");
@@ -15,10 +15,10 @@ test("le héro d'origine est conservé tel quel", () => {
 });
 
 test("les sections de la maquette sont dans l'ordre, avec les ancres de la navigation", () => {
-  const order = ["WhoCards", "ToolTiles", "FlowSection", "DetailRows", "OfflineBand", "RoleCards", "TrustCopy", "AccessDemo"].map((name) => page.indexOf(`<${name} />`));
+  const order = ["ProblemSection", "SolutionSection", "ToolTiles", "DetailRows", "FlowSection", "RoleCards", "ObjectionCards", "TrustCopy", "AccessDemo"].map((name) => page.indexOf(`<${name} />`));
   assert.ok(order.every((index) => index > 0), "section manquante");
   assert.deepEqual([...order].sort((a, b) => a - b), order, "ordre des sections");
-  for (const id of ["fonctionnalites", "parcours", "profils"]) assert.match(page, new RegExp(`id="${id}"`));
+  for (const id of ["probleme", "solution", "fonctionnalites", "parcours", "profils", "objections"]) assert.match(page, new RegExp(`id="${id}"`));
 });
 
 test("la FAQ, le contact et le pied de page de l'application restent ceux d'origine", () => {
@@ -77,4 +77,42 @@ test("le faux QR code est déterministe", async () => {
   const source = read("src/components/landing2/FakeQr.tsx");
   assert.match(source, /state \* 9301 \+ 49297\) % 233280/);
   assert.doesNotMatch(source, /Math\.random/);
+});
+
+test("le message est le bon : un infirmier prépare depuis l'espace patient, sinon le médecin consulte directement par QR depuis son espace professionnel", () => {
+  const dir = new URL("../src/components/landing2/", import.meta.url);
+  for (const file of readdirSync(dir)) {
+    const source = readFileSync(new URL(file, dir), "utf8");
+    // le patient ne fait pas lui-même sa pré-consultation
+    assert.doesNotMatch(source, /Préparez|Préparer mon rendez-vous|Ma consultation|Notez le motif|Préparez vos consultations/i, file);
+  }
+  const solution = read("src/components/landing2/SolutionSection.tsx");
+  assert.match(solution, /infirmier/);
+  assert.match(solution, /espace professionnel/);
+  assert.match(solution, /préconisations/);
+  const flow = read("src/components/landing2/flowParts.tsx");
+  for (const title of ["L’infirmier prépare", "Le médecin scanne votre QR", "Vous retrouvez ses préconisations"]) assert.ok(flow.includes(`title: "${title}"`), title);
+  const content = read("src/lib/landing-content.ts");
+  assert.match(content, /Sans infirmier, le médecin consulte directement/);
+  assert.doesNotMatch(content, /Préparez vos consultations|Notez le motif/);
+});
+
+test("la solution montre trois captures détourées (main et téléphone), responsives, sans écran fictif", () => {
+  const solution = read("src/components/landing2/SolutionSection.tsx");
+  const shots = [...solution.matchAll(/src: "(\/landing\/hand-[a-z-]+\.webp)"/g)].map((match) => match[1]);
+  assert.equal(shots.length, 3);
+  for (const src of shots) assert.ok(existsSync(new URL(`../public${src}`, import.meta.url)), src);
+  assert.match(solution, /<Image/);
+  assert.match(solution, /sizes="\(max-width: 900px\)/);
+  assert.match(solution, /prefers-reduced-motion/);
+  assert.doesNotMatch(solution, /lp2-phone|lp2-scr/);
+  assert.match(css, /\.lp2-hand-stack \{width:min\(86vw,420px\)\}/);
+});
+
+test("la landing suit l'ordre problème, solution, bénéfices, fonctionnement, objections, appel final, sans logos ni témoignages", () => {
+  const ids = ["probleme", "solution", "fonctionnalites", "parcours", "profils", "objections"].map((id) => page.indexOf(`id="${id}"`));
+  assert.deepEqual([...ids].sort((a, b) => a - b), ids);
+  assert.ok(page.indexOf("<FaqSection />") > ids.at(-1));
+  assert.ok(page.indexOf("<ContactSection ") > page.indexOf("<FaqSection />"));
+  assert.doesNotMatch(page, /<Testimonials|<Logos|<Companies/);
 });

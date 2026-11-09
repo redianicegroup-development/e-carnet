@@ -1,4 +1,4 @@
-/* Landing — sections reprises de la maquette HTML de la landing (pour qui, écrans du carnet, parcours, rangées, hors connexion, rôles, confiance).
+/* Landing — sections reprises de la maquette HTML de la landing (problème, solution, bénéfices du carnet, parcours, rangées, rôles, objections, confiance).
    Tout est préfixé « lp2- » et les variables « --lp2-* » : rien ne touche aux autres pages. Le héro, la FAQ, le contact et le pied de page gardent leurs styles d'origine.
    Pas de thème sombre : l'application n'en propose pas. */
 .lp2 {--lp2-bg:#FFF7E6; --lp2-bg-alt:#FFEFD0; --lp2-surface:#FFFFFF; --lp2-tint:#FFE3B3; --lp2-honey:#FFC857;
@@ -96,11 +96,6 @@
 .lp2-head {display:grid; gap:14px; justify-items:center; text-align:center; margin:0 auto 48px; max-width:760px}
 .lp2-head h2 {font-size:clamp(1.9rem,3.8vw,3rem)}
 .lp2-head.lp2-left {justify-items:start; text-align:left; margin-inline:0}
-.lp2-who {display:grid; grid-template-columns:repeat(4,1fr); gap:18px}
-.lp2-who article {background:var(--lp2-surface); border:1px solid var(--lp2-line); border-radius:var(--lp2-r-l); padding:26px 22px 28px; display:grid; gap:12px; align-content:start; transition:transform .2s, box-shadow .2s}
-.lp2-who article:hover {transform:translateY(-4px); box-shadow:var(--lp2-shadow)}
-.lp2-who h3 {font-size:1.12rem}
-.lp2-who p {color:var(--lp2-muted); font-size:.98rem}
 .lp2-orb {width:52px; height:52px; border-radius:16px; display:grid; place-items:center; color:#1E3A34; background:linear-gradient(145deg,#FFE3B3,#FFC857); box-shadow:inset 0 2px 0 rgba(255,255,255,.7), 0 8px 14px -8px rgba(30,58,52,.5)}
 .lp2-orb.lp2-g {background:linear-gradient(145deg,#CDE9DD,#6DBB9F)}
 .lp2-orb .lp2-i {width:24px;height:24px}
@@ -157,15 +152,35 @@
 .lp2-pcard ul {margin:0; padding-left:18px; color:var(--lp2-p-muted); font-size:13px; display:grid; gap:4px}
 .lp2-pcard .lp2-mot {display:flex; justify-content:space-between; align-items:center; border:1.5px dashed var(--lp2-p-honey-2); background:#FFF6DD; border-radius:12px; padding:10px 12px; font:500 13px var(--lp2-f-mono); letter-spacing:.12em}
 .lp2-pcard .lp2-mot small {font:500 11px var(--lp2-f-body); letter-spacing:0; color:var(--lp2-p-muted)}
-.lp2-offline {display:grid; grid-template-columns:1.1fr 1fr; gap:48px; align-items:center; padding:48px; border-radius:var(--lp2-r-xl); background:var(--lp2-ink); color:var(--lp2-bg)}
-.lp2-offline h2 {font-size:clamp(1.7rem,3vw,2.4rem); margin:14px 0}
-.lp2-offline .lp2-eyebrow {color:var(--lp2-honey)}
-.lp2-offline p {opacity:.85}
-.lp2-offline .lp2-nums {display:grid; grid-template-columns:repeat(3,1fr); gap:12px}
-.lp2-offline .lp2-num {padding:18px 14px; border-radius:20px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.14); display:grid; gap:6px}
-.lp2-offline .lp2-num strong {font:700 clamp(1.5rem,2.6vw,2.1rem) var(--lp2-f-display); color:var(--lp2-honey); line-height:1}
-.lp2-offline .lp2-num strong small {font-size:.5em; margin-left:3px}
-.lp2-offline .lp2-num span {font-size:.88rem; opacity:.85; line-height:1.3}
+.lp2-bleed--dark {background:var(--lp2-ink); color:var(--lp2-bg)}
+.lp2-problem-in {width:min(calc(100% - 32px),1180px); margin-inline:auto; display:grid; grid-template-columns:5fr 7fr; gap:72px; align-items:start}
+.lp2-problem-head h2 {font-size:clamp(2.1rem,4.6vw,3.5rem); color:#fff}
+.lp2-problem-head p {margin-top:22px; max-width:40ch; font-size:1.12rem; color:rgba(255,247,230,.82)}
+.lp2-pains {list-style:none; margin:0; padding:0; display:grid}
+.lp2-pains li {padding:30px 0; border-top:1px solid rgba(255,247,230,.2)}
+.lp2-pains li:last-child {border-bottom:1px solid rgba(255,247,230,.2)}
+.lp2-pains h3 {font-size:clamp(1.25rem,2.2vw,1.55rem); color:var(--lp2-honey)}
+.lp2-pains p {margin-top:10px; max-width:54ch; color:rgba(255,247,230,.84)}
+.lp2-picks {list-style:none; margin:26px 0 0; padding:0; display:grid; gap:10px; max-width:540px}
+.lp2-pick {display:flex; gap:12px; align-items:flex-start; width:100%; padding:14px 16px; text-align:left; border-radius:var(--lp2-r-m); border:1.5px solid var(--lp2-line); background:transparent; color:var(--lp2-ink); font:inherit; line-height:1.4; cursor:pointer; transition:background .25s, border-color .25s, box-shadow .25s}
+.lp2-pick .lp2-i {color:var(--lp2-muted); margin-top:.1em; transition:color .25s}
+.lp2-pick:hover {background:var(--lp2-surface)}
+.lp2-pick[aria-pressed="true"] {background:var(--lp2-surface); border-color:var(--lp2-green); box-shadow:var(--lp2-shadow-soft)}
+.lp2-pick[aria-pressed="true"] .lp2-i {color:var(--lp2-green)}
+.lp2-hand {margin:0; display:grid; justify-items:center;}
+.lp2-hand-stack {display:grid; width:min(100%,520px); padding:34px 34px 0; box-sizing:border-box; -webkit-mask-image:linear-gradient(to bottom,#000 80%,transparent 100%); mask-image:linear-gradient(to bottom,#000 80%,transparent 100%)}
+.lp2-hand-img {grid-area:1 / 1; width:100%; height:auto; opacity:0; transition:opacity .5s ease; filter:drop-shadow(0 16px 18px rgba(30,58,52,.2))}
+.lp2-hand-img.lp2-on {opacity:1}
+.lp2-hand-note {margin-top:10px; font-size:.82rem; color:var(--lp2-muted); text-align:center}
+.lp2-ap-list {margin:0; padding-left:16px; display:grid; gap:3px; font-size:11.5px; font-weight:600}
+.lp2-tile p.lp2-kick {margin-top:-10px; font:600 .8rem/1.2 var(--lp2-f-body); color:var(--lp2-link)}
+.lp2-tile p.lp2-kick + p {margin-top:-10px}
+.lp2-after-tiles {margin-top:96px}
+.lp2-objs {display:grid; grid-template-columns:repeat(2,1fr); gap:18px}
+.lp2-obj {background:var(--lp2-surface); border:1px solid var(--lp2-line); border-left:5px solid var(--lp2-honey); border-radius:var(--lp2-r-m); padding:26px 28px 28px; display:grid; gap:10px; align-content:start}
+.lp2-obj h3 {font-size:1.2rem}
+.lp2-obj p {color:var(--lp2-muted)}
+.lp2-obj a {font-weight:600; white-space:nowrap}
 .lp2-roles {display:grid; grid-template-columns:repeat(3,1fr); gap:18px}
 .lp2-role {background:var(--lp2-surface); border:1px solid var(--lp2-line); border-radius:var(--lp2-r-l); padding:30px 26px; display:grid; gap:14px; align-content:start}
 .lp2-role.lp2-lead-card {background:var(--lp2-green); color:#fff; border-color:transparent}
@@ -215,24 +230,26 @@
 .lp2-rv-wait {opacity:0; transform:translateY(20px)}
 .lp2-rv {transition:opacity .7s ease, transform .7s cubic-bezier(.2,.7,.2,1)}
 @media (max-width:1020px) {
-  .lp2-who, .lp2-tiles {grid-template-columns:repeat(2,1fr)}
+  .lp2-tiles {grid-template-columns:repeat(2,1fr)}
   .lp2-flow {grid-template-columns:1fr; gap:40px; justify-items:center}
   .lp2-steps {max-width:none; width:100%}
 }
 @media (max-width:900px) {
-  .lp2-row, .lp2-trust, .lp2-offline {grid-template-columns:1fr; gap:36px}
+  .lp2-row, .lp2-trust, .lp2-problem-in {grid-template-columns:1fr; gap:36px}
   .lp2-row.lp2-flip .lp2-copy {order:0}
   .lp2-rows {gap:72px}
   .lp2-roles {grid-template-columns:1fr}
-  .lp2-offline {padding:32px 22px}
+  .lp2-after-tiles {margin-top:72px}
+  .lp2-hand-stack {width:min(86vw,420px)}
+  .lp2-objs {grid-template-columns:1fr}
 }
 @media (max-width:560px) {
-  .lp2-who, .lp2-tiles {grid-template-columns:1fr}
-  .lp2-offline .lp2-nums {grid-template-columns:1fr}
+  .lp2-tiles {grid-template-columns:1fr}
   .lp2-flow-phone {padding:20px 8px}
   .lp2-stage {padding:24px 12px}
 }
 @media (prefers-reduced-motion:reduce) {
+  .lp2-hand-img {transition:none}
   .lp2-rv-wait {opacity:1; transform:none}
-  .lp2-btn:hover, .lp2-who article:hover, .lp2-tile:hover {transform:none}
+  .lp2-btn:hover, .lp2-tile:hover {transform:none}
 }

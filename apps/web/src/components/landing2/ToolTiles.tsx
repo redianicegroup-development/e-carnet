@@ -5,9 +5,8 @@ export function ToolTiles() {
   return (
     <>
       <div className="lp2-head lp2-rv">
-        <span className="lp2-eyebrow">Le carnet</span>
-        <h2 id="tools-title">Un carnet simple, rangé écran par écran</h2>
-        <p className="lp2-lead">Huit espaces pour garder l’essentiel à portée de main. Les exemples ci-dessous sont fictifs.</p>
+        <h2 id="tools-title">Ce que votre carnet change, concrètement</h2>
+        <p className="lp2-lead">Huit espaces, chacun pour un bénéfice précis. Les exemples ci-dessous sont fictifs.</p>
       </div>
       <div className="lp2-tiles">
         <article className="lp2-tile lp2-rv">
@@ -35,18 +34,27 @@ export function ToolTiles() {
               <small>Salbutamol, au besoin</small>
             </div>
           </div>
-          <h3>Mon carnet</h3>
+          <h3>Ne répétez plus votre histoire</h3>
+          <p className="lp2-kick">Mon carnet</p>
           <p>Antécédents, allergies et traitements, chacun marqué par son origine.</p>
         </article>
         <article className="lp2-tile lp2-rv">
           <div className="lp2-view" aria-hidden="true">
-            <span className="lp2-ap-k">Ma consultation</span>
-            <div className="lp2-ap-input">Toux depuis trois jours</div>
-            <div className="lp2-ap-input" style={{ minHeight: "48px" }}>Pire la nuit, pas de fièvre.</div>
-            <div className="lp2-ap-btn">Enregistrer</div>
+            <div className="lp2-ap-row">
+              <span className="lp2-ap-k">Préconisations</span>
+              <span className="lp2-chip lp2-ok">Validée</span>
+            </div>
+            <div className="lp2-ap-card">
+              <b>Repos et hydratation</b>
+            </div>
+            <div className="lp2-ap-card">
+              <b>Contrôle dans 7 jours</b>
+              <small>Cabinet exemple</small>
+            </div>
           </div>
-          <h3>Pré-consultation</h3>
-          <p>Notez le motif et vos observations avant le rendez-vous.</p>
+          <h3>Repartez avec les conseils du médecin</h3>
+          <p className="lp2-kick">Préconisations</p>
+          <p>Après la consultation, ses préconisations rejoignent votre carnet.</p>
         </article>
         <article className="lp2-tile lp2-rv">
           <div className="lp2-view" aria-hidden="true">
@@ -85,7 +93,8 @@ export function ToolTiles() {
               </div>
             </div>
           </div>
-          <h3>Documents</h3>
+          <h3>Retrouvez vos ordonnances en un geste</h3>
+          <p className="lp2-kick">Documents</p>
           <p>Ordonnances et comptes rendus rangés avec vos consultations.</p>
         </article>
         <article className="lp2-tile lp2-rv">
@@ -97,8 +106,9 @@ export function ToolTiles() {
             <svg className="lp2-chart" viewBox="0 0 200 100" role="presentation"><g stroke="#F3DFB6" strokeWidth="1"><path d="M0 20H200M0 50H200M0 80H200" /></g><path d="M8 70 L48 58 L88 64 L128 40 L168 46 L192 28 V100 H8Z" fill="#3B826C" opacity=".14" /><path d="M8 70 L48 58 L88 64 L128 40 L168 46 L192 28" fill="none" stroke="#3B826C" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" /><circle cx="192" cy="28" r="5" fill="#FFC857" stroke="#3B826C" strokeWidth="2.5" /></svg>
             <small>Exemple de suivi dans le temps</small>
           </div>
-          <h3>Mesures</h3>
-          <p>Suivez vos mesures et repérez l’évolution d’un coup d’œil.</p>
+          <h3>Voyez votre évolution d’un coup d’œil</h3>
+          <p className="lp2-kick">Mesures</p>
+          <p>Suivez vos mesures dans le temps.</p>
         </article>
         <article className="lp2-tile lp2-rv">
           <div className="lp2-view" aria-hidden="true">
@@ -137,8 +147,9 @@ export function ToolTiles() {
               </div>
             </div>
           </div>
-          <h3>Vaccinations</h3>
-          <p>Gardez la liste de vos vaccins et ce qui reste à prévoir.</p>
+          <h3>Sachez ce qui reste à faire</h3>
+          <p className="lp2-kick">Vaccinations</p>
+          <p>La liste de vos vaccins et ce qui reste à prévoir.</p>
         </article>
         <article className="lp2-tile lp2-rv">
           <div className="lp2-view" aria-hidden="true">
@@ -170,8 +181,9 @@ export function ToolTiles() {
               </div>
             </div>
           </div>
-          <h3>Rendez-vous et rappels</h3>
-          <p>Un agenda et des rappels pour ne rien laisser passer.</p>
+          <h3>Ne manquez plus un rendez-vous ni un traitement</h3>
+          <p className="lp2-kick">Rendez-vous et rappels</p>
+          <p>Un agenda et des rappels, au même endroit.</p>
         </article>
         <article className="lp2-tile lp2-rv">
           <div className="lp2-view" aria-hidden="true" style={{ gridTemplateColumns: "1fr 64px", alignItems: "center" }}>
@@ -183,7 +195,8 @@ export function ToolTiles() {
             </div>
             <FakeQr seed={7} />
           </div>
-          <h3>Carte d’urgence</h3>
+          <h3>Soyez prêt en cas d’urgence</h3>
+          <p className="lp2-kick">Carte d’urgence</p>
           <p>Un QR activé par vous, ou un téléchargement en image PNG.</p>
         </article>
         <article className="lp2-tile lp2-rv">
@@ -208,8 +221,9 @@ export function ToolTiles() {
               </div>
             </div>
           </div>
-          <h3>Historique des accès</h3>
-          <p>Qui a demandé quoi, quand, et la décision que vous avez prise.</p>
+          <h3>Sachez qui a consulté votre carnet</h3>
+          <p className="lp2-kick">Historique des accès</p>
+          <p>Qui a ouvert quoi, quand, et la décision prise.</p>
         </article>
       </div>
     </>

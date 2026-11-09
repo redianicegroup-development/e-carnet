@@ -6,11 +6,12 @@ import { AccessDemo } from "../components/landing2/AccessDemo";
 import { DetailRows } from "../components/landing2/DetailRows";
 import { FlowSection } from "../components/landing2/FlowSection";
 import { LandingReveal } from "../components/landing2/LandingReveal";
-import { OfflineBand } from "../components/landing2/OfflineBand";
+import { ObjectionCards } from "../components/landing2/ObjectionCards";
+import { ProblemSection } from "../components/landing2/ProblemSection";
 import { RoleCards } from "../components/landing2/RoleCards";
+import { SolutionSection } from "../components/landing2/SolutionSection";
 import { ToolTiles } from "../components/landing2/ToolTiles";
 import { TrustCopy } from "../components/landing2/TrustCopy";
-import { WhoCards } from "../components/landing2/WhoCards";
 import { FaqSection } from "../components/landing/FaqSection";
 import { HeroScene } from "../components/landing/HeroScene";
 import { LandingMotion } from "../components/motion/LandingMotion";
@@ -26,7 +27,7 @@ import "./landing-showcase.css";
 import "./landing-v2.css";
 
 const PAGE_TITLE = "Carnet de santé numérique | Mon E-Carnet";
-const PAGE_DESCRIPTION = "Organisez vos informations de santé, préparez vos consultations et maîtrisez les demandes d’accès. Organisez vos informations de santé dans votre espace sécurisé.";
+const PAGE_DESCRIPTION = "Rassemblez vos informations de santé dans un carnet, remettez-le au médecin à chaque consultation et gardez la maîtrise des accès. Votre espace sécurisé.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -87,24 +88,28 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Sections 2 à 5, reprises de la maquette HTML de la landing (composants landing2). Le héro ci-dessus, la FAQ, le contact et le pied de page restent ceux de l'application. */}
+      {/* Sections sous le hero, dans l'ordre d'une landing qui convertit : problème, solution, bénéfices, fonctionnement, rôles, objections.
+          Le héro ci-dessus, le contact (appel à l'action final) et le pied de page de l'application gardent leur structure.
+          Pas de bandeau « ils nous font confiance » ni de témoignages : rien de réel à y mettre pour l'instant. */}
       <div className="lp2">
         <LandingReveal />
-        <section className="lp2-sec" aria-labelledby="who-title"><WhoCards /></section>
-        <section className="lp2-sec" id="fonctionnalites" aria-labelledby="tools-title"><ToolTiles /></section>
+        <section className="lp2-bleed lp2-bleed--dark" id="probleme" aria-labelledby="problem-title"><ProblemSection /></section>
+        <section className="lp2-sec" id="solution" aria-labelledby="solution-title"><SolutionSection /></section>
+        <section className="lp2-sec lp2-flush" id="fonctionnalites" aria-labelledby="tools-title">
+          <ToolTiles />
+          <div className="lp2-after-tiles"><DetailRows /></div>
+        </section>
         <section className="lp2-bleed" id="parcours" aria-labelledby="flow-title">
           <div className="lp2-flow-wrap">
             <div className="lp2-head lp2-left lp2-rv">
-              <span className="lp2-eyebrow">Comment ça marche</span>
-              <h2 id="flow-title">Du carnet au rendez-vous</h2>
-              <p className="lp2-lead">Trois moments simples. Vous décidez à chaque étape.</p>
+              <h2 id="flow-title">Trois étapes, de votre carnet à ses préconisations</h2>
+              <p className="lp2-lead">Un infirmier prépare, ou le médecin consulte directement : il scanne votre QR depuis son espace professionnel.</p>
             </div>
             <FlowSection />
           </div>
         </section>
-        <section className="lp2-sec" aria-label="Fonctionnalités en détail"><DetailRows /></section>
-        <section className="lp2-sec lp2-flush" aria-labelledby="off-title"><OfflineBand /></section>
-        <section className="lp2-sec lp2-flush" id="profils" aria-labelledby="roles-title"><RoleCards /></section>
+        <section className="lp2-sec" id="profils" aria-labelledby="roles-title"><RoleCards /></section>
+        <section className="lp2-sec lp2-flush" id="objections" aria-labelledby="objections-title"><ObjectionCards /></section>
         <section className="lp2-sec lp2-flush" aria-labelledby="trust-title">
           <div className="lp2-trust"><TrustCopy /><AccessDemo /></div>
         </section>

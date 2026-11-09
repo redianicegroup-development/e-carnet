@@ -39,8 +39,8 @@ export function FaqSection() {
     <section className="lp-section lp-wrap lp-faq-section" id="questions" aria-labelledby="faq-title">
       <div className="lp-faq" data-reveal>
         <div className="lp-faq__head">
-          <h2 id="faq-title">Les réponses essentielles</h2>
-          <p className="lead">Ce qu’on demande le plus avant de créer un espace.</p>
+          <h2 id="faq-title">Encore une question ?</h2>
+          <p className="lead">Les réponses aux questions les plus fréquentes avant de créer un espace.</p>
         </div>
         <div className="faq-groups" ref={list} onKeyDown={onKeyDown}>
           {FAQ_ITEMS.map((item) => {
