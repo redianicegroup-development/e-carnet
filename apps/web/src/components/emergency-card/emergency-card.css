@@ -37,6 +37,7 @@
 .ecard__field--blood.is-empty dd { color: var(--ecard-muted); font-size: clamp(.58rem, 1.35cqi, .9rem); font-weight: 500; letter-spacing: 0; }
 .ecard__chips { display: flex; flex-wrap: wrap; gap: 3px; margin: 0; padding: 0; list-style: none; }
 .ecard__chips li { padding: 2px clamp(4px, .75cqi, 8px); border: 1px solid; border-radius: 999px; font-size: clamp(.5rem, 1.05cqi, .72rem); font-weight: 700; line-height: 1.15; overflow-wrap: anywhere; }
+.ecard__declared { display: block; margin-top: 3px; font-size: clamp(.5rem, 1cqi, .68rem); font-weight: 500; }
 .ecard__chips--allergy li { border-color: #f1c2b8; background: #fff1ee; color: #8a1c10; }
 .ecard__chips--treatment li { border-color: #d3dfd8; background: #eef3f0; color: #24352f; }
 .ecard__field--contact dd { display: grid; gap: 2px; }

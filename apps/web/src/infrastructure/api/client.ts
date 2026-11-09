@@ -94,41 +94,95 @@ export function notifyProductActionCompleted(path: string, method: string) {
   }
 }
 
-export async function apiSend<T>(method: "POST" | "PATCH" | "PUT" | "DELETE", path: string, body?: unknown): Promise<T> {
+/* ---------- écritures : clé d'idempotence, délai maximal, reprises (SEC-05) ----------
+   Chaque action de la personne reçoit une clé `Idempotency-Key` ; l'API rejoue la réponse déjà calculée si la même clé
+   revient (réponse perdue, double clic), au lieu d'exécuter l'écriture deux fois. Cela rend la reprise automatique sûre :
+   jusqu'à 3 essais, seulement après une panne réseau, un délai dépassé ou un 502/503/504, avec attente croissante et
+   aléatoire. Une réponse de l'API (400, 403, 409…) n'est jamais reprise. Les erreurs réseau restent des `TypeError`
+   (le reste de l'application teste `instanceof TypeError`). */
+export const WRITE_TIMEOUT_MS = 20000;
+export const UPLOAD_TIMEOUT_MS = 60000;
+export const MAX_WRITE_ATTEMPTS = 3;
+const RETRYABLE_STATUSES = new Set([502, 503, 504]);
+
+export function newIdempotencyKey(): string {
+  const webCrypto = typeof crypto === "undefined" ? undefined : crypto;
+  if (webCrypto?.randomUUID) return webCrypto.randomUUID();
+  const bytes = new Uint8Array(16);
+  if (webCrypto?.getRandomValues) webCrypto.getRandomValues(bytes);
+  else for (let index = 0; index < bytes.length; index += 1) bytes[index] = Math.floor(Math.random() * 256);
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+/** Attente avant la reprise n° `attempt` (1, 2…) : 400 ms puis 800 ms, réduite de 0 à 50 % au hasard pour étaler les reprises. */
+export function retryDelayMs(attempt: number, random: () => number = Math.random): number {
+  return Math.round(400 * 2 ** (attempt - 1) * (0.5 + random() * 0.5));
+}
+
+export function isRetryableStatus(status: number): boolean {
+  return RETRYABLE_STATUSES.has(status);
+}
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+async function sendWrite<T>(path: string, init: { method: string; headers?: Record<string, string>; body?: BodyInit }, timeoutMs: number): Promise<T> {
   const csrf = await primeCsrf();
   if (!csrf.ok) throw new ApiError("Impossible d’établir la session de sécurité.", csrf.status);
-  const response = await fetch(`${API_URL}${path}`, {
-    method,
-    credentials: "include",
-    headers: { "Content-Type": "application/json", "X-CSRFToken": readCsrfToken() },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
-  const result = await parse<T>(response);
-  notifyProductActionCompleted(path, method);
-  return result;
+  const idempotencyKey = newIdempotencyKey();
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= MAX_WRITE_ATTEMPTS; attempt += 1) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(`${API_URL}${path}`, {
+        ...init,
+        credentials: "include",
+        headers: { ...init.headers, "X-CSRFToken": readCsrfToken(), "Idempotency-Key": idempotencyKey },
+        signal: controller.signal,
+      });
+      if (!isRetryableStatus(response.status) || attempt === MAX_WRITE_ATTEMPTS) return await parse<T>(response);
+      lastError = new ApiError("Le service est momentanément indisponible.", response.status);
+    } catch (error) {
+      if (error instanceof ApiError) throw error;
+      lastError = error;
+      // Hors connexion : inutile d'attendre, l'appelant (file hors ligne) doit le savoir tout de suite.
+      if (typeof navigator !== "undefined" && navigator.onLine === false) break;
+    } finally {
+      clearTimeout(timer);
+    }
+    if (attempt < MAX_WRITE_ATTEMPTS) await sleep(retryDelayMs(attempt));
+  }
+  if (lastError instanceof DOMException && lastError.name === "AbortError") {
+    throw new ApiError("La demande prend trop de temps. Vérifiez votre réseau puis réessayez.", 0);
+  }
+  throw lastError;
+}
+
+/** Une même écriture identique lancée deux fois en même temps (double clic) ne part qu'une fois : les appelants partagent la réponse. */
+const writesInFlight = new Map<string, Promise<unknown>>();
+
+export function apiSend<T>(method: "POST" | "PATCH" | "PUT" | "DELETE", path: string, body?: unknown): Promise<T> {
+  const payload = body === undefined ? undefined : JSON.stringify(body);
+  const signature = `${method} ${path} ${payload ?? ""}`;
+  const running = writesInFlight.get(signature) as Promise<T> | undefined;
+  if (running) return running;
+  const promise = sendWrite<T>(path, { method, headers: { "Content-Type": "application/json" }, body: payload }, WRITE_TIMEOUT_MS)
+    .then((result) => { notifyProductActionCompleted(path, method); return result; })
+    .finally(() => { writesInFlight.delete(signature); });
+  writesInFlight.set(signature, promise);
+  return promise;
 }
 
 export const apiPost = <T,>(path: string, body: unknown = {}) => apiSend<T>("POST", path, body);
 
 export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
-  const csrf = await primeCsrf();
-  if (!csrf.ok) throw new ApiError("Impossible d’établir la session de sécurité.", csrf.status);
-  const response = await fetch(`${API_URL}${path}`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "X-CSRFToken": readCsrfToken() },
-    body: form,
-  });
-  const result = await parse<T>(response);
+  const result = await sendWrite<T>(path, { method: "POST", body: form }, UPLOAD_TIMEOUT_MS);
   notifyProductActionCompleted(path, "POST");
   return result;
 }
 
 export async function apiUploadPatch<T>(path: string, form: FormData): Promise<T> {
-  const csrf = await primeCsrf();
-  if (!csrf.ok) throw new ApiError("Impossible d’établir la session de sécurité.", csrf.status);
-  const response = await fetch(`${API_URL}${path}`, { method: "PATCH", credentials: "include", headers: { "X-CSRFToken": readCsrfToken() }, body: form });
-  const result = await parse<T>(response);
+  const result = await sendWrite<T>(path, { method: "PATCH", body: form }, UPLOAD_TIMEOUT_MS);
   notifyProductActionCompleted(path, "PATCH");
   return result;
 }

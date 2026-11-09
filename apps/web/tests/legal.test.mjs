@@ -37,20 +37,20 @@ test("les données techniques déclarées correspondent à l'inventaire du code"
   assert.ok(!legal.HOSTS.some((h) => /hodi/i.test(h.name)), "Hodi ne doit pas figurer tant que contrat et déploiement n'existent pas");
 });
 
-test("la session PWA reste persistante 30 jours sans activité et sa durée déclarée correspond au serveur", () => {
+test("la session PWA reste persistante 7 jours sans activité et sa durée déclarée correspond au serveur", () => {
   const settings = readFileSync(new URL("../../../apps/api/config/settings.py", import.meta.url), "utf8");
   const env = readFileSync(new URL("../../../.env.example", import.meta.url), "utf8");
   const productionEnv = readFileSync(new URL("../../../apps/api/.env.production.example", import.meta.url), "utf8");
   const render = readFileSync(new URL("../../../render.yaml", import.meta.url), "utf8");
   const sessionCookie = legal.COOKIES.find((cookie) => cookie.name === "sessionid");
-  assert.match(settings, /SESSION_COOKIE_AGE = int\(os\.environ\.get\("ECARNET_SESSION_AGE_SECONDS", str\(60 \* 60 \* 24 \* 30\)\)\)/);
+  assert.match(settings, /SESSION_COOKIE_AGE = int\(os\.environ\.get\("ECARNET_SESSION_AGE_SECONDS", str\(60 \* 60 \* 24 \* 7\)\)\)/);
   assert.match(settings, /SESSION_EXPIRE_AT_BROWSER_CLOSE = False/);
   assert.match(settings, /SESSION_SAVE_EVERY_REQUEST = True/);
-  assert.match(env, /^ECARNET_SESSION_AGE_SECONDS=2592000$/m);
-  assert.match(productionEnv, /^ECARNET_SESSION_AGE_SECONDS=2592000$/m);
-  assert.match(render, /key: ECARNET_SESSION_AGE_SECONDS\s+value: "2592000"/);
-  assert.match(sessionCookie.duration, /30 jours sans activité/);
-  assert.match(legal.TECH_VALIDITY.session, /30 jours sans activité/);
+  assert.match(env, /^ECARNET_SESSION_AGE_SECONDS=604800$/m);
+  assert.match(productionEnv, /^ECARNET_SESSION_AGE_SECONDS=604800$/m);
+  assert.match(render, /key: ECARNET_SESSION_AGE_SECONDS\s+value: "604800"/);
+  assert.match(sessionCookie.duration, /7 jours sans activité/);
+  assert.match(legal.TECH_VALIDITY.session, /7 jours sans activité/);
 });
 
 test("les configurations de référence et les textes visibles gardent fermé l’accès clinique admin", () => {

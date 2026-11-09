@@ -2,6 +2,7 @@ import re
 
 from rest_framework import serializers
 from .models import ClinicalDeclaration, PatientEmergencyCard, PatientProfile
+from .allergy_rules import ALLERGY_NEGATION_MESSAGE, is_allergy_state, looks_like_allergy_negation
 
 PHONE_PATTERN = re.compile(r"^\+?[0-9][0-9 ().\-]{4,30}$")
 
@@ -36,6 +37,13 @@ class ClinicalDeclarationSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         kind = attrs.get("kind", getattr(self.instance, "kind", None))
         label = attrs.get("label", getattr(self.instance, "label", ""))
+        if kind == "allergy":
+            # UX-01 : « Aucune allergie » / « Je ne sais pas » sont des choix (libellés exacts), pas des phrases à taper.
+            if is_allergy_state(label):
+                attrs["label"] = str(label).strip()
+                attrs["details"] = ""
+            elif looks_like_allergy_negation(label):
+                raise serializers.ValidationError({"label": ALLERGY_NEGATION_MESSAGE})
         if kind == "blood_group" and label not in {"A+", "A−", "B+", "B−", "AB+", "AB−", "O+", "O−", "Inconnu"}:
             raise serializers.ValidationError({"label": "Choisissez un groupe sanguin valide."})
         if kind in {"height", "weight"}:

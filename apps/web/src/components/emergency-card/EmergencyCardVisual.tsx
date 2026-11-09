@@ -1,9 +1,10 @@
 import { QRCodeSVG } from "qrcode.react";
 import { Icon } from "../ui/Icon";
 import { PROJECT_LOGO_MINI_WEBP } from "../../lib/brand";
+import { latestDeclaredOn } from "../../lib/allergy-rules";
 import "./emergency-card.css";
 
-export type EmergencyCardItem = { label: string; details?: string };
+export type EmergencyCardItem = { label: string; details?: string; declared_at?: string };
 /** Ce que la carte affiche — et donc ce que voit toute personne qui scanne le QR. */
 export type EmergencyCardView = {
   first_name: string;
@@ -47,6 +48,7 @@ function Chips({ items, tone }: { items: EmergencyCardItem[]; tone: "allergy" | 
  */
 export function EmergencyCardVisual({ card, qrUrl = "", showQr = true, photo }: { card: EmergencyCardView; qrUrl?: string; showQr?: boolean; photo?: EmergencyCardPhoto }) {
   const name = emergencyCardFullName(card);
+  const allergiesDeclaredOn = latestDeclaredOn(card.allergies);
   const hasContact = Boolean(card.contact_name || card.contact_phone);
   const role = emergencyCardProfessionLabel(card.profession);
   const hasPatientDeclarations = Object.values(card.declarations_provenance ?? {}).some((item) => item.code === "patient_declared");
@@ -69,7 +71,7 @@ export function EmergencyCardVisual({ card, qrUrl = "", showQr = true, photo }: 
               <div className={`ecard__field${card.city ? "" : " is-empty"}`}><dt>Ville</dt><dd>{card.city || "Non renseignée"}</dd></div>
               <div className={`ecard__field${card.height_cm ? "" : " is-empty"}`}><dt>Taille déclarée</dt><dd>{card.height_cm || "Non renseignée"}</dd></div>
               <div className={`ecard__field${card.weight_kg ? "" : " is-empty"}`}><dt>Poids déclaré</dt><dd>{card.weight_kg || "Non renseigné"}</dd></div>
-              <div className={`ecard__field ecard__field--wide${card.allergies.length ? "" : " is-empty"}`}><dt>Allergies</dt><dd>{card.allergies.length ? <Chips items={card.allergies} tone="allergy" /> : "Aucune allergie déclarée"}</dd></div>
+              <div className={`ecard__field ecard__field--wide${card.allergies.length ? "" : " is-empty"}`}><dt>Allergies</dt><dd>{card.allergies.length ? <><Chips items={card.allergies} tone="allergy" />{allergiesDeclaredOn && <small className="ecard__declared">Déclaré le {allergiesDeclaredOn}</small>}</> : "Non renseigné"}</dd></div>
               {card.treatments.length > 0 && <div className="ecard__field ecard__field--wide"><dt>Traitements</dt><dd><Chips items={card.treatments} tone="treatment" /></dd></div>}
               <div className={`ecard__field ecard__field--wide ecard__field--contact${hasContact ? "" : " is-empty"}`}>
                 <dt>Contact d’urgence</dt>

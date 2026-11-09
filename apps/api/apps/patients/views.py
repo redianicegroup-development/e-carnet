@@ -4,7 +4,7 @@ import uuid
 from datetime import date, timedelta
 from django.conf import settings
 from django.db import IntegrityError, transaction
-from django.db.models import Count, Max
+from django.db.models import Count, F, Max
 from django.utils import timezone
 from rest_framework import serializers, status
 from rest_framework.exceptions import PermissionDenied
@@ -18,6 +18,7 @@ from apps.care.notifications import notify_patient
 from .access import PatientAccess
 from .models import ClinicalDeclaration, PatientEmergencyCard, PatientProfile, PatientRepresentation, RepresentationTransferRequest, TrustedContactDelegation
 from .serializers import ClinicalDeclarationSerializer, PatientEmergencyCardSerializer, PatientProfileSerializer
+from .allergy_rules import ALLERGY_STATE_LABELS, is_allergy_state
 
 
 def profile_for(user, request=None, scope=None):
@@ -474,7 +475,16 @@ class DeclarationListCreateView(APIView):
         serializer = ClinicalDeclarationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         kind = serializer.validated_data["kind"]
-        if kind in ClinicalDeclaration.SINGLETON_KINDS:
+        # UX-01 : un état d'allergie (« Aucune allergie connue », « Je ne sais pas ») se comporte comme une valeur unique, et ne coexiste pas avec de vraies allergies.
+        is_allergy_state_choice = kind == "allergy" and is_allergy_state(serializer.validated_data["label"])
+        if kind == "allergy":
+            owner = profile_for(request.user, request)
+            declared_allergies = ClinicalDeclaration.objects.filter(patient=owner, kind="allergy", status="declared")
+            if is_allergy_state_choice and declared_allergies.exclude(label__in=ALLERGY_STATE_LABELS).exists():
+                return Response({"success": False, "message": "Retirez d’abord les allergies déjà déclarées pour indiquer ce choix."}, status=status.HTTP_400_BAD_REQUEST)
+            if not is_allergy_state_choice:
+                declared_allergies.filter(label__in=ALLERGY_STATE_LABELS).update(status="cancelled")
+        if kind in ClinicalDeclaration.SINGLETON_KINDS or is_allergy_state_choice:
             # Groupe sanguin, ville, contact d’urgence : une seule valeur active, la nouvelle remplace l’ancienne.
             patient = profile_for(request.user, request)
             ClinicalDeclaration.objects.filter(patient=patient, kind=kind, status="declared").update(status="cancelled")
@@ -535,7 +545,7 @@ def emergency_card_data(card, *, public=False):
         "blood_group": blood.label if blood else "",
         "height_cm": display_height,
         "weight_kg": display_weight,
-        "allergies": list(declarations.filter(kind="allergy").values("label", "details")),
+        "allergies": list(declarations.filter(kind="allergy").values("label", "details", declared_at=F("updated_at"))),
         "treatments": list(declarations.filter(kind="treatment").values("label", "details")),
         "contact_name": contact.label if contact else "",
         "contact_phone": contact.details if contact else "",

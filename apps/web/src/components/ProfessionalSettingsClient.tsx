@@ -14,6 +14,7 @@ import { ThemeSettingsClient } from "./ThemeSettingsClient";
 import { AccountActionRequestsSettingsClient } from "./AccountActionRequestsSettingsClient";
 import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
 import { cleanUpBeforeLogout } from "../lib/logout";
+import { useLogoutAll } from "./useLogoutAll";
 import { ProfessionalCredentialsSettings } from "./ProfessionalCredentialsSettings";
 import { EstablishmentLogo } from "./EstablishmentLogo";
 import "./establishment-logo.css";
@@ -43,6 +44,7 @@ export function ProfessionalSettingsClient() {
   const [sessionRequired, setSessionRequired] = useState(false);
   const [message, setMessage] = useState("Chargement du profil professionnel…");
   const [signingOut, setSigningOut] = useState(false);
+  const allDevices = useLogoutAll(setMessage);
   const [activeSection, setActiveSection] = useState<string | null>(null);
 
   useEffect(() => {
@@ -96,7 +98,7 @@ export function ProfessionalSettingsClient() {
       >
         <p className="notice" role="status" aria-live="polite">{loading ? "Chargement…" : message}</p>
       </ProfileSummary>
-      <SettingsDirectory items={navItems} activeId={activeSection} onSelect={setActiveSection} onLogout={() => void logout()} logoutDisabled={loading || signingOut} />
+      <SettingsDirectory items={navItems} activeId={activeSection} onSelect={setActiveSection} onLogout={() => void logout()} onLogoutAll={() => void allDevices.logoutAll()} logoutDisabled={loading || signingOut || allDevices.busy} />
 
       {activeSection === "professionnel" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Profil professionnel</span><dl className="settings-details"><div><dt>Profession</dt><dd>{profile?.professional_title || "À renseigner"}</dd></div><div><dt>Spécialité</dt><dd>{profile?.specialty || "À renseigner"}</dd></div></dl><p className="settings-note muted">La spécialité est déclarée par vous. Les justificatifs médicaux ne sont pas collectés par Mon E‑Carnet : leur vérification relève de l’établissement.</p><div className="actions"><Link className="button" href="/professionnel/onboarding?retour=parametres">Modifier mon profil</Link></div></div>{profile && <ProfessionalCredentialsSettings profile={profile} onSaved={(saved) => setProfile((current) => current ? { ...current, ...saved } : current)} />}</SettingsModal>}
 

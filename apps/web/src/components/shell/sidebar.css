@@ -24,6 +24,10 @@
 .sb__item .icon { width: 23px; height: 23px; }
 .sb__label, .sb__long { display: none; }
 .sb__badge { position: absolute; top: 1px; right: calc(50% - 23px); display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding-inline: 4px; border-radius: 999px; background: var(--danger); color: #fff; font-size: .62rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+/* UX-03 (WCAG 2.4.11) : un élément qui prend le focus au clavier ne doit pas rester sous la barre du bas ni sous l'en-tête collant.
+   Le navigateur garde cette marge quand il fait défiler la page jusqu'à l'élément. */
+html:has(.sb) { scroll-padding-bottom: calc(96px + env(safe-area-inset-bottom)); scroll-padding-top: calc(var(--net-banner-h, 0px) + 72px); }
+@media (min-width: 920px) { html:has(.sb) { scroll-padding-bottom: 0; scroll-padding-top: calc(var(--net-banner-h, 0px) + 16px); } }
 @media (max-width: 380px) { .sb { padding-inline: 10px; } .sb__scroll { padding: 4px; } .sb__item { width: 44px; min-height: 44px; } .sb__item .icon { width: 21px; height: 21px; } }
 .space-mobile-header { position: sticky; top: var(--net-banner-h, 0px); z-index: 35; width: calc(100% + 32px); margin: -18px -16px 0; padding: max(10px, env(safe-area-inset-top)) 16px 10px; border: 0; background: transparent; backdrop-filter: none; }
 .space-mobile-header__brand { display: inline-flex; align-items: center; gap: 10px; min-width: 0; color: var(--text); text-decoration: none; }

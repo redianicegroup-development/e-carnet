@@ -1,4 +1,7 @@
+import time
+
 from django.conf import settings
+from django.contrib.auth import logout
 from django.core.cache import cache
 from django.http import HttpResponse, JsonResponse
 
@@ -95,3 +98,44 @@ class ApiPrivateNoStoreMiddleware:
         if request.path.startswith("/api/") and not response.has_header("Cache-Control"):
             response["Cache-Control"] = "private, no-store"
         return response
+
+
+# Chemins qui ne comptent pas comme une activité de la personne : sondes, jeton CSRF, compteurs de visite.
+IDLE_EXEMPT_PREFIXES = ("/api/v1/health/", "/api/v1/csrf/", "/api/v1/identity/analytics/", "/api/v1/patient/care/notifications/pulse/")
+SESSION_LAST_SEEN_KEY = "last_seen_at"
+IDLE_TIMEOUT_MESSAGE = "Votre session a expiré après une période d’inactivité. Reconnectez-vous."
+
+
+class PrivilegedIdleTimeoutMiddleware:
+    """SEC-04 : déconnecte côté serveur, après une inactivité, les comptes qui ouvrent des dossiers de patients.
+
+    Sont concernés le staff et les comptes ayant un contexte professionnel ou établissement actif. L'instant de la dernière
+    requête est gardé dans la session pour tout le monde (un patient qui bascule en contexte professionnel n'est pas
+    déconnecté à tort) ; la limite, elle, ne s'applique qu'aux comptes concernés. Au-delà, la session est fermée et l'API
+    répond 401 `session_idle`. La requête qui ferme la session est la première après la pause : le contrôle se fait donc
+    sans tâche de fond."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        limit = int(getattr(settings, "ECARNET_PRIVILEGED_IDLE_SECONDS", 0))
+        path = request.path
+        if limit > 0 and path.startswith("/api/") and not path.startswith(IDLE_EXEMPT_PREFIXES):
+            user = getattr(request, "user", None)
+            if user is not None and user.is_authenticated:
+                now = int(time.time())
+                last = request.session.get(SESSION_LAST_SEEN_KEY)
+                if isinstance(last, int) and now - last > limit and self._is_privileged(user):
+                    logout(request)
+                    return JsonResponse({"success": False, "code": "session_idle", "message": IDLE_TIMEOUT_MESSAGE}, status=401)
+                request.session[SESSION_LAST_SEEN_KEY] = now
+        return self.get_response(request)
+
+    @staticmethod
+    def _is_privileged(user) -> bool:
+        if user.is_staff or user.is_superuser:
+            return True
+        from .models import AccountContext  # import tardif : le middleware est chargé avant que les modèles soient prêts
+
+        return AccountContext.objects.filter(user=user, is_active=True, role__in=("professional", "establishment")).exists()

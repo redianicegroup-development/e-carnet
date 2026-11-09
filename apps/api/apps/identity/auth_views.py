@@ -65,6 +65,17 @@ class LogoutView(APIView):
     def post(self, request): logout(request); return Response({"success": True, "data": None})
 
 
+class LogoutAllView(APIView):
+    """SEC-04 : ferme toutes les sessions du compte (autres appareils compris), puis celle de cet appareil."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        from .session_control import end_all_sessions
+        closed = end_all_sessions(request.user)
+        logout(request)
+        return Response({"success": True, "data": {"closed": closed}})
+
+
 class CurrentAccountView(APIView):
     permission_classes = [IsAuthenticated]
     def get(self, request): return Response({"success": True, "data": account_payload(request.user)})

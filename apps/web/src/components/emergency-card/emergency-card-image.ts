@@ -1,5 +1,6 @@
 import { EMERGENCY_CARD_FOOTNOTE, emergencyCardFullName, emergencyCardProfessionLabel, type EmergencyCardPhoto, type EmergencyCardView } from "./EmergencyCardVisual";
 import { PROJECT_LOGO_WEBP } from "../../lib/brand";
+import { latestDeclaredOn } from "../../lib/allergy-rules";
 
 /*
  * Export PNG de la carte d’urgence : même contenu et même mise en page que <EmergencyCardVisual />, dessinés en canvas
@@ -290,8 +291,11 @@ function paint(ctx: Ctx, card: EmergencyCardView, photo: LoadedPhoto, brandLogo:
 
   // allergies
   y += label(ctx, "Allergies", x, y);
-  if (card.allergies.length) y += chips(ctx, card.allergies.map((item) => item.label), x, y, width, "allergy") + 20;
-  else { ctx.font = `500 26px ${style.body}`; ctx.fillStyle = MUTED; ctx.fillText("Aucune allergie déclarée", x, y + 28); y += 28 + 20; }
+  if (card.allergies.length) {
+    y += chips(ctx, card.allergies.map((item) => item.label), x, y, width, "allergy") + 20;
+    const declaredOn = latestDeclaredOn(card.allergies);
+    if (declaredOn) { ctx.font = `500 22px ${style.body}`; ctx.fillStyle = MUTED; ctx.fillText(`Déclaré le ${declaredOn}`, x, y + 20); y += 20 + 16; }
+  } else { ctx.font = `500 26px ${style.body}`; ctx.fillStyle = MUTED; ctx.fillText("Non renseigné", x, y + 28); y += 28 + 20; }
 
   // traitements (seulement s’il y en a, comme à l’écran)
   if (card.treatments.length) {

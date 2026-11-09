@@ -111,7 +111,10 @@ export function resolveTheme({ palette, font_pair, text_scale }: ThemeConfig): R
 
   const ink = ensure(c5, [c1, WHITE], 7, "#000000");
   const text = ink;
-  const textMuted = ensure(mix(ink, c1, 0.28), [c1, WHITE], 4.5, ink);
+  // UX-03 : les textes secondaires, liens et anneaux de focus se posent aussi sur la teinte c2 (cartes teintées, pastilles, onglet actif) :
+  // le contraste est exigé contre elle aussi, pas seulement contre le fond et le blanc.
+  const tinted = [c1, WHITE, c2];
+  const textMuted = ensure(mix(ink, c1, 0.28), tinted, 4.5, ink);
 
   // Primaire : on garde c4 si possible ; texte blanc sinon encre ; sinon on assombrit c4.
   let primary = c4;
@@ -120,10 +123,10 @@ export function resolveTheme({ palette, font_pair, text_scale }: ThemeConfig): R
     if (contrast(primary, ink) >= 4.5) onPrimary = ink;
     else primary = ensure(c4, [WHITE], 4.5, ink);
   }
-  const primaryText = ensure(c4, [c1, WHITE], 4.5, ink);
+  const primaryText = ensure(c4, tinted, 4.5, ink);
   const border = luminance(c2) > 0.85 ? c3 : c2;
   const borderStrong = ensure(mix(ink, WHITE, 0.55), [c1, WHITE], 3, ink); // bordures d'inputs ≥ 3:1 (WCAG 1.4.11)
-  const focus = ensure(c4, [c1, WHITE], 3, ink);
+  const focus = ensure(c4, tinted, 3, ink);
 
   return {
     "--brand-1": c1, "--brand-2": c2, "--brand-3": c3, "--brand-4": c4, "--brand-5": c5,

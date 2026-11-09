@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 const included = [
-  "Comptes nominatifs avec authentification par session serveur ; la configuration de référence garde la session après fermeture de la PWA, jusqu’à 30 jours sans activité.",
+  "Comptes nominatifs avec authentification par session serveur ; la configuration de référence garde la session après fermeture de la PWA, jusqu’à 7 jours sans activité (30 minutes pour les comptes professionnels et établissement).",
   "Espaces patient, professionnel et établissement avec contrôle des autorisations côté API.",
   "Carnet patient, déclarations, documents, consultations, vaccinations, mesures, rendez-vous, rappels et plans de suivi selon les rôles et autorisations disponibles.",
   "Carte d’urgence virtuelle, QR public activé par le patient et téléchargement PNG ; les informations restent des déclarations et doivent être vérifiées par les professionnels.",
@@ -88,7 +88,7 @@ export default function V1Page() {
         <h2>Connexion et mode hors connexion</h2>
         <p className="muted">
           Sans déconnexion explicite, le cookie de session persiste après fermeture de la PWA selon la durée réglée
-          pour l’environnement (30 jours sans activité dans les configurations de référence). Une connexion Internet
+          pour l’environnement (7 jours sans activité dans les configurations de référence). Une connexion Internet
           reste nécessaire pour interroger le serveur. Sans réseau, seuls les écrans et les lectures déjà enregistrés
           localement peuvent s’ouvrir en lecture seule, jusqu’à leur expiration.
         </p>

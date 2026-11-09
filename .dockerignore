@@ -14,3 +14,7 @@
 coverage
 out
 build
+# SEC-02 : jamais de documents médicaux téléversés ni de base locale dans l'image
+**/private-media
+**/*.sqlite3
+**/*.sqlite3-*

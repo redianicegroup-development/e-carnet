@@ -34,6 +34,10 @@ jobs:
           --health-retries 10
     steps:
       - uses: actions/checkout@v4
+      - name: Aucun document téléversé dans le dépôt (SEC-02)
+        run: |
+          tracked="$(git ls-files apps/api/private-media)"
+          if [ -n "$tracked" ]; then echo "apps/api/private-media/ ne doit jamais être versionné :"; echo "$tracked"; exit 1; fi
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -75,3 +79,60 @@ jobs:
       - run: npm run build --workspace=@ecarnet/web
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e --workspace=@ecarnet/web
+
+  # UX-03 : axe-core + contrôles du projet (contrastes mesurés, focus, cibles) sur les pages publiques, bloquant.
+  # Les espaces connectés (SPACES=patient,professionnel,etablissement avec les comptes A11Y_*) se lancent en recette :
+  # ils demandent l'API et des comptes de test.
+  accessibility:
+    runs-on: ubuntu-latest
+    name: Accessibilité (WCAG 2.2 AA)
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm install --no-save --no-package-lock axe-core@4.10.2
+      - run: npm run build --workspace=@ecarnet/web
+      - run: npx playwright install --with-deps chromium
+      - name: Démarrer le site
+        run: |
+          npm run start --workspace=@ecarnet/web > /tmp/web.log 2>&1 &
+          for i in $(seq 1 60); do curl -fsS http://127.0.0.1:3000/ > /dev/null && exit 0; sleep 2; done
+          cat /tmp/web.log; exit 1
+      - name: Audit axe (pages publiques)
+        run: node ops/accessibility-wcag-audit.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rapport-accessibilite
+          path: reports/wcag-2.2-aa-automated.json
+
+  # SEC-06 : vulnérabilités connues des dépendances et secrets committés. Bloquant dès qu'une vulnérabilité critique
+  # touche la production ou qu'un secret est détecté.
+  supply-chain:
+    runs-on: ubuntu-latest
+    name: Chaîne d’approvisionnement
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Dépendances web livrées en production (vulnérabilité critique = échec)
+        run: npm audit --omit=dev --audit-level=critical
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Dépendances API (fichier verrouillé avec empreintes)
+        run: |
+          python -m pip install pip-audit
+          pip-audit --requirement apps/api/requirements.txt --require-hashes --no-deps --disable-pip
+      - name: Secrets dans l’historique Git (gitleaks)
+        run: docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.21.2 detect --source /repo --redact --no-banner --exit-code 1

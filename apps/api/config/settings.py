@@ -24,8 +24,8 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware", "whitenoise.middleware.WhiteNoiseMiddleware", "apps.identity.middleware.AdminLoginThrottleMiddleware", "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware", "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware", "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "apps.identity.middleware.ForcePasswordChangeMiddleware", "apps.identity.middleware.ApiPrivateNoStoreMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware", "django.contrib.auth.middleware.AuthenticationMiddleware", "apps.identity.middleware.PrivilegedIdleTimeoutMiddleware",
+    "apps.identity.middleware.ForcePasswordChangeMiddleware", "apps.identity.middleware.ApiPrivateNoStoreMiddleware", "apps.identity.idempotency.IdempotencyMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware", "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 ROOT_URLCONF = "config.urls"
@@ -142,6 +142,10 @@ ECARNET_MONITOR_WEBHOOK_TOLERANCE_SECONDS = int(os.environ.get("ECARNET_MONITOR_
 ECARNET_ENVIRONMENT = os.environ.get("ECARNET_ENVIRONMENT", "").strip().lower()[:20]
 CORS_ALLOWED_ORIGINS = [origin.strip() for origin in os.environ.get("CORS_ALLOWED_ORIGINS", WEB_ORIGIN).split(",") if origin.strip()]
 CORS_ALLOW_CREDENTIALS = True
+# SEC-05 : le web envoie Idempotency-Key sur ses écritures ; l'autoriser aussi pour les appels directs inter-origines.
+from corsheaders.defaults import default_headers  # noqa: E402
+CORS_ALLOW_HEADERS = (*default_headers, "idempotency-key")
+CORS_EXPOSE_HEADERS = ["Idempotent-Replayed"]
 CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in os.environ.get("CSRF_TRUSTED_ORIGINS", ",".join(CORS_ALLOWED_ORIGINS)).split(",") if origin.strip()]
 CSRF_COOKIE_HTTPONLY = False
 SESSION_COOKIE_HTTPONLY = True
@@ -151,8 +155,10 @@ SESSION_COOKIE_SAMESITE = os.environ.get("SESSION_COOKIE_SAMESITE", "None" if no
 CSRF_COOKIE_SAMESITE = os.environ.get("CSRF_COOKIE_SAMESITE", "None" if not DEBUG else "Lax")
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
-# Session persistante adaptée à la PWA : glissante à chaque requête, avec expiration après 30 jours sans activité.
-SESSION_COOKIE_AGE = int(os.environ.get("ECARNET_SESSION_AGE_SECONDS", str(60 * 60 * 24 * 30)))
+# SEC-04 : session glissante (renouvelée à chaque requête), 7 jours sans activité au lieu de 30. Les comptes professionnels,
+# établissement et staff sont en plus déconnectés après ECARNET_PRIVILEGED_IDLE_SECONDS d'inactivité (0 = désactivé).
+SESSION_COOKIE_AGE = int(os.environ.get("ECARNET_SESSION_AGE_SECONDS", str(60 * 60 * 24 * 7)))
+ECARNET_PRIVILEGED_IDLE_SECONDS = int(os.environ.get("ECARNET_PRIVILEGED_IDLE_SECONDS", str(30 * 60)))
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 SESSION_SAVE_EVERY_REQUEST = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
@@ -181,8 +187,10 @@ if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")  # l'hébergeur termine TLS et transmet l'en-tête
     SECURE_SSL_REDIRECT = os.environ.get("DJANGO_SSL_REDIRECT", "true").lower() == "true"
     SECURE_REDIRECT_EXEMPT = [r"^api/v1/health/"]  # sondes internes en HTTP simple
-    # Montée en charge prudente : 1 jour par défaut, à relever (puis préchargement) une fois HTTPS stabilisé.
-    SECURE_HSTS_SECONDS = int(os.environ.get("DJANGO_HSTS_SECONDS", "86400"))
+    # SEC-07 : un an par défaut. `includeSubDomains` reste à activer explicitement (DJANGO_HSTS_INCLUDE_SUBDOMAINS=true)
+    # une fois tous les sous-domaines servis en HTTPS ; le préchargement (preload) est une décision à part.
+    SECURE_HSTS_SECONDS = int(os.environ.get("DJANGO_HSTS_SECONDS", str(60 * 60 * 24 * 365)))
+    SECURE_HSTS_PRELOAD = os.environ.get("DJANGO_HSTS_PRELOAD", "false").lower() == "true"
     SECURE_HSTS_INCLUDE_SUBDOMAINS = os.environ.get("DJANGO_HSTS_INCLUDE_SUBDOMAINS", "false").lower() == "true"
     SECURE_REFERRER_POLICY = "same-origin"
 

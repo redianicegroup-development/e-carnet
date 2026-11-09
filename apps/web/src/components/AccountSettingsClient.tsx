@@ -21,6 +21,7 @@ import { PushNotificationToggle } from "./PushNotificationToggle";
 import { OfflineDataToggle } from "./OfflineDataToggle";
 import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
 import { cleanUpBeforeLogout } from "../lib/logout";
+import { useLogoutAll } from "./useLogoutAll";
 
 const API = "";
 type Account = { first_name: string; last_name: string; email: string; avatar_url: string; is_privileged: boolean };
@@ -59,6 +60,7 @@ export function AccountSettingsClient() {
   const [message, setMessage] = useState("Chargement de votre profil…");
   const [busy, setBusy] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const allDevices = useLogoutAll(setMessage);
   const [activeSection, setActiveSection] = useState<string | null>(null);
 
   useEffect(() => {
@@ -137,7 +139,7 @@ export function AccountSettingsClient() {
 
       <PatientEmergencyCardSettingsClient />
 
-      <SettingsDirectory items={sections} activeId={activeSection} onSelect={setActiveSection} onLogout={() => void logout()} logoutDisabled={signingOut} />
+      <SettingsDirectory items={sections} activeId={activeSection} onSelect={setActiveSection} onLogout={() => void logout()} onLogoutAll={() => void allDevices.logoutAll()} logoutDisabled={signingOut || allDevices.busy} />
 
       {activeSection === "personnel" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section">
         <span className="eyebrow">Mon identité</span><p className="muted">Votre nom et votre photo sont rattachés à votre compte Mon E‑Carnet.</p>

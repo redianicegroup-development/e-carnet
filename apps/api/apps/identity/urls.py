@@ -1,5 +1,5 @@
 from django.urls import path
-from .auth_views import AccountAvatarView, ContextSelectView, CurrentAccountView, IdentityProfileView, LoginView, LogoutView, OAuthIdentityListView, OAuthIdentityUnlinkView, PasswordChangeView, PatientOnboardingView, RecoveryAnswerView, RecoveryQuestionView, RecoveryResetView, RecoverySetupView, RegisterView
+from .auth_views import AccountAvatarView, ContextSelectView, CurrentAccountView, IdentityProfileView, LoginView, LogoutAllView, LogoutView, OAuthIdentityListView, OAuthIdentityUnlinkView, PasswordChangeView, PatientOnboardingView, RecoveryAnswerView, RecoveryQuestionView, RecoveryResetView, RecoverySetupView, RegisterView
 from .oauth_views import OAuthCallbackView, OAuthProviderAvailabilityView, OAuthStartView
 from .contact_views import PublicContactView
 from .views import CurrentAccountThemeView
@@ -11,7 +11,7 @@ from .admin_audit import AdminAuditExportView, AdminAuditJournalView
 from .monitoring_webhook import MonitoringWebhookView
 from .account_action_views import AdminAccountActionRequestStatusView, AdminAccountActionRequestsView, AdminDeleteRequestedAccountView, CurrentAccountActionRequestsView
 urlpatterns = [
-    path("register/", RegisterView.as_view()), path("login/", LoginView.as_view()), path("logout/", LogoutView.as_view()),
+    path("register/", RegisterView.as_view()), path("login/", LoginView.as_view()), path("logout/", LogoutView.as_view()), path("logout-all/", LogoutAllView.as_view()),
     path("analytics/visits/", AnonymousVisitView.as_view(), name="anonymous-visitor-visit"),
     path("analytics/clicks/", AnonymousClickView.as_view(), name="anonymous-visitor-click"),
     path("feedback/", PublicFeedbackView.as_view(), name="public-feedback"),

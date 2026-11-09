@@ -18,6 +18,7 @@ import { EstablishmentProfileEditor, establishmentInitials, type EstablishmentPr
 import "./establishment-settings.css";
 import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
 import { cleanUpBeforeLogout } from "../lib/logout";
+import { useLogoutAll } from "./useLogoutAll";
 
 type Account = { email: string; first_name: string; last_name: string; avatar_url?: string; is_privileged: boolean; contexts: { role: string; is_active: boolean }[] };
 type Establishment = { id: string; name: string; establishment_type: string; city: string; address: string; phone: string; email: string; responsible_name: string; logo: string; updated_at: string | null; status: "pending" | "active" | "rejected" | string; internal_code: string | null };
@@ -45,6 +46,7 @@ export function EstablishmentSettingsClient() {
   const [message, setMessage] = useState("Chargement des informations du compte et de l’établissement…");
   const [loading, setLoading] = useState(true);
   const [signingOut, setSigningOut] = useState(false);
+  const allDevices = useLogoutAll(setMessage);
   const [sessionRequired, setSessionRequired] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
 
@@ -108,7 +110,7 @@ export function EstablishmentSettingsClient() {
         {establishments.length > 1 && <label className="field"><span>Établissement concerné</span><select value={selected?.id ?? ""} onChange={(event) => setSelectedId(event.target.value)}>{establishments.map((item) => <option key={item.id} value={item.id}>{item.name} · {statusLabel(item.status)}</option>)}</select></label>}
         <p className="notice" role="status" aria-live="polite">{loading ? "Chargement…" : message}</p>
       </ProfileSummary>
-      <SettingsDirectory items={navItems} activeId={activeSection} onSelect={setActiveSection} onLogout={() => void logout()} logoutDisabled={signingOut || loading} />
+      <SettingsDirectory items={navItems} activeId={activeSection} onSelect={setActiveSection} onLogout={() => void logout()} onLogoutAll={() => void allDevices.logoutAll()} logoutDisabled={signingOut || loading || allDevices.busy} />
 
       {activeSection === "administratif" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Identité de la structure</span>
         {selected && selected.status === "active" && <>

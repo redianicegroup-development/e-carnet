@@ -11,6 +11,8 @@ import { FollowUpPlans } from "./FollowUpPlans";
 import { PatientAppointments } from "./PatientAppointments";
 import { CollapsibleSection } from "./ui/CollapsibleSection";
 import { PatientCarnetExport } from "./PatientCarnetExport";
+import { ALLERGY_NEGATION_MESSAGE, allergyStateLabel, isAllergyState, looksLikeAllergyNegation, type AllergyMode } from "../lib/allergy-rules";
+import "./patient-allergy-choice.css";
 
 type Declaration = { id: string; kind: string; label: string; details: string; provenance: { label: string } };
 type Kind = "allergy" | "antecedent" | "treatment" | "blood_group" | "city" | "emergency_contact" | "height" | "weight";
@@ -31,6 +33,7 @@ const isKind = (value: string | null): value is Kind => !!value && value in KIND
 export function PatientCarnet() {
   const [items, setItems] = useState<Declaration[] | null>(null);
   const [form, setForm] = useState<FormState>({ kind: "allergy", label: "", details: "" });
+  const [allergyMode, setAllergyMode] = useState<AllergyMode>("listed");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
@@ -65,14 +68,19 @@ export function PatientCarnet() {
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-    if (!form.label.trim()) return;
+    const allergyState = form.kind === "allergy" && allergyMode !== "listed";
+    const label = allergyState ? allergyStateLabel(allergyMode) : form.label.trim();
+    if (!label) return;
+    if (form.kind === "allergy" && !allergyState && looksLikeAllergyNegation(label)) { setMessage(ALLERGY_NEGATION_MESSAGE); return; }
     if (form.kind === "emergency_contact" && !form.details.trim()) { setMessage("Indiquez le téléphone du contact d’urgence."); return; }
     setBusy(true);
     setMessage("");
     try {
-      const created = await apiPost<Declaration>("/api/v1/patient/declarations/", { kind: form.kind, label: form.label.trim(), details: form.details.trim() });
-      const replaces = SINGLETON.includes(form.kind);
-      setItems((list) => [created, ...(list ?? []).filter((item) => item.id !== created.id && (!replaces || item.kind !== form.kind))]);
+      const created = await apiPost<Declaration>("/api/v1/patient/declarations/", { kind: form.kind, label, details: allergyState ? "" : form.details.trim() });
+      const replaces = SINGLETON.includes(form.kind) || allergyState;
+      // Une vraie allergie remplace « Aucune allergie connue » / « Je ne sais pas » (l'API les annule), et inversement.
+      const staleAllergyState = (item: Declaration) => created.kind === "allergy" && item.kind === "allergy" && isAllergyState(item.label) && item.label !== created.label;
+      setItems((list) => [created, ...(list ?? []).filter((item) => item.id !== created.id && (!replaces || item.kind !== form.kind) && !staleAllergyState(item))]);
       setForm(replaces ? { kind: form.kind, label: created.label, details: created.details } : { ...form, label: "", details: "" });
       setMessage(replaces ? "Enregistré. Votre carte d’urgence est à jour." : "Déclaration ajoutée. Elle reste marquée « déclarée par vous ».");
     } catch (error) {
@@ -81,7 +89,9 @@ export function PatientCarnet() {
   }
 
   const unique = SINGLETON.includes(form.kind);
-  const freeText = form.kind === "allergy" || form.kind === "antecedent" || form.kind === "treatment";
+  const allergyChoice = form.kind === "allergy";
+  const typedAllergy = !allergyChoice || allergyMode === "listed";
+  const freeText = (form.kind === "allergy" || form.kind === "antecedent" || form.kind === "treatment") && typedAllergy;
   const physicalKind = form.kind === "height" || form.kind === "weight";
   return (
     <div className="stack-lg">
@@ -117,7 +127,15 @@ export function PatientCarnet() {
             <label className="field"><span>Nom du contact d’urgence</span><input required maxLength={120} autoComplete="off" value={form.label} onChange={(event) => setForm({ ...form, label: event.target.value })} placeholder="Ex. Awa Koné (sœur)" /></label>
             <label className="field"><span>Téléphone du contact</span><input required type="tel" inputMode="tel" maxLength={32} autoComplete="off" value={form.details} onChange={(event) => setForm({ ...form, details: event.target.value })} placeholder="+225 07 00 00 00 00" /></label>
           </>}
-          {freeText && <label className="field"><span>Nom ou libellé</span><input required maxLength={160} value={form.label} onChange={(event) => setForm({ ...form, label: event.target.value })} placeholder="Ex. allergie connue" /></label>}
+          {allergyChoice && (
+            <fieldset className="allergy-choice">
+              <legend>Votre situation</legend>
+              {([["listed", "J’ai une allergie à déclarer"], ["none", "Aucune allergie connue"], ["unknown", "Je ne sais pas"]] as [AllergyMode, string][]).map(([value, text]) => (
+                <label key={value}><input type="radio" name="allergy-mode" value={value} checked={allergyMode === value} onChange={() => { setAllergyMode(value); setMessage(""); }} /><span>{text}</span></label>
+              ))}
+            </fieldset>
+          )}
+          {freeText && <label className="field"><span>Nom ou libellé</span><input required maxLength={160} value={form.label} onChange={(event) => setForm({ ...form, label: event.target.value })} placeholder="Ex. pénicilline, arachide" /></label>}
           {physicalKind && <label className="field"><span>{form.kind === "height" ? "Taille (cm)" : "Poids (kg)"}</span><input required type="number" inputMode="decimal" min={form.kind === "height" ? "30" : "1"} max={form.kind === "height" ? "250" : "500"} step="0.1" value={form.label} onChange={(event) => setForm({ ...form, label: event.target.value })} placeholder={form.kind === "height" ? "Ex. 170" : "Ex. 65"} /></label>}
           {(freeText || form.kind === "blood_group") && <label className="field"><span>Détails (facultatif)</span><textarea maxLength={500} value={form.details} onChange={(event) => setForm({ ...form, details: event.target.value })} /></label>}
           <button className="button primary" type="submit" disabled={busy}>{busy ? "Enregistrement…" : unique ? "Enregistrer" : "Ajouter à mon carnet"}</button>

@@ -82,7 +82,9 @@ services:
       - key: ECARNET_QR_TTL_SECONDS
         value: "300"
       - key: ECARNET_SESSION_AGE_SECONDS
-        value: "2592000"
+        value: "604800"
+      - key: ECARNET_PRIVILEGED_IDLE_SECONDS
+        value: "1800"
       # A8 non tranché : accès clinique administratif fermé en configuration de référence.
       - key: ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ
         value: "false"
