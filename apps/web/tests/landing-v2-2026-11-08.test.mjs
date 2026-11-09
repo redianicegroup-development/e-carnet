@@ -15,10 +15,10 @@ test("le héro d'origine est conservé tel quel", () => {
 });
 
 test("les sections de la maquette sont dans l'ordre, avec les ancres de la navigation", () => {
-  const order = ["ProblemSection", "SolutionSection", "ToolTiles", "DetailRows", "FlowSection", "RoleCards", "ObjectionCards", "TrustCopy", "AccessDemo"].map((name) => page.indexOf(`<${name} />`));
+  const order = ["ProblemSection", "SolutionSection", "ToolTiles", "DetailRows", "FlowSection", "RoleCards", "TrustCopy", "AccessDemo"].map((name) => page.indexOf(`<${name} />`));
   assert.ok(order.every((index) => index > 0), "section manquante");
   assert.deepEqual([...order].sort((a, b) => a - b), order, "ordre des sections");
-  for (const id of ["probleme", "solution", "fonctionnalites", "parcours", "profils", "objections"]) assert.match(page, new RegExp(`id="${id}"`));
+  for (const id of ["probleme", "solution", "fonctionnalites", "parcours", "profils"]) assert.match(page, new RegExp(`id="${id}"`));
 });
 
 test("la FAQ, le contact et le pied de page de l'application restent ceux d'origine", () => {
@@ -109,10 +109,30 @@ test("la solution montre trois captures détourées (main et téléphone), respo
   assert.match(css, /\.lp2-hand-stack \{width:min\(86vw,420px\)\}/);
 });
 
-test("la landing suit l'ordre problème, solution, bénéfices, fonctionnement, objections, appel final, sans logos ni témoignages", () => {
-  const ids = ["probleme", "solution", "fonctionnalites", "parcours", "profils", "objections"].map((id) => page.indexOf(`id="${id}"`));
+test("la landing suit l'ordre problème, solution, bénéfices, fonctionnement, rôles, confiance, appel final, sans logos ni témoignages", () => {
+  const ids = ["probleme", "solution", "fonctionnalites", "parcours", "profils"].map((id) => page.indexOf(`id="${id}"`));
   assert.deepEqual([...ids].sort((a, b) => a - b), ids);
   assert.ok(page.indexOf("<FaqSection />") > ids.at(-1));
   assert.ok(page.indexOf("<ContactSection ") > page.indexOf("<FaqSection />"));
   assert.doesNotMatch(page, /<Testimonials|<Logos|<Companies/);
+});
+
+test("textes de la landing 09/11 (2e passe) : titres concrets, appel final qui nomme l'action, accroche du hero alignée", () => {
+  const content = read("src/lib/landing-content.ts");
+  const all = [content, page, ...readdirSync(new URL("../src/components/landing2/", import.meta.url)).filter((file) => file.endsWith(".tsx")).map((file) => read(`src/components/landing2/${file}`))].join("\n");
+  for (const old of ["Ce que votre carnet change, concrètement", "Le médecin sait d’où vient chaque information", "chacun à leur place", "Trois étapes, de votre carnet à ses préconisations", "Avant de vous lancer", "Vous gardez la main sur chaque accès", "Votre prochaine consultation peut commencer autrement"]) assert.ok(!all.includes(old), `ancien titre encore présent : ${old}`);
+  assert.match(content, /primary: \{ href: "\/connexion\?mode=register", label: "Créer mon carnet" \}/, "l'appel final mène à la création de compte, avec le libellé de l'application");
+  assert.doesNotMatch(content, /préparez vos consultations/, "le patient ne prépare pas sa consultation : c'est le travail du médecin ou de l'infirmier");
+});
+
+test("landing vitrine (3e passe) : quatre tuiles, aucun chiffre dans les étapes, une seule couche de réassurance avant l'appel final", () => {
+  const tiles = read("src/components/landing2/ToolTiles.tsx");
+  assert.equal((tiles.match(/className="lp2-tile lp2-rv"/g) ?? []).length, 4);
+  const figure = /\d+ ?(minutes?|min\b|heures?|h\b|jours?)/i;
+  const flow = read("src/components/landing2/flowParts.tsx");
+  const steps = flow.slice(flow.indexOf("export const FLOW_STEPS"), flow.indexOf("export const FLOW_SCREENS"));
+  assert.doesNotMatch(steps, figure, "les étapes ne portent pas de durées : elles sont dans la FAQ et la page Sécurité");
+  assert.doesNotMatch(read("src/lib/landing-content.ts").slice(read("src/lib/landing-content.ts").indexOf("export const STEPS"), read("src/lib/landing-content.ts").indexOf("export type Profile")), figure);
+  assert.doesNotMatch(page, /ObjectionCards/);
+  assert.ok(page.indexOf("<TrustCopy />") < page.indexOf("<FaqSection />") && page.indexOf("<FaqSection />") < page.indexOf("<ContactSection "));
 });

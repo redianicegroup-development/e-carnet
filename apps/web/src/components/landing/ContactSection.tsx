@@ -173,7 +173,7 @@ export function ContactSection({ privacyHref }: { privacyHref: string }) {
               {FINAL.points.map((point) => <li key={point}><span aria-hidden="true"><Icon name="check" size={16} /></span>{point}</li>)}
             </ul>
             <div className="actions">
-              <Link className="button primary" href={FINAL.primary.href} data-track="signup">{FINAL.primary.label}</Link>
+              <Link className="button primary" href={FINAL.primary.href} data-track="signup">{FINAL.primary.label}<Icon name="chevron" size={18} /></Link>
               <Link className="button" href={FINAL.secondary.href}>{FINAL.secondary.label}</Link>
             </div>
           </div>

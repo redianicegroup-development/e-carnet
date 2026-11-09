@@ -6,7 +6,6 @@ import { AccessDemo } from "../components/landing2/AccessDemo";
 import { DetailRows } from "../components/landing2/DetailRows";
 import { FlowSection } from "../components/landing2/FlowSection";
 import { LandingReveal } from "../components/landing2/LandingReveal";
-import { ObjectionCards } from "../components/landing2/ObjectionCards";
 import { ProblemSection } from "../components/landing2/ProblemSection";
 import { RoleCards } from "../components/landing2/RoleCards";
 import { SolutionSection } from "../components/landing2/SolutionSection";
@@ -88,7 +87,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Sections sous le hero, dans l'ordre d'une landing qui convertit : problème, solution, bénéfices, fonctionnement, rôles, objections.
+      {/* Sections sous le hero, dans l'ordre d'une landing qui convertit : problème, solution, bénéfices, fonctionnement, rôles, confiance (une seule démonstration), puis la FAQ.
           Le héro ci-dessus, le contact (appel à l'action final) et le pied de page de l'application gardent leur structure.
           Pas de bandeau « ils nous font confiance » ni de témoignages : rien de réel à y mettre pour l'instant. */}
       <div className="lp2">
@@ -102,14 +101,13 @@ export default function HomePage() {
         <section className="lp2-bleed" id="parcours" aria-labelledby="flow-title">
           <div className="lp2-flow-wrap">
             <div className="lp2-head lp2-left lp2-rv">
-              <h2 id="flow-title">Trois étapes, de votre carnet à ses préconisations</h2>
+              <h2 id="flow-title">Une consultation en trois étapes, sans repartir de zéro.</h2>
               <p className="lp2-lead">Un infirmier prépare, ou le médecin consulte directement : il scanne votre QR depuis son espace professionnel.</p>
             </div>
             <FlowSection />
           </div>
         </section>
         <section className="lp2-sec" id="profils" aria-labelledby="roles-title"><RoleCards /></section>
-        <section className="lp2-sec lp2-flush" id="objections" aria-labelledby="objections-title"><ObjectionCards /></section>
         <section className="lp2-sec lp2-flush" aria-labelledby="trust-title">
           <div className="lp2-trust"><TrustCopy /><AccessDemo /></div>
         </section>

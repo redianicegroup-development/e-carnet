@@ -7,7 +7,7 @@ export function DetailRows() {
       <div className="lp2-rows">
         <div className="lp2-row">
           <div className="lp2-copy lp2-rv">
-            <h2>Le médecin sait d’où vient chaque information</h2>
+            <h2>Chaque information dit d’où elle vient.</h2>
             <p className="lp2-lead">Vos antécédents, allergies et traitements sont marqués « Déclaré par le patient ». On distingue d’un coup d’œil ce qui vient de vous et ce qui vient d’un professionnel.</p>
             <ul className="lp2-ticks">
               <li>
@@ -151,7 +151,7 @@ export function DetailRows() {
         </div>
         <div className="lp2-row">
           <div className="lp2-copy lp2-rv">
-            <h2>Vos proches et vos enfants, chacun à leur place</h2>
+            <h2>Un carnet par enfant, une fiche d’urgence pour vos proches.</h2>
             <p className="lp2-lead">Un proche de confiance lit votre fiche d’urgence, rien de plus. Un enfant a son propre carnet, distinct du vôtre.</p>
             <ul className="lp2-ticks">
               <li>

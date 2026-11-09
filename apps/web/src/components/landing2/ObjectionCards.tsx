@@ -6,8 +6,8 @@ export function ObjectionCards() {
   return (
     <>
       <div className="lp2-head lp2-rv">
-        <h2 id="objections-title">Avant de vous lancer</h2>
-        <p className="lp2-lead">Les quatre doutes qu’on entend le plus, et ce qu’il en est.</p>
+        <h2 id="objections-title">Vos doutes, sans détour.</h2>
+        <p className="lp2-lead">Les quatre questions qu’on nous pose le plus avant de créer un carnet, et ce qu’il en est.</p>
       </div>
       <div className="lp2-objs">
         <article className="lp2-obj lp2-rv">

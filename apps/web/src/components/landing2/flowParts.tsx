@@ -9,7 +9,7 @@ const STETH_ICON = <svg className="lp2-i" viewBox="0 0 24 24" aria-hidden="true"
 /** Parcours en trois étapes : un infirmier prépare la pré-consultation dans l'espace patient (facultatif), le médecin scanne le QR depuis son espace professionnel, le patient retrouve les préconisations. */
 export const FLOW_STEPS: { orb: string; icon: ReactNode; title: string; text: string }[] = [
   { orb: "lp2-orb", icon: PENCIL, title: "L’infirmier prépare", text: "Il saisit le motif, les symptômes et les constantes depuis votre espace patient. Sans infirmier, le médecin consulte directement : cette étape est facultative." },
-  { orb: "lp2-orb lp2-g", icon: QR_ICON, title: "Le médecin scanne votre QR", text: "Depuis son espace professionnel. Le QR est valable 5 minutes et ne sert qu’une fois ; l’accès dure 2 heures." },
+  { orb: "lp2-orb lp2-g", icon: QR_ICON, title: "Le médecin scanne votre QR", text: "Depuis son espace professionnel. Le QR est temporaire et ne sert qu’une fois." },
   { orb: "lp2-orb", icon: DOC_ICON, title: "Vous retrouvez ses préconisations", text: "Le médecin lit, consulte, puis établit ses préconisations. Elles rejoignent votre carnet une fois la consultation validée." },
 ];
 

@@ -17,7 +17,7 @@ export const HERO_IMAGE = {
 export const HERO = {
   eyebrow: "Carnet de santé numérique",
   title: "Votre carnet de santé, sous votre contrôle.",
-  lead: "Organisez vos informations, préparez vos consultations et choisissez qui peut consulter votre carnet.",
+  lead: "Réunissez vos informations de santé, remettez votre carnet au médecin et choisissez qui peut le consulter.",
   primary: { href: "/connexion", label: "Commencer" },
   secondary: { href: "/connexion?mode=register&profil=professionnel", label: "Je suis professionnel" },
   note: "Organisez vos informations de santé dans votre espace sécurisé.",
@@ -43,7 +43,7 @@ export const FEATURES: Feature[] = [
 export type Step = { icon: IconName; title: string; text: string };
 export const STEPS: Step[] = [
   { icon: "pencil", title: "L’infirmier prépare", text: "Il saisit le motif, les symptômes et les constantes depuis votre espace patient. Sans infirmier, le médecin consulte directement : cette étape est facultative." },
-  { icon: "qr", title: "Le médecin scanne votre QR", text: "Depuis son espace professionnel. Le QR est valable 5 minutes et ne sert qu’une fois ; l’accès dure 2 heures." },
+  { icon: "qr", title: "Le médecin scanne votre QR", text: "Depuis son espace professionnel. Le QR est temporaire et ne sert qu’une fois." },
   { icon: "document", title: "Vous retrouvez ses préconisations", text: "Le médecin lit, consulte, puis établit ses préconisations. Elles rejoignent votre carnet une fois la consultation validée." },
 ];
 
@@ -83,14 +83,14 @@ export const FAQ_ITEMS: FaqItem[] = [
 /** Dernière section : l'invitation à créer son espace, puis le formulaire de contact (une seule section, un seul bouton principal).
  *  `points` résume la valeur en trois lignes, au-dessus du bouton. */
 export const FINAL = {
-  title: "Votre prochaine consultation peut commencer autrement.",
-  lead: "Créez votre espace patient ou professionnel depuis une seule page. Utilisez des informations exactes et gardez votre compte personnel.",
+  title: "Ouvrez votre carnet avant votre prochain rendez-vous.",
+  lead: "Commencez par l’essentiel, le reste peut venir plus tard. Utilisez des informations exactes et gardez votre compte personnel.",
   points: [
-    "Votre carnet rempli une fois, prêt pour chaque médecin",
+    "Allergies, traitements, antécédents : tout est au même endroit",
     "Un infirmier prépare, ou le médecin consulte directement avec votre QR",
     "Ses préconisations rejoignent votre carnet, vous gardez la main sur les accès",
   ],
-  primary: { href: "/connexion", label: "Commencer" },
+  primary: { href: "/connexion?mode=register", label: "Créer mon carnet" },
   secondary: { href: "/connexion", label: "Se connecter" },
 } as const;
 

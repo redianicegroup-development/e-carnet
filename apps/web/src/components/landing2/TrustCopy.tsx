@@ -5,7 +5,7 @@ export function TrustCopy() {
   return (
     <>
       <div className="lp2-rv">
-        <h2 id="trust-title">Vous gardez la main sur chaque accès.</h2>
+        <h2 id="trust-title">C’est vous qui décidez qui lit votre carnet.</h2>
         <ul className="lp2-guards">
           <li>
             <svg className="lp2-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.2-7 10-4-1.8-7-5.5-7-10V6z" /><path d="M9 12l2.2 2.2L15 10" /></svg>
