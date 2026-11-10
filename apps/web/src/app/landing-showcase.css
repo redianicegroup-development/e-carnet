@@ -134,27 +134,17 @@
 
 /* ---------- Contact ---------- */
 .lp-contact__layout { display: grid; gap: 28px; }
-.lp-contact__intro { display: grid; gap: 26px; align-content: start; }
-.lp-cta { display: grid; gap: 14px; }
-.lp-cta .actions { margin-top: 4px; }
-.lp-cta__points { list-style: none; margin: 2px 0 4px; padding: 0; display: grid; gap: 10px; }
-.lp-cta__points li { margin: 0; display: flex; align-items: flex-start; gap: 10px; font-size: .98rem; }
-.lp-cta__points li > span { flex-shrink: 0; display: grid; place-items: center; width: 24px; height: 24px; margin-top: 1px; border-radius: 50%; background: var(--bg); box-shadow: var(--press-sm); color: var(--primary-text); }
-.lp-contact__ask { display: grid; gap: 10px; padding-top: 24px; border-top: 1px solid color-mix(in srgb, var(--text) 10%, transparent); }
-.lp-contact__ask h3 { margin: 0; font-size: 1.15rem; letter-spacing: -.02em; }
-.lp-contact__ask > p { margin: 0; color: var(--text-muted); }
-.lp-contact__points { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 12px; }
-.lp-contact__points li { margin: 0; display: flex; align-items: flex-start; gap: 12px; font-size: .95rem; }
-.lp-contact__points li > span { flex-shrink: 0; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--bg); box-shadow: var(--press-sm); color: var(--primary-text); }
+.lp-contact__intro { display: grid; gap: 10px; align-content: start; }
+.lp-contact__lead { margin: 0; color: var(--text-muted); }
 .lp-contact__panel { padding: clamp(20px, 4vw, 36px); border: 0; border-radius: 30px; background: var(--bg); box-shadow: var(--raise-lg); }
 .lp-contact__form { position: relative; display: grid; gap: 16px; }
-.lp-contact__row { display: grid; gap: 16px; }
+.lp-contact__row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .lp-contact .field { gap: 6px; }
 .lp-contact .field > label { font-size: .8125rem; font-weight: 700; color: var(--text-muted); }
 .lp-contact :is(input, select, textarea) { transition: border-color .2s ease, box-shadow .2s ease; }
 .lp-contact :is(input, select, textarea):focus-visible { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 22%, transparent); }
 .lp-contact .field--error :is(input, select, textarea) { border-color: var(--danger); }
-.lp-contact textarea { min-height: 150px; line-height: 1.5; }
+.lp-contact textarea { min-height: 112px; line-height: 1.5; }
 .field-hint { margin: 0; color: var(--text-muted); font-size: .8rem; }
 .field-error { margin: 0; color: var(--danger); font-size: .82rem; font-weight: 600; }
 .lp-select { position: relative; }
@@ -166,8 +156,6 @@
 .lp-contact__meta small.is-near { color: var(--status-declared-fg); font-weight: 700; }
 .lp-contact__meta small.is-over { color: var(--danger); font-weight: 700; }
 .lp-hp { position: absolute; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
-.lp-contact__warning { display: flex; align-items: flex-start; gap: 9px; margin: 0; padding: 11px 13px; border-radius: 14px; background: var(--status-declared-bg); color: var(--status-declared-fg); font-size: .85rem; font-weight: 600; }
-.lp-contact__warning .icon { flex-shrink: 0; margin-top: 2px; }
 .notice--error { background: var(--status-contested-bg); border-color: color-mix(in srgb, var(--danger) 45%, transparent); color: var(--status-contested-fg); font-weight: 600; }
 .lp-contact__submit { width: 100%; min-height: 52px; font-size: 1rem; }
 .lp-contact__legal { margin: 0; color: var(--text-muted); font-size: .78rem; }
@@ -184,7 +172,6 @@
 .lp-contact__done p { margin: 0; max-width: 36ch; color: var(--text-muted); }
 .lp-contact__done h3:focus { outline: none; }
 .lp-contact__done-icon { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; background: var(--primary); color: var(--on-primary); }
-@media (min-width: 560px) { .lp-contact__row { grid-template-columns: 1fr 1fr; } }
 @media (min-width: 920px) {
   .lp-contact__layout { grid-template-columns: .85fr 1.15fr; gap: 64px; align-items: start; }
   .lp-contact__intro { position: sticky; top: calc(var(--pub-header-h, 58px) + 24px); }
@@ -195,3 +182,19 @@
 }
 
 @media (min-width: 1040px) { .lp-features__grid { grid-template-columns: repeat(4, 1fr); } }
+
+/* Appel final : une carte sombre, une seule action principale, la connexion en simple lien. */
+.lp-cta-card { --primary: #cde8d6; --on-primary: #14302a; position: relative; overflow: hidden; display: grid; gap: 26px; padding: clamp(26px, 6vw, 52px); border-radius: 32px; color: #fff7e6; background: radial-gradient(120% 90% at 100% 0%, rgb(255 200 87 / .14), transparent 55%), linear-gradient(160deg, #1e3a34 0%, #244b41 100%); box-shadow: 0 30px 60px -34px rgb(30 58 52 / .75); }
+.lp-cta-card__copy { display: grid; gap: 12px; align-content: start; }
+.lp-cta-card h2 { margin: 0; color: #fff7e6; font-size: clamp(1.8rem, 6.4vw, 2.9rem); line-height: 1.05; letter-spacing: -.035em; }
+.lp-cta-card .lead { margin: 0; color: rgb(255 247 230 / .84); font-size: clamp(1rem, 3.6vw, 1.2rem); }
+.lp-cta-card__points { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 10px; }
+.lp-cta-card__points li { margin: 0; display: flex; align-items: flex-start; gap: 10px; font-size: .98rem; color: #fff7e6; }
+.lp-cta-card__points li > span { flex-shrink: 0; display: grid; place-items: center; width: 24px; height: 24px; margin-top: 1px; border-radius: 50%; background: rgb(205 232 214 / .16); color: #bfe3ce; }
+.lp-cta-card__actions { display: grid; gap: 6px; align-content: center; justify-items: stretch; text-align: center; }
+body .lp-cta-card .button.primary { width: 100%; min-height: 60px; font-size: 1.08rem; font-weight: 800; text-shadow: none; }
+.lp-cta-card__login { display: grid; place-items: center; min-height: 48px; color: #fff7e6; font-weight: 600; text-decoration: underline; text-underline-offset: 4px; }
+.lp-cta-card__login:hover { color: #fff; }
+.lp-cta-card__fine { margin: 0; font-size: .78rem; color: rgb(255 247 230 / .62); }
+.lp-cta-card :is(a, button):focus-visible { outline: 3px solid #ffc857; outline-offset: 3px; }
+@media (min-width: 900px) { .lp-cta-card { grid-template-columns: minmax(0, 1.3fr) minmax(260px, .7fr); gap: 56px; align-items: center; } }

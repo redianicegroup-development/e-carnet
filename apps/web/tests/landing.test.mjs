@@ -58,8 +58,8 @@ test("aucune promesse écartée par la revue juridique dans les textes de la lan
     ...landing.PROFILES.flatMap((profile) => [profile.title, ...profile.points]),
     ...landing.SAFEGUARDS,
     ...landing.FAQ_ITEMS.flatMap((item) => [item.q, item.a]),
-    landing.CONTACT_COPY.title, landing.CONTACT_COPY.lead, ...landing.CONTACT_COPY.points.map((point) => point.text),
-    landing.FINAL.title, landing.FINAL.lead,
+    landing.CONTACT_COPY.title, landing.CONTACT_COPY.lead,
+    landing.FINAL.title, landing.FINAL.lead, landing.FINAL.note, ...landing.FINAL.points,
   ];
   for (const text of texts) assert.doesNotMatch(text, banned, text);
 });

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { ContactSection } from "../components/landing/ContactSection";
-import { AccessDemo } from "../components/landing2/AccessDemo";
 import { DetailRows } from "../components/landing2/DetailRows";
 import { FlowSection } from "../components/landing2/FlowSection";
 import { LandingReveal } from "../components/landing2/LandingReveal";
@@ -10,7 +9,6 @@ import { ProblemSection } from "../components/landing2/ProblemSection";
 import { RoleCards } from "../components/landing2/RoleCards";
 import { SolutionSection } from "../components/landing2/SolutionSection";
 import { ToolTiles } from "../components/landing2/ToolTiles";
-import { TrustCopy } from "../components/landing2/TrustCopy";
 import { FaqSection } from "../components/landing/FaqSection";
 import { HeroScene } from "../components/landing/HeroScene";
 import { LandingMotion } from "../components/motion/LandingMotion";
@@ -87,7 +85,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Sections sous le hero, dans l'ordre d'une landing qui convertit : problème, solution, bénéfices, fonctionnement, rôles, confiance (une seule démonstration), puis la FAQ.
+      {/* Sections sous le hero, dans l'ordre d'une landing qui convertit : problème, solution, bénéfices, fonctionnement, rôles, puis la FAQ et l'appel final.
           Le héro ci-dessus, le contact (appel à l'action final) et le pied de page de l'application gardent leur structure.
           Pas de bandeau « ils nous font confiance » ni de témoignages : rien de réel à y mettre pour l'instant. */}
       <div className="lp2">
@@ -108,13 +106,10 @@ export default function HomePage() {
           </div>
         </section>
         <section className="lp2-sec" id="profils" aria-labelledby="roles-title"><RoleCards /></section>
-        <section className="lp2-sec lp2-flush" aria-labelledby="trust-title">
-          <div className="lp2-trust"><TrustCopy /><AccessDemo /></div>
-        </section>
       </div>
       <FaqSection />
 
-      {/* 6 · Contact et appel à l'action final, dans une seule section. */}
+      {/* Appel à l'action final (carte sombre), puis formulaire de contact. */}
       <ContactSection privacyHref={LEGAL_DOCS.privacy.path} />
     </LandingMotion>
   </PublicShell>;

@@ -1,100 +1,10 @@
-import { FakeQr } from "./FakeQr";
+import { MaskedEmergencyCard } from "./MaskedEmergencyCard";
 
-/** Généré depuis la maquette (carnet, carte d’urgence, proches et enfants). */
+/** Rangées sous les tuiles : carte d’urgence (vraie carte, valeurs masquées) et proches et enfants. */
 export function DetailRows() {
   return (
     <>
       <div className="lp2-rows">
-        <div className="lp2-row">
-          <div className="lp2-copy lp2-rv">
-            <h2>Chaque information dit d’où elle vient.</h2>
-            <p className="lp2-lead">Vos antécédents, allergies et traitements sont marqués « Déclaré par le patient ». On distingue d’un coup d’œil ce qui vient de vous et ce qui vient d’un professionnel.</p>
-            <ul className="lp2-ticks">
-              <li>
-                <svg className="lp2-i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M8 12l3 3 5-6" /></svg>
-                {" "}
-                Antécédents, allergies et traitements au même endroit
-              </li>
-              <li>
-                <svg className="lp2-i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M8 12l3 3 5-6" /></svg>
-                {" "}
-                Documents, mesures et vaccinations rangés par thème
-              </li>
-              <li>
-                <svg className="lp2-i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M8 12l3 3 5-6" /></svg>
-                {" "}
-                Un carnet prêt à être remis au médecin à chaque consultation
-              </li>
-            </ul>
-          </div>
-          <div className="lp2-stage lp2-rv">
-            <div className="lp2-phone">
-              <div className="lp2-scr">
-                <span className="lp2-notch" />
-                <div className="lp2-ap-bar">
-                  <span>
-                    <svg className="lp2-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h5l2 2h9v10H4z" /></svg>
-                    Carnet
-                  </span>
-                  <i className="lp2-ap-av">EC</i>
-                </div>
-                <div className="lp2-ap-body">
-                  <p className="lp2-ap-title">Mon carnet</p>
-                  <div className="lp2-ap-card">
-                    <div className="lp2-ap-row">
-                      <b>Allergies</b>
-                      <span className="lp2-chip lp2-dec">Déclaré par le patient</span>
-                    </div>
-                    <small>Pénicilline</small>
-                  </div>
-                  <div className="lp2-ap-card">
-                    <div className="lp2-ap-row">
-                      <b>Antécédents</b>
-                      <span className="lp2-chip lp2-dec">Déclaré par le patient</span>
-                    </div>
-                    <small>Asthme léger</small>
-                  </div>
-                  <div className="lp2-ap-card">
-                    <div className="lp2-ap-row">
-                      <b>Traitements</b>
-                      <span className="lp2-chip lp2-dec">Déclaré par le patient</span>
-                    </div>
-                    <small>Salbutamol, au besoin</small>
-                  </div>
-                  <div className="lp2-ap-card">
-                    <div className="lp2-ap-row">
-                      <b>Tension</b>
-                      <span className="lp2-chip lp2-me">Mesuré</span>
-                    </div>
-                    <small>12/8, ce matin</small>
-                  </div>
-                </div>
-                <div className="lp2-ap-tabs">
-                  <span>
-                    <svg className="lp2-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11 12 4l8 7" /><path d="M6 10v9h12v-9" /><path d="M10 19v-5h4v5" /></svg>
-                    Accueil
-                  </span>
-                  <span className="lp2-on">
-                    <svg className="lp2-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h5l2 2h9v10H4z" /></svg>
-                    Carnet
-                  </span>
-                  <span>
-                    <svg className="lp2-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4v6a4 4 0 0 0 8 0V4" /><circle cx="18" cy="16" r="3" /><path d="M14 10v2a4 4 0 0 0 1.2 2.9" /></svg>
-                    Consult.
-                  </span>
-                  <span>
-                    <svg className="lp2-i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="12" r="2" /><circle cx="18" cy="6" r="2" /><circle cx="18" cy="18" r="2" /><path d="M8 11l8-4M8 13l8 4" /></svg>
-                    Accès
-                  </span>
-                  <span>
-                    <svg className="lp2-i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2" /><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6" /></svg>
-                    Moi
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
         <div className="lp2-row lp2-flip">
           <div className="lp2-copy lp2-rv">
             <h2>Une carte d’urgence, prête quand il le faut</h2>
@@ -122,31 +32,7 @@ export function DetailRows() {
             </p>
           </div>
           <div className="lp2-stage lp2-green lp2-rv">
-            <div className="lp2-ecard" role="img" aria-label="Exemple fictif de carte d’urgence avec un QR code">
-              <header>
-                <strong>Carte d’urgence</strong>
-                <span className="lp2-chip lp2-dec">Exemple fictif</span>
-              </header>
-              <div className="lp2-band">
-                <svg className="lp2-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-9.5-9C.8 7.6 3 4 6.5 4c2 0 3.4 1.1 4 2 .6-.9 2-2 4-2C18 4 20.2 7.6 18.5 11 16 15.6 12 20 12 20z" /></svg>
-                {" "}
-                En cas d’urgence
-              </div>
-              <dl>
-                <dt>Nom</dt>
-                <dd>Prénom Nom</dd>
-                <dt>Allergie</dt>
-                <dd>Pénicilline</dd>
-                <dt>Traitement</dt>
-                <dd>Salbutamol</dd>
-                <dt>Contact</dt>
-                <dd>07 00 00 00 00</dd>
-              </dl>
-              <div className="lp2-foot">
-                <p>Informations déclarées par le patient. Scannez pour ouvrir la fiche.</p>
-                <FakeQr seed={11} />
-              </div>
-            </div>
+            <MaskedEmergencyCard />
           </div>
         </div>
         <div className="lp2-row">

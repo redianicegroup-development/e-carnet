@@ -163,27 +163,28 @@ export function ContactSection({ privacyHref }: { privacyHref: string }) {
   const fieldError = (field: ContactField) => shown(field) && <p className="field-error" id={`${fieldId(field)}-error`}>{shown(field)}</p>;
 
   return (
-    <section className="lp-section lp-wrap lp-contact" id="contact" aria-labelledby="contact-title">
+    <>
+    <section className="lp-section lp-wrap lp-cta-section" aria-labelledby="contact-title">
+      <div className="lp-cta-card" data-reveal>
+        <div className="lp-cta-card__copy">
+          <h2 id="contact-title">{FINAL.title}</h2>
+          <p className="lead">{FINAL.lead}</p>
+          <ul className="lp-cta-card__points">
+            {FINAL.points.map((point) => <li key={point}><span aria-hidden="true"><Icon name="check" size={16} /></span>{point}</li>)}
+          </ul>
+        </div>
+        <div className="lp-cta-card__actions">
+          <Link className="button primary" href={FINAL.primary.href} data-track="signup">{FINAL.primary.label}<Icon name="chevron" size={18} /></Link>
+          <Link className="lp-cta-card__login" href={FINAL.secondary.href}>{FINAL.secondary.label}</Link>
+          <p className="lp-cta-card__fine">{FINAL.note}</p>
+        </div>
+      </div>
+    </section>
+    <section className="lp-section lp-wrap lp-contact" id="contact" aria-labelledby="contact-ask-title">
       <div className="lp-contact__layout">
         <div className="lp-contact__intro" data-reveal>
-          <div className="lp-cta">
-            <h2 id="contact-title">{FINAL.title}</h2>
-            <p className="lead">{FINAL.lead}</p>
-            <ul className="lp-cta__points">
-              {FINAL.points.map((point) => <li key={point}><span aria-hidden="true"><Icon name="check" size={16} /></span>{point}</li>)}
-            </ul>
-            <div className="actions">
-              <Link className="button primary" href={FINAL.primary.href} data-track="signup">{FINAL.primary.label}<Icon name="chevron" size={18} /></Link>
-              <Link className="button" href={FINAL.secondary.href}>{FINAL.secondary.label}</Link>
-            </div>
-          </div>
-          <div className="lp-contact__ask">
-            <h3>{CONTACT_COPY.title}</h3>
-            <p>{CONTACT_COPY.lead}</p>
-            <ul className="lp-contact__points">
-              {CONTACT_COPY.points.map((point) => <li key={point.text}><span aria-hidden="true"><Icon name={point.icon} size={18} /></span>{point.text}</li>)}
-            </ul>
-          </div>
+          <h2 id="contact-ask-title">{CONTACT_COPY.title}</h2>
+          <p className="lp-contact__lead">{CONTACT_COPY.lead}</p>
         </div>
         <div className="lp-contact__panel" data-reveal>
           {status === "sent" ? (
@@ -230,7 +231,7 @@ export function ContactSection({ privacyHref }: { privacyHref: string }) {
 
               <div className={`field${shown("message") ? " field--error" : ""}`}>
                 <label htmlFor={fieldId("message")}>Message</label>
-                <textarea id={fieldId("message")} name="message" rows={6} required maxLength={CONTACT_LIMITS.messageMax + 200} placeholder="Décrivez votre besoin en quelques lignes." value={fields.message} onChange={update("message")} onBlur={() => blur("message")} aria-invalid={Boolean(shown("message"))} aria-describedby={describe("message", `${fieldId("message")}-count`)} />
+                <textarea id={fieldId("message")} name="message" rows={4} required maxLength={CONTACT_LIMITS.messageMax + 200} placeholder="Décrivez votre besoin en quelques lignes." value={fields.message} onChange={update("message")} onBlur={() => blur("message")} aria-invalid={Boolean(shown("message"))} aria-describedby={describe("message", `${fieldId("message")}-count`)} />
                 <div className="lp-contact__meta">
                   {fieldError("message") ?? <span />}
                   <small id={`${fieldId("message")}-count`} className={remaining < 0 ? "is-over" : remaining < 100 ? "is-near" : undefined}>{fields.message.length} / {CONTACT_LIMITS.messageMax.toLocaleString("fr-FR")}</small>
@@ -239,7 +240,6 @@ export function ContactSection({ privacyHref }: { privacyHref: string }) {
 
               <div className="lp-hp" aria-hidden="true"><label>Ne pas remplir<input ref={decoy} type="text" name="website" tabIndex={-1} autoComplete="off" defaultValue="" /></label></div>
 
-              <p className="lp-contact__warning"><Icon name="shield" size={16} />Vos informations restent sous votre contrôle.</p>
 
               <div className={`lp-contact__consent${shown("consent") ? " is-error" : ""}`}>
                 <label htmlFor={fieldId("consent")}>
@@ -257,5 +257,6 @@ export function ContactSection({ privacyHref }: { privacyHref: string }) {
         </div>
       </div>
     </section>
+    </>
   );
 }

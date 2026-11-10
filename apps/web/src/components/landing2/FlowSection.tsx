@@ -1,7 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
-import { FLOW_SCREENS, FLOW_STEPS, FLOW_TABS_BAR } from "./flowParts";
+import { FLOW_STEPS } from "./flowParts";
 
 const STEP_MS = 6000;
 
@@ -13,7 +14,7 @@ function subscribeReducedMotion(onChange: () => void) {
 }
 const reducedMotionNow = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-/** « Du carnet au rendez-vous » : trois étapes, un téléphone qui montre l'écran correspondant.
+/** « Du carnet au rendez-vous » : trois étapes, une vraie capture de l'application (main et téléphone) pour chacune.
  *  Le défilement automatique (6 s) s'arrête au survol, au focus, sur demande (bouton Pause) et si l'animation est réduite. */
 export function FlowSection() {
   const [current, setCurrent] = useState(0);
@@ -74,18 +75,12 @@ export function FlowSection() {
       </div>
       <div className="lp2-flow-phone">
         <span className="lp2-blob" aria-hidden="true" />
-        <div className="lp2-phone">
-          <div className="lp2-scr">
-            <span className="lp2-notch" />
-            <div className="lp2-screens" aria-live={running ? "off" : "polite"}>
-              {FLOW_SCREENS.map((screen, index) => (
-                <div key={FLOW_STEPS[index].title} id={`flow-screen-${index}`} role="tabpanel" aria-labelledby={`flow-tab-${index}`} className={current === index ? "lp2-on" : undefined}>
-                  {screen.node}
-                </div>
-              ))}
+        <div className="lp2-hand-stack lp2-flow-stack" aria-live={running ? "off" : "polite"}>
+          {FLOW_STEPS.map((step, index) => (
+            <div key={step.title} id={`flow-screen-${index}`} role="tabpanel" aria-labelledby={`flow-tab-${index}`} className={`lp2-flow-shot${current === index ? " lp2-on" : ""}`}>
+              <Image src={step.image.src} alt={step.image.alt} width={900} height={1272} sizes="(max-width: 900px) 86vw, 420px" />
             </div>
-            {FLOW_TABS_BAR}
-          </div>
+          ))}
         </div>
       </div>
     </div>

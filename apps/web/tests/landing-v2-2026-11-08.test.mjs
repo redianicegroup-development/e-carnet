@@ -15,7 +15,7 @@ test("le héro d'origine est conservé tel quel", () => {
 });
 
 test("les sections de la maquette sont dans l'ordre, avec les ancres de la navigation", () => {
-  const order = ["ProblemSection", "SolutionSection", "ToolTiles", "DetailRows", "FlowSection", "RoleCards", "TrustCopy", "AccessDemo"].map((name) => page.indexOf(`<${name} />`));
+  const order = ["ProblemSection", "SolutionSection", "ToolTiles", "DetailRows", "FlowSection", "RoleCards"].map((name) => page.indexOf(`<${name} />`));
   assert.ok(order.every((index) => index > 0), "section manquante");
   assert.deepEqual([...order].sort((a, b) => a - b), order, "ordre des sections");
   for (const id of ["probleme", "solution", "fonctionnalites", "parcours", "profils"]) assert.match(page, new RegExp(`id="${id}"`));
@@ -67,18 +67,6 @@ test("le parcours en trois étapes est accessible : onglets, flèches, pause, an
   assert.match(flow, /prefers-reduced-motion/);
 });
 
-test("la démonstration d'accès passe par autoriser, révoquer, rejouer et refuser", () => {
-  const demo = read("src/components/landing2/AccessDemo.tsx");
-  for (const label of ["Autoriser", "Révoquer", "Rejouer l’exemple", "Refuser"]) assert.ok(demo.includes(label), label);
-  assert.match(demo, /Exemple illustré, sans donnée réelle/);
-});
-
-test("le faux QR code est déterministe", async () => {
-  const source = read("src/components/landing2/FakeQr.tsx");
-  assert.match(source, /state \* 9301 \+ 49297\) % 233280/);
-  assert.doesNotMatch(source, /Math\.random/);
-});
-
 test("le message est le bon : un infirmier prépare depuis l'espace patient, sinon le médecin consulte directement par QR depuis son espace professionnel", () => {
   const dir = new URL("../src/components/landing2/", import.meta.url);
   for (const file of readdirSync(dir)) {
@@ -109,7 +97,7 @@ test("la solution montre trois captures détourées (main et téléphone), respo
   assert.match(css, /\.lp2-hand-stack \{width:min\(86vw,420px\)\}/);
 });
 
-test("la landing suit l'ordre problème, solution, bénéfices, fonctionnement, rôles, confiance, appel final, sans logos ni témoignages", () => {
+test("la landing suit l'ordre problème, solution, bénéfices, fonctionnement, rôles, FAQ, appel final, sans logos ni témoignages", () => {
   const ids = ["probleme", "solution", "fonctionnalites", "parcours", "profils"].map((id) => page.indexOf(`id="${id}"`));
   assert.deepEqual([...ids].sort((a, b) => a - b), ids);
   assert.ok(page.indexOf("<FaqSection />") > ids.at(-1));
@@ -125,14 +113,42 @@ test("textes de la landing 09/11 (2e passe) : titres concrets, appel final qui n
   assert.doesNotMatch(content, /préparez vos consultations/, "le patient ne prépare pas sa consultation : c'est le travail du médecin ou de l'infirmier");
 });
 
-test("landing vitrine (3e passe) : quatre tuiles, aucun chiffre dans les étapes, une seule couche de réassurance avant l'appel final", () => {
+test("landing vitrine (3e passe) : quatre tuiles, aucun chiffre dans les étapes, la FAQ puis l'appel final", () => {
   const tiles = read("src/components/landing2/ToolTiles.tsx");
   assert.equal((tiles.match(/className="lp2-tile lp2-rv"/g) ?? []).length, 4);
   const figure = /\d+ ?(minutes?|min\b|heures?|h\b|jours?)/i;
   const flow = read("src/components/landing2/flowParts.tsx");
-  const steps = flow.slice(flow.indexOf("export const FLOW_STEPS"), flow.indexOf("export const FLOW_SCREENS"));
+  const steps = flow.slice(flow.indexOf("export const FLOW_STEPS"), flow.length);
   assert.doesNotMatch(steps, figure, "les étapes ne portent pas de durées : elles sont dans la FAQ et la page Sécurité");
   assert.doesNotMatch(read("src/lib/landing-content.ts").slice(read("src/lib/landing-content.ts").indexOf("export const STEPS"), read("src/lib/landing-content.ts").indexOf("export type Profile")), figure);
   assert.doesNotMatch(page, /ObjectionCards/);
-  assert.ok(page.indexOf("<TrustCopy />") < page.indexOf("<FaqSection />") && page.indexOf("<FaqSection />") < page.indexOf("<ContactSection "));
+  assert.ok(page.indexOf("<RoleCards />") < page.indexOf("<FaqSection />") && page.indexOf("<FaqSection />") < page.indexOf("<ContactSection "));
+});
+
+test("landing (4e passe) : vraie carte d'urgence masquée, rebond léger, images dans le parcours, sections retirées, appel final et contact plus courts", () => {
+  const rows = read("src/components/landing2/DetailRows.tsx");
+  assert.match(rows, /<MaskedEmergencyCard \/>/);
+  const card = read("src/components/landing2/MaskedEmergencyCard.tsx");
+  assert.match(card, /^"use client";/, "la carte embarque qrcode.react : elle reste dans un composant client");
+  assert.match(card, /EmergencyCardVisual/);
+  assert.match(card, /const X = "xxxxxxxxxx"/);
+  assert.doesNotMatch(rows, /FakeQr|lp2-ecard|Chaque information dit d’où elle vient|Prénom Nom|Pénicilline/);
+  assert.ok(existsSync(new URL("../public/landing/carte-titulaire.webp", import.meta.url)));
+  for (const gone of ["TrustCopy", "AccessDemo", "FakeQr", "ObjectionCards", "WhoCards", "OfflineBand"]) assert.ok(!existsSync(new URL(`../src/components/landing2/${gone}.tsx`, import.meta.url)), `${gone} doit être supprimé`);
+  assert.doesNotMatch(page, /TrustCopy|AccessDemo|C’est vous qui décidez/);
+  assert.match(css, /@keyframes lp2-bounce/);
+  assert.match(css, /prefers-reduced-motion[^]*?\.lp2-stack \.lp2-pcard \{animation:none\}/, "le rebond s'arrête si l'animation est réduite");
+  const flowSource = read("src/components/landing2/FlowSection.tsx");
+  assert.match(flowSource, /<Image/);
+  assert.doesNotMatch(flowSource, /lp2-phone|lp2-scr|FLOW_SCREENS|FLOW_TABS_BAR/);
+  const parts = read("src/components/landing2/flowParts.tsx");
+  const srcs = [...parts.matchAll(/src: "(\/landing\/[a-z-]+\.webp)"/g)].map((match) => match[1]);
+  assert.equal(srcs.length, 3);
+  for (const src of srcs) assert.ok(existsSync(new URL(`../public${src}`, import.meta.url)), src);
+  const content = read("src/lib/landing-content.ts");
+  assert.doesNotMatch(content, /Établissement : choisissez l’objet|Nous utilisons votre e-mail ou votre numéro/);
+  const contact = read("src/components/landing/ContactSection.tsx");
+  assert.match(contact, /lp-cta-card/);
+  assert.match(contact, /id="contact"/);
+  assert.doesNotMatch(contact, /lp-contact__ask|lp-contact__warning|CONTACT_COPY\.points/);
 });

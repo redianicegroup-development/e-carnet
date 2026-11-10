@@ -1,38 +1,29 @@
-# Modifications du 09/11/2026 — landing, 2e et 3e passes : textes puis mode « vitrine » (hero et pied de page inchangés)
+# Modifications du 09/11/2026 — landing, passes 2 à 4 : textes, vitrine, carte, parcours, CTA, contact (hero et pied de page inchangés)
 
-Objectif : une vitrine, pas une documentation. Aucun style ni animation n'est touché ; seules la longueur et les textes changent, plus une flèche sur le bouton de l'appel final (comme celle du hero).
+Archive complète : e-carnet_V1_9.zip (V1.8 + ces changements). Les fichiers devenus inutiles sont déjà supprimés.
 
-## 2e passe — titres
-| Avant | Après |
-|---|---|
-| Ce que votre carnet change, concrètement | Votre santé, enfin réunie au même endroit. |
-| Le médecin sait d'où vient chaque information | Chaque information dit d'où elle vient. |
-| Vos proches et vos enfants, chacun à leur place | Un carnet par enfant, une fiche d'urgence pour vos proches. |
-| Trois étapes, de votre carnet à ses préconisations | Une consultation en trois étapes, sans repartir de zéro. |
-| Vous gardez la main sur chaque accès. | C'est vous qui décidez qui lit votre carnet. |
-| Avant de vous lancer | (section retirée en 3e passe, voir ci-dessous) |
+## 4e passe (dernière demande)
+1. **Carte d'urgence** : la fausse carte (« Exemple fictif », Pénicilline, faux QR) est remplacée par la **vraie carte de l'application** (`EmergencyCardVisual`), toutes les valeurs masquées par `xxxxxxxxxx`, avec l'avatar du titulaire. Elle est dans `landing2/MaskedEmergencyCard.tsx` (composant client : la carte embarque `qrcode.react`). Sur téléphone, elle grandit avec son contenu et ses textes sont plus lisibles (la carte de l'application garde un 16/9 trop serré ici).
+2. **Rebond léger** sur « Proche de confiance » et « Profil enfant » (`@keyframes lp2-bounce`, 4,2 s, décalé de 0,9 s entre les deux, coupé si l'animation est réduite).
+3. **Sections retirées** : « Chaque information dit d'où elle vient » (rangée) et « C'est vous qui décidez qui lit votre carnet » (texte + démonstration d'accès).
+4. **Parcours en trois étapes** : le faux téléphone dessiné en CSS est remplacé par de vraies captures détourées : étape 1 pré-consultation (`hand-motif.webp`), étape 2 QR temporaire (`hand-qr.webp`), étape 3 accueil du carnet (`hand-accueil.webp`, l'ancienne capture « Partager en QR »). **« Solution »** : sa 3e capture est maintenant l'écran du QR temporaire (même `hand-qr.webp`).
+5. **Appel final** : carte sombre, un seul bouton principal pleine largeur (« Créer mon carnet → », qui garde l'effet gel/gooey sur fond clair), la connexion passe en lien (« Déjà un compte ? Se connecter »), 3 lignes courtes, la phrase « informations exactes… » en petit.
+6. **Contact** : titre « Une question ? Écrivez-nous. » et une ligne ; les deux lignes d'explication et le bandeau « Vos informations restent sous votre contrôle » sont retirés ; Prénom et Nom côte à côte, message plus court. `#contact` mène toujours au formulaire.
 
 ## 3e passe — vitrine
-1. **Bénéfices : 8 tuiles → 4** (Mon carnet, Préconisations, Documents, Rendez-vous et rappels). Retirées : Mesures, Vaccinations (secondaires), Carte d'urgence (déjà détaillée dans sa rangée juste dessous), Historique des accès (déjà dans la démonstration d'accès). Intro : « L'essentiel, d'un coup d'œil. »
-2. **Étapes sans chiffres** : « Le QR est temporaire et ne sert qu'une fois. » (plus de 5 minutes ni de 2 heures dans les étapes, ni dans `STEPS`). Les durées restent dans la FAQ, la démonstration d'accès, la page Sécurité et les écrans fictifs du téléphone.
-3. **Une seule couche de réassurance avant l'appel final** : la section « doutes » (`ObjectionCards`) est retirée de la page. Il reste la démonstration d'accès (`TrustCopy` + `AccessDemo`), puis la FAQ. Ses quatre doutes sont déjà traités par la FAQ, sauf « je ne suis pas à l'aise avec le numérique » : il passe dans l'appel final (« Commencez par l'essentiel, le reste peut venir plus tard. »).
-4. **Solution : intro raccourcie** (deux phrases au lieu de quatre) ; les trois lignes cliquables restent.
-5. **Appel final** : « Ouvrez votre carnet avant votre prochain rendez-vous. » ; bouton « Créer mon carnet → » vers `/connexion?mode=register` (même libellé que l'écran de connexion, suivi `data-track="signup"` inchangé).
-6. **Hero** : seul `HERO.lead` change (« Réunissez vos informations de santé, remettez votre carnet au médecin et choisissez qui peut le consulter. »). Le reste du hero et le pied de page sont inchangés.
+Tuiles de bénéfices 8 → 4 ; plus de durées dans les étapes (« Le QR est temporaire et ne sert qu'une fois ») ; section « doutes » retirée ; intro de « Solution » raccourcie.
 
-Non touché (à décider) : les trois grandes rangées sous les tuiles (provenance, carte d'urgence, proches et enfants), la FAQ (réponses relues par les juristes) et le CSS devenu inutile de `.lp2-obj*`.
+## 2e passe — titres
+Votre santé, enfin réunie au même endroit. · Un carnet par enfant, une fiche d'urgence pour vos proches. · Une consultation en trois étapes, sans repartir de zéro. · Appel final : « Ouvrez votre carnet avant votre prochain rendez-vous. » · Hero : seule l'accroche change (« Réunissez vos informations de santé, remettez votre carnet au médecin et choisissez qui peut le consulter. »).
 
-## Fichiers modifiés
-`apps/web/src/lib/landing-content.ts`, `src/app/page.tsx`, `src/components/landing/ContactSection.tsx`, `src/components/landing2/{ToolTiles,DetailRows,TrustCopy,SolutionSection,flowParts}.tsx`, `tests/landing-v2-2026-11-08.test.mjs` (ordre et ancres mis à jour ; 2 tests ajoutés).
+## Fichiers supprimés
+`landing2/{TrustCopy,AccessDemo,FakeQr,ObjectionCards,WhoCards,OfflineBand}.tsx`. Le CSS `.lp2-demo`, `.lp2-guards`, `.lp2-trust`, `.lp2-obj*` et `.lp2-phone` est devenu inutile et n'a pas été retiré.
 
-## À supprimer à la main (un zip de fichiers modifiés ne supprime rien)
-```
-git rm apps/web/src/components/landing2/ObjectionCards.tsx apps/web/src/components/landing2/WhoCards.tsx apps/web/src/components/landing2/OfflineBand.tsx
-```
-`WhoCards.tsx` et `OfflineBand.tsx` sont déjà donnés comme supprimés dans la note du 09/11 mais sont encore dans la V1.8 ; `WhoCards.tsx` fait échouer le test « le message est le bon ».
+## Images
+Nouvelles : `public/landing/hand-motif.webp`, `hand-accueil.webp`, `carte-titulaire.webp`. Remplacée : `hand-qr.webp`. Les deux visuels (QR, pré-consultation) ont été détourés automatiquement depuis tes images : à vérifier à l'œil sur les contours.
 
 ## À faire relire
-« C'est vous qui décidez qui lit votre carnet » (et « Aucun accès sans votre choix » dans le hero) ne mentionnent pas l'ouverture d'urgence par un administrateur d'établissement (ETA-09, avec motif et audit).
+Le hero dit toujours « Aucun accès sans votre choix » : cela ne mentionne pas l'ouverture d'urgence par un administrateur d'établissement (ETA-09, avec motif et audit).
 
 ## Vérifications
-Tests `landing`, `etablissement-landing` et `landing-v2` : 33 verts avec les trois fichiers ci-dessus mis de côté. `next build`, `tsc` et `eslint` non lancés (pas de `node_modules`) : à lancer avant déploiement.
+Suite complète : 377 verts sur 381. Les 4 échecs existaient déjà dans la V1.8 (un seul centre d'aide, hors-connexion, navigation, cache du thème) et sont sans rapport. Le test « le message est le bon », qui échouait à cause de `WhoCards`, passe maintenant. Syntaxe des fichiers modifiés vérifiée avec esbuild ; rendu mobile et bureau de la carte, du CTA, du formulaire et du parcours vérifié sur une maquette statique avec les CSS du projet. `next build`, `tsc` et `eslint` non lancés (pas de `node_modules`) : à lancer avant déploiement.

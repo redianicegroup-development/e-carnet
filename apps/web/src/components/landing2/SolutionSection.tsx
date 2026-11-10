@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 const SHOTS = [
   { src: "/landing/hand-carnet.webp", label: "Votre carnet est rempli une fois", alt: "Une main tient un téléphone ouvert sur l’accueil du carnet : carte d’informations, déclarations, documents, vaccins, rappels et plans de suivi." },
   { src: "/landing/hand-preconsultation.webp", label: "Un infirmier prépare la pré-consultation depuis votre espace, ou le médecin consulte directement", alt: "Une main tient un téléphone ouvert sur la pré-consultation de l’espace patient : le motif et les symptômes à cocher." },
-  { src: "/landing/hand-qr.webp", label: "Le médecin scanne votre QR, consulte et fait ses préconisations", alt: "Une main tient un téléphone ouvert sur l’accueil du patient, avec le bouton « Partager en QR »." },
+  { src: "/landing/hand-qr.webp", label: "Le médecin scanne votre QR, consulte et fait ses préconisations", alt: "Une main tient un téléphone ouvert sur le QR temporaire du patient, avec son compte à rebours." },
 ] as const;
 
 const SHOT_MS = 5500;

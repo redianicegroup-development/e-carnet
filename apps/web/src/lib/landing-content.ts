@@ -84,21 +84,18 @@ export const FAQ_ITEMS: FaqItem[] = [
  *  `points` résume la valeur en trois lignes, au-dessus du bouton. */
 export const FINAL = {
   title: "Ouvrez votre carnet avant votre prochain rendez-vous.",
-  lead: "Commencez par l’essentiel, le reste peut venir plus tard. Utilisez des informations exactes et gardez votre compte personnel.",
+  lead: "Commencez par l’essentiel, le reste peut venir plus tard.",
   points: [
-    "Allergies, traitements, antécédents : tout est au même endroit",
-    "Un infirmier prépare, ou le médecin consulte directement avec votre QR",
-    "Ses préconisations rejoignent votre carnet, vous gardez la main sur les accès",
+    "Votre carnet réuni au même endroit",
+    "Le médecin consulte votre carnet avec votre QR",
+    "Ses préconisations rejoignent votre carnet",
   ],
   primary: { href: "/connexion?mode=register", label: "Créer mon carnet" },
-  secondary: { href: "/connexion", label: "Se connecter" },
+  secondary: { href: "/connexion", label: "Déjà un compte ? Se connecter" },
+  note: "Utilisez des informations exactes et gardez votre compte personnel.",
 } as const;
 
 export const CONTACT_COPY = {
-  title: "Une question ? Écrivons-nous.",
-  lead: "Patient, professionnel ou établissement : dites-nous ce dont vous avez besoin. Nous vous répondons par le moyen que vous indiquez.",
-  points: [
-    { icon: "building" as IconName, text: "Établissement : choisissez l’objet « Ouvrir un espace établissement »." },
-    { icon: "mail" as IconName, text: "Nous utilisons votre e-mail ou votre numéro pour vous répondre." },
-  ],
+  title: "Une question ? Écrivez-nous.",
+  lead: "Patient, professionnel ou établissement : on vous répond.",
 } as const;
