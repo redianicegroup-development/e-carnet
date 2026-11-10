@@ -34,9 +34,12 @@ export const CLOUDINARY_VERSIONS = {
   "/illustrations/modal/question.svg": 1792314992,
   "/illustrations/modal/success.svg": 1792314993,
   "/illustrations/modal/welcome.svg": 1792314993,
+  "/landing/carte-titulaire.webp": 1794290432,
+  "/landing/hand-accueil.webp": 1794290434,
   "/landing/hand-carnet.webp": 1794249994,
+  "/landing/hand-motif.webp": 1794290436,
   "/landing/hand-preconsultation.webp": 1794249996,
-  "/landing/hand-qr.webp": 1794249997,
+  "/landing/hand-qr.webp": 1794290438,
   "/landing/hero-desktop.webp": 1793966775,
   "/landing/hero-mobile.webp": 1793966778,
 }
