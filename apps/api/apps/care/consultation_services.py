@@ -10,6 +10,9 @@ from .services import SELF_ACCESS_MESSAGE, is_own_patient_file, require_scope
 from .vitals import build_consultation_vitals
 
 
+SEAL_REQUIRED_MESSAGE = "Ajoutez votre signature ou votre cachet avant de valider une consultation."
+
+
 @transaction.atomic
 def validate_consultation(*, professional, data):
     """Termine la consultation : le médecin signe, et la pré-consultation du patient est clôturée du même geste.
@@ -20,6 +23,9 @@ def validate_consultation(*, professional, data):
     access_error = professional_clinical_access_error(professional)
     if access_error:
         raise ValidationError(access_error)
+    # Pas de consultation sans signature ni cachet : ils sont figés sur la consultation (aucun appel réseau ici, seuls les identifiants sont copiés).
+    if not (professional.signature_cloudinary_public_id or professional.stamp_cloudinary_public_id):
+        raise ValidationError(SEAL_REQUIRED_MESSAGE)
     establishment = professional.active_establishment
     grant = AccessGrant.objects.select_related("patient", "establishment").filter(id=data["access_grant_id"], professional=professional).first()
     if not grant:
@@ -66,6 +72,8 @@ def validate_consultation(*, professional, data):
         attestation_svg=attestation,
         attestation_svg_hash=sha256(attestation.encode("utf-8")).hexdigest(),
         attestation_signed_at=signed_at,
+        signature_asset_id=professional.signature_cloudinary_public_id,
+        stamp_asset_id=professional.stamp_cloudinary_public_id,
         validated_at=signed_at,
     )
     prescription_lines = [

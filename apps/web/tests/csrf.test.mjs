@@ -41,6 +41,13 @@ test("aucun composant ne relit lui-même le cookie CSRF", async () => {
       assert.doesNotMatch(await readFile(file, "utf8"), /csrftoken/i, "le cookie d’opt-in ne doit pas être confondu avec le jeton CSRF");
       continue;
     }
+    if (normalized.endsWith("lib/language.ts")) {
+      // Écrit (jamais lit) le seul cookie « googtrans » du traducteur : il ne doit pas être confondu avec le jeton CSRF.
+      const source = await readFile(file, "utf8");
+      assert.doesNotMatch(source, /csrftoken/i, "le cookie de langue ne doit pas être confondu avec le jeton CSRF");
+      assert.doesNotMatch(source, /=\s*document\.cookie\b(?!\s*=)|document\.cookie\.(split|match)/, "le cookie de langue est écrit, jamais relu");
+      continue;
+    }
     if (/document\.cookie/.test(await readFile(file, "utf8"))) offenders.push(file);
   }
   assert.deepEqual(offenders, []);

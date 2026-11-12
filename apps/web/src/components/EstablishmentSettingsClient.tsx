@@ -18,7 +18,7 @@ import { EstablishmentProfileEditor, establishmentInitials, type EstablishmentPr
 import "./establishment-settings.css";
 import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
 import { cleanUpBeforeLogout } from "../lib/logout";
-import { useLogoutAll } from "./useLogoutAll";
+import { LogoutAllSetting } from "./LogoutAllSetting";
 
 type Account = { email: string; first_name: string; last_name: string; avatar_url?: string; is_privileged: boolean; contexts: { role: string; is_active: boolean }[] };
 type Establishment = { id: string; name: string; establishment_type: string; city: string; address: string; phone: string; email: string; responsible_name: string; logo: string; updated_at: string | null; status: "pending" | "active" | "rejected" | string; internal_code: string | null };
@@ -46,7 +46,6 @@ export function EstablishmentSettingsClient() {
   const [message, setMessage] = useState("Chargement des informations du compte et de l’établissement…");
   const [loading, setLoading] = useState(true);
   const [signingOut, setSigningOut] = useState(false);
-  const allDevices = useLogoutAll(setMessage);
   const [sessionRequired, setSessionRequired] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
 
@@ -93,7 +92,7 @@ export function EstablishmentSettingsClient() {
     { id: "coordonnees", title: "Coordonnées", description: "Adresse, contacts et responsable.", icon: "pin" },
     { id: "ordonnance", title: "Modèle d’ordonnance", description: "En-tête et pied de page imprimables.", icon: "document" },
     { id: "compte", title: "Paramètres du compte", description: "Personnaliser l’apparence de l’application.", icon: "sparkle" },
-    { id: "securite", title: "Sécurité et connexion", description: "Gérer les fournisseurs liés au compte.", icon: "lock" },
+    { id: "securite", title: "Sécurité et connexion", description: "Fournisseurs de connexion et appareils connectés.", icon: "lock" },
     { id: "hors-connexion", title: "Hors connexion", description: "Naviguer sans réseau avec une copie chiffrée, en lecture seule.", icon: "download" },
     { id: "en-savoir-plus", title: "En savoir plus", description: "Aide, informations et documents Mon E‑Carnet.", icon: "help" },
     { id: "avis", title: "Votre avis", description: "Partager une suggestion ou signaler un problème.", icon: "pencil" },
@@ -110,7 +109,7 @@ export function EstablishmentSettingsClient() {
         {establishments.length > 1 && <label className="field"><span>Établissement concerné</span><select value={selected?.id ?? ""} onChange={(event) => setSelectedId(event.target.value)}>{establishments.map((item) => <option key={item.id} value={item.id}>{item.name} · {statusLabel(item.status)}</option>)}</select></label>}
         <p className="notice" role="status" aria-live="polite">{loading ? "Chargement…" : message}</p>
       </ProfileSummary>
-      <SettingsDirectory items={navItems} activeId={activeSection} onSelect={setActiveSection} onLogout={() => void logout()} onLogoutAll={() => void allDevices.logoutAll()} logoutDisabled={signingOut || loading || allDevices.busy} />
+      <SettingsDirectory items={navItems} activeId={activeSection} onSelect={setActiveSection} onLogout={() => void logout()} logoutDisabled={signingOut || loading} />
 
       {activeSection === "administratif" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Identité de la structure</span>
         {selected && selected.status === "active" && <>
@@ -137,7 +136,7 @@ export function EstablishmentSettingsClient() {
         <dl className="settings-details"><div><dt>Responsable du compte</dt><dd>{accountName}</dd></div><div><dt>Email de connexion</dt><dd>{account?.email ?? (loading ? "Chargement…" : "Non disponible")}</dd></div><div><dt>Contexte établissement</dt><dd>{account?.contexts.find((context) => context.role === "establishment")?.is_active ? "Actif" : "Associé au compte"}</dd></div></dl><ThemeSettingsClient compact space="establishment" />
       </div></SettingsModal>}
 
-      {activeSection === "securite" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Accès au compte</span><p className="muted">Les actions établissement sont contrôlées côté API selon votre compte et votre rôle. Gérez ci-dessous vos méthodes de connexion.</p><LinkedProvidersSettingsClient nextPath="/etablissement/parametres" /><AccountActionRequestsSettingsClient isPrivileged={account?.is_privileged ?? true} /><ul className="info-list"><li>La session est gérée par le serveur et protégée contre les requêtes intersites.</li></ul>
+      {activeSection === "securite" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Accès au compte</span><p className="muted">Les actions établissement sont contrôlées côté API selon votre compte et votre rôle. Gérez ci-dessous vos méthodes de connexion.</p><LinkedProvidersSettingsClient nextPath="/etablissement/parametres" /><LogoutAllSetting disabled={signingOut || loading} /><AccountActionRequestsSettingsClient isPrivileged={account?.is_privileged ?? true} /><ul className="info-list"><li>La session est gérée par le serveur et protégée contre les requêtes intersites.</li></ul>
       </div></SettingsModal>}
 
       {activeSection === "hors-connexion" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><OfflineDataToggle audience="third-party" /></SettingsModal>}

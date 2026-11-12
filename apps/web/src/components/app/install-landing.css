@@ -1,0 +1,8 @@
+.install-landing { display: grid; gap: 14px; justify-items: start; max-width: 560px; margin-inline: auto; }
+.install-landing h1 { margin: 0; font-size: clamp(1.6rem, 6vw, 2.2rem); line-height: 1.15; }
+.install-landing .lead { margin: 0; }
+.install-landing__logo { border-radius: 20px; }
+.install-landing__cta { min-height: 52px; font-size: 1.05rem; }
+.install-landing__steps { display: grid; gap: 10px; margin: 0; padding-inline-start: 1.3rem; }
+.install-landing__steps li { padding-inline-start: 4px; }
+.install-landing__skip { margin: 4px 0 0; font-size: .9rem; }

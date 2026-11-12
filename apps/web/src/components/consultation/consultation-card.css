@@ -1,0 +1,90 @@
+/* Carte de consultation (patient, professionnel, établissement). Tout est en grille ou en flex qui passe à la ligne, avec min-width: 0 :
+   aucun texte, badge ni tuile de constante ne peut dépasser le bord droit de la carte, même sur un écran de 320 px. */
+.consult-list { display: grid; gap: 16px; min-width: 0; }
+.consult-card { display: grid; gap: 14px; min-width: 0; overflow-wrap: anywhere; }
+.consult-card > * { min-width: 0; }
+
+/* Bandeau : même fond miel / menthe que les autres cartes à bandeau de l'application. */
+.consult-card__band { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 12px 14px; padding: 14px 16px; border-radius: 18px; color: var(--text); background: var(--orb-honey); box-shadow: var(--orb-shine); }
+.consult-card__band--alt { background: var(--orb-mint); }
+.consult-card__date { display: grid; justify-items: center; align-content: center; gap: 0; min-width: 58px; padding: 8px 10px; border-radius: 16px; background: color-mix(in srgb, var(--surface) 82%, transparent); text-align: center; line-height: 1.1; }
+.consult-card__day { font-size: 1.5rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.consult-card__month { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); }
+.consult-card__heading { display: grid; gap: 4px; justify-items: start; min-width: 0; }
+.consult-card__heading h3 { margin: 0; font-size: 1.1rem; line-height: 1.25; overflow-wrap: anywhere; }
+.consult-card__who { display: flex; align-items: center; gap: 8px; margin: 0 0 2px; min-width: 0; }
+.consult-card__who strong { overflow-wrap: anywhere; }
+.consult-card__where { margin: 0; font-size: .9rem; color: color-mix(in srgb, var(--text) 82%, transparent); overflow-wrap: anywhere; }
+/* Le badge passe à la ligne au lieu de dépasser : c'est le défaut corrigé (« Consultation médicale validée » sortait de la carte). */
+.consult-card__badge { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; margin-top: 4px; padding: 5px 12px 5px 9px; border-radius: 999px; background: var(--status-verified-bg); color: var(--status-verified-fg); font-size: .78rem; font-weight: 700; line-height: 1.25; white-space: normal; overflow-wrap: anywhere; }
+.consult-card__badge svg { flex-shrink: 0; }
+
+.consult-card__facts { display: grid; gap: 6px; margin: 0; }
+.consult-card__facts > div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: var(--fs-small, .9rem); }
+.consult-card__facts dt { color: var(--text-muted); flex-shrink: 0; }
+.consult-card__facts dd { margin: 0; font-weight: 650; text-align: end; min-width: 0; overflow-wrap: anywhere; }
+.consult-card__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.consult-card__actions .button { min-height: 44px; max-width: 100%; white-space: normal; }
+
+/* Compte rendu */
+.consult-report { display: grid; gap: 16px; padding: 16px; border-radius: 18px; background: var(--bg); box-shadow: var(--press-sm); min-width: 0; }
+.consult-section { display: grid; gap: 8px; min-width: 0; }
+.consult-section h4 { margin: 0; font-size: .8rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--text-muted); }
+.consult-section__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.consult-text { margin: 0; white-space: pre-line; overflow-wrap: anywhere; line-height: 1.5; }
+.consult-text__label { font-weight: 700; }
+.consult-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.consult-chips li { padding: 4px 11px; border-radius: 999px; background: var(--surface-tint); border: 1px solid var(--border); font-size: .85rem; overflow-wrap: anywhere; }
+
+/* Constantes : tuiles qui se répartissent selon la place, jamais coupées (le libellé passe à la ligne). */
+.consult-vitals { display: grid; gap: 6px; min-width: 0; }
+.consult-vitals__source { margin: 0; font-size: .85rem; color: var(--text-muted); overflow-wrap: anywhere; }
+.consult-vitals__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 104px), 1fr)); gap: 8px; margin: 0; }
+.consult-vitals__grid > div { display: grid; gap: 2px; align-content: start; min-width: 0; padding: 8px 10px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+.consult-vitals__grid dt { font-size: .75rem; line-height: 1.2; color: var(--text-muted); overflow-wrap: anywhere; }
+.consult-vitals__grid dd { margin: 0; font-weight: 800; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+
+/* Ordonnance et examens */
+.consult-rx { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; counter-reset: rx; }
+.consult-rx li { position: relative; display: grid; gap: 2px; padding: 10px 12px 10px 44px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); counter-increment: rx; min-width: 0; overflow-wrap: anywhere; }
+.consult-rx li::before { content: counter(rx); position: absolute; inset-inline-start: 12px; top: 10px; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--primary-tint); color: var(--primary-text); font-size: .75rem; font-weight: 800; }
+.consult-rx em { color: var(--text-muted); font-size: .85rem; }
+.consult-exams { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.consult-exams li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+.consult-exams__label { display: grid; gap: 1px; min-width: 0; flex: 1 1 160px; overflow-wrap: anywhere; }
+.consult-exams__label small { color: var(--text-muted); }
+
+/* Validation, signature et cachet */
+.consult-signed { display: grid; gap: 10px; padding-top: 12px; border-top: 1px dashed var(--border); font-size: .88rem; color: var(--text-muted); }
+.consult-signed p { margin: 0; }
+.consult-signed strong { color: var(--text); }
+.consult-seal-images { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.consult-seal-images figure { display: grid; gap: 4px; margin: 0; min-width: 0; }
+.consult-seal-images figcaption { font-size: .75rem; color: var(--text-muted); }
+/* Fond papier : une signature noire ou bleue transparente reste lisible en thème sombre. */
+.consult-seal-images .consult-seal-images__paper { display: grid; place-items: center; width: min(100%, 180px); height: 84px; padding: 6px; border: 1px solid var(--border); border-radius: 12px; background: #fff; overflow: hidden; }
+.consult-seal-images__paper--stamp { width: 120px; height: 120px; }
+.consult-seal-images img { display: block; max-width: 100%; width: auto; height: auto; object-fit: contain; }
+/* Hauteurs en pixels (cadre moins marge et bordure) : un pourcentage ne s'applique pas dans une grille à hauteur automatique, et le cachet carré serait rogné. */
+.consult-seal-images__paper--signature img { max-height: 70px; }
+.consult-seal-images__paper--stamp img { max-height: 106px; }
+
+@media (max-width: 420px) {
+  .consult-card__band { grid-template-columns: minmax(0, 1fr); }
+  .consult-card__date { justify-self: start; grid-auto-flow: column; align-items: baseline; gap: 6px; padding: 6px 12px; }
+  .consult-card__actions .button { flex: 1 1 100%; justify-content: center; }
+}
+
+/* Cartes « rendez-vous » et « pré-consultation » de l'historique (même bandeau que l'ancienne carte) : un motif ou un badge long passe à la ligne
+   au lieu de pousser la carte hors de l'écran. */
+body .visit-card { min-width: 0; overflow-wrap: anywhere; }
+body .visit-card > .section-heading:first-child { flex-wrap: wrap; align-items: flex-start; min-width: 0; }
+body .visit-card > .section-heading:first-child > div { min-width: 0; flex: 1 1 180px; }
+body .visit-card > .section-heading:first-child > .badge { flex: 0 1 auto; max-width: 100%; white-space: normal; }
+
+/* Panneau du sceau dans la carte : les libellés ne se coupent jamais au milieu d'un mot, les valeurs longues passent à la ligne. */
+.consult-card .seal__panel { min-width: 0; }
+.consult-card .seal__panel dt { flex: none; overflow-wrap: normal; word-break: normal; }
+.consult-card .seal__panel dd { min-width: 0; overflow-wrap: anywhere; }
+.consult-card .seal__panel > .consult-seal-images { grid-column: 1 / -1; }
+@media (max-width: 420px) { .consult-card .seal__panel { grid-template-columns: minmax(0, 1fr); } }

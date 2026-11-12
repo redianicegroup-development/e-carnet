@@ -48,7 +48,7 @@ export function ProfessionalStep3() {
       await savePatientIdentity(form); // espace patient (contexte patient actif depuis l'étape 2)
       await apiPost("/api/v1/identity/contexts/select/", { role: "professional" }); // le carnet patient est prêt : on active l'espace professionnel
       await apiPatch("/api/v1/professionals/onboarding/", { specialty: choice.value }); // espace professionnel
-      if (draft.changed) await draft.upload(); // numéro d'ordre, cachet, signature (facultatifs)
+      if (draft.changed) await draft.upload(); // numéro d'ordre, cachet, signature (à ajouter avant la première validation)
       router.push("/onboarding/securite");
     } catch (error) {
       setMessage(onboardingErrorMessage(error));
@@ -70,7 +70,7 @@ export function ProfessionalStep3() {
 
     <fieldset className="onboarding-part">
       <legend>Dans votre espace professionnel</legend>
-      <p className="muted">Le numéro d’ordre, le cachet et la signature sont facultatifs : vous pourrez les ajouter plus tard dans vos paramètres.</p>
+      <p className="muted">Le numéro d’ordre est facultatif. Pour valider une consultation, il faudra une signature ou un cachet : vous pouvez les ajouter maintenant, plus tard dans vos paramètres, ou au moment de valider votre première consultation.</p>
       <SpecialtyFields choice={choice} disabled={submitting} />
       <CredentialFields draft={draft} profile={credentials} />
     </fieldset>

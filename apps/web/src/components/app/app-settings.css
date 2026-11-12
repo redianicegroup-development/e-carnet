@@ -1,0 +1,12 @@
+/* Paramètres › À propos de l'application (langue, partage, version). Propriétés logiques : la mise en page suit le sens de lecture (arabe). */
+.settings-app { display: grid; gap: 6px; margin-block-start: 10px; padding-block-start: 12px; border-block-start: 1px solid var(--border); }
+.settings-app__title { margin: 0; padding-inline: 10px; font-size: .8125rem; font-weight: 700; letter-spacing: .02em; color: var(--text-muted); }
+.settings-app .setting-list { gap: 2px; }
+.settings-directory .settings-app .setting-item { padding: 12px 10px; border-color: transparent; border-radius: 12px; background: transparent; }
+.settings-directory .settings-app .setting-item:hover { background: var(--surface-tint); }
+.settings-app__aside { flex-shrink: 0; max-width: 40%; color: var(--text-muted); font-size: .85rem; text-align: end; overflow-wrap: anywhere; }
+.settings-app__aside--alert { color: var(--primary-text); font-weight: 700; }
+.share-app__title { margin: 6px 0 0; font-size: .95rem; }
+.share-app__targets { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.share-app__targets .button { min-height: 44px; }
+.share-app .field input { width: 100%; }

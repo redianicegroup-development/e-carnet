@@ -1,4 +1,7 @@
+import uuid
+
 from django.db import transaction
+from django.db.models import Q
 from django.http import HttpResponse
 from rest_framework import status
 from rest_framework.parsers import FormParser, MultiPartParser
@@ -10,6 +13,26 @@ from apps.cloudinary_storage import CLOUDINARY_CONFIGURED, destroy as cloudinary
 from apps.identity.models import AccountContext
 from .models import ProfessionalProfile, ProfessionalSpecialty
 from .serializers import ProfessionalCredentialsSerializer, ProfessionalOnboardingSerializer, ProfessionalProfileSerializer
+
+
+def asset_frozen_on_consultation(public_id):
+    """Vrai si une consultation signée garde cette signature ou ce cachet : le fichier ne doit alors jamais être détruit."""
+    if not public_id:
+        return False
+    from apps.care.models import Consultation
+    return Consultation.objects.filter(Q(signature_asset_id=public_id) | Q(stamp_asset_id=public_id)).exists()
+
+
+def destroy_unreferenced_assets(assets):
+    """Détruit chez Cloudinary les fichiers remplacés ou retirés, sauf ceux figés sur une consultation. Un échec reste silencieux."""
+    for public_id, resource_type in assets:
+        if asset_frozen_on_consultation(public_id):
+            continue
+        try:
+            cloudinary_destroy(public_id, resource_type=resource_type)
+        except Exception:
+            # Ne jamais exposer un identifiant Cloudinary ni faire échouer la mise à jour déjà enregistrée.
+            pass
 
 
 class ProfessionalMeView(APIView):
@@ -60,7 +83,8 @@ class ProfessionalCredentialsView(APIView):
             uploaded = values.get(key)
             if uploaded is None:
                 continue
-            result = cloudinary_upload(uploaded, folder="professional-credentials", public_id=f"{profile.id}/{key}", resource_type="image", delivery_type="private")
+            # Identifiant propre à chaque dépôt : remplacer la signature ne touche jamais celle d'une consultation déjà signée.
+            result = cloudinary_upload(uploaded, folder="professional-credentials", public_id=f"{profile.id}/{key}-{uuid.uuid4().hex[:12]}", resource_type="image", delivery_type="private")
             old_public_id = getattr(profile, public_field)
             if old_public_id and old_public_id != result.get("public_id"):
                 old_assets.append((old_public_id, getattr(profile, resource_field) or "image"))
@@ -68,12 +92,7 @@ class ProfessionalCredentialsView(APIView):
             setattr(profile, resource_field, "image")
             setattr(profile, version_field, result.get("version"))
         profile.save(update_fields=("professional_identifier", "stamp_cloudinary_public_id", "stamp_cloudinary_resource_type", "stamp_cloudinary_version", "signature_cloudinary_public_id", "signature_cloudinary_resource_type", "signature_cloudinary_version", "updated_at"))
-        for public_id, resource_type in old_assets:
-            try:
-                cloudinary_destroy(public_id, resource_type=resource_type)
-            except Exception:
-                # Ne jamais exposer un identifiant Cloudinary ni faire échouer la mise à jour déjà enregistrée.
-                pass
+        destroy_unreferenced_assets(old_assets)
         return Response({"success": True, "data": {
             "professional_identifier": profile.professional_identifier,
             "stamp_uploaded": bool(profile.stamp_cloudinary_public_id),
@@ -130,11 +149,8 @@ class ProfessionalCredentialAssetView(APIView):
             setattr(profile, fields[2], None)
             profile.save(update_fields=(*fields, "updated_at"))
             if CLOUDINARY_CONFIGURED:
-                try:
-                    cloudinary_destroy(public_id, resource_type=resource_type or "image")
-                except Exception:
-                    # Le retrait est déjà enregistré : un échec de nettoyage ne doit ni se voir ni être exposé.
-                    pass
+                # Le retrait est déjà enregistré : un échec de nettoyage ne doit ni se voir ni être exposé.
+                destroy_unreferenced_assets([(public_id, resource_type or "image")])
         return Response({"success": True, "data": {
             "professional_identifier": profile.professional_identifier,
             "stamp_uploaded": bool(profile.stamp_cloudinary_public_id),

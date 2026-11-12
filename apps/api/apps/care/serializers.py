@@ -163,14 +163,23 @@ class ConsultationSerializer(serializers.ModelSerializer):
     establishment_id = serializers.UUIDField(read_only=True, allow_null=True)
     access_grant_id = serializers.UUIDField(read_only=True, allow_null=True)
     source_encounter_id = serializers.UUIDField(read_only=True, allow_null=True)
+    # Seul un booléen est exposé : l'image se lit par /consultations/<id>/seal/<signature|stamp>/, jamais par son identifiant de stockage.
+    has_signature = serializers.SerializerMethodField()
+    has_stamp = serializers.SerializerMethodField()
 
     class Meta:
         model = Consultation
-        fields = ("id", "professional_id", "establishment_id", "access_grant_id", "source_encounter_id", "professional_name", "facility_label", "reason", "symptoms", "clinical_exam", "diagnosis", "observations", "vitals", "prescription_lines", "exam_requests", "conclusion", "care_plan", "validated_at", "attestation_signed_at", "attestation_svg_hash", "provenance")
+        fields = ("id", "professional_id", "establishment_id", "access_grant_id", "source_encounter_id", "professional_name", "facility_label", "reason", "symptoms", "clinical_exam", "diagnosis", "observations", "vitals", "prescription_lines", "exam_requests", "conclusion", "care_plan", "validated_at", "attestation_signed_at", "attestation_svg_hash", "has_signature", "has_stamp", "provenance")
         read_only_fields = fields
 
     def get_provenance(self, _obj):
         return {"code": "verified", "label": "Consultation médicale validée"}
+
+    def get_has_signature(self, obj):
+        return bool(obj.signature_asset_id)
+
+    def get_has_stamp(self, obj):
+        return bool(obj.stamp_asset_id)
 
     def get_vitals(self, obj):
         return present_consultation_vitals(obj.vitals)

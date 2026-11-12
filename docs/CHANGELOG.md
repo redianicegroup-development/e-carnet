@@ -1,5 +1,16 @@
 > **Référence d’état auditée le 06/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-06.md`](ETAT-REEL-PROJET-2026-11-06.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
 
+## Version 1.6 — 11/11/2026 (base V1_9)
+
+- **Paramètres** (patient, professionnel, établissement) : groupe « Application » avec **Langue** (français par défaut, anglais et arabe par Google Translate, arabe de droite à gauche, confirmation avant tout envoi à Google), **Partager l’application** (menu de partage, WhatsApp, Facebook, Telegram, X, e-mail, SMS, copie du lien) et **Version de l’application** (« À jour » ou « Mise à jour disponible », bouton de mise à jour). Le lien partagé ouvre `/installer`, qui propose l’installation de la PWA (Android, iPhone, navigateurs intégrés aux réseaux sociaux).
+- **Sécurité et connexion** : « Se déconnecter de tous les appareils » y est déplacé, avec confirmation.
+- **Historique des consultations** : une carte commune aux trois espaces ; « Consultation médicale validée » ne déborde plus ; compte rendu structuré (constantes, symptômes, examen, diagnostic, conclusion, conduite à tenir, ordonnance, examens) ; signature et cachet visibles.
+- **Signature ou cachet obligatoire** pour valider une consultation (refus côté serveur, barrière côté écran avec dessin ou photo sur place). Signature et cachet sont **figés sur chaque consultation** validée (migration care `0029`) et conservés même si le médecin les remplace.
+- **Fermeture automatique de l’accès** à la signature : comportement déjà en place, inchangé et couvert par des tests.
+- **Confidentialité** : Google Translate, langue conservée sur l’appareil et cookie `googtrans` déclarés dans la politique ; texte à faire relire avant mise en ligne.
+- Au déploiement : migrer la base, configurer Cloudinary, définir `ECARNET_BUILD_ID` (ou utiliser Vercel) pour la détection de mise à jour.
+- Détail : `MODIFICATIONS-2026-11-11-parametres-consultations.md`. Version `1.6.0` (racine et `@ecarnet/web`).
+
 ## 2026-11-06 — Session PWA et cohérence des informations
 
 - **Session persistante** : durée glissante par défaut portée à 30 jours sans activité dans Django, le modèle Render et l’exemple de production ; fermer la PWA sans choisir « Déconnexion » ne termine pas la session. Les valeurs réellement appliquées sur un environnement hébergé restent à vérifier.

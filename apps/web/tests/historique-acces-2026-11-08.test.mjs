@@ -120,6 +120,7 @@ test("côté professionnel : l'accès s'ouvre au scan, se termine à la demande,
   assert.match(access, /tone: "danger"/);
   assert.match(read("src/application/professional-access-grants.ts"), /access-grants\/\$\{grantId\}\/end\//);
   const consultations = read("src/components/ProfessionalConsultations.tsx");
-  assert.match(consultations, /<PersonAvatar src=\{item\.patient_avatar\} name=\{item\.patient_name/);
+  assert.match(consultations, /<ConsultationCard [^>]*showPatient/);
+  assert.match(read("src/components/consultation/ConsultationCard.tsx"), /<PersonAvatar src=\{item\.patient_avatar\} name=\{patientName\}/);
   assert.match(consultations, /item\.patient_name \?\? ""/);
 });

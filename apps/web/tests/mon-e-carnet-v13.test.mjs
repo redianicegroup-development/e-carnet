@@ -88,7 +88,7 @@ test("la pré-consultation n'a plus de choix manuel d'établissement ni de clôt
   const pro = read("src/components/ProfessionalConsultations.tsx");
   assert.match(pro, /useConfirm\(\)/);
   assert.match(pro, /Terminer et signer/);
-  assert.match(pro, /disabled=\{submitting \|\| !encounterId\}/);
+  assert.match(pro, /disabled=\{submitting \|\| !encounterId \|\| !sealReady\}/);
   assert.match(read("src/application/professional-access-grants.ts"), /status: "draft" \| "closed"/);
 });
 

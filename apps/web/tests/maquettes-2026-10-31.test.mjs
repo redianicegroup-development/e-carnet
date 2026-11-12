@@ -44,8 +44,9 @@ test("Consultations ne garde que le parcours ; tout l'historique est dans Histor
   assert.match(read("src/components/PatientHistory.tsx"), /<PatientConsultations \/>/);
   const list = read("src/components/PatientConsultations.tsx");
   for (const label of ["Toutes", "À venir", "Passées", "Pré-consult."]) assert.ok(list.includes(label), label);
-  assert.match(list, /<ConsultationSealPanel item=\{item\} \/>/);
-  assert.match(read("src/components/ConsultationSealPanel.tsx"), /Ouvrir le sceau/);
+  assert.match(list, /<ConsultationCard /);
+  assert.match(read("src/components/consultation/ConsultationCard.tsx"), /Ouvrir le sceau/);
+  assert.match(read("src/components/ConsultationSealPanel.tsx"), /Sceau de validation/);
 });
 
 test("connexion sociale : les boutons se partagent la largeur (Google seul = toute la ligne, trois = une ligne)", () => {

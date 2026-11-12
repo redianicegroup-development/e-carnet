@@ -4,9 +4,12 @@ from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
+from django.utils import timezone
 from PIL import Image
 from rest_framework.test import APIClient
 
+from apps.care.models import Consultation
+from apps.patients.models import PatientProfile
 from .models import ProfessionalProfile
 
 User = get_user_model()
@@ -123,3 +126,65 @@ class ProfessionalCredentialAssetTests(TestCase):
         response = self.client.delete("/api/v1/professionals/credentials/signature/")
         self.assertEqual(response.status_code, 200)
         self.assertFalse(response.data["data"]["signature_uploaded"])
+
+
+class ProfessionalCredentialsFrozenOnConsultationsTests(TestCase):
+    """Chaque dépôt a son propre identifiant ; un fichier gardé par une consultation signée n'est jamais détruit."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username="frozen-professional", password="local-test-password")
+        self.profile = ProfessionalProfile.objects.create(user=self.user, professional_title="Médecin", signature_cloudinary_public_id="private/signature-old", stamp_cloudinary_public_id="private/stamp-old")
+        self.client = APIClient()
+        self.client.force_authenticate(self.user)
+        self.patient = PatientProfile.objects.create(user=User.objects.create_user(username="frozen-patient", password="local-test-password"))
+
+    def freeze(self, **ids):
+        return Consultation.objects.create(patient=self.patient, professional=self.profile, professional_name="Médecin", facility_label="Clinique", reason="Fièvre", validated_at=timezone.now(), **ids)
+
+    @patch("apps.professionals.views.CLOUDINARY_CONFIGURED", True)
+    @patch("apps.professionals.views.cloudinary_destroy")
+    @patch("apps.professionals.views.cloudinary_upload")
+    def test_every_upload_gets_its_own_public_id(self, upload, _destroy):
+        upload.side_effect = lambda *args, **kwargs: {"public_id": kwargs["public_id"], "version": 1}
+        self.client.patch("/api/v1/professionals/credentials/", {"signature": png_file()}, format="multipart")
+        self.client.patch("/api/v1/professionals/credentials/", {"signature": png_file()}, format="multipart")
+        first, second = (call.kwargs["public_id"] for call in upload.call_args_list)
+        self.assertNotEqual(first, second)
+        for public_id in (first, second):
+            self.assertTrue(public_id.startswith(f"{self.profile.id}/signature-"))
+
+    @patch("apps.professionals.views.CLOUDINARY_CONFIGURED", True)
+    @patch("apps.professionals.views.cloudinary_destroy")
+    @patch("apps.professionals.views.cloudinary_upload", return_value={"public_id": "private/signature-new", "version": 2})
+    def test_replacing_a_signature_kept_by_a_consultation_does_not_destroy_it(self, _upload, destroy):
+        self.freeze(signature_asset_id="private/signature-old")
+        response = self.client.patch("/api/v1/professionals/credentials/", {"signature": png_file()}, format="multipart")
+        self.assertEqual(response.status_code, 200)
+        self.profile.refresh_from_db()
+        self.assertEqual(self.profile.signature_cloudinary_public_id, "private/signature-new")
+        destroy.assert_not_called()
+
+    @patch("apps.professionals.views.CLOUDINARY_CONFIGURED", True)
+    @patch("apps.professionals.views.cloudinary_destroy")
+    @patch("apps.professionals.views.cloudinary_upload", return_value={"public_id": "private/signature-new", "version": 2})
+    def test_replacing_a_signature_no_consultation_keeps_destroys_the_old_one(self, _upload, destroy):
+        self.freeze(stamp_asset_id="private/stamp-old")  # une autre consultation, qui ne garde pas cette signature
+        self.client.patch("/api/v1/professionals/credentials/", {"signature": png_file()}, format="multipart")
+        destroy.assert_called_once_with("private/signature-old", resource_type="image")
+
+    @patch("apps.professionals.views.CLOUDINARY_CONFIGURED", True)
+    @patch("apps.professionals.views.cloudinary_destroy")
+    def test_removing_a_stamp_kept_by_a_consultation_clears_the_profile_but_keeps_the_file(self, destroy):
+        self.freeze(stamp_asset_id="private/stamp-old")
+        response = self.client.delete("/api/v1/professionals/credentials/stamp/")
+        self.assertEqual(response.status_code, 200)
+        self.profile.refresh_from_db()
+        self.assertEqual(self.profile.stamp_cloudinary_public_id, "")
+        destroy.assert_not_called()
+
+    @patch("apps.professionals.views.CLOUDINARY_CONFIGURED", True)
+    @patch("apps.professionals.views.cloudinary_destroy")
+    def test_removing_a_signature_no_consultation_keeps_destroys_it(self, destroy):
+        response = self.client.delete("/api/v1/professionals/credentials/signature/")
+        self.assertEqual(response.status_code, 200)
+        destroy.assert_called_once_with("private/signature-old", resource_type="image")

@@ -54,3 +54,9 @@
   .seal-field__actions .button { flex: 1 1 100%; }
   .ink-capture { padding: 12px; }
 }
+
+/* Barrière « signature ou cachet requis » de la validation d'une consultation. */
+.seal-recap--required { display: grid; gap: 10px; padding: 14px 16px; border: 1.5px dashed var(--border-strong); border-radius: 16px; background: var(--surface-tint); min-width: 0; }
+.seal-recap--required p { margin: 0; overflow-wrap: anywhere; }
+.seal-recap { min-width: 0; }
+.seal-recap > .ink-capture, .seal-recap > .seal-field__actions, .seal-recap > .status { flex: 1 1 100%; }

@@ -51,7 +51,7 @@ def anonymize_and_disable_account(user):
         raise PermissionDenied("Un compte administrateur ou superadministrateur ne peut pas être supprimé.")
 
     from apps.patients.models import ClinicalDeclaration, PatientProfile
-    from apps.care.models import AccessGrant, Appointment, CareEncounter, FollowUpPlan, HealthMeasurement, MedicalDocument, MedicationReminder, PatientNotification, PreConsultationRevision, Vaccination
+    from apps.care.models import AccessGrant, Appointment, CareEncounter, Consultation, FollowUpPlan, HealthMeasurement, MedicalDocument, MedicationReminder, PatientNotification, PreConsultationRevision, Vaccination
     from apps.professionals.models import ProfessionalProfile
     from apps.establishments.models import EstablishmentAdministrator, EstablishmentMembership
 
@@ -105,6 +105,8 @@ def anonymize_and_disable_account(user):
                     cloudinary_destroy(public_id, resource_type=resource_type or "image")
                 except Exception as exc:
                     raise RuntimeError("La suppression Cloudinary du cachet ou de la signature du compte a échoué ; le compte est conservé.") from exc
+        # Fichiers détruits ci-dessus : les consultations ne doivent plus annoncer une signature ou un cachet qui n'existe plus.
+        Consultation.objects.filter(professional=professional).update(signature_asset_id="", stamp_asset_id="")
         ProfessionalProfile.objects.filter(pk=professional.pk).update(
             professional_title="Compte anonymisé", specialty="", professional_identifier="",
             stamp_cloudinary_public_id="", stamp_cloudinary_resource_type="image", stamp_cloudinary_version=None,

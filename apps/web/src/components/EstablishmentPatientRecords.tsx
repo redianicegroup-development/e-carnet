@@ -1,6 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
 import { apiGet, apiPost } from "../infrastructure/api/client";
+import type { ConsultationRecord } from "../lib/care-records";
+import { ConsultationCard } from "./consultation/ConsultationCard";
+import "./consultation/consultation-card.css";
 import { PageHeader } from "./ui/PageHeader";
 type Establishment = { id: string; name: string; status: string };
 type Patient = { id: string; first_name: string; last_name: string; age?: number | null; last_service_at?: string | null };
@@ -16,9 +19,19 @@ async function fetchRecords(): Promise<Data> {
 }
 function formatDate(value?: string | null) { return value ? new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value)) : "Date non renseignée"; }
 function reasonLabel(value: string) { return REASONS.find(([key]) => key === value)?.[1] ?? "Motif enregistré"; }
+/** Une ligne « consultation » complète (le serveur renvoie le même contenu qu'au patient) ; sinon l'affichage générique reste en place. */
+function isConsultationRow(row: Record<string, unknown>): boolean {
+  const provenance = row.provenance as { label?: unknown } | null | undefined;
+  return typeof row.id === "string" && typeof row.reason === "string" && typeof row.validated_at === "string" && Array.isArray(row.prescription_lines) && Array.isArray(row.exam_requests) && typeof provenance?.label === "string";
+}
 function ClinicalSection({ name, rows }: { name: string; rows: Record<string, unknown>[] }) {
   if (!rows.length) return null;
   const labels: Record<string, string> = { preconsultations: "Pré-consultations", consultations: "Consultations", measurements: "Mesures", documents: "Documents", vaccinations: "Vaccinations" };
+  // Consultations validées : même carte que chez le patient et le médecin (compte rendu, ordonnance, examens, validation). Les images de signature
+  // et de cachet ne sont servies qu'au patient et au médecin signataire : l'établissement voit seulement qu'elles ont été apposées.
+  if (name === "consultations" && rows.every(isConsultationRow)) {
+    return <section className="record"><h2>{labels[name]}</h2><div className="consult-list">{(rows as unknown as ConsultationRecord[]).map((row, index) => <ConsultationCard key={row.id} item={row} index={index} sealImages={false} />)}</div></section>;
+  }
   return <section className="record"><h2>{labels[name] ?? name}</h2>{rows.map((row, index) => <article key={String(row.id ?? index)} className="establishment-record-card">{Object.entries(row).filter(([key, value]) => !["id", "patient", "download_url", "created_at", "updated_at"].includes(key) && value !== null && value !== "" && typeof value !== "object").map(([key, value]) => <p key={key}><strong>{key.replaceAll("_", " ")} :</strong> {String(value)}</p>)}</article>)}</section>;
 }
 export function EstablishmentPatientRecords() {

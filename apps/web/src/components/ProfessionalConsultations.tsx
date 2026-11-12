@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { ApiError } from "../infrastructure/api/client";
 import { useConfirm } from "./modal/ConfirmProvider";
 import { ConsultationSeal } from "./ConsultationSeal";
+import { ConsultationCard } from "./consultation/ConsultationCard";
 import { ProfessionalMeasurementEntry } from "./ProfessionalMeasurementEntry";
 import { ProfessionalTemplateApprovals } from "./ProfessionalTemplateApprovals";
 import { CollapsibleSection } from "./ui/CollapsibleSection";
@@ -18,6 +19,7 @@ import { CARE_PLAN_ITEMS, CLINICAL_FINDINGS, CONCLUSION_ITEMS, DIAGNOSES, buildP
 import { buildObservations, OBSERVATIONS_MAX, OTHER_MAX, parseObservations, SYMPTOMS, type SymptomsForm } from "../lib/preconsult";
 import { emptyVitalsForm, parseVitalsForm, vitalsToForm, type VitalsForm } from "../lib/vitals";
 import "./consultation-flow.css";
+import "./consultation/consultation-card.css";
 
 /* Consultation du médecin. Même expérience que la pré-consultation du patient : on SÉLECTIONNE (puces, listes), on n'écrit que l'« Autre ».
    Le patient est choisi parmi ses autorisations actives DANS L'ÉTABLISSEMENT ACTIF, qui se règle depuis « Mon rattachement ». */
@@ -63,6 +65,8 @@ export function ProfessionalConsultations() {
   const [loading, setLoading] = useState(true);
   const [loadingEncounters, setLoadingEncounters] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  // Signature ou cachet enregistrés : sans eux, le serveur refuse la validation. La barrière s'affiche sous le formulaire.
+  const [sealReady, setSealReady] = useState(false);
   const [message, setMessage] = useState("Chargement des autorisations actives…");
   const [search, setSearch] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
@@ -142,6 +146,7 @@ export function ProfessionalConsultations() {
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     if (!grantId || !encounterId) return;
+    if (!sealReady) { setMessage("Ajoutez votre signature ou votre cachet avant de signer la consultation."); return; }
     const diagnosisText = buildPicked(diagnosis.selected, DIAGNOSES, diagnosis.other);
     const conclusionText = buildPicked(conclusion.selected, CONCLUSION_ITEMS, conclusion.other);
     if (!conclusionText && !diagnosisText) { setMessage("Choisissez au moins le diagnostic ou la conclusion avant de signer."); return; }
@@ -222,5 +227,5 @@ export function ProfessionalConsultations() {
     <FormSection num={7} title="Conclusion"><ChipPicker label="Conclusion" options={CONCLUSION_ITEMS} selected={conclusion.selected} other={conclusion.other} onSelected={(selected) => setConclusion({ ...conclusion, selected })} onOther={(other) => setConclusion({ ...conclusion, other })} otherLabel="Autre conclusion (facultatif)" /></FormSection>
     <FormSection num={8} title="Ordonnance" hint="Choisissez dans les listes ; « Autre » pour ce qui n’y figure pas."><PrescriptionPicker lines={lines} onChange={setLines} /></FormSection>
     <FormSection num={9} title="Examens demandés" hint="Choisissez l’examen, ou joignez la photo de la demande si vous préférez ne pas le saisir."><ExamPicker exams={exams} onChange={setExams} /></FormSection>
-    <p className="muted">Une attestation SVG est enregistrée avec la validation. Elle ne constitue pas une signature électronique qualifiée.</p><ConsultationSeal /><button className="button primary" type="submit" disabled={submitting || !encounterId}>{submitting ? "Signature…" : "Terminer et signer"}</button></>}</>}</form>{selectedGrant && <ProfessionalMeasurementEntry grant={selectedGrant} />}<div className="section-grid"><CollapsibleSection title="Mes consultations" icon="stethoscope" hint="Historique signé"><div className="professional-history"><div className="professional-history__heading"><label className="professional-quick-search"><span className="sr-only">Rechercher patient, établissement ou motif</span><input ref={searchRef} type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Patient, établissement, motif…" /><kbd aria-hidden="true">/</kbd></label></div>{loading ? <p className="empty">Chargement…</p> : filteredConsultations.length === 0 ? <p className="empty">{consultations.length ? "Aucun résultat pour cette recherche." : "Aucune consultation validée."}</p> : <div className="professional-compact-list" aria-live="polite">{filteredConsultations.map((item) => <article className="professional-compact-record professional-compact-record--person" key={item.id}><span className="professional-compact-record__who"><PersonAvatar src={item.patient_avatar} name={item.patient_name || "Patient"} size={44} /><span><strong>{item.patient_name || "Patient"}</strong><span className="professional-compact-record__reason">{item.reason}</span><small className="muted">{item.facility_label} · {item.provenance.label}</small></span></span><span className="badge verified">Validée</span></article>)}</div>}</div></CollapsibleSection></div></section></div>;
+    <p className="muted">Cette validation ne constitue pas une signature électronique qualifiée.</p><ConsultationSeal onReadyChange={setSealReady} /><button className="button primary" type="submit" disabled={submitting || !encounterId || !sealReady} aria-disabled={submitting || !encounterId || !sealReady}>{submitting ? "Signature…" : "Terminer et signer"}</button>{!sealReady && encounterId && <p className="muted" role="status">« Terminer et signer » s’active dès que votre signature ou votre cachet est enregistré.</p>}</>}</>}</form>{selectedGrant && <ProfessionalMeasurementEntry grant={selectedGrant} />}<div className="section-grid"><CollapsibleSection title="Mes consultations" icon="stethoscope" hint="Historique signé"><div className="professional-history"><div className="professional-history__heading"><label className="professional-quick-search"><span className="sr-only">Rechercher patient, établissement ou motif</span><input ref={searchRef} type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Patient, établissement, motif…" /><kbd aria-hidden="true">/</kbd></label></div>{loading ? <p className="empty">Chargement…</p> : filteredConsultations.length === 0 ? <p className="empty">{consultations.length ? "Aucun résultat pour cette recherche." : "Aucune consultation validée."}</p> : <div className="consult-list" aria-live="polite">{filteredConsultations.map((item, index) => <ConsultationCard key={item.id} item={item} index={index} showPatient />)}</div>}</div></CollapsibleSection></div></section></div>;
 }

@@ -26,7 +26,7 @@ test("SEC-01 : la CSP démarre en Report-Only, sans rien bloquer, et peut bascul
   assert.match(config, /ECARNET_CSP_REPORT_URI/);
   assert.match(config, /"frame-ancestors 'none'"/);
   assert.match(config, /"object-src 'none'"/);
-  assert.match(config, /"connect-src 'self'"/);
+  assert.match(config, /"connect-src 'self'[^"]*"/);
 });
 
 test("SEC-01 / SEC-07 : HSTS d'un an côté web, seulement en production", () => {

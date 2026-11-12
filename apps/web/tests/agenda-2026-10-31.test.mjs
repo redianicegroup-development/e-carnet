@@ -57,8 +57,9 @@ test("la fusion du 31/10 garde les écrans des maquettes : Aujourd'hui, agenda e
   assert.match(src("components/ProfessionalHome.tsx"), /<ProfessionalToday \/>/);
   assert.match(src("app/patient/agenda/page.tsx"), /PatientAgenda/);
   assert.match(src("app/professionnel/agenda/page.tsx"), /<ClinicalGate>/);
-  assert.match(src("components/PatientConsultations.tsx"), /<ConsultationSealPanel item=\{item\} \/>/);
-  assert.match(src("components/ConsultationSealPanel.tsx"), /aria-expanded=\{open\}/);
+  assert.match(src("components/PatientConsultations.tsx"), /<ConsultationCard /);
+  assert.match(src("components/consultation/ConsultationCard.tsx"), /<ConsultationSealPanel id=\{sealId\} item=\{item\}/);
+  assert.match(src("components/consultation/ConsultationCard.tsx"), /aria-expanded=\{sealOpen\}/);
 });
 
 test("C4 : le professionnel peut proposer un déplacement confirmé et le patient peut accepter ou refuser", () => {

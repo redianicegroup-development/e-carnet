@@ -85,7 +85,7 @@ test("la capture accepte la caméra, le dessin et la sélection de la couleur", 
 });
 
 test("le cachet et la signature sont apposés à la fin des consultations qui ont une ordonnance", () => {
-  assert.match(read("src/components/ProfessionalConsultations.tsx"), /<ConsultationSeal \/>/);
+  assert.match(read("src/components/ProfessionalConsultations.tsx"), /<ConsultationSeal onReadyChange=\{setSealReady\} \/>/);
   const seal = read("src/components/ConsultationSeal.tsx");
   assert.match(seal, /useSealImage/);
   assert.match(read("src/components/useSealImage.ts"), /\/api\/v1\/professionals\/credentials\//);

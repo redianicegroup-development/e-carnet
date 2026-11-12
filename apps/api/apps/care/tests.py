@@ -425,7 +425,7 @@ class PatientAccessTests(TestCase):
 
     def test_doctor_signature_closes_the_draft_and_binds_it_to_the_doctors_establishment(self):
         doctor = User.objects.create_user(username="doctor-consult", password="local-test-password", first_name="Docteur", last_name="Validant")
-        profile = ProfessionalProfile.objects.create(user=doctor, professional_title="Médecin", verification_status="verified")
+        profile = ProfessionalProfile.objects.create(user=doctor, professional_title="Médecin", verification_status="verified", signature_cloudinary_public_id="test/professional-credentials/consult/signature")
         AccountContext.objects.create(user=doctor, role="professional", is_active=True)
         establishment = Establishment.objects.create(created_by=self.user, name="Clinique Consultation", establishment_type="Clinique", city="Abidjan", address="C", phone="0", email="consult@example.test", responsible_name="Root", status="active", internal_code="CONSULT-1")
         EstablishmentMembership.objects.create(establishment=establishment, professional=profile, status="active")
@@ -511,6 +511,7 @@ class PatientAccessTests(TestCase):
             user=doctor,
             professional_title="Médecin",
             verification_status="verified",
+            signature_cloudinary_public_id="test/professional-credentials/parcours/signature",
         )
         AccountContext.objects.create(user=doctor, role="professional", is_active=True)
         establishment = Establishment.objects.create(
@@ -789,10 +790,12 @@ class QrOnlyAndSingleUseTests(TestCase):
         self.assertFalse(PatientAccessQrToken.objects.filter(pk=old.pk).exists())
 
 
-def make_clinic_doctor(creator, suffix):
-    """Médecin vérifié, rattaché et actif dans un établissement actif : le minimum pour lire des données cliniques."""
+def make_clinic_doctor(creator, suffix, *, sealed=True):
+    """Médecin vérifié, rattaché et actif dans un établissement actif : le minimum pour lire des données cliniques.
+
+    `sealed` : le médecin a déposé une signature (sans elle, aucune consultation ne peut être validée)."""
     user = User.objects.create_user(username=f"doctor-{suffix}", password="local-test-password", first_name="Docteur", last_name=suffix.title())
-    profile = ProfessionalProfile.objects.create(user=user, professional_title="Médecin", verification_status="verified")
+    profile = ProfessionalProfile.objects.create(user=user, professional_title="Médecin", verification_status="verified", signature_cloudinary_public_id=f"test/professional-credentials/{suffix}/signature" if sealed else "")
     AccountContext.objects.create(user=user, role="professional", is_active=True)
     establishment = Establishment.objects.create(created_by=creator, name=f"Clinique {suffix}", establishment_type="Clinique", city="Abidjan", address="A", phone="0", email=f"{suffix}@example.test", responsible_name="Root", status="active", internal_code=f"{suffix.upper()}-1")
     EstablishmentMembership.objects.create(establishment=establishment, professional=profile, status="active")

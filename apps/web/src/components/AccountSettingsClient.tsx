@@ -21,7 +21,7 @@ import { PushNotificationToggle } from "./PushNotificationToggle";
 import { OfflineDataToggle } from "./OfflineDataToggle";
 import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
 import { cleanUpBeforeLogout } from "../lib/logout";
-import { useLogoutAll } from "./useLogoutAll";
+import { LogoutAllSetting } from "./LogoutAllSetting";
 
 const API = "";
 type Account = { first_name: string; last_name: string; email: string; avatar_url: string; is_privileged: boolean };
@@ -33,7 +33,7 @@ const sections: SettingsNavItem[] = [
   { id: "proches", title: "Proches et personnes représentées", description: "Gérer les dossiers distincts des enfants représentés.", icon: "users" },
   { id: "proches-de-confiance", title: "Proches de confiance", description: "Inviter ou retirer un accès limité à la fiche d’urgence.", icon: "users" },
   { id: "compte", title: "Paramètres du compte", description: "Personnaliser l’apparence de l’application.", icon: "sparkle" },
-  { id: "securite", title: "Sécurité et connexion", description: "Gérer les fournisseurs liés au compte.", icon: "lock" },
+  { id: "securite", title: "Sécurité et connexion", description: "Fournisseurs de connexion et appareils connectés.", icon: "lock" },
   { id: "en-savoir-plus", title: "En savoir plus", description: "Aide, informations et documents Mon E‑Carnet.", icon: "help" },
   { id: "avis", title: "Votre avis", description: "Partager une suggestion ou signaler un problème.", icon: "pencil" },
 ];
@@ -60,7 +60,6 @@ export function AccountSettingsClient() {
   const [message, setMessage] = useState("Chargement de votre profil…");
   const [busy, setBusy] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
-  const allDevices = useLogoutAll(setMessage);
   const [activeSection, setActiveSection] = useState<string | null>(null);
 
   useEffect(() => {
@@ -139,7 +138,7 @@ export function AccountSettingsClient() {
 
       <PatientEmergencyCardSettingsClient />
 
-      <SettingsDirectory items={sections} activeId={activeSection} onSelect={setActiveSection} onLogout={() => void logout()} onLogoutAll={() => void allDevices.logoutAll()} logoutDisabled={signingOut || allDevices.busy} />
+      <SettingsDirectory items={sections} activeId={activeSection} onSelect={setActiveSection} onLogout={() => void logout()} logoutDisabled={signingOut} />
 
       {activeSection === "personnel" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section">
         <span className="eyebrow">Mon identité</span><p className="muted">Votre nom et votre photo sont rattachés à votre compte Mon E‑Carnet.</p>
@@ -177,6 +176,7 @@ export function AccountSettingsClient() {
 
       {activeSection === "securite" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section">
         <span className="eyebrow">Accès au compte</span><LinkedProvidersSettingsClient nextPath="/patient/parametres" />
+        <LogoutAllSetting disabled={signingOut} />
         <AccountActionRequestsSettingsClient isPrivileged={account.is_privileged} />
       </div></SettingsModal>}
 

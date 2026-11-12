@@ -23,6 +23,9 @@ export type ConsultationRecord = {
   conclusion: string;
   care_plan: string;
   validated_at: string;
+  /** Signature / cachet du médecin figés sur la consultation au moment de la validation (les images sont servies à part). */
+  has_signature?: boolean;
+  has_stamp?: boolean;
   provenance: { label: string };
 };
 

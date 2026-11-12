@@ -1235,6 +1235,40 @@ class PatientPrescriptionDownloadView(APIView):
         return response
 
 
+class ConsultationSealImageView(APIView):
+    """Signature ou cachet du professionnel, tels que figés à la validation de la consultation (jamais ceux de son profil actuel).
+
+    Lisibles par le patient propriétaire de la consultation et par le professionnel qui l'a signée ; toute autre personne reçoit 404.
+    L'identifiant de stockage reste côté serveur : seul le PNG est servi."""
+    permission_classes = [IsAuthenticated]
+    KIND_FIELDS = {"signature": "signature_asset_id", "stamp": "stamp_asset_id"}
+
+    def get(self, request, pk, kind):
+        field = self.KIND_FIELDS.get(kind)
+        if not field:
+            return Response({"success": False, "message": "Élément inconnu."}, status=404)
+        consultation = Consultation.objects.select_related("professional").filter(pk=pk).first()
+        allowed = bool(consultation and consultation.professional_id and consultation.professional.user_id == request.user.id)
+        if consultation and not allowed:
+            allowed = consultation.patient_id == profile_for(request.user, request).id
+        if not consultation or not allowed:
+            return Response({"success": False, "message": "Consultation introuvable."}, status=404)
+        public_id = getattr(consultation, field)
+        if not public_id:
+            return Response({"success": False, "message": "Aucun fichier joint à cette consultation."}, status=404)
+        if not CLOUDINARY_CONFIGURED:
+            return Response({"success": False, "message": "Le stockage sécurisé des cachets et signatures n’est pas configuré."}, status=503)
+        try:
+            content = signed_download(public_id, resource_type="image", extension="png")
+        except Exception:
+            return Response({"success": False, "message": "L’image est momentanément indisponible."}, status=502)
+        response = HttpResponse(content, content_type="image/png")
+        # L'identifiant est immuable (chaque dépôt en crée un nouveau) : le navigateur peut garder l'image un jour, pour ce seul compte.
+        response["Cache-Control"] = "private, max-age=86400"
+        response["X-Content-Type-Options"] = "nosniff"
+        return response
+
+
 class ProfessionalAccessGrantListCreateView(APIView):
     permission_classes = [IsAuthenticated]
     throttle_classes = [WriteScopedThrottle]

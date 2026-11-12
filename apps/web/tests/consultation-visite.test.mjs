@@ -84,8 +84,9 @@ test("le médecin relit les constantes libres, rédige trois blocs et prescrit e
 });
 
 test("le patient retrouve chaque consultation comme une page « Visites » du carnet papier", () => {
-  const history = read("src/components/PatientConsultations.tsx");
-  for (const text of [/describeVitals/, /Ordonnance/, /Examens demandés/, /Diagnostic/, /VITAL_SOURCE_LABELS/]) assert.match(history, text);
+  assert.match(read("src/components/PatientConsultations.tsx"), /<ConsultationCard /);
+  const card = read("src/components/consultation/ConsultationCard.tsx");
+  for (const text of [/describeVitals/, /Ordonnance/, /Examens demandés/, /Diagnostic/, /VITAL_SOURCE_LABELS/, /Voir le compte rendu/]) assert.match(card, text);
 });
 
 test("Mes mesures rassemble relevés patients et constantes des consultations dans un historique daté", () => {

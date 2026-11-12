@@ -50,7 +50,7 @@ function SealField({ kind, uploaded, pending, refreshKey, busy, open, onOpen, on
         {!pending && uploaded && <button type="button" className="button danger" onClick={onRemoveSaved} disabled={busy}>Retirer</button>}
       </div>
     </div>
-    <small className="muted">{pending ? "Nouveau fichier prêt : cliquez sur « Enregistrer » pour l’ajouter à vos ordonnances." : uploaded ? copy.saved : "Facultatif. Vous pouvez l’ajouter plus tard."}</small>
+    <small className="muted">{pending ? "Nouveau fichier prêt : cliquez sur « Enregistrer » pour l’utiliser sur vos consultations et ordonnances." : uploaded ? copy.saved : "Une signature ou un cachet est requis pour valider une consultation."}</small>
     {open && <InkCapture kind={kind} onCancel={onClose} onUse={(file) => { onPick(file); onClose(); }} />}
   </div>;
 }
@@ -87,10 +87,11 @@ export function useCredentialsDraft(profile: Credentials, onSaved: (profile: Cre
   }
 
   async function removeSaved(kind: SealKind) {
+    const lastOne = !(kind === "stamp" ? profile.signature_uploaded : profile.stamp_uploaded);
     const ok = await confirm({
       title: COPY[kind].removeTitle,
-      message: "Il ne sera plus ajouté à vos prochaines ordonnances.",
-      note: "Les ordonnances déjà signées gardent ce qui y figurait au moment de la signature. Vous pourrez en déposer un nouveau à tout moment.",
+      message: lastOne ? "C’est votre seul moyen de signer : sans signature ni cachet, vous ne pourrez plus valider de consultation tant que vous n’en aurez pas ajouté un nouveau." : "Il ne sera plus apposé sur vos prochaines consultations ni ordonnances.",
+      note: "Les consultations et ordonnances déjà signées gardent ce qui y figurait au moment de la signature, pour toujours. Vous pourrez en déposer un nouveau à tout moment.",
       confirmLabel: "Retirer",
       cancelLabel: "Garder",
       tone: "danger",
@@ -166,12 +167,12 @@ export function ProfessionalCredentialsSettings({ profile, onSaved, variant = "s
   return <form className="settings-modal-section" onSubmit={submit}>
     <span className="eyebrow">{onboarding ? eyebrow ?? "Étape facultative" : "Ordonnance"}</span>
     <h3>{onboarding ? "Votre cachet et votre signature" : "Coordonnées du prescripteur"}</h3>
-    <p className="muted">Le numéro d’ordre, le cachet et la signature figurent sur vos ordonnances. Le cachet et la signature sont facultatifs.</p>
+    <p className="muted">Le numéro d’ordre, la signature et le cachet figurent sur vos ordonnances. Pour valider une consultation, il faut au moins une signature ou un cachet : ils sont apposés sur chaque consultation validée et lui restent attachés pour toujours, même si vous les remplacez plus tard.</p>
     <CredentialFields draft={draft} profile={profile} />
     {onboarding
       ? <OnboardingNav backHref={backHref} busy={busy} />
       : <div className="actions"><button className="button primary" type="submit" disabled={busy}>{busy ? "Enregistrement…" : "Enregistrer"}</button></div>}
-    {onboarding && <p className="muted">Vous pourrez les ajouter plus tard dans vos paramètres.</p>}
+    {onboarding && <p className="muted">Vous pourrez les ajouter plus tard dans vos paramètres, ou au moment de valider votre première consultation.</p>}
     <p className="status" role="status" aria-live="polite">{message}</p>
   </form>;
 }

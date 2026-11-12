@@ -17,6 +17,7 @@ import "./info-pages.css";
 import "./info-pages.css";
 import { ThemeBootstrap } from "../components/ThemeBootstrap";
 import { PwaRegister } from "../components/PwaRegister";
+import { GoogleTranslateBootstrap } from "../components/app/GoogleTranslateBootstrap";
 import { AnonymousVisitorTracker } from "../components/AnonymousVisitorTracker";
 import { LandingFeedbackWidget } from "../components/LandingFeedbackWidget";
 import { GooeyFilters } from "../components/ui/GooeyFilters";
@@ -69,5 +70,5 @@ export const metadata: Metadata = {
 export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#FFF7E6" };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
-  return <html lang="fr" className={localFontClasses}><body><NetworkProvider><OfflineBanner /><GooeyFilters /><ThemeBootstrap /><AnonymousVisitorTracker /><PwaRegister /><ConfirmProvider>{children}</ConfirmProvider><CookieConsentBanner /><LandingFeedbackWidget /></NetworkProvider></body></html>;
+  return <html lang="fr" className={localFontClasses}><body><NetworkProvider><OfflineBanner /><GooeyFilters /><ThemeBootstrap /><AnonymousVisitorTracker /><PwaRegister /><GoogleTranslateBootstrap /><ConfirmProvider>{children}</ConfirmProvider><CookieConsentBanner /><LandingFeedbackWidget /></NetworkProvider></body></html>;
 }

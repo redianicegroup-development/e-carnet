@@ -14,7 +14,7 @@ import { ThemeSettingsClient } from "./ThemeSettingsClient";
 import { AccountActionRequestsSettingsClient } from "./AccountActionRequestsSettingsClient";
 import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
 import { cleanUpBeforeLogout } from "../lib/logout";
-import { useLogoutAll } from "./useLogoutAll";
+import { LogoutAllSetting } from "./LogoutAllSetting";
 import { ProfessionalCredentialsSettings } from "./ProfessionalCredentialsSettings";
 import { EstablishmentLogo } from "./EstablishmentLogo";
 import "./establishment-logo.css";
@@ -44,7 +44,6 @@ export function ProfessionalSettingsClient() {
   const [sessionRequired, setSessionRequired] = useState(false);
   const [message, setMessage] = useState("Chargement du profil professionnel…");
   const [signingOut, setSigningOut] = useState(false);
-  const allDevices = useLogoutAll(setMessage);
   const [activeSection, setActiveSection] = useState<string | null>(null);
 
   useEffect(() => {
@@ -82,7 +81,7 @@ export function ProfessionalSettingsClient() {
     { id: "professionnel", title: "Informations professionnelles", description: "Profession et spécialité déclarée.", icon: "stethoscope" },
     { id: "etablissement", title: activeEstablishment ? `Mon établissement — ${activeEstablishment.name}` : "Mon établissement", description: "Établissement actif et rattachements.", icon: "building" },
     { id: "compte", title: "Paramètres du compte", description: "Personnaliser l’apparence de l’application.", icon: "sparkle" },
-    { id: "securite", title: "Sécurité et connexion", description: "Gérer les fournisseurs liés au compte.", icon: "lock" },
+    { id: "securite", title: "Sécurité et connexion", description: "Fournisseurs de connexion et appareils connectés.", icon: "lock" },
     { id: "hors-connexion", title: "Hors connexion", description: "Naviguer sans réseau avec une copie chiffrée, en lecture seule.", icon: "download" },
     { id: "en-savoir-plus", title: "En savoir plus", description: "Aide, informations et documents Mon E‑Carnet.", icon: "help" },
     { id: "avis", title: "Votre avis", description: "Partager une suggestion ou signaler un problème.", icon: "pencil" },
@@ -98,7 +97,7 @@ export function ProfessionalSettingsClient() {
       >
         <p className="notice" role="status" aria-live="polite">{loading ? "Chargement…" : message}</p>
       </ProfileSummary>
-      <SettingsDirectory items={navItems} activeId={activeSection} onSelect={setActiveSection} onLogout={() => void logout()} onLogoutAll={() => void allDevices.logoutAll()} logoutDisabled={loading || signingOut || allDevices.busy} />
+      <SettingsDirectory items={navItems} activeId={activeSection} onSelect={setActiveSection} onLogout={() => void logout()} logoutDisabled={loading || signingOut} />
 
       {activeSection === "professionnel" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Profil professionnel</span><dl className="settings-details"><div><dt>Profession</dt><dd>{profile?.professional_title || "À renseigner"}</dd></div><div><dt>Spécialité</dt><dd>{profile?.specialty || "À renseigner"}</dd></div></dl><p className="settings-note muted">La spécialité est déclarée par vous. Les justificatifs médicaux ne sont pas collectés par Mon E‑Carnet : leur vérification relève de l’établissement.</p><div className="actions"><Link className="button" href="/professionnel/onboarding?retour=parametres">Modifier mon profil</Link></div></div>{profile && <ProfessionalCredentialsSettings profile={profile} onSaved={(saved) => setProfile((current) => current ? { ...current, ...saved } : current)} />}</SettingsModal>}
 
@@ -106,7 +105,7 @@ export function ProfessionalSettingsClient() {
 
       {activeSection === "compte" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Préférences personnelles</span><p className="muted">Responsable du compte : {fullName} · {account?.email ?? "Email non disponible"}</p><ThemeSettingsClient compact space="professional" /></div></SettingsModal>}
 
-      {activeSection === "securite" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Accès au compte</span><p className="muted">Les autorisations professionnelles sont vérifiées côté API. Les fournisseurs ci-dessous servent uniquement à la connexion au compte.</p><LinkedProvidersSettingsClient nextPath="/professionnel/parametres" /><AccountActionRequestsSettingsClient isPrivileged={account?.is_privileged ?? true} /></div></SettingsModal>}
+      {activeSection === "securite" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Accès au compte</span><p className="muted">Les autorisations professionnelles sont vérifiées côté API. Les fournisseurs ci-dessous servent uniquement à la connexion au compte.</p><LinkedProvidersSettingsClient nextPath="/professionnel/parametres" /><LogoutAllSetting disabled={loading || signingOut} /><AccountActionRequestsSettingsClient isPrivileged={account?.is_privileged ?? true} /></div></SettingsModal>}
 
       {activeSection === "hors-connexion" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><OfflineDataToggle audience="third-party" /></SettingsModal>}
       {activeSection === "en-savoir-plus" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><SettingsMoreSection /></SettingsModal>}

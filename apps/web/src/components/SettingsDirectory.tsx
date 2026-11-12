@@ -1,5 +1,6 @@
 "use client";
 
+import { AppSettingsGroup } from "./app/AppSettingsGroup";
 import { useConfirm } from "./modal/ConfirmProvider";
 import { clearGreetingSession } from "./modal/greeting";
 import { Icon, type IconName } from "./ui/Icon";
@@ -16,12 +17,10 @@ type Props = {
   activeId: string | null;
   onSelect: (id: string) => void;
   onLogout?: () => void;
-  /** SEC-04 : ferme aussi les sessions des autres appareils. */
-  onLogoutAll?: () => void;
   logoutDisabled?: boolean;
 };
 
-export function SettingsDirectory({ items, activeId, onSelect, onLogout, onLogoutAll, logoutDisabled = false }: Props) {
+export function SettingsDirectory({ items, activeId, onSelect, onLogout, logoutDisabled = false }: Props) {
   const confirm = useConfirm();
   async function askLogout() {
     if (!onLogout) return;
@@ -30,14 +29,6 @@ export function SettingsDirectory({ items, activeId, onSelect, onLogout, onLogou
     clearGreetingSession();
     onLogout();
   }
-  async function askLogoutAll() {
-    if (!onLogoutAll) return;
-    const ok = await confirm({ title: "Se déconnecter partout ?", message: "Toutes vos sessions seront fermées : ce téléphone, cet ordinateur et vos autres appareils.", note: "Utile si vous avez perdu un appareil ou utilisé un ordinateur partagé.", confirmLabel: "Tout fermer", cancelLabel: "Annuler", tone: "danger", mood: "farewell" });
-    if (!ok) return;
-    clearGreetingSession();
-    onLogoutAll();
-  }
-
   return (
     <div className="settings-directory">
       <div className="setting-list" role="group" aria-label="Rubriques des paramètres">
@@ -60,17 +51,11 @@ export function SettingsDirectory({ items, activeId, onSelect, onLogout, onLogou
           );
         })}
       </div>
+      <AppSettingsGroup />
       {onLogout && (
         <button type="button" className="setting-item setting-item--danger" onClick={() => void askLogout()} disabled={logoutDisabled}>
           <span className="setting-item__icon" aria-hidden="true"><Icon name="logout" size={20} /></span>
           <span className="setting-item__meta"><strong>Se déconnecter</strong></span>
-          <span className="setting-item__chevron" aria-hidden="true">›</span>
-        </button>
-      )}
-      {onLogoutAll && (
-        <button type="button" className="setting-item setting-item--danger" onClick={() => void askLogoutAll()} disabled={logoutDisabled}>
-          <span className="setting-item__icon" aria-hidden="true"><Icon name="logout" size={20} /></span>
-          <span className="setting-item__meta"><strong>Se déconnecter de tous les appareils</strong></span>
           <span className="setting-item__chevron" aria-hidden="true">›</span>
         </button>
       )}

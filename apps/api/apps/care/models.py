@@ -138,6 +138,10 @@ class Consultation(models.Model):
     attestation_svg = models.TextField(blank=True, max_length=20000)
     attestation_svg_hash = models.CharField(max_length=64, blank=True)
     attestation_signed_at = models.DateTimeField(null=True, blank=True)
+    # Signature et cachet du professionnel figés à la validation (identifiants Cloudinary privés, jamais exposés) :
+    # les remplacer ou les retirer ensuite dans son profil ne change pas ce qui figure sur une consultation déjà signée.
+    signature_asset_id = models.CharField(max_length=500, blank=True)
+    stamp_asset_id = models.CharField(max_length=500, blank=True)
     validated_at = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
 
