@@ -22,7 +22,13 @@ from apps.care.serializers import CareEncounterSerializer, ConsultationSerialize
 from apps.patients.models import PatientProfile
 
 from .models import Establishment, EstablishmentAdministrator, EstablishmentRecordOpening, EstablishmentRecordOpeningClosure, EstablishmentJoinCode
-from .views import active_administrator
+from .views import active_administrator as _active_administrator
+
+
+def active_administrator(user, establishment_id=None):
+    """Administrateur actif d'un établissement de SOIN : un laboratoire (PRO-21) n'a jamais de lecture clinique, même drapeau allumé."""
+    administrator = _active_administrator(user, establishment_id)
+    return None if administrator and administrator.establishment.is_laboratory else administrator
 
 logger = logging.getLogger(__name__)
 

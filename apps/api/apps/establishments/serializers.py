@@ -24,8 +24,8 @@ class EstablishmentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Establishment
-        fields = ("id", "name", "establishment_type", "city", "address", "phone", "email", "responsible_name", "logo", "status", "internal_code", "activated_at", "profile_completed_at", "name_updated_at", "original_name", "created_at", "updated_at")
-        read_only_fields = ("id", "status", "internal_code", "activated_at", "profile_completed_at", "name_updated_at", "original_name", "created_at", "updated_at")
+        fields = ("id", "name", "establishment_type", "is_laboratory", "city", "address", "phone", "email", "responsible_name", "logo", "status", "internal_code", "activated_at", "profile_completed_at", "name_updated_at", "original_name", "created_at", "updated_at")
+        read_only_fields = ("id", "is_laboratory", "status", "internal_code", "activated_at", "profile_completed_at", "name_updated_at", "original_name", "created_at", "updated_at")
 
 
 PHONE_PATTERN = re.compile(r"^\+?[0-9 .()-]{8,20}$")

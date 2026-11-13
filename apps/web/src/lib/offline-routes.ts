@@ -12,6 +12,7 @@ export const SPACE_ROUTES: Record<SpaceId, readonly string[]> = {
   patient: ["/patient", "/patient/carnet", "/patient/consultations", "/patient/historique", "/patient/parametres", "/patient/acces", "/patient/agenda", "/patient/proches", "/patient/adressages", "/patient/transfert"],
   professional: ["/professionnel", "/professionnel/patients", "/professionnel/consultations", "/professionnel/acces", "/professionnel/etablissements", "/professionnel/agenda", "/professionnel/adressages", "/professionnel/parametres"],
   establishment: ["/etablissement", "/etablissement/dossiers", "/etablissement/medecins", "/etablissement/demandes", "/etablissement/modeles", "/etablissement/parametres", "/etablissement/gestion", "/etablissement/aide"],
+  laboratory: ["/laboratoire", "/laboratoire/depots", "/laboratoire/parametres"],
 };
 
 export function routesToWarm(space: SpaceId): string[] {

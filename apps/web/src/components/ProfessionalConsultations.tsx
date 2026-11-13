@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import { ApiError } from "../infrastructure/api/client";
 import { useConfirm } from "./modal/ConfirmProvider";
 import { ConsultationSeal } from "./ConsultationSeal";
+import { getPendingForGrant, waitForResults, type PendingForGrant } from "../application/lab-results";
+import { PendingResultsPanel, ProfessionalPendingList } from "./ProfessionalPendingResults";
 import { ConsultationCard } from "./consultation/ConsultationCard";
 import { ListSearchBar } from "./list/ListSearchBar";
 import { useListFilter } from "./list/useListFilter";
@@ -75,6 +77,8 @@ export function ProfessionalConsultations() {
   const { state: listFilter, patch: patchFilter, reset: resetFilter, filtered: listFiltered } = useListFilter();
   // Photos déjà envoyées : si la signature échoue après l'envoi, un nouvel essai réutilise la photo au lieu de la renvoyer.
   const uploadedProofs = useRef(new WeakMap<File, string>());
+  // PRO-21 : consultation de CE patient qui attendait des résultats (null : parcours habituel, ou fonction éteinte).
+  const [pending, setPending] = useState<PendingForGrant | null>(null);
 
   const activeMembership = profile.status === "ready" ? profile.profile.memberships.find((item) => item.establishment_id === profile.profile.active_establishment && item.status === "active") ?? null : null;
 
@@ -109,6 +113,7 @@ export function ProfessionalConsultations() {
     setGrantId(value);
     setEncounterId("");
     setEncounters([]);
+    setPending(null);
     if (!value) return;
     setLoadingEncounters(true);
     try {
@@ -120,6 +125,7 @@ export function ProfessionalConsultations() {
       setSymptoms(parseObservations(drafts[0]?.observations));
       setVitalsForm(vitalsToForm(drafts[0]?.vitals));
       setMessage(drafts.length ? "Pré-consultation du patient chargée." : "Le patient n’a pas encore préparé de pré-consultation.");
+      await loadPending(value, { prefill: true });
       // Le dossier du patient scanné est amené sous les yeux du professionnel (début du formulaire de consultation).
       if (options.reveal) window.requestAnimationFrame(() => document.getElementById("terminer-consultation")?.scrollIntoView({ block: "start", behavior: "smooth" }));
     } catch (error) {
@@ -129,9 +135,95 @@ export function ProfessionalConsultations() {
     }
   }
 
+  /* Reprise : le brouillon enregistré à « Attendre les résultats » remplace la pré-consultation du patient ; les examens, eux, viennent de
+     l'attente (le serveur ignore ceux que le client enverrait). Sans attente, ou fonction éteinte (404), rien ne change. */
+  async function loadPending(forGrant: string, options: { prefill: boolean }) {
+    try {
+      const found = await getPendingForGrant(forGrant);
+      setPending(found);
+      if (!found || !options.prefill) return;
+      const draft = found.draft;
+      setEncounterId((current) => found.source_encounter_id || current);
+      setReason(draft.reason ?? "");
+      setSymptoms(parseObservations(draft.symptoms));
+      if (draft.vitals) setVitalsForm(vitalsToForm(draft.vitals as Parameters<typeof vitalsToForm>[0]));
+      setClinical({ selected: [], other: draft.clinical_exam ?? "" });
+      setDiagnosis({ selected: [], other: draft.diagnosis ?? "" });
+      setCarePlan({ selected: [], other: draft.care_plan ?? "" });
+      setConclusion({ selected: [], other: draft.conclusion ?? "" });
+      setLines((draft.prescription_lines ?? []) as LineDraft[]);
+      setExams([]);
+      setMessage(found.status === "waiting_results" ? "Cette consultation attend encore des résultats." : "Résultats reçus : relisez, complétez et signez.");
+    } catch {
+      setPending(null);
+    }
+  }
+
+  /* Photos de demande d'examen envoyées avant l'enregistrement ; un nouvel essai réutilise la photo déjà envoyée. */
+  async function buildRequestedExams(list: ExamDraft[]) {
+    const requested_exams: NonNullable<ConsultationInput["requested_exams"]> = [];
+    for (const exam of list) {
+      let proof: string | null = null;
+      if (exam.photo) {
+        proof = uploadedProofs.current.get(exam.photo) ?? null;
+        if (!proof) { proof = (await uploadExamProof(grantId, exam.photo)).id; uploadedProofs.current.set(exam.photo, proof); }
+      }
+      requested_exams.push({ kind: exam.kind, label: exam.label.trim(), ...(proof ? { proof_document_id: proof } : {}) });
+    }
+    return requested_exams;
+  }
+
+  async function waitResults() {
+    if (!grantId || !encounterId) return;
+    const parsedVitals = parseVitalsForm(vitalsForm);
+    if (!parsedVitals.ok) { setMessage(parsedVitals.message); return; }
+    const orders = checkOrders(lines, exams);
+    if (!orders.ok) { setMessage(orders.message); return; }
+    if (orders.exams.length === 0) { setMessage("Ajoutez au moins un examen à la section « Examens demandés » avant d’attendre les résultats."); return; }
+    const accepted = await confirm({
+      title: "Attendre les résultats ?",
+      message: "Votre saisie est enregistrée sans être signée. Votre accès au carnet du patient se ferme, et la consultation reste bloquée tant que les résultats ne sont pas arrivés.",
+      note: "Le patient montrera son QR d’examen au laboratoire. Pour reprendre, il présentera un nouveau QR d’accès.",
+      confirmLabel: "Attendre les résultats",
+      cancelLabel: "Continuer à rédiger",
+    });
+    if (!accepted) return;
+    setSubmitting(true);
+    try {
+      const requested_exams = await buildRequestedExams(orders.exams);
+      await waitForResults({
+        access_grant_id: grantId,
+        source_encounter_id: encounterId,
+        reason: reason.trim(),
+        symptoms: buildObservations(symptoms),
+        clinical_exam: buildPicked(clinical.selected, CLINICAL_FINDINGS, clinical.other),
+        diagnosis: buildPicked(diagnosis.selected, DIAGNOSES, diagnosis.other),
+        vitals: parsedVitals.vitals,
+        prescription_lines: orders.prescription_lines,
+        requested_exams,
+        conclusion: buildPicked(conclusion.selected, CONCLUSION_ITEMS, conclusion.other),
+        care_plan: buildPicked(carePlan.selected, CARE_PLAN_ITEMS, carePlan.other),
+      });
+      // L'accès s'est fermé côté serveur : ce patient quitte la liste des patients connectés.
+      const waitingGrantId = grantId;
+      setGrants((current) => current.filter((grant) => grant.id !== waitingGrantId));
+      resetForm();
+      setEncounters([]);
+      setEncounterId("");
+      setGrantId("");
+      setPending(null);
+      setMessage("Consultation mise en attente. Votre accès s’est fermé ; elle se rouvrira quand le patient présentera un nouveau QR, une fois les résultats reçus.");
+    } catch (error) {
+      setMessage(error instanceof ApiError ? error.message : "Mise en attente impossible.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     if (!grantId || !encounterId) return;
+    if (pending?.status === "waiting_results") { setMessage("Cette consultation attend encore des résultats : attendez-les, ou abandonnez l’examen manquant."); return; }
     if (!sealReady) { setMessage("Ajoutez votre signature ou votre cachet avant de signer la consultation."); return; }
     const diagnosisText = buildPicked(diagnosis.selected, DIAGNOSES, diagnosis.other);
     const conclusionText = buildPicked(conclusion.selected, CONCLUSION_ITEMS, conclusion.other);
@@ -150,18 +242,11 @@ export function ProfessionalConsultations() {
     if (!accepted) return;
     setSubmitting(true);
     try {
-      const requested_exams: NonNullable<ConsultationInput["requested_exams"]> = [];
-      for (const exam of orders.exams) {
-        let proof: string | null = null;
-        if (exam.photo) {
-          proof = uploadedProofs.current.get(exam.photo) ?? null;
-          if (!proof) { proof = (await uploadExamProof(grantId, exam.photo)).id; uploadedProofs.current.set(exam.photo, proof); }
-        }
-        requested_exams.push({ kind: exam.kind, label: exam.label.trim(), ...(proof ? { proof_document_id: proof } : {}) });
-      }
+      const requested_exams = pending ? [] : await buildRequestedExams(orders.exams);
       const consultation = await validateProfessionalConsultation({
         access_grant_id: grantId,
         source_encounter_id: encounterId,
+        ...(pending ? { pending_consultation_id: pending.id } : {}),
         reason: reason.trim(),
         symptoms: buildObservations(symptoms),
         clinical_exam: buildPicked(clinical.selected, CLINICAL_FINDINGS, clinical.other),
@@ -181,6 +266,7 @@ export function ProfessionalConsultations() {
       setEncounters([]);
       setEncounterId("");
       setGrantId("");
+      setPending(null);
       setMessage("Consultation signée. La pré-consultation est clôturée, le carnet du patient est à jour et votre accès s’est fermé automatiquement.");
     } catch (error) {
       setMessage(error instanceof ApiError ? error.message : "Validation impossible.");
@@ -196,7 +282,7 @@ export function ProfessionalConsultations() {
   const selectedGrant = grants.find((grant) => grant.id === grantId) ?? null;
   const symptomsTooLong = buildObservations(symptoms).length > OBSERVATIONS_MAX;
 
-  return <div className="stack-lg"><ProfessionalTemplateApprovals /><section className="hero-page"><h1>Compléter sans ressaisir.</h1><p className="muted">La dernière pré-consultation du patient s’affiche dès que son autorisation est active. En signant, vous la clôturez.</p><p className="notice" role="status" aria-live="polite">{message}</p></section><section className="patient-grid"><form id="terminer-consultation" className="card preconsult-form" onSubmit={submit}><h2>Terminer la consultation</h2>{loading ? <p className="empty">Chargement des autorisations…</p> : grants.length === 0 ? <p className="empty">Aucune autorisation active permettant de reprendre une pré-consultation.</p> : <>
+  return <div className="stack-lg"><ProfessionalTemplateApprovals /><ProfessionalPendingList /><section className="hero-page"><h1>Compléter sans ressaisir.</h1><p className="muted">La dernière pré-consultation du patient s’affiche dès que son autorisation est active. En signant, vous la clôturez.</p><p className="notice" role="status" aria-live="polite">{message}</p></section><section className="patient-grid"><form id="terminer-consultation" className="card preconsult-form" onSubmit={submit}><h2>Terminer la consultation</h2>{loading ? <p className="empty">Chargement des autorisations…</p> : grants.length === 0 ? <p className="empty">Aucune autorisation active permettant de reprendre une pré-consultation.</p> : <>
     <div className="consult-context">
       {activeMembership && <div className="consult-establishment"><EstablishmentLogo logo={activeMembership.establishment_logo} name={activeMembership.establishment_name} size={40} /><div><span className="muted">Établissement actif</span><strong>{activeMembership.establishment_name}</strong></div><Link className="button small" href="/professionnel/acces">Changer</Link></div>}
       {grants.length > 1 && <div className="patient-picker" role="group" aria-label="Patient"><span className="eyebrow">Patient</span>{grants.map((grant) => <button type="button" key={grant.id} className="patient-option" aria-pressed={grant.id === grantId} onClick={() => void chooseGrant(grant.id)}><PersonAvatar src={grant.patient_avatar} name={grant.patient_name || grant.reference} size={40} /><span><strong>{grant.patient_name || `Accès ${grant.reference}`}</strong><small className="muted">Accès {grant.reference}</small></span></button>)}</div>}
@@ -204,6 +290,7 @@ export function ProfessionalConsultations() {
     </div>
     {!grantId ? <p className="muted">Choisissez le patient pour lire sa dernière pré-consultation.</p> : <>
     <div className="preconsult-read" aria-live="polite"><span className="preconsult-read__label">Pré-consultation du patient</span>{loadingEncounters ? <p className="muted">Chargement…</p> : !grantId ? <p className="muted">Choisissez une autorisation pour lire la dernière pré-consultation.</p> : encounters.length === 0 ? <p className="empty">Aucune pré-consultation en préparation pour ce patient.</p> : encounters.map((encounter) => <article className="record preconsult-read__item" key={encounter.id}><div><strong>{encounter.reason || "Sans motif"}</strong>{encounter.observations && <p>{encounter.observations}</p>}{Object.keys(encounter.template_responses ?? {}).length > 0 && <dl className="kv">{Object.entries(encounter.template_responses ?? {}).map(([key, value]) => { const field = encounter.template_fields?.find((entry) => entry.key === key); return <div key={key}><dt>{field?.label ?? key}</dt><dd>{typeof value === "boolean" ? (value ? "Oui" : "Non") : String(value)}{field?.unit ? ` ${field.unit}` : ""}</dd></div>; })}</dl>}{encounter.recorded_with_help && <p className="muted">Rempli avec l’aide de : {encounter.recorded_with_help}</p>}</div><span className="badge pending">Brouillon</span></article>)}</div>
+    {pending && <PendingResultsPanel grantId={grantId} pending={pending} onChanged={() => void loadPending(grantId, { prefill: false })} />}
     <FormSection num={1} title="Quel est le motif de la consultation ?"><label className="field"><span>Motif</span><input maxLength={240} value={reason} onChange={(event) => setReason(event.target.value)} /></label></FormSection>
     <FormSection num={2} title="Quels symptômes ou maux le patient ressent-il ?" hint="Cochez ce qui correspond (facultatif).">
       <ChipPicker label="Symptômes les plus fréquents" options={SYMPTOMS} pictograms={SYMPTOM_PICTOGRAMS} selected={symptoms.selected} other={symptoms.other} onSelected={(selected) => setSymptoms({ ...symptoms, selected })} onOther={(other) => setSymptoms({ ...symptoms, other })} otherLabel="Autre symptôme, depuis quand, intensité (facultatif)" otherPlaceholder="Si le symptôme n’est pas dans la liste, écrivez-le ici." maxOther={OTHER_MAX} rows={3} />
@@ -215,6 +302,6 @@ export function ProfessionalConsultations() {
     <FormSection num={6} title="Conduite à tenir"><ChipPicker label="Conduite à tenir" options={CARE_PLAN_ITEMS} selected={carePlan.selected} other={carePlan.other} onSelected={(selected) => setCarePlan({ ...carePlan, selected })} onOther={(other) => setCarePlan({ ...carePlan, other })} otherLabel="Autre consigne (facultatif)" /></FormSection>
     <FormSection num={7} title="Conclusion"><ChipPicker label="Conclusion" options={CONCLUSION_ITEMS} selected={conclusion.selected} other={conclusion.other} onSelected={(selected) => setConclusion({ ...conclusion, selected })} onOther={(other) => setConclusion({ ...conclusion, other })} otherLabel="Autre conclusion (facultatif)" /></FormSection>
     <FormSection num={8} title="Ordonnance" hint="Choisissez dans les listes ; « Autre » pour ce qui n’y figure pas."><PrescriptionPicker lines={lines} onChange={setLines} /></FormSection>
-    <FormSection num={9} title="Examens demandés" hint="Choisissez l’examen, ou joignez la photo de la demande si vous préférez ne pas le saisir."><ExamPicker exams={exams} onChange={setExams} /></FormSection>
-    <p className="muted">Cette validation ne constitue pas une signature électronique qualifiée.</p><ConsultationSeal onReadyChange={setSealReady} /><button className="button primary" type="submit" disabled={submitting || !encounterId || !sealReady} aria-disabled={submitting || !encounterId || !sealReady}>{submitting ? "Signature…" : "Terminer et signer"}</button>{!sealReady && encounterId && <p className="muted" role="status">« Terminer et signer » s’active dès que votre signature ou votre cachet est enregistré.</p>}</>}</>}</form>{selectedGrant && <ProfessionalMeasurementEntry grant={selectedGrant} />}<div className="section-grid"><CollapsibleSection title="Mes consultations" icon="stethoscope" hint="Historique signé"><div className="professional-history"><div className="professional-history__heading"><ListSearchBar label="Rechercher patient, établissement ou motif" placeholder="Patient, établissement, motif…" state={listFilter} onChange={patchFilter} onReset={resetFilter} shown={filteredConsultations.length} total={consultations.length} filtered={listFiltered} facilityOptions={facilityOptions} showPeriod shortcut /></div>{loading ? <p className="empty">Chargement…</p> : filteredConsultations.length === 0 ? <p className="empty">{consultations.length ? "Aucune consultation ne correspond à cette recherche ou à ces filtres." : "Aucune consultation validée."}</p> : <div className="consult-list" aria-live="polite">{filteredConsultations.map((item, index) => <ConsultationCard key={item.id} item={item} index={index} showPatient />)}</div>}</div></CollapsibleSection></div></section></div>;
+    {!pending && <FormSection num={9} title="Examens demandés" hint="Choisissez l’examen, ou joignez la photo de la demande si vous préférez ne pas le saisir. Si le résultat est nécessaire pour conclure, utilisez « Attendre les résultats »."><ExamPicker exams={exams} onChange={setExams} /></FormSection>}
+    <p className="muted">Cette validation ne constitue pas une signature électronique qualifiée.</p><ConsultationSeal onReadyChange={setSealReady} />{!pending && <button className="button" type="button" disabled={submitting || !encounterId || exams.length === 0} onClick={() => void waitResults()}>Attendre les résultats</button>} {pending?.status !== "waiting_results" && <><button className="button primary" type="submit" disabled={submitting || !encounterId || !sealReady} aria-disabled={submitting || !encounterId || !sealReady}>{submitting ? "Signature…" : "Terminer et signer"}</button>{!sealReady && encounterId && <p className="muted" role="status">« Terminer et signer » s’active dès que votre signature ou votre cachet est enregistré.</p>}</>}</>}</>}</form>{selectedGrant && <ProfessionalMeasurementEntry grant={selectedGrant} />}<div className="section-grid"><CollapsibleSection title="Mes consultations" icon="stethoscope" hint="Historique signé"><div className="professional-history"><div className="professional-history__heading"><ListSearchBar label="Rechercher patient, établissement ou motif" placeholder="Patient, établissement, motif…" state={listFilter} onChange={patchFilter} onReset={resetFilter} shown={filteredConsultations.length} total={consultations.length} filtered={listFiltered} facilityOptions={facilityOptions} showPeriod shortcut /></div>{loading ? <p className="empty">Chargement…</p> : filteredConsultations.length === 0 ? <p className="empty">{consultations.length ? "Aucune consultation ne correspond à cette recherche ou à ces filtres." : "Aucune consultation validée."}</p> : <div className="consult-list" aria-live="polite">{filteredConsultations.map((item, index) => <ConsultationCard key={item.id} item={item} index={index} showPatient />)}</div>}</div></CollapsibleSection></div></section></div>;
 }

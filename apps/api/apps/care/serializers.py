@@ -527,4 +527,22 @@ class ProfessionalConsultationCreateSerializer(serializers.Serializer):
     requested_exams = ExamRequestInputSerializer(many=True, required=False, max_length=MAX_ORDER_LINES)
     conclusion = serializers.CharField(max_length=4000, required=False, allow_blank=True)
     care_plan = serializers.CharField(max_length=4000, required=False, allow_blank=True)
+    # PRO-21 : reprise d'une consultation « en attente de résultats » (ses examens et PDF viennent alors de l'attente).
+    pending_consultation_id = serializers.UUIDField(required=False)
     attestation_svg = serializers.CharField(max_length=20000, trim_whitespace=True)
+
+
+class PendingConsultationCreateSerializer(serializers.Serializer):
+    """PRO-21 — « Attendre les résultats » : la saisie du médecin SANS signature, et au moins un examen demandé."""
+    access_grant_id = serializers.UUIDField()
+    source_encounter_id = serializers.UUIDField()
+    reason = serializers.CharField(max_length=240, required=False, allow_blank=True)
+    symptoms = serializers.CharField(max_length=4000, required=False, allow_blank=True)
+    clinical_exam = serializers.CharField(max_length=4000, required=False, allow_blank=True)
+    diagnosis = serializers.CharField(max_length=2000, required=False, allow_blank=True)
+    observations = serializers.CharField(max_length=4000, required=False, allow_blank=True)
+    vitals = VitalsField(required=False)
+    prescription_lines = PrescriptionLineInputSerializer(many=True, required=False, max_length=MAX_ORDER_LINES)
+    requested_exams = ExamRequestInputSerializer(many=True, allow_empty=False, max_length=MAX_ORDER_LINES)
+    conclusion = serializers.CharField(max_length=4000, required=False, allow_blank=True)
+    care_plan = serializers.CharField(max_length=4000, required=False, allow_blank=True)

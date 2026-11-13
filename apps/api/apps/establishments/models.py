@@ -47,6 +47,11 @@ class Establishment(models.Model):
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="created_establishments", null=True, blank=True)
     status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="pending")
     internal_code = models.CharField(max_length=24, unique=True, null=True, blank=True)
+    # PRO-21 : un laboratoire n'est pas un lieu de soin. Posé UNIQUEMENT à sa création par l'administrateur de l'établissement parent
+    # (jamais modifiable depuis la fiche, contrairement à `establishment_type` qui est un texte libre). Un laboratoire reçoit le nom
+    # du patient et dépose un PDF ; il n'a ni code médecin, ni dossiers, ni lecture clinique.
+    is_laboratory = models.BooleanField(default=False)
+    parent = models.ForeignKey("self", null=True, blank=True, on_delete=models.PROTECT, related_name="laboratories")
     activated_at = models.DateTimeField(null=True, blank=True)
     suspended_at = models.DateTimeField(null=True, blank=True)
     suspended_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="suspended_establishments")

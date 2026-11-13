@@ -1,13 +1,13 @@
 import type { IconName } from "../components/ui/Icon";
 
-export type SpaceId = "patient" | "professional" | "establishment";
+export type SpaceId = "patient" | "professional" | "establishment" | "laboratory";
 /** `featured` : onglet principal de l'espace (la 3e entrée de la barre basse mobile), mis en évidence par une pastille de miel qui suit la palette choisie. */
 export type Tab = { id: string; label: string; long: string; href: string; icon: IconName; match: (path: string) => boolean; featured?: boolean };
 
 const exact = (href: string) => (path: string) => path === href;
 const section = (...hrefs: string[]) => (path: string) => hrefs.some((href) => path === href || path.startsWith(`${href}/`));
 
-/* Navigation courte : cinq entrées maximum par espace. Les fonctions secondaires vivent dans l'écran de leur domaine,
+/* Navigation courte : cinq entrées maximum par espace (l'espace laboratoire n'en a que trois : il scanne, il dépose, il consulte ses dépôts). Les fonctions secondaires vivent dans l'écran de leur domaine,
    plutôt que de créer un onglet séparé pour chaque action. */
 export const SPACES: Record<SpaceId, { label: string; role: string; home: string; tabs: Tab[]; bare: string[]}> = {
   patient: {
@@ -40,6 +40,16 @@ export const SPACES: Record<SpaceId, { label: string; role: string; home: string
       { id: "parametres", label: "Paramètres", long: "Pré-consultation · ordonnances · compte", href: "/etablissement/parametres", icon: "sliders", match: section("/etablissement/parametres", "/etablissement/fiche") },
     ],
   },
+  /* PRO-21 — le laboratoire ne lit aucun dossier : il scanne le QR d'examen du patient, dépose un PDF par examen, relit ses dépôts.
+     Le compte reste un compte « établissement » côté serveur (contexte `establishment`) ; seule l'interface a son propre espace. */
+  laboratory: {
+    label: "Espace laboratoire", role: "establishment", home: "/laboratoire", bare: [],
+    tabs: [
+      { id: "scanner", label: "Scanner", long: "Scanner le QR d’examen et déposer un résultat", href: "/laboratoire", icon: "qr", match: exact("/laboratoire") },
+      { id: "depots", label: "Dépôts", long: "Historique de vos dépôts de résultats", href: "/laboratoire/depots", icon: "document", match: section("/laboratoire/depots") },
+      { id: "moi", label: "Moi", long: "Mon compte et paramètres", href: "/laboratoire/parametres", icon: "user", match: section("/laboratoire/parametres") },
+    ],
+  },
 };
 
 /** Onglets d'un médecin dont le rattachement n'est pas encore validé : l'accueil et le rattachement, rien d'autre.
@@ -55,7 +65,7 @@ export function visibleTabsFor(space: SpaceId, clinicalReady: boolean): Tab[] {
   return tabs;
 }
 
-type ContextLike = { role: string; is_active?: boolean; onboarding_completed?: boolean };
+type ContextLike = { role: string; is_active?: boolean; onboarding_completed?: boolean; is_laboratory?: boolean };
 
 /** Un compte est « professionnel » quand son contexte professionnel existe et que son profil est créé. Les patients simples,
     les comptes établissement et les médecins en cours d'inscription n'ont pas de second espace. */
@@ -75,7 +85,22 @@ export function spaceSwitchTarget(space: SpaceId, contexts: ContextLike[] | unde
 /** Contexte à activer côté serveur pour que l'espace affiché soit celui que le serveur reconnaît (lien direct, favori) :
     seulement pour un compte professionnel qui possède l'espace demandé sans qu'il soit actif. `null` = rien à faire. */
 export function contextToActivate(space: SpaceId, contexts: ContextLike[] | undefined): "patient" | "professional" | null {
-  if (space === "establishment" || !isProfessionalAccount(contexts)) return null;
+  if (space === "establishment" || space === "laboratory" || !isProfessionalAccount(contexts)) return null;
   const wanted = (contexts ?? []).find((context) => context.role === SPACES[space].role);
   return wanted && wanted.is_active !== true ? (SPACES[space].role as "patient" | "professional") : null;
+}
+
+/** Le compte est celui d'un laboratoire (PRO-21) : le serveur l'indique sur le contexte `establishment`. */
+export function isLaboratoryAccount(contexts: ContextLike[] | undefined): boolean {
+  return (contexts ?? []).some((context) => context.role === "establishment" && context.is_laboratory === true);
+}
+
+/** Adresse où l'espace affiché doit envoyer le compte, ou `null` : un laboratoire n'a pas l'espace établissement (ni les onglets
+    Dossiers, Équipe, Demandes), et un compte qui n'est pas un laboratoire n'a pas l'espace laboratoire. Pas de redirection en boucle :
+    chaque espace n'a qu'une seule cible. */
+export function laboratoryRedirect(space: SpaceId, contexts: ContextLike[] | undefined): string | null {
+  const laboratory = isLaboratoryAccount(contexts);
+  if (space === "establishment" && laboratory) return SPACES.laboratory.home;
+  if (space === "laboratory" && !laboratory) return (contexts ?? []).some((context) => context.role === "establishment") ? SPACES.establishment.home : "/";
+  return null;
 }

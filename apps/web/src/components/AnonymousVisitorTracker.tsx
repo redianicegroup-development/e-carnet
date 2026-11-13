@@ -15,7 +15,7 @@ const CLICK_CATEGORIES = new Set([
   "signup", "professional_signup", "login", "establishment_contact", "faq", "security", "about",
   "navigation", "external", "feedback_open", "action", "other",
 ]);
-const PRIVATE_PREFIXES = ["/patient", "/professionnel", "/etablissement", "/staff", "/admin", "/onboarding"];
+const PRIVATE_PREFIXES = ["/patient", "/professionnel", "/etablissement", "/laboratoire", "/staff", "/admin", "/onboarding"];
 
 function isPrivateRoute(pathname: string) {
   return PRIVATE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));

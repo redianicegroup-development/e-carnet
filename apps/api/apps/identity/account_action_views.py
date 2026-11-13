@@ -51,7 +51,7 @@ def anonymize_and_disable_account(user):
         raise PermissionDenied("Un compte administrateur ou superadministrateur ne peut pas être supprimé.")
 
     from apps.patients.models import ClinicalDeclaration, PatientProfile
-    from apps.care.models import AccessGrant, Appointment, CareEncounter, Consultation, FollowUpPlan, HealthMeasurement, MedicalDocument, MedicationReminder, PatientNotification, PreConsultationRevision, Vaccination
+    from apps.care.models import AccessGrant, Appointment, CareEncounter, Consultation, FollowUpPlan, HealthMeasurement, MedicalDocument, MedicationReminder, PatientNotification, PreConsultationRevision, PendingConsultation, Vaccination
     from apps.professionals.models import ProfessionalProfile
     from apps.establishments.models import EstablishmentAdministrator, EstablishmentMembership
 
@@ -89,6 +89,8 @@ def anonymize_and_disable_account(user):
             updated_at=now,
         )
         AccessGrant.objects.filter(patient=patient, status__in=("pending", "active")).update(status="revoked", revoked_at=now)
+        # PRO-21 : le brouillon clinique d'une consultation en attente est effacé, l'attente annulée et son QR d'examen périmé.
+        PendingConsultation.objects.filter(patient=patient).exclude(status="completed").update(draft={}, status="cancelled", qr_expires_at=now)
 
     professional = ProfessionalProfile.objects.filter(user=user).first()
     if professional:

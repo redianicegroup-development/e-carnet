@@ -133,7 +133,7 @@ class EstablishmentCatalogView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        items = Establishment.with_complete_profile().filter(status="active").order_by("name").values("id", "name", "city")
+        items = Establishment.with_complete_profile().filter(status="active", is_laboratory=False).order_by("name").values("id", "name", "city")
         return Response({"success": True, "data": [{"id": str(item["id"]), "name": item["name"], "city": item["city"]} for item in items]})
 
 
@@ -642,6 +642,9 @@ class EstablishmentJoinCodeCreateView(APIView):
         admin = active_administrator(request.user, establishment_id)
         if not admin:
             return Response({"success": False, "message": "Vous n’êtes pas administrateur de cet établissement actif."}, status=403)
+        if admin.establishment.is_laboratory:
+            # Un laboratoire ne reçoit pas de médecins : pas de code de rattachement.
+            return Response({"success": False, "message": "Un laboratoire ne peut pas émettre de code médecin."}, status=403)
         if not admin.establishment.is_profile_complete:
             return Response({"success": False, "code": "profile_incomplete", "message": "Complétez d’abord la fiche de votre établissement avant de créer un code médecin."}, status=409)
         raw_code = f"ECM-{secrets.token_urlsafe(9).upper()}"

@@ -9,6 +9,7 @@ from .clinical_views import (
     EstablishmentRecordOpeningsView,
     EstablishmentRecordOpeningCloseView,
 )
+from .laboratories import EstablishmentLaboratoriesView
 from .views import (
     EstablishmentActiveJoinCodesView,
     EstablishmentActiveJoinCodeCountView,
@@ -55,6 +56,7 @@ urlpatterns = [
     path("startup/<uuid:establishment_id>/administrator-invitation/revoke/", StaffAdministratorInvitationRevokeView.as_view()),
     path("startup/<uuid:establishment_id>/status/", StaffEstablishmentStatusView.as_view()),
     path("startup/<uuid:establishment_id>/audit/", StaffEstablishmentAuditView.as_view()),
+    path("<uuid:establishment_id>/laboratories/", EstablishmentLaboratoriesView.as_view()),
     path("<uuid:establishment_id>/join-codes/", EstablishmentJoinCodeCreateView.as_view()),
     path("<uuid:establishment_id>/join-codes/active/", EstablishmentActiveJoinCodesView.as_view()),
     path("<uuid:establishment_id>/join-codes/active-count/", EstablishmentActiveJoinCodeCountView.as_view()),

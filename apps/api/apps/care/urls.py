@@ -5,6 +5,17 @@ from .break_glass_views import (
     ProfessionalEmergencyAccessDetailView,
     ProfessionalEmergencyAccessListCreateView,
 )
+from .pending_views import (
+    LabDepositHistoryView,
+    LabExamQrResolveView,
+    LabResultDepositView,
+    PatientExamQrView,
+    PatientPendingCancelView,
+    PatientPendingConsultationListView,
+    ProfessionalPendingConsultationView,
+    ProfessionalPendingExamAbandonView,
+    ProfessionalPendingForGrantView,
+)
 from .views import (
     EncounterDetailView,
     EncounterListCreateView,
@@ -115,6 +126,16 @@ urlpatterns = [
     path("professional/access-grants/<uuid:grant_id>/documents/<uuid:pk>/download/", ProfessionalMedicalDocumentDownloadView.as_view()),
     path("professional/access-grants/<uuid:grant_id>/vaccinations/", ProfessionalVaccinationListView.as_view()),
     path("professional/access-grants/<uuid:grant_id>/vaccinations/<uuid:pk>/confirm/", ProfessionalVaccinationConfirmView.as_view()),
+    # PRO-21 — consultation en attente de résultats + espace laboratoire (drapeau ECARNET_LAB_ENABLED).
+    path("pending-consultations/", PatientPendingConsultationListView.as_view()),
+    path("pending-consultations/<uuid:pk>/exam-qr/", PatientExamQrView.as_view()),
+    path("pending-consultations/<uuid:pk>/cancel/", PatientPendingCancelView.as_view()),
+    path("professional/pending-consultations/", ProfessionalPendingConsultationView.as_view()),
+    path("professional/pending-consultations/<uuid:pk>/exams/<uuid:exam_id>/abandon/", ProfessionalPendingExamAbandonView.as_view()),
+    path("professional/access-grants/<uuid:grant_id>/pending-consultation/", ProfessionalPendingForGrantView.as_view()),
+    path("laboratory/exam-qr/resolve/", LabExamQrResolveView.as_view()),
+    path("laboratory/results/", LabResultDepositView.as_view()),
+    path("laboratory/deposits/", LabDepositHistoryView.as_view()),
     path("professional/follow-up-plans/", ProfessionalFollowUpPlanCreateView.as_view()),
     path("professional/follow-up-plans/<uuid:pk>/", ProfessionalFollowUpPlanDetailView.as_view()),
 ]

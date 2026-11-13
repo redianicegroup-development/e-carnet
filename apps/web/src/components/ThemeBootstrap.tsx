@@ -15,7 +15,7 @@ type ThemeResponse = { success?: boolean; data?: unknown; account_id?: string | 
  */
 export function ThemeBootstrap() {
   const pathname = usePathname();
-  const workspace: ThemeWorkspace = pathname?.startsWith("/patient") ? "patient" : pathname?.startsWith("/etablissement") ? "establishment" : "professional";
+  const workspace: ThemeWorkspace = pathname?.startsWith("/patient") ? "patient" : pathname?.startsWith("/etablissement") || pathname?.startsWith("/laboratoire") ? "establishment" : "professional";
   const themeRef = useRef<ThemeConfig>(defaultTheme());
   const workspaceRef = useRef<ThemeWorkspace>(workspace);
 

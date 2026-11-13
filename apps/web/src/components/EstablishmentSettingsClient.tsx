@@ -38,7 +38,8 @@ function statusLabel(status: Establishment["status"]): string {
   return "En attente de validation";
 }
 
-export function EstablishmentSettingsClient() {
+/** `laboratory` (PRO-21) : même page « Moi », sans le modèle d'ordonnance ni la copie hors connexion, qui ne concernent pas un laboratoire. */
+export function EstablishmentSettingsClient({ laboratory = false }: { laboratory?: boolean } = {}) {
   const router = useRouter();
   const [account, setAccount] = useState<Account | null>(null);
   const [establishments, setEstablishments] = useState<Establishment[]>([]);
@@ -98,18 +99,19 @@ export function EstablishmentSettingsClient() {
     { id: "avis", title: "Votre avis", description: "Partager une suggestion ou signaler un problème.", icon: "pencil" },
   ];
   const titleFor = (id: string) => navItems.find((item) => item.id === id)?.title ?? "Paramètres";
+  const shownItems = laboratory ? navItems.filter((item) => item.id !== "ordonnance" && item.id !== "hors-connexion") : navItems;
 
   return (
     <div className="establishment-settings settings-page">
       <ProfileSummary
         avatar={<div className="avatar avatar--large avatar--logo" aria-hidden="true">{selected?.logo ? <img src={selected.logo} alt="" /> : selected ? establishmentInitials(selected.name) : "ET"}</div>}
-        eyebrow="Espace établissement" name={selected?.name ?? "Compte établissement"}
+        eyebrow={laboratory ? "Espace laboratoire" : "Espace établissement"} name={selected?.name ?? "Compte établissement"}
         stats={selected ? [{ label: "Ville", value: selected.city }, { label: "Type", value: selected.establishment_type }, { label: "Statut", value: statusLabel(selected.status) }] : []}
       >
         {establishments.length > 1 && <label className="field"><span>Établissement concerné</span><select value={selected?.id ?? ""} onChange={(event) => setSelectedId(event.target.value)}>{establishments.map((item) => <option key={item.id} value={item.id}>{item.name} · {statusLabel(item.status)}</option>)}</select></label>}
         <p className="notice" role="status" aria-live="polite">{loading ? "Chargement…" : message}</p>
       </ProfileSummary>
-      <SettingsDirectory items={navItems} activeId={activeSection} onSelect={setActiveSection} onLogout={() => void logout()} logoutDisabled={signingOut || loading} />
+      <SettingsDirectory items={shownItems} activeId={activeSection} onSelect={setActiveSection} onLogout={() => void logout()} logoutDisabled={signingOut || loading} />
 
       {activeSection === "administratif" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Identité de la structure</span>
         {selected && selected.status === "active" && <>

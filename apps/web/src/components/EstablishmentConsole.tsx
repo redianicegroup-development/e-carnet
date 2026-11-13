@@ -15,9 +15,10 @@ import { EstablishmentKpis } from "./EstablishmentKpis";
 import { EstablishmentDashboard } from "./EstablishmentDashboard";
 import { CollapsibleSection } from "./ui/CollapsibleSection";
 import { EstablishmentJoinCodes } from "./EstablishmentJoinCodes";
+import { EstablishmentLaboratories } from "./EstablishmentLaboratories";
 import { splitFullName } from "../lib/join-codes";
 
-type Establishment = { id: string; name: string; city: string; logo?: string | null; status: "pending" | "active" | "suspended" | "rejected" | string };
+type Establishment = { id: string; name: string; city: string; is_laboratory?: boolean; logo?: string | null; status: "pending" | "active" | "suspended" | "rejected" | string };
 type Membership = { id: string; status: "pending" | "active" | "refused" | "suspended" | string; professional_name?: string; professional_first_name?: string; professional_last_name?: string; professional_email?: string; professional_avatar_url?: string; professional_title?: string; professional_specialty?: string; professional_age?: number | null; requested_at?: string | null; reviewed_at?: string | null };
 type OpeningSummary = { opening_id: string; reason_label: string; opened_at: string; status: string };
 type AppointmentSummary = { id: string; starts_at: string; ends_at: string | null; status: string };
@@ -113,6 +114,8 @@ export function EstablishmentConsole({ view }: { view: "home" | "requests" | "do
   if (!data) return <div className="skeleton" role="status"><span className="sr-only">Chargement…</span><i /><i /></div>;
   const { establishment, memberships, activeJoinCodeCount, openings, appointments } = data;
   if (!establishment) return <NoEstablishment />;
+  // PRO-21 : un laboratoire a son propre espace (/laboratoire), où le shell l'envoie ; ceci ne sert que si l'on arrive ici autrement.
+  if (establishment.is_laboratory) return <section className="notice" role="status"><strong>{establishment.name}</strong> est un laboratoire : son espace est <Link href="/laboratoire">l’espace laboratoire</Link>.</section>;
   const active = establishment.status === "active";
   const pending = memberships.filter((item) => item.status === "pending");
   const doctors = memberships.filter((item) => item.status === "active");
@@ -191,6 +194,7 @@ export function EstablishmentConsole({ view }: { view: "home" | "requests" | "do
         <CollapsibleSection title="Ouvertures récentes" solo icon="eye" hint="Dossiers ouverts par l’établissement"><section className="card" aria-labelledby="openings-list-title"><div className="section-heading"><div><h2 id="openings-list-title">Ouvertures récentes</h2></div></div>{openings.length === 0 ? <p className="empty">Aucune ouverture enregistrée.</p> : <ul className="stack">{openings.map((item) => <li className="record" key={item.opening_id}><strong>{item.reason_label}</strong><p className="muted">Depuis le {new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(item.opened_at))} · {item.status}</p></li>)}</ul>}</section></CollapsibleSection>
         <CollapsibleSection title="Rendez-vous" solo icon="clock" hint="Pris dans l’établissement"><section className="card" aria-labelledby="appointments-list-title"><div className="section-heading"><div><h2 id="appointments-list-title">Rendez-vous</h2></div></div>{appointments.length === 0 ? <p className="empty">Aucun rendez-vous.</p> : <ul className="stack">{appointments.map((item) => <li className="record" key={item.id}><strong>{new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(item.starts_at))}</strong><span className="badge">{item.status}</span></li>)}</ul>}</section></CollapsibleSection>
         <CollapsibleSection title="Codes médecin" icon="qr" hint="Valables 48 h">{codeCard}</CollapsibleSection>
+        <CollapsibleSection title="Laboratoires" icon="document" hint="Résultats d’examens">{<EstablishmentLaboratories establishmentId={establishment.id} />}</CollapsibleSection>
       </div>}
       {!active && <section className="card progress-card"><div className="section-heading"><div><h2>Activer l’espace établissement</h2></div></div><p className="muted">L’équipe Mon E‑Carnet doit d’abord valider votre structure.</p><div className="progress-card__line" role="progressbar" aria-valuemin={0} aria-valuemax={2} aria-valuenow={establishment.status === "pending" ? 1 : 0}><span style={{ width: `${establishment.status === "pending" ? 50 : 0}%` }} /></div><div className="progress-card__meta"><span>{establishment.status === "pending" ? "Demande reçue" : "Fiche à préparer"}</span><Link className="text-link" href="/etablissement/parametres">Voir les paramètres</Link></div></section>}
       {!active && codeCard}

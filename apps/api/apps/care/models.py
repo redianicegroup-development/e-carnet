@@ -214,6 +214,13 @@ class MedicalDocument(models.Model):
     professional = models.ForeignKey("professionals.ProfessionalProfile", null=True, blank=True, on_delete=models.PROTECT, related_name="medical_documents")
     validated_at = models.DateTimeField(null=True, blank=True)
     exam_request = models.ForeignKey("ExamRequest", null=True, blank=True, on_delete=models.SET_NULL, related_name="result_documents")
+    # PRO-21 : résultat déposé par un laboratoire pour une consultation encore en attente (l'ExamRequest n'existe pas avant la signature).
+    # À la signature, `exam_request` est renseigné ; `pending_exam` reste pour la traçabilité.
+    pending_exam = models.ForeignKey("PendingExam", null=True, blank=True, on_delete=models.SET_NULL, related_name="result_documents")
+    # Compte du laboratoire qui a déposé le fichier. Un laboratoire n'est pas un professionnel : il n'a pas de `professional`.
+    lab_depositor = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="lab_deposited_documents")
+    # Une correction du laboratoire est un nouveau dépôt : l'ancien reste lisible, marqué « remplacé », jamais modifié ni supprimé.
+    superseded_by = models.ForeignKey("self", null=True, blank=True, on_delete=models.SET_NULL, related_name="supersedes")
     file = models.FileField(upload_to=medical_document_upload_to, blank=True, null=True)
     cloudinary_public_id = models.CharField(max_length=500, blank=True)
     cloudinary_resource_type = models.CharField(max_length=16, blank=True)
@@ -231,7 +238,9 @@ class MedicalDocument(models.Model):
         ordering = ("-created_at",)
         constraints = [
             models.CheckConstraint(
-                condition=models.Q(establishment__isnull=True) | (models.Q(professional__isnull=False) & models.Q(validated_at__isnull=False)),
+                condition=models.Q(establishment__isnull=True)
+                | (models.Q(professional__isnull=False) & models.Q(validated_at__isnull=False))
+                | (models.Q(lab_depositor__isnull=False) & models.Q(validated_at__isnull=False)),
                 name="care_md_estab_validator_ck",
             ),
         ]
@@ -585,3 +594,64 @@ class EmergencyAccessReview(models.Model):
 
     def delete(self, *args, **kwargs):
         raise TypeError("Les revues d’accès d’urgence sont immuables.")
+
+
+class PendingConsultation(models.Model):
+    """PRO-21 — consultation « en attente de résultats ».
+
+    Une `Consultation` n'existe qu'une fois signée (c'est une règle de tout le produit : historique, agenda, exports). Tant que le
+    médecin attend un résultat d'examen, ce qu'il a saisi vit ici, sans signature. À la signature, `validate_consultation` crée la
+    vraie `Consultation`, y rattache les examens et les PDF reçus, puis passe cette ligne à `completed`.
+
+    L'accès du médecin au carnet est fermé pendant l'attente ; la reprise exige un nouveau QR du patient (le consentement ne se transmet pas)."""
+    STATUS_CHOICES = (
+        ("waiting_results", "En attente de résultats"),
+        ("to_resume", "À reprendre"),
+        ("completed", "Signée"),
+        ("cancelled", "Annulée"),
+    )
+    OPEN_STATUSES = ("waiting_results", "to_resume")
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name="pending_consultations")
+    professional = models.ForeignKey("professionals.ProfessionalProfile", on_delete=models.PROTECT, related_name="pending_consultations")
+    establishment = models.ForeignKey("establishments.Establishment", on_delete=models.PROTECT, related_name="pending_consultations")
+    source_encounter = models.ForeignKey(CareEncounter, on_delete=models.PROTECT, related_name="pending_consultations")
+    # Saisie du médecin (motif, symptômes, constantes, ordonnance…), SANS attestation : la signature n'a lieu qu'à la reprise.
+    draft = models.JSONField(default=dict, blank=True)
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="waiting_results")
+    consultation = models.OneToOneField(Consultation, null=True, blank=True, on_delete=models.PROTECT, related_name="pending_origin")
+    # QR d'examen : jeton signé (HMAC) recalculé à la demande, jamais stocké. Renouveler ou révoquer incrémente `qr_version`,
+    # ce qui invalide d'un coup tous les QR précédents.
+    qr_version = models.PositiveSmallIntegerField(default=1)
+    qr_expires_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+        constraints = [
+            # Un seul brouillon patient à la fois (voir EncounterListCreateView) → une seule attente ouverte par pré-consultation.
+            models.UniqueConstraint(fields=("source_encounter",), condition=models.Q(status__in=("waiting_results", "to_resume")), name="care_pending_one_open_per_encounter"),
+        ]
+        indexes = [models.Index(fields=("patient", "status"), name="care_pend_patient_st_idx"), models.Index(fields=("professional", "status"), name="care_pend_prof_st_idx")]
+
+
+class PendingExam(models.Model):
+    """Un examen demandé pendant une consultation en attente. À la signature, il devient un `ExamRequest` de la vraie consultation."""
+    STATUS_CHOICES = (("requested", "Demandé"), ("result_received", "Résultat reçu"), ("abandoned", "Abandonné"))
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    pending = models.ForeignKey(PendingConsultation, on_delete=models.CASCADE, related_name="exams")
+    position = models.PositiveSmallIntegerField(default=0)
+    kind = models.CharField(max_length=16, choices=ExamRequest.KIND_CHOICES)
+    label = models.CharField(max_length=160)
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="requested")
+    proof_document = models.ForeignKey(MedicalDocument, null=True, blank=True, on_delete=models.SET_NULL, related_name="pending_exam_proofs")
+    # Laboratoire qui a déposé le (dernier) résultat.
+    lab_establishment = models.ForeignKey("establishments.Establishment", null=True, blank=True, on_delete=models.PROTECT, related_name="lab_pending_exams")
+    result_received_at = models.DateTimeField(null=True, blank=True)
+    abandon_reason = models.CharField(max_length=240, blank=True, default="")
+    abandoned_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ("position",)

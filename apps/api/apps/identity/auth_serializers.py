@@ -79,7 +79,18 @@ class AccountSerializer(serializers.Serializer):
         return [{"provider": identity.provider, "display_name": identity.display_name, "avatar_url": identity.avatar_url} for identity in obj.auth_identities.all()]
 
     def get_contexts(self, obj):
-        return [{"role": c.role, "is_active": c.is_active, "onboarding_completed": c.onboarding_completed} for c in obj.account_contexts.all()]
+        contexts = [{"role": c.role, "is_active": c.is_active, "onboarding_completed": c.onboarding_completed} for c in obj.account_contexts.all()]
+        if any(context["role"] == "establishment" for context in contexts):
+            # PRO-21 : le compte d'un laboratoire a son propre espace (/laboratoire). Il n'est « laboratoire » que si TOUS ses rôles actifs
+            # d'administrateur sont des laboratoires : un compte qui administre aussi un établissement de soin garde l'espace établissement.
+            from apps.establishments.models import EstablishmentAdministrator
+            flags = list(EstablishmentAdministrator.objects.filter(user=obj, status="active").values_list("establishment__is_laboratory", flat=True))
+            is_laboratory = bool(flags) and all(flags)
+            for context in contexts:
+                if context["role"] == "establishment":
+                    context["is_laboratory"] = is_laboratory
+        return contexts
+
     def get_patient_profile(self, obj):
         profile = getattr(obj, "patient_profile", None)
         return {"completed": bool(profile), "id": str(profile.id) if profile else None}

@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { createContext, Fragment, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { ApiError, apiGet, apiPost } from "../../infrastructure/api/client";
 import { isSessionMissing } from "../../lib/session";
-import { SPACES, contextToActivate, spaceSwitchTarget, visibleTabsFor, type SpaceId } from "../../lib/spaces";
+import { SPACES, contextToActivate, laboratoryRedirect, spaceSwitchTarget, visibleTabsFor, type SpaceId } from "../../lib/spaces";
 import { useConfirm } from "../modal/ConfirmProvider";
 import { GreetingModal } from "../modal/GreetingModal";
 import { BrandMark } from "../ui/BrandMark";
@@ -34,7 +34,7 @@ export type SpaceAccount = {
   date_joined?: string;
   is_admin?: boolean;
   must_change_password?: boolean;
-  contexts: { role: string; is_active: boolean; onboarding_completed: boolean }[];
+  contexts: { role: string; is_active: boolean; onboarding_completed: boolean; is_laboratory?: boolean }[];
   patient_profile: { completed: boolean; id: string | null };
 };
 
@@ -247,10 +247,17 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
   }, [passwordChangePending, router]);
 
   // Onboarding de l'établissement : tant que la fiche n'est pas complétée, l'espace reste fermé (le serveur bloque aussi les codes).
-  const profilePending = space === "establishment" && state.status === "ready" && !passwordChangePending && state.account.contexts.some((context) => context.role === "establishment" && !context.onboarding_completed);
+  const profilePending = (space === "establishment" || space === "laboratory") && state.status === "ready" && !passwordChangePending && state.account.contexts.some((context) => context.role === "establishment" && !context.onboarding_completed);
   useEffect(() => {
     if (profilePending && !bare) router.replace("/etablissement/fiche");
   }, [profilePending, bare, router]);
+
+  // PRO-21 : le compte d'un laboratoire n'a pas l'espace établissement (ses onglets Dossiers, Équipe, Demandes ne le concernent pas) ;
+  // un compte qui n'est pas un laboratoire n'a pas l'espace laboratoire. Le shell choisit l'espace d'après le contexte du compte.
+  const spaceRedirect = state.status === "ready" && !bare && !passwordChangePending && !profilePending ? laboratoryRedirect(space, state.account.contexts) : null;
+  useEffect(() => {
+    if (spaceRedirect) router.replace(spaceRedirect);
+  }, [spaceRedirect, router]);
 
   const moi = config.tabs[config.tabs.length - 1];
   const showAdminLink = space === "patient" && state.status === "ready" && state.account.is_admin === true;
@@ -313,7 +320,8 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
           <section className="card gate" role="alert"><h1>{state.message === OFFLINE_NO_COPY_MESSAGE ? "Vous êtes hors connexion" : "Service momentanément indisponible"}</h1><p className="muted">{state.message}</p><div className="actions"><button type="button" className="button primary" onClick={() => setLoadAttempt((attempt) => attempt + 1)}>Réessayer</button></div></section>
         )}
         {passwordChangePending && <ScreenLoader label="Redirection vers le choix de votre mot de passe…" />}
-        {((state.status === "ready" && !passwordChangePending) || bare) && (
+        {spaceRedirect && <ScreenLoader label="Ouverture de votre espace…" />}
+        {((state.status === "ready" && !passwordChangePending && !spaceRedirect) || bare) && (
           <AccountContext.Provider value={state.status === "ready" ? state.account : null}>
             <PatientAccessQrContext.Provider value={{ qr: patientAccessQr, setQr: setPatientAccessQr }}>
               {space === "patient" && state.status === "ready" && !bare && <TrustedDelegationBanner />}
@@ -324,8 +332,8 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
         )}
         {!bare && <p className="space-footer" data-scroll-top="true"><Link href="/aide">Aide</Link></p>}
       </main>
-      {state.status === "ready" && !bare && <GreetingModal account={state.account} space={space} />}
-      {state.status === "ready" && !bare && !passwordChangePending && !profilePending && <ProductTour space={space} accountId={state.account.id} />}
+      {state.status === "ready" && !bare && !spaceRedirect && <GreetingModal account={state.account} space={space} />}
+      {state.status === "ready" && !spaceRedirect && !bare && !passwordChangePending && !profilePending && <ProductTour space={space} accountId={state.account.id} />}
     </div>
   );
 }

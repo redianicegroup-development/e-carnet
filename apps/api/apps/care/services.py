@@ -59,8 +59,10 @@ def other_professional_connected(patient, professional, *, exclude_grant_id=None
 # Pourquoi un accès a été fermé avant son échéance (journal d'audit, metadata.reason_code : clé déjà autorisée par la liste blanche du journal).
 END_REASON_PROFESSIONAL = "professional_ended"
 END_REASON_CONSULTATION_SIGNED = "consultation_signed"
+END_REASON_WAITING_RESULTS = "waiting_results"
 _END_NOTIFICATIONS = {
     END_REASON_PROFESSIONAL: ("Accès terminé", "{who} de {where} a mis fin à son accès à votre carnet."),
+    END_REASON_WAITING_RESULTS: ("Consultation en attente de résultats", "{who} de {where} attend les résultats de vos examens. Son accès à votre carnet s’est fermé : montrez votre QR d’examen au laboratoire, puis votre QR d’accès à votre médecin pour reprendre."),
     END_REASON_CONSULTATION_SIGNED: ("Consultation terminée", "{who} de {where} a terminé votre consultation. Son accès à votre carnet s’est fermé automatiquement : vous n’avez rien à faire."),
 }
 

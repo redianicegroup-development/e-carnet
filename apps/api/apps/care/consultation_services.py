@@ -7,6 +7,7 @@ from rest_framework.exceptions import ValidationError
 from apps.professionals.access import professional_clinical_access_error
 from .models import AccessGrant, CareEncounter, Consultation, ConsultationRevision, ExamRequest, MedicalDocument, PreConsultationRevision, PrescriptionLine
 from .services import SELF_ACCESS_MESSAGE, is_own_patient_file, require_scope
+from .pending_services import attach_pending_to_consultation, pending_for_signature
 from .vitals import build_consultation_vitals
 
 
@@ -42,6 +43,9 @@ def validate_consultation(*, professional, data):
         raise ValidationError("Cette pré-consultation n’existe pas pour ce patient.")
     if encounter.status != "draft" or Consultation.objects.filter(source_encounter=encounter).exists():
         raise ValidationError("Cette pré-consultation est déjà clôturée : elle a déjà donné lieu à une consultation.")
+    # PRO-21 : une attente de résultats ouverte sur cette pré-consultation bloque la signature « ordinaire ». Seule la reprise de
+    # SA consultation (statut « à reprendre », son identifiant fourni) passe ; ses examens viennent alors de l'attente, pas du client.
+    pending = pending_for_signature(encounter=encounter, professional=professional, pending_id=data.get("pending_consultation_id"))
     from .svg_sanitizer import sanitize_svg
     attestation = sanitize_svg(data["attestation_svg"].strip())
     signed_at = timezone.now()
@@ -90,7 +94,7 @@ def validate_consultation(*, professional, data):
     ]
     exam_requests = []
     used_proofs = set()
-    for index, exam in enumerate(data.get("requested_exams", [])):
+    for index, exam in enumerate([] if pending else data.get("requested_exams", [])):
         proof = None
         proof_id = exam.get("proof_document_id")
         if proof_id:
@@ -103,6 +107,8 @@ def validate_consultation(*, professional, data):
         exam_requests.append(ExamRequest(consultation=consultation, position=index, kind=exam["kind"], label=label, proof_document=proof))
     PrescriptionLine.objects.bulk_create(prescription_lines)
     ExamRequest.objects.bulk_create(exam_requests)
+    if pending:
+        attach_pending_to_consultation(pending, consultation, now=signed_at)
     # Clôture par le médecin : l’établissement vient de la session du médecin, jamais d’un choix du patient.
     encounter.status = "closed"
     encounter.closed_at = signed_at

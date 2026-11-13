@@ -1,0 +1,20 @@
+/* PRO-21 — QR d'examen, consultation en attente, espace laboratoire. Couleurs : variables de palette uniquement. */
+.qr-exam { display: grid; gap: 12px; justify-items: start; }
+.qr-exam svg { background: #fff; border-radius: var(--r-md, 12px); padding: 4px; max-width: 100%; height: auto; }
+.pending-banner { border-left: 4px solid var(--primary, currentColor); }
+.pending-exam { display: grid; gap: 8px; padding: 12px 0; border-top: 1px solid var(--border, rgba(0, 0, 0, .12)); }
+.pending-exam:first-child { border-top: 0; }
+.lab-identity { display: grid; gap: 4px; padding: 16px; border-radius: var(--r-md, 12px); border: 2px solid var(--primary, currentColor); }
+.lab-identity strong { font-size: 1.25rem; }
+.lab-exam-row { display: grid; gap: 8px; padding: 12px 0; border-top: 1px solid var(--border, rgba(0, 0, 0, .12)); }
+.lab-secret { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 1.1rem; user-select: all; padding: 8px 12px; border-radius: var(--r-md, 12px); background: var(--surface-2, rgba(0, 0, 0, .06)); width: fit-content; }
+/* Espace laboratoire — onglet Dépôts. */
+.lab-day { display: grid; gap: 8px; }
+.lab-day__title { margin: 8px 0 0; font-size: .95rem; text-transform: capitalize; color: var(--muted, inherit); }
+.lab-deposits { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.lab-deposit { display: grid; gap: 4px; padding: 12px 14px; border-radius: var(--r-md, 12px); border: 1px solid var(--border, rgba(0, 0, 0, .12)); background: var(--surface, transparent); }
+.lab-deposit__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.lab-deposit__meta { margin: 0; }
+.lab-status--deposited { background: color-mix(in srgb, var(--primary, currentColor) 18%, transparent); }
+.lab-status--replaced { background: color-mix(in srgb, var(--primary, currentColor) 8%, transparent); border: 1px dashed var(--primary, currentColor); }
+.lab-status--abandoned { background: transparent; border: 1px solid var(--border, rgba(0, 0, 0, .3)); color: var(--muted, inherit); }
