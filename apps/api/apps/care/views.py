@@ -22,7 +22,8 @@ from apps.professionals.models import ProfessionalProfile
 from apps.audit.models import AuditEvent
 from apps.audit.services import record_event
 from apps.cloudinary_storage import CLOUDINARY_CONFIGURED, destroy as cloudinary_destroy, extension_from_name, signed_download, upload as cloudinary_upload
-from .models import AccessGrant, Appointment, CareEncounter, Consultation, ExamRequest, FollowUpPlan, FollowUpPlanItem, FollowUpPlanRevision, HealthMeasurement, MedicalDocument, MedicationIntake, MedicationReminder, PatientNotification, PreconsultationTemplate, PushSubscription, Vaccination
+from .break_glass import PATIENT_VISIBLE_EVENTS as BREAK_GLASS_PATIENT_EVENTS
+from .models import AccessGrant, Appointment, CareEncounter, Consultation, EmergencyAccessRequest, ExamRequest, FollowUpPlan, FollowUpPlanItem, FollowUpPlanRevision, HealthMeasurement, MedicalDocument, MedicationIntake, MedicationReminder, PatientNotification, PreconsultationTemplate, PushSubscription, Vaccination
 from .pdf_compression import compress_pdf_lossless
 from .serializers import AccessGrantSerializer, PatientAccessGrantSerializer, account_avatar_url, ProfessionalConsultationSerializer, AppointmentSerializer, CareEncounterSerializer, ConsultationSerializer, FollowUpPlanSerializer, HealthMeasurementSerializer, MedicalDocumentSerializer, MedicationIntakeSerializer, MedicationReminderSerializer, PatientNotificationSerializer, PreconsultationTemplateSerializer, ProfessionalAccessGrantSerializer, ProfessionalAppointmentSerializer, ProfessionalConsultationCreateSerializer, ProposeAppointmentSerializer, VaccinationSerializer
 from .services import ANOTHER_PROFESSIONAL_CONNECTED_MESSAGE, AUTO_GRANT_DURATION, END_REASON_CONSULTATION_SIGNED, END_REASON_PROFESSIONAL, end_access_grant, QR_TOKEN_TTL_SECONDS, SELF_ACCESS_MESSAGE, SelfAccessRefused, create_patient_qr_token, create_professional_grant, is_own_patient_file, other_professional_connected, require_scope
@@ -570,7 +571,7 @@ class PatientAccessSummaryPreferenceView(APIView):
         patient = profile_for(request.user, request)
         frequency = request.data.get("frequency")
         valid = {choice[0] for choice in PatientAccessSummaryPreference.FREQUENCY_CHOICES}
-        if frequency not in valid:
+        if not isinstance(frequency, str) or frequency not in valid:  # une liste ou un objet JSON doit répondre 400, pas planter
             raise ValidationError({"frequency": "Choisissez désactivé, hebdomadaire ou mensuel."})
         preference, _ = PatientAccessSummaryPreference.objects.update_or_create(
             patient=patient,
@@ -866,31 +867,19 @@ class EstablishmentAppointmentListView(APIView):
 
 
 class PatientCarnetExportView(APIView):
-    """Export volontaire du carnet. PDF par défaut ; ?format=xlsx&from=AAAA-MM-JJ&to=AAAA-MM-JJ donne un classeur Excel sur la période choisie (PAT-09)."""
+    """Export volontaire du carnet du patient connecté (PAT-09). PDF par défaut, ?format=xlsx donne un classeur Excel.
+
+    Paramètres communs aux deux formats : from / to (AAAA-MM-JJ, tout l’historique si absents) et sections (liste séparée par des virgules :
+    allergies, vaccins, mesures, consultations, prescriptions, examens, documents ; toutes si absent). Un paramètre invalide répond 400.
+    Journalisé (format, période, rubriques : jamais le contenu), jamais mis en cache."""
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        if request.query_params.get("format") == "xlsx":
+        if (request.query_params.get("format") or "").lower() == "xlsx":
             from .export_xlsx import carnet_xlsx_response
             return carnet_xlsx_response(request)
-        from io import BytesIO
-        from reportlab.lib.pagesizes import A4
-        from reportlab.pdfgen import canvas
-        patient = profile_for(request.user, request)
-        buffer = BytesIO(); pdf = canvas.Canvas(buffer, pagesize=A4); width, height = A4; y = height - 54
-        pdf.setFont("Helvetica-Bold", 18); pdf.drawString(48, y, "MON CARNET NUMERIQUE"); y -= 28
-        pdf.setFont("Helvetica", 10); pdf.drawString(48, y, f"Titulaire : {patient.user.get_full_name() or patient.user.email}"); y -= 24
-        rows = [("Déclarations", ClinicalDeclaration.objects.filter(patient=patient).values_list("label", flat=True)), ("Vaccinations", Vaccination.objects.filter(patient=patient).values_list("vaccine_name", "administered_on")), ("Mesures récentes", HealthMeasurement.objects.filter(patient=patient)[:30].values_list("kind", "value", "unit", "measured_at"))]
-        for title, values in rows:
-            pdf.setFont("Helvetica-Bold", 12); pdf.drawString(48, y, title); y -= 18; pdf.setFont("Helvetica", 9)
-            for value in values:
-                text = " · ".join(str(part or "")[:60] for part in (value if isinstance(value, tuple) else (value,)))
-                pdf.drawString(58, y, text[:105]); y -= 13
-                if y < 60: pdf.showPage(); y = height - 54; pdf.setFont("Helvetica", 9)
-            y -= 10
-        pdf.setFont("Helvetica-Oblique", 8); pdf.drawString(48, 40, "Export volontaire généré par Mon E-Carnet. Vérifiez la date et la provenance des informations."); pdf.save()
-        record_event(event_type="patient.carnet.exported", actor=request.user, actor_role=patient_actor_role(request), patient=patient, metadata={"action": "exported", "resource_type": "patient_carnet_pdf"})
-        response = HttpResponse(buffer.getvalue(), content_type="application/pdf"); response["Content-Disposition"] = f'attachment; filename="carnet-{patient.id}.pdf"'; response["Cache-Control"] = "private, no-store"; return response
+        from .export_pdf import carnet_pdf_response
+        return carnet_pdf_response(request)
 
 
 class EstablishmentPreconsultationTemplateListCreateView(APIView):
@@ -1004,14 +993,20 @@ class PatientAccessAuditView(APIView):
                 | Q(event_type__startswith="establishment_record.")
                 | Q(event_type__startswith="delegation.")
                 | Q(event_type__startswith="referral.")
+                # ACS-13 : l'accès d'urgence et sa revue sont toujours visibles (les relectures de la fenêtre restent dans l'audit).
+                | Q(event_type__in=BREAK_GLASS_PATIENT_EVENTS)
             )
             .select_related("access_grant__professional__user__account_profile", "establishment")
             .order_by("-created_at")[:200]
         )
+        events = list(events)
+        emergency_ids = {str((event.metadata or {}).get("resource_id")) for event in events if event.event_type.startswith("break_glass.")}
+        emergencies = {str(item.id): item for item in EmergencyAccessRequest.objects.filter(pk__in=[i for i in emergency_ids if i and i != "None"])}
         data = []
         for event in events:
             grant = event.access_grant
             metadata = event.metadata or {}
+            emergency = emergencies.get(str(metadata.get("resource_id"))) if event.event_type.startswith("break_glass.") else None
             data.append({
                 "id": str(event.id),
                 "event_type": event.event_type,
@@ -1023,16 +1018,17 @@ class PatientAccessAuditView(APIView):
                 "authorized_until": metadata.get("authorized_until"),
                 "access_duration_minutes": metadata.get("access_duration_minutes"),
                 "reason_category": metadata.get("reason_category"),
+                "emergency_access_id": str(emergency.id) if emergency else None,
                 "opening_id": metadata.get("opening_id"),
                 "delegation_id": metadata.get("delegation_id"),
                 "referral_id": metadata.get("referral_id"),
                 "counterparty_establishment_id": metadata.get("counterparty_establishment_id"),
                 "method": metadata.get("method"),
                 "access_grant_id": str(grant.id) if grant else None,
-                "professional_id": str(grant.professional_id) if grant else None,
-                "professional_name": grant.professional_name if grant else "Professionnel",
+                "professional_id": str(grant.professional_id) if grant else (str(emergency.professional_id) if emergency else None),
+                "professional_name": grant.professional_name if grant else (emergency.professional_name if emergency else "Professionnel"),
                 "professional_avatar": account_avatar_url(grant.professional.user) if grant else "",
-                "facility_label": grant.facility_label if grant else (event.establishment.name if event.establishment else "Établissement"),
+                "facility_label": grant.facility_label if grant else (emergency.facility_label if emergency else (event.establishment.name if event.establishment else "Établissement")),
                 "created_at": event.created_at,
             })
         return Response({"success": True, "data": data})
@@ -1391,7 +1387,7 @@ class ProfessionalRecentPatientsView(APIView):
             for item in rows
         ]
         response = Response({"success": True, "data": data})
-        response["Cache-Control"] = "private, max-age=86400"
+        response["Cache-Control"] = "private, no-store"
         response["Vary"] = "Authorization"
         return response
 

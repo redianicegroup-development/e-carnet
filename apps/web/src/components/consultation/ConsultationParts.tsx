@@ -5,6 +5,8 @@ import { isListed, numberOptions } from "../../lib/preconsult";
 import { OTHER_VALUE } from "../../lib/consultation-options";
 import { VITAL_FIELDS, type VitalKey, type VitalsForm } from "../../lib/vitals";
 import "../preconsult-form.css";
+import { Pictogram } from "../ui/Pictogram";
+import { pictogramFor, type PictogramName } from "../../lib/pictograms";
 
 /* Briques communes de la consultation du médecin : mêmes classes, mêmes gestes que la pré-consultation du patient
    (sections numérotées, puces à cocher, listes pour les constantes). Le médecin sélectionne ; « Autre » reste possible. */
@@ -20,7 +22,9 @@ export function FormSection({ num, title, hint, children }: { num: number; title
 }
 
 /** Puces à cocher (comme les symptômes du patient) + texte libre « Autre ». */
-export function ChipPicker({ label, options, selected, other, onSelected, onOther, otherLabel, otherPlaceholder, maxOther = 1500, rows = 2 }: {
+export function ChipPicker({ label, options, selected, other, onSelected, onOther, otherLabel, otherPlaceholder, maxOther = 1500, rows = 2, pictograms }: {
+  /** Pictogramme facultatif par option (PAT-20) : il accompagne le texte, il ne le remplace jamais. */
+  pictograms?: Readonly<Record<string, PictogramName>>;
   label: string; options: readonly string[]; selected: string[]; other: string;
   onSelected: (next: string[]) => void; onOther: (next: string) => void; otherLabel: string; otherPlaceholder?: string; maxOther?: number; rows?: number;
 }) {
@@ -30,7 +34,7 @@ export function ChipPicker({ label, options, selected, other, onSelected, onOthe
       <div className="symptom-grid" role="group" aria-label={label}>
         {options.map((item) => (
           <label key={item} className={`symptom-chip${selected.includes(item) ? " is-on" : ""}`}>
-            <input type="checkbox" checked={selected.includes(item)} onChange={() => toggle(item)} /><span>{item}</span>
+            <input type="checkbox" checked={selected.includes(item)} onChange={() => toggle(item)} />{pictograms && pictogramFor(pictograms, item) ? <Pictogram name={pictogramFor(pictograms, item) as PictogramName} size={18} decorative /> : null}<span>{item}</span>
           </label>
         ))}
       </div>

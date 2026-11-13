@@ -1,10 +1,16 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import { apiGet, apiPost } from "../infrastructure/api/client";
 import { describeVitals, VITAL_SOURCE_LABELS, type ConsultationVitals } from "../lib/vitals";
 import { PATIENT_MEASUREMENT_TYPES, type HealthMeasurementRecord, type PatientMeasurementKind } from "../lib/measurement-types";
-import { MeasurementTrends } from "./MeasurementTrends";
+import { Pictogram } from "./ui/Pictogram";
+import { MEASUREMENT_PICTOGRAMS, pictogramFor, type PictogramName } from "../lib/pictograms";
+import { useDataSaver } from "./data-saver/useDataSaver";
+
+// Les courbes (bibliothèque de graphiques) ne sont téléchargées qu'au moment de les afficher.
+const MeasurementTrends = dynamic(() => import("./MeasurementTrends").then((module) => module.MeasurementTrends), { ssr: false, loading: () => <p className="muted" role="status">Chargement des courbes…</p> });
 
 type Measurement = HealthMeasurementRecord;
 type Consultation = { id: string; validated_at: string; professional_name: string; vitals: ConsultationVitals };
@@ -33,6 +39,8 @@ function fromConsultation(item: Consultation): HistoryItem[] {
 
 export function HealthMeasurements() {
   const [items, setItems] = useState<HistoryItem[] | null>(null);
+  const saver = useDataSaver();
+  const [trendsRequested, setTrendsRequested] = useState(false);
   const [kind, setKind] = useState<PatientMeasurementKind>("temperature");
   const [value, setValue] = useState("");
   const [source, setSource] = useState<"measured" | "declared">("measured");
@@ -75,14 +83,14 @@ export function HealthMeasurements() {
     <div className="section-heading"><div><span className="eyebrow">Constantes secondaires · variables</span><h2 id="measurements-title">Mes constantes de suivi</h2></div><span className="count-badge">{items?.length ?? "…"}</span></div>
     <p className="muted">Température, saturation, pouls, tension et glycémie peuvent varier : saisissez-les ici comme relevés ponctuels. Ils restent dans le même historique que les constantes des consultations signées. La tension et la glycémie sont conservées telles qu’écrites, sans conversion. Taille et poids de référence se déclarent au-dessus.</p>
     <form className="patient-grid" onSubmit={submit}>
-      <label className="field"><span>Mesure</span><select value={kind} onChange={(event) => setKind(event.target.value as typeof kind)}>{TYPES.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}</select></label>
+      <label className="field"><span>{pictogramFor(MEASUREMENT_PICTOGRAMS, kind) ? <Pictogram name={pictogramFor(MEASUREMENT_PICTOGRAMS, kind) as PictogramName} size={18} decorative /> : null} Mesure</span><select value={kind} onChange={(event) => setKind(event.target.value as typeof kind)}>{TYPES.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}</select></label>
       <label className="field"><span>Valeur{selected.unit ? ` (${selected.unit})` : ""}</span><input required type={selected.freeText ? "text" : "number"} inputMode={selected.freeText ? "text" : "decimal"} maxLength={selected.freeText ? 24 : undefined} step={selected.freeText ? undefined : selected.step} value={value} onChange={(event) => setValue(event.target.value)} placeholder={selected.placeholder} /></label>
       <label className="field"><span>Origine</span><select value={source} onChange={(event) => setSource(event.target.value as typeof source)}><option value="measured">Mesuré</option><option value="declared">Déclaré</option></select></label>
       <label className="field"><span>Date et heure</span><input required type="datetime-local" value={measuredAt} onChange={(event) => setMeasuredAt(event.target.value)} /></label>
       <button className="button primary" disabled={busy}>{busy ? "Enregistrement…" : "Ajouter la mesure"}</button>
     </form>
     <p className="status" role="status" aria-live="polite">{message}</p>
-    <MeasurementTrends records={trendRecords} loading={items === null} error={items !== null && items.length === 0 && message && /indisponible/i.test(message) ? message : null} />
+    {saver.active && !trendsRequested ? <div className="notice" role="status"><p>Courbes masquées pour économiser vos données.</p><button className="button small" type="button" onClick={() => setTrendsRequested(true)}>Afficher les courbes</button></div> : <MeasurementTrends records={trendRecords} loading={items === null} error={items !== null && items.length === 0 && message && /indisponible/i.test(message) ? message : null} />}
     <div className="stack" aria-live="polite" aria-label="Historique unifié des constantes">
       {items === null ? <div className="skeleton" role="status"><span className="sr-only">Chargement…</span><i /></div> : history.length === 0 ? <p className="empty">Aucune constante renseignée pour le moment.</p> : history.map((item) => <article className="record" key={item.id}><div><strong>{item.kind_label}</strong><p className="muted">{item.value}{item.unit ? ` ${item.unit}` : ""} · {formatDate(item.measured_at)}</p><small className="muted">{item.source_label}{item.note ? ` · ${item.note}` : ""}</small></div></article>)}
     </div>

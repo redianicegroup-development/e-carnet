@@ -122,5 +122,6 @@ test("côté professionnel : l'accès s'ouvre au scan, se termine à la demande,
   const consultations = read("src/components/ProfessionalConsultations.tsx");
   assert.match(consultations, /<ConsultationCard [^>]*showPatient/);
   assert.match(read("src/components/consultation/ConsultationCard.tsx"), /<PersonAvatar src=\{item\.patient_avatar\} name=\{patientName\}/);
-  assert.match(consultations, /item\.patient_name \?\? ""/);
+  // La recherche couvre aussi le nom du patient (PRO-16 : filtre partagé, insensible aux accents).
+  assert.match(consultations, /matchesQuery\(\[item\.patient_name,/);
 });

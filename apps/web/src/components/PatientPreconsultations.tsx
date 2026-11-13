@@ -6,6 +6,8 @@ import { apiGet, apiPatch, apiPost } from "../infrastructure/api/client";
 import { describeVitals, emptyVitalsForm, parseVitalsForm, vitalsToForm, VITAL_FIELDS, type StoredVitals, type VitalsForm } from "../lib/vitals";
 import { buildObservations, isListed, numberOptions, OBSERVATIONS_MAX, OTHER_MAX, parseObservations, SYMPTOMS } from "../lib/preconsult";
 import "./preconsult-form.css";
+import { Pictogram } from "./ui/Pictogram";
+import { pictogramFor, SYMPTOM_PICTOGRAMS, type PictogramName } from "../lib/pictograms";
 
 type TemplateField = { key: string; label: string; type: "text" | "number" | "choice" | "yes_no"; unit: string; required: boolean; options: string[] };
 type ActiveTemplate = { id: string; name: string; establishment_id: string; establishment_name: string; fields: TemplateField[] };
@@ -138,7 +140,7 @@ export function PatientPreconsultations({ onDraftChange }: { onDraftChange?: (ha
           <legend><span className="preconsult-section__num">2</span>Quels symptômes ou maux ressentez-vous ?</legend>
           <p className="muted preconsult-section__hint">Cochez ce qui correspond (facultatif).</p>
           <div className="symptom-grid" role="group" aria-label="Symptômes les plus fréquents">
-            {SYMPTOMS.map((symptom) => <label key={symptom} className={`symptom-chip${form.selected.includes(symptom) ? " is-on" : ""}`}><input type="checkbox" checked={form.selected.includes(symptom)} onChange={() => toggleSymptom(symptom)} /><span>{symptom}</span></label>)}
+            {SYMPTOMS.map((symptom) => <label key={symptom} className={`symptom-chip${form.selected.includes(symptom) ? " is-on" : ""}`}><input type="checkbox" checked={form.selected.includes(symptom)} onChange={() => toggleSymptom(symptom)} />{pictogramFor(SYMPTOM_PICTOGRAMS, symptom) ? <Pictogram name={pictogramFor(SYMPTOM_PICTOGRAMS, symptom) as PictogramName} size={18} decorative /> : null}<span>{symptom}</span></label>)}
           </div>
           <label className="field"><span>Autre symptôme, depuis quand, intensité (facultatif)</span><textarea maxLength={OTHER_MAX} rows={3} value={form.other} onChange={(event) => setForm({ ...form, other: event.target.value })} placeholder="Si votre symptôme n’est pas dans la liste, écrivez-le ici." /></label>
           {buildObservations({ selected: form.selected, other: form.other }).length > OBSERVATIONS_MAX && <p className="status" role="alert">Le texte est trop long : raccourcissez-le.</p>}

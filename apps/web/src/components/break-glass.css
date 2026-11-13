@@ -1,0 +1,37 @@
+/* ACS-13 — accès d'urgence « bris de glace ». Jetons du thème uniquement : clair et sombre suivent. */
+.break-glass-warning { margin: 0; line-height: 1.5; border-color: var(--danger); background: var(--status-contested-bg); color: var(--status-contested-fg); }
+.break-glass-form { display: grid; gap: 14px; }
+.break-glass-form h2 { margin: 0; }
+.break-glass-form__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.break-glass-form__error { color: var(--danger); }
+.break-glass-form__confirm { display: flex; align-items: flex-start; gap: 10px; padding: 11px 13px; border: 1px solid var(--border); border-radius: 12px; line-height: 1.45; cursor: pointer; }
+.break-glass-form__confirm input { margin-top: 3px; accent-color: var(--primary); flex: 0 0 auto; }
+.break-glass-card { display: grid; gap: 14px; border-color: var(--danger); }
+.break-glass-card__head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 12px 18px; }
+.break-glass-card__head h2 { margin: 2px 0 0; overflow-wrap: anywhere; }
+.break-glass-timer { display: grid; justify-items: end; gap: 1px; text-align: right; }
+.break-glass-timer span, .break-glass-timer small { color: var(--text-muted); font-size: .8rem; }
+.break-glass-timer strong { font-size: 1.7rem; font-variant-numeric: tabular-nums; color: var(--primary-text); }
+.break-glass-card__blood { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 12px 14px; border-radius: 12px; background: var(--surface-tint); }
+.break-glass-card__blood strong { font-size: 1.35rem; }
+.break-glass-card__block h3 { margin: 0 0 6px; font-size: 1rem; }
+.break-glass-card__block ul { margin: 0; padding-left: 1.1rem; display: grid; gap: 5px; overflow-wrap: anywhere; }
+.break-glass-card__source { margin: 0; font-size: .85rem; }
+.break-glass-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.break-glass-list li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+.break-glass-list li:last-child { border-bottom: 0; padding-bottom: 0; }
+.break-glass-item header { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.break-glass-item header h2 { margin: 0; font-size: 1.1rem; }
+.break-glass-item--overdue { border-color: var(--danger); }
+.break-glass-item__facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; margin: 12px 0; }
+.break-glass-item__facts dt { color: var(--text-muted); font-size: .8rem; }
+.break-glass-item__facts dd { margin: 2px 0 0; font-weight: 650; overflow-wrap: anywhere; }
+.break-glass-item__note { margin: 0 0 12px; padding: 10px 13px; border-left: 3px solid var(--border); background: var(--surface-tint); border-radius: 0 10px 10px 0; overflow-wrap: anywhere; }
+.break-glass-review { display: grid; gap: 12px; }
+.break-glass-entry { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 14px; }
+.break-glass-entry p { margin: 0; }
+@media (max-width: 560px) {
+  .break-glass-form__grid, .break-glass-item__facts { grid-template-columns: 1fr; }
+  .break-glass-timer { justify-items: start; text-align: left; }
+  .break-glass-list li { align-items: flex-start; }
+}

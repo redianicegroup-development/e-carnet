@@ -1,4 +1,10 @@
 from django.urls import path
+from .break_glass_views import (
+    EstablishmentEmergencyAccessListView,
+    EstablishmentEmergencyAccessReviewView,
+    ProfessionalEmergencyAccessDetailView,
+    ProfessionalEmergencyAccessListCreateView,
+)
 from .views import (
     EncounterDetailView,
     EncounterListCreateView,
@@ -94,6 +100,11 @@ urlpatterns = [
     path("professional/preconsultation-templates/<int:pk>/approve/", ProfessionalPendingPreconsultationTemplatesView.as_view(http_method_names=["post"])),
     path("professional/access-grants/", ProfessionalAccessGrantListCreateView.as_view()),
     path("professional/recent-patients/", ProfessionalRecentPatientsView.as_view()),
+    # ACS-13 — accès d'urgence « bris de glace » (404 tant que ECARNET_BREAK_GLASS_ENABLED est faux).
+    path("professional/emergency-access/", ProfessionalEmergencyAccessListCreateView.as_view()),
+    path("professional/emergency-access/<uuid:pk>/", ProfessionalEmergencyAccessDetailView.as_view()),
+    path("establishment/<uuid:establishment_id>/emergency-access/", EstablishmentEmergencyAccessListView.as_view()),
+    path("establishment/<uuid:establishment_id>/emergency-access/<uuid:pk>/review/", EstablishmentEmergencyAccessReviewView.as_view()),
     path("professional/access-grants/<uuid:pk>/end/", ProfessionalAccessGrantEndView.as_view()),
     path("professional/access-grants/<uuid:grant_id>/care-history/", ProfessionalCareHistoryView.as_view()),
     path("professional/consultations/", ProfessionalConsultationListCreateView.as_view()),

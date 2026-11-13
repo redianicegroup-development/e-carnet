@@ -1,0 +1,1 @@
+Overlay PAT-21 pour e-carnetV1.5.1. Extraire à la racine du dépôt pour remplacer/ajouter les fichiers listés. Aucun .env, base de données, node_modules, build ou résultat de test n’est inclus. ETA-13/E4 n’est pas inclus, en attente de ses prérequis.

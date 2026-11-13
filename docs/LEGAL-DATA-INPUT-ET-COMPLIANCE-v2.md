@@ -204,6 +204,6 @@ Les nouveaux parcours doivent être ajoutés à la revue juridique avant toute o
 - les ouvertures locales par administrateur d’établissement sont motivées, temporaires, auditables et notifiées au patient ; elles ne donnent accès qu’aux soins de la structure concernée ;
 - les adressages C1 et la portée C2 `care_history` sont soumis au consentement granulaire du patient, à un professionnel actif et à une durée limitée ; les structures sources sont choisies par le patient ;
 - aucune copie inter-établissements n’est conservée en V1 ; C3 reste désactivé jusqu’à validation de la conservation, de la rectification et de l’effacement ;
-- aucune recherche libre de patients ni accès administrateur au contenu d’une autre structure n’est prévu ; le bris de glace reste hors périmètre.
+- aucune recherche libre de patients ni accès administrateur au contenu d’une autre structure n’est prévu ; le bris de glace reste hors périmètre en production. *Mise à jour du 12/11/2026 : son code est livré (version 1.8) mais désactivé par défaut ; avant toute activation, la déclaration ARTCI et les pages de confidentialité devront le décrire (voir `IMPLEMENTATION-ACS-13-BRIS-DE-GLACE.md`).*
 
 Les pages d’aide, de confidentialité, de CGU et de sécurité ont été actualisées le 26/10/2026. Elles restent marquées comme provisoires tant que les champs juridiques et la validation d’un juriste ivoirien ne sont pas complétés.

@@ -17,6 +17,8 @@ import { PatientEmergencyCardSettingsClient } from "./PatientEmergencyCardSettin
 import { PatientRepresentationsSettingsClient } from "./PatientRepresentationsSettingsClient";
 import { TrustedContactDelegationClient } from "./TrustedContactDelegationClient";
 import { PatientNotifications } from "./PatientNotifications";
+import { DataSaverSettings } from "./data-saver/DataSaverSettings";
+import { PatientAccessSummarySettings } from "./PatientAccessSummarySettings";
 import { PushNotificationToggle } from "./PushNotificationToggle";
 import { OfflineDataToggle } from "./OfflineDataToggle";
 import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
@@ -29,6 +31,8 @@ const sections: SettingsNavItem[] = [
   { id: "personnel", title: "Mes informations personnelles", description: "Modifier mon nom et ma photo de profil.", icon: "idcard" },
   { id: "sante", title: "Informations de santé déclaratives", description: "Téléphone, adresse et couverture santé.", icon: "heart" },
   { id: "notifications", title: "Notifications", description: "Consulter les notifications de votre carnet et les marquer comme lues.", icon: "bell" },
+  { id: "recapitulatif-acces", title: "Récapitulatif des accès", description: "Recevoir un résumé périodique des lectures de votre carnet.", icon: "eye" },
+  { id: "economie-donnees", title: "Économie de données", description: "Alléger les pages et les photos quand le réseau est lent.", icon: "download" },
   { id: "hors-connexion", title: "Hors connexion", description: "Naviguer sans réseau avec une copie chiffrée de vos données, en lecture seule.", icon: "download" },
   { id: "proches", title: "Proches et personnes représentées", description: "Gérer les dossiers distincts des enfants représentés.", icon: "users" },
   { id: "proches-de-confiance", title: "Proches de confiance", description: "Inviter ou retirer un accès limité à la fiche d’urgence.", icon: "users" },
@@ -157,6 +161,10 @@ export function AccountSettingsClient() {
       </div></SettingsModal>}
 
       {activeSection === "notifications" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><PushNotificationToggle /><div className="settings-modal-section"><PatientNotifications /></div></SettingsModal>}
+
+      {activeSection === "recapitulatif-acces" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><PatientAccessSummarySettings /></SettingsModal>}
+
+      {activeSection === "economie-donnees" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><DataSaverSettings /></SettingsModal>}
 
       {activeSection === "hors-connexion" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><OfflineDataToggle /></SettingsModal>}
       {activeSection === "proches" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section">

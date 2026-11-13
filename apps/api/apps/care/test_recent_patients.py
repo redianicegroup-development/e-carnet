@@ -100,3 +100,71 @@ class ProfessionalRecentPatientsTests(TestCase):
         row = self.client.get(URL).data["data"][0]
         self.assertEqual((row["first_name"], row["last_name"]), ("Consulté", "Aujourd’hui"))
         self.assertNotIn("diagnosis", row)
+
+    # --- PRO-15 : garde-fous de la liste « patients récents » -------------------------------------------------
+
+    def test_anonymous_request_is_refused(self):
+        response = APIClient().get(URL)
+        self.assertIn(response.status_code, (401, 403))
+
+    def test_professional_without_active_establishment_is_refused_with_403(self):
+        self.profile.active_establishment = None
+        self.profile.save(update_fields=("active_establishment",))
+        self.grant(self.patient("recent-no-etab", "Sans", "Établissement"))
+        response = self.client.get(URL)
+        self.assertEqual(response.status_code, 403)
+        self.assertNotIn("data", response.data)
+
+    def test_professional_without_active_membership_is_refused_with_403(self):
+        EstablishmentMembership.objects.filter(professional=self.profile).update(status="suspended")
+        self.grant(self.patient("recent-no-membership", "Sans", "Rattachement"))
+        response = self.client.get(URL)
+        self.assertEqual(response.status_code, 403)
+
+    def test_patient_context_user_has_no_professional_profile_and_is_refused(self):
+        patient = self.patient("recent-just-patient", "Simple", "Patient")
+        client = APIClient()
+        client.force_authenticate(patient.user)
+        self.assertEqual(client.get(URL).status_code, 403)
+
+    def test_professional_context_must_be_selected(self):
+        AccountContext.objects.filter(user=self.owner).update(is_active=False)
+        self.assertEqual(self.client.get(URL).status_code, 403)
+
+    def test_revoked_and_pending_grants_never_list_the_patient(self):
+        revoked = self.patient("recent-revoked", "Accès", "Révoqué")
+        pending = self.patient("recent-pending", "Accès", "Attente")
+        self.grant(revoked)
+        self.grant(pending)
+        AccessGrant.objects.filter(patient=revoked).update(status="revoked")
+        AccessGrant.objects.filter(patient=pending).update(status="pending")
+        names = {row["last_name"] for row in self.client.get(URL).data["data"]}
+        self.assertNotIn("Révoqué", names)
+        self.assertNotIn("Attente", names)
+
+    def test_consultation_older_than_thirty_days_does_not_keep_the_patient(self):
+        patient = self.patient("recent-old-consult", "Consultation", "Ancienne")
+        grant = self.grant(patient, expires_at=timezone.now() - timedelta(days=40))
+        Consultation.objects.create(
+            patient=patient, professional=self.profile, establishment=self.establishment,
+            access_grant=grant, professional_name="Médecin", facility_label="Clinique",
+            reason="Ancien motif", validated_at=timezone.now() - timedelta(days=45),
+        )
+        names = {row["last_name"] for row in self.client.get(URL).data["data"]}
+        self.assertNotIn("Ancienne", names)
+
+    def test_list_is_sorted_from_most_recent_access_and_has_no_identifier(self):
+        older = self.patient("recent-sort-old", "Ancien", "Accès")
+        newer = self.patient("recent-sort-new", "Nouveau", "Accès")
+        self.grant(older, expires_at=timezone.now() - timedelta(days=10))
+        AccessGrant.objects.filter(patient=older).update(status="expired", requested_at=timezone.now() - timedelta(days=12), starts_at=timezone.now() - timedelta(days=11))
+        self.grant(newer)
+        data = self.client.get(URL).data["data"]
+        self.assertEqual([row["first_name"] for row in data], ["Nouveau", "Ancien"])
+        for row in data:
+            self.assertEqual(set(row), {"first_name", "last_name", "last_accessed_at"})
+
+    def test_response_is_never_cached_by_the_browser(self):
+        self.grant(self.patient("recent-nocache", "Sans", "Cache"))
+        response = self.client.get(URL)
+        self.assertEqual(response["Cache-Control"], "private, no-store")

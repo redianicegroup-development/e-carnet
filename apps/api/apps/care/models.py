@@ -473,3 +473,115 @@ class MedicationReminderDispatch(models.Model):
     class Meta:
         constraints = [models.UniqueConstraint(fields=("reminder", "scheduled_for"), name="unique_medication_dispatch_slot")]
         indexes = [models.Index(fields=("scheduled_for",), name="care_dispatch_slot_idx")]
+
+
+class EmergencyAccessRequestQuerySet(models.QuerySet):
+    def update(self, **kwargs):
+        raise TypeError("Les accès d’urgence sont immuables.")
+
+    def delete(self):
+        raise TypeError("Les accès d’urgence sont immuables.")
+
+    def bulk_update(self, objs, fields, batch_size=None):
+        raise TypeError("Les accès d’urgence sont immuables.")
+
+
+class EmergencyAccessRequest(models.Model):
+    """Accès d’urgence « bris de glace » (ACS-13) : un professionnel lit la seule fiche d’urgence d’un patient, sans son consentement préalable.
+
+    Append-only comme l’audit : la ligne n’est jamais modifiée. La fenêtre d’accès (``expires_at``) est fixée une fois pour
+    toutes à la création (1 h au plus, non renouvelable) ; la revue a posteriori vit dans ``EmergencyAccessReview``.
+    Le texte libre du motif reste ici : il n’est jamais recopié dans l’audit.
+    """
+    REASON_UNCONSCIOUS = "unconscious"
+    REASON_VITAL_DANGER = "vital_danger"
+    REASON_CANNOT_CONSENT = "cannot_consent"
+    REASON_CHOICES = (
+        (REASON_UNCONSCIOUS, "Patient inconscient"),
+        (REASON_VITAL_DANGER, "Danger vital immédiat"),
+        (REASON_CANNOT_CONSENT, "Patient dans l’incapacité de consentir, urgence médicale"),
+    )
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    patient = models.ForeignKey(PatientProfile, on_delete=models.PROTECT, related_name="emergency_access_requests")
+    professional = models.ForeignKey("professionals.ProfessionalProfile", on_delete=models.PROTECT, related_name="emergency_access_requests")
+    establishment = models.ForeignKey("establishments.Establishment", on_delete=models.PROTECT, related_name="emergency_access_requests")
+    # Photographie au moment des faits : le nom ou l’établissement actif peuvent changer ensuite, pas ce qui s’est passé.
+    professional_name = models.CharField(max_length=180)
+    facility_label = models.CharField(max_length=180)
+    reason_category = models.CharField(max_length=24, choices=REASON_CHOICES)
+    reason_note = models.CharField(max_length=280)
+    requested_at = models.DateTimeField(default=timezone.now)
+    expires_at = models.DateTimeField()
+    review_due_at = models.DateTimeField()
+
+    objects = EmergencyAccessRequestQuerySet.as_manager()
+
+    class Meta:
+        ordering = ("-requested_at",)
+        indexes = [
+            models.Index(fields=("establishment", "requested_at"), name="emg_acc_est_req_idx"),
+            models.Index(fields=("patient", "requested_at"), name="emg_acc_pt_req_idx"),
+            models.Index(fields=("professional", "patient", "requested_at"), name="emg_acc_pro_pt_req_idx"),
+        ]
+        constraints = [
+            models.CheckConstraint(condition=models.Q(reason_category__in=("unconscious", "vital_danger", "cannot_consent")), name="emg_acc_reason_category_ck"),
+            models.CheckConstraint(condition=models.Q(reason_note__gt=""), name="emg_acc_reason_note_required_ck"),
+            models.CheckConstraint(condition=models.Q(expires_at__gt=models.F("requested_at")), name="emg_acc_expiry_after_start_ck"),
+        ]
+
+    @property
+    def is_active_now(self):
+        return self.requested_at <= timezone.now() < self.expires_at
+
+    def save(self, *args, **kwargs):
+        if self.pk and type(self).objects.filter(pk=self.pk).exists():
+            raise TypeError("Les accès d’urgence sont immuables.")
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise TypeError("Les accès d’urgence sont immuables.")
+
+
+class EmergencyAccessReviewQuerySet(models.QuerySet):
+    def update(self, **kwargs):
+        raise TypeError("Les revues d’accès d’urgence sont immuables.")
+
+    def delete(self):
+        raise TypeError("Les revues d’accès d’urgence sont immuables.")
+
+    def bulk_update(self, objs, fields, batch_size=None):
+        raise TypeError("Les revues d’accès d’urgence sont immuables.")
+
+
+class EmergencyAccessReview(models.Model):
+    """Revue a posteriori obligatoire (sous 72 h) par l’administrateur de l’établissement. Une seule décision, non modifiable."""
+    OUTCOME_JUSTIFIED = "justified"
+    OUTCOME_UNJUSTIFIED = "unjustified"
+    OUTCOME_CHOICES = (
+        (OUTCOME_JUSTIFIED, "Justifié"),
+        (OUTCOME_UNJUSTIFIED, "Non justifié : abus à signaler"),
+    )
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    emergency_access = models.OneToOneField(EmergencyAccessRequest, on_delete=models.PROTECT, related_name="review")
+    reviewed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="emergency_access_reviews")
+    outcome = models.CharField(max_length=16, choices=OUTCOME_CHOICES)
+    note = models.CharField(max_length=500, blank=True, default="")
+    reviewed_at = models.DateTimeField(default=timezone.now)
+
+    objects = EmergencyAccessReviewQuerySet.as_manager()
+
+    class Meta:
+        ordering = ("-reviewed_at",)
+        constraints = [
+            models.CheckConstraint(condition=models.Q(outcome__in=("justified", "unjustified")), name="emg_rev_outcome_ck"),
+            # Un abus ne se signale pas sans dire pourquoi.
+            models.CheckConstraint(condition=models.Q(outcome="justified") | models.Q(note__gt=""), name="emg_rev_unjustified_note_ck"),
+        ]
+
+    def save(self, *args, **kwargs):
+        if self.pk and type(self).objects.filter(pk=self.pk).exists():
+            raise TypeError("Les revues d’accès d’urgence sont immuables.")
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise TypeError("Les revues d’accès d’urgence sont immuables.")

@@ -82,3 +82,43 @@ class PatientAccessSummaryTests(TestCase):
         response = client.patch(URL, {"frequency": "monthly"}, format="json")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["data"]["frequency"], "monthly")
+
+    def test_invalid_or_missing_frequency_is_refused_and_changes_nothing(self):
+        client = APIClient(); client.force_authenticate(self.user)
+        for payload in ({"frequency": "daily"}, {"frequency": ""}, {"frequency": None}, {"frequency": ["weekly"]}, {}):
+            with self.subTest(payload=payload):
+                response = client.patch(URL, payload, format="json")
+                self.assertEqual(response.status_code, 400)
+        self.preference.refresh_from_db()
+        self.assertEqual(self.preference.frequency, "weekly")
+
+    def test_anonymous_cannot_read_or_change_the_preference(self):
+        client = APIClient()
+        self.assertIn(client.get(URL).status_code, (401, 403))
+        self.assertIn(client.patch(URL, {"frequency": "monthly"}, format="json").status_code, (401, 403))
+        self.preference.refresh_from_db()
+        self.assertEqual(self.preference.frequency, "weekly")
+
+    def test_a_patient_only_changes_their_own_preference(self):
+        other_user = User.objects.create_user(username="summary-other", email="other@example.test", password="local-test-password")
+        other = PatientProfile.objects.create(user=other_user, first_name="Binta", last_name="Traoré")
+        other_preference = PatientAccessSummaryPreference.objects.create(patient=other, frequency="monthly")
+        client = APIClient(); client.force_authenticate(self.user)
+        self.assertEqual(client.patch(URL, {"frequency": "disabled"}, format="json").status_code, 200)
+        self.preference.refresh_from_db(); other_preference.refresh_from_db()
+        self.assertEqual(self.preference.frequency, "disabled")
+        self.assertEqual(other_preference.frequency, "monthly")
+
+    def test_a_new_patient_starts_with_the_summary_disabled(self):
+        user = User.objects.create_user(username="summary-new", email="new@example.test", password="local-test-password")
+        PatientProfile.objects.create(user=user, first_name="Koffi", last_name="Yao")
+        client = APIClient(); client.force_authenticate(user)
+        data = client.get(URL).data["data"]
+        self.assertEqual(data["frequency"], "disabled")
+        self.assertIsNone(data["last_sent_at"])
+
+    def test_the_last_sending_date_is_exposed_after_a_summary_is_sent(self):
+        client = APIClient(); client.force_authenticate(self.user)
+        self.assertIsNone(client.get(URL).data["data"]["last_sent_at"])
+        self.execute_command()
+        self.assertIsNotNone(client.get(URL).data["data"]["last_sent_at"])

@@ -73,6 +73,8 @@ REST_FRAMEWORK = {
         "monitoring_webhook": os.environ.get("ECARNET_RATE_MONITOR_WEBHOOK", "600/hour"),
         "code_redeem": os.environ.get("ECARNET_RATE_CODE", "10/hour"),
         "grant_request": os.environ.get("ECARNET_RATE_GRANT", "60/hour"),
+        "break_glass_open": os.environ.get("ECARNET_RATE_BREAK_GLASS_OPEN", "6/hour"),
+        "break_glass_review": os.environ.get("ECARNET_RATE_BREAK_GLASS_REVIEW", "60/hour"),
         "qr_create": os.environ.get("ECARNET_RATE_QR_CREATE", "30/hour"),
         "emergency_card_public": os.environ.get("ECARNET_RATE_EMERGENCY_CARD", "120/hour"),
         "visitor_analytics": os.environ.get("ECARNET_RATE_VISITOR", "1200/hour"),
@@ -97,6 +99,12 @@ ECARNET_REPRESENTATION_LEGAL_AGE = (
 )
 ECARNET_TRUSTED_CONTACTS_ENABLED = os.environ.get("ECARNET_TRUSTED_CONTACTS_ENABLED", "false").lower() == "true"
 ECARNET_REFERRALS_ENABLED = os.environ.get("ECARNET_REFERRALS_ENABLED", "false").lower() == "true"
+# ACS-13 — accès d'urgence « bris de glace » : lecture de la seule fiche d'urgence, sans consentement préalable, motivée, tracée,
+# revue sous 72 h. DÉSACTIVÉ par défaut : aucune activation en production sans les trois décisions écrites (avis juridique,
+# définition de l'urgence et de qui l'invoque, validation du comité). Voir docs/IMPLEMENTATION-ACS-13-BRIS-DE-GLACE.md.
+ECARNET_BREAK_GLASS_ENABLED = os.environ.get("ECARNET_BREAK_GLASS_ENABLED", "false").lower() == "true"
+# Durée de l'accès, en minutes : 60 au plus et non renouvelable. Cette valeur ne peut que RACCOURCIR la fenêtre.
+ECARNET_BREAK_GLASS_DURATION_MINUTES = min(60, max(1, int(os.environ["ECARNET_BREAK_GLASS_DURATION_MINUTES"]))) if os.environ.get("ECARNET_BREAK_GLASS_DURATION_MINUTES", "").isdigit() else 60
 # Lecture du contenu clinique d'un dossier par l'administrateur d'établissement : DÉSACTIVÉE par défaut. À n'activer (=true) qu'après la base
 # légale (A8) et la mise en place de l'écran d'ouverture (motif, minuteur, historique) : aujourd'hui l'accès n'existe que par l'API.
 ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ = os.environ.get("ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ", "false").lower() == "true"

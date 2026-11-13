@@ -28,6 +28,9 @@ export type AccessEvent = {
   authorized_until?: string | null;
   method?: string | null;
   access_grant_id?: string | null;
+  /** ACS-13 : l'accès d'urgence auquel l'événement appartient (null pour tout le reste). */
+  emergency_access_id?: string | null;
+  reason_category?: string | null;
   professional_id?: string | null;
   professional_name: string;
   professional_avatar?: string;
@@ -74,6 +77,14 @@ export const STATUS_LABELS: Record<string, string> = {
   refused: "Refusée",
   expired: "Expirée",
   revoked: "Révoquée",
+  emergency: "Accès d’urgence",
+};
+
+/** ACS-13 : les motifs de la liste fermée, tels que le patient les lit. */
+export const EMERGENCY_REASON_LABELS: Record<string, string> = {
+  unconscious: "patient inconscient",
+  vital_danger: "danger vital immédiat",
+  cannot_consent: "impossibilité de consentir lors d’une urgence médicale",
 };
 
 export const SCOPE_LABELS: Record<string, string> = {
@@ -132,6 +143,7 @@ export function describeEvent(event: AccessEvent): EventLine {
     const label = noun ? noun[count === 1 ? 0 : 1] : count === 1 ? "élément de votre carnet" : "éléments de votre carnet";
     return { ...base, kind: "read", tone: "info", title: `A consulté ${count} ${label}`, detail: "Lecture seule : rien n’a été modifié." };
   }
+  if (event.event_type.startsWith("break_glass.")) return describeEmergencyEvent(event, base);
   switch (event.action) {
     case "accept": {
       const until = formatClock(event.authorized_until);
@@ -156,7 +168,27 @@ export function describeEvent(event: AccessEvent): EventLine {
   }
 }
 
+/** ACS-13 — le bris de glace est dit sans détour : sans votre accord, pour une urgence, fiche d'urgence seulement. */
+function describeEmergencyEvent(event: AccessEvent, base: { id: string; at: string }): EventLine {
+  switch (event.action) {
+    case "opened": {
+      const reason = EMERGENCY_REASON_LABELS[event.reason_category ?? ""];
+      const minutes = typeof event.access_duration_minutes === "number" ? `${event.access_duration_minutes} min` : "une heure au plus";
+      return { ...base, kind: "open", tone: "danger", title: "Accès d’urgence à votre fiche", detail: `Sans votre accord préalable${reason ? ` — ${reason}` : ""}. Fiche d’urgence seulement (groupe sanguin, allergies, traitements, antécédents), pendant ${minutes}. Votre carnet complet n’a pas été ouvert.` };
+    }
+    case "reviewed":
+      return event.status === "unjustified"
+        ? { ...base, kind: "other", tone: "danger", title: "L’établissement a jugé cet accès injustifié", detail: "Il a été signalé à l’équipe Mon E‑Carnet." }
+        : { ...base, kind: "other", tone: "ok", title: "L’établissement a revu cet accès d’urgence", detail: "Il l’a jugé justifié." };
+    case "flagged":
+      return { ...base, kind: "other", tone: "danger", title: "Accès d’urgence signalé", detail: "L’équipe Mon E‑Carnet examine la suite à donner." };
+    default:
+      return { ...base, kind: "other", tone: "muted", title: "Événement lié à l’accès d’urgence", detail: "" };
+  }
+}
+
 const sessionStatusFromEvents = (events: AccessEvent[]): string | null => {
+  if (events.some((event) => event.event_type.startsWith("break_glass."))) return "emergency";
   // `events` est trié du plus récent au plus ancien : le premier statut renseigné est l'état actuel de l'accès.
   for (const event of events) if (event.status) return event.status;
   return null;
@@ -176,7 +208,7 @@ export function groupByProfessional(events: AccessEvent[], grants: Grant[]): Pro
     const newestFirst = [...groupEvents].sort((a, b) => b.created_at.localeCompare(a.created_at));
     const bySession = new Map<string, AccessEvent[]>();
     for (const event of newestFirst) {
-      const sessionKey = event.access_grant_id ?? "sans-acces";
+      const sessionKey = event.access_grant_id ?? event.emergency_access_id ?? "sans-acces";
       const list = bySession.get(sessionKey);
       if (list) list.push(event); else bySession.set(sessionKey, [event]);
     }

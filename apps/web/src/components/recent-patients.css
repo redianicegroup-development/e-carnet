@@ -1,0 +1,10 @@
+.recent-patients { display: grid; gap: 12px; min-width: 0; }
+.recent-patients .section-heading { align-items: flex-start; flex-wrap: wrap; gap: 10px; }
+.recent-patients .section-heading h2 { margin: 0; }
+.recent-patients .section-heading p { margin: 2px 0 0; }
+.recent-patients__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.recent-patients__item { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; background: color-mix(in srgb, var(--surface-tint) 45%, transparent); }
+.recent-patients__item > div { min-width: 0; }
+.recent-patients__item strong { overflow-wrap: anywhere; }
+.recent-patients__item p { margin: 2px 0 0; font-size: .8rem; overflow-wrap: anywhere; }
+.recent-patients__note { margin: 0; font-size: .8rem; }

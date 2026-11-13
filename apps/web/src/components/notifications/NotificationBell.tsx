@@ -38,7 +38,7 @@ type PanelFit = { align: "right" | "left"; width: number };
 function contextLink(kind: string) {
   const normalized = kind.toLocaleLowerCase("fr-FR");
   if (/consult|visit|rendez|appointment/.test(normalized)) return { href: "/patient/consultations", label: "Voir les visites" };
-  if (/access|share|grant|partag/.test(normalized)) return { href: "/patient/historique#acces", label: "Voir les accès" };
+  if (/access|share|grant|partag|break_glass/.test(normalized)) return { href: "/patient/historique#acces", label: "Voir les accès" };
   if (/vaccin/.test(normalized)) return { href: "/patient/carnet#vaccinations", label: "Voir mes vaccinations" };
   if (/medicat|treatment|rappel/.test(normalized)) return { href: "/patient/carnet#medications", label: "Voir mes traitements" };
   if (/profile|account|param/.test(normalized)) return { href: "/patient/parametres", label: "Voir le profil" };

@@ -248,6 +248,103 @@ paths:
           description: Consultation validée et historisée
         '400':
           description: Autorisation absente, expirée, révoquée ou pré-consultation non clôturée
+  /patient/care/professional/emergency-access/:
+    get:
+      summary: Accès d’urgence « bris de glace » du professionnel (ACS-13) — mes accès et la liste fermée des motifs
+      description: Répond 404 `break_glass_disabled` tant que ECARNET_BREAK_GLASS_ENABLED est faux (cas par défaut).
+      responses:
+        '200':
+          description: Accès du professionnel (statut, motif, fenêtre, revue), durée en minutes, motifs possibles
+        '403':
+          description: Profil professionnel absent
+        '404':
+          description: Fonction désactivée (`break_glass_disabled`)
+    post:
+      summary: Ouvrir un accès d’urgence à la seule fiche d’urgence d’un patient (1 h au plus, non renouvelable)
+      description: >
+        Le patient est désigné par son identité exacte (nom, prénom, date de naissance ; téléphone facultatif pour départager des
+        homonymes). Motif de la liste fermée et texte libre (10 à 280 caractères) obligatoires, contrôlés avant toute recherche.
+        Rejouée pendant que l’accès est ouvert, la demande retrouve le même accès (200) sans le prolonger.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [first_name, last_name, birth_date, reason_category, reason_note]
+              properties:
+                first_name: {type: string}
+                last_name: {type: string}
+                birth_date: {type: string, format: date}
+                phone: {type: string}
+                reason_category: {type: string, enum: [unconscious, vital_danger, cannot_consent]}
+                reason_note: {type: string, minLength: 10, maxLength: 280}
+      responses:
+        '201':
+          description: Accès ouvert ; renvoie l’accès et la fiche d’urgence (identité, groupe sanguin, allergies, traitements, antécédents)
+        '200':
+          description: Accès déjà ouvert pour ce patient par ce professionnel (même accès, même fin)
+        '400':
+          description: Motif ou identification incomplets (`reason_required`, `reason_too_long`, `identification_incomplete`)
+        '403':
+          description: Professionnel non vérifié ou non rattaché (`not_eligible`)
+        '404':
+          description: Aucun dossier unique ne correspond (`patient_not_identified`, réponse identique si le dossier n’existe pas ou est ambigu) ou fonction désactivée
+        '409':
+          description: Accès non renouvelable pendant 24 h (`not_renewable`) ou accès déjà ouvert par le patient (`consent_available`)
+        '429':
+          description: Trop de tentatives
+  /patient/care/professional/emergency-access/{id}/:
+    get:
+      summary: Relire la fiche d’urgence pendant la fenêtre ouverte (chaque lecture est tracée)
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string, format: uuid}}
+      responses:
+        '200':
+          description: Fiche d’urgence
+        '403':
+          description: Fenêtre terminée (`expired`), autre établissement (`wrong_establishment`) ou professionnel plus éligible
+        '404':
+          description: Accès introuvable ou ouvert par un autre professionnel
+  /patient/care/establishment/{establishment_id}/emergency-access/:
+    get:
+      summary: Accès d’urgence de l’établissement et état de leur revue (administrateurs actifs seulement, aucun contenu clinique)
+      parameters:
+        - {name: establishment_id, in: path, required: true, schema: {type: string, format: uuid}}
+      responses:
+        '200':
+          description: Liste avec état de revue `pending`, `overdue` ou `done`
+        '403':
+          description: Réservé aux administrateurs de cet établissement
+        '404':
+          description: Fonction désactivée
+  /patient/care/establishment/{establishment_id}/emergency-access/{id}/review/:
+    post:
+      summary: Revue a posteriori d’un accès d’urgence (une décision, définitive, sous 72 h)
+      parameters:
+        - {name: establishment_id, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: id, in: path, required: true, schema: {type: string, format: uuid}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [outcome]
+              properties:
+                outcome: {type: string, enum: [justified, unjustified]}
+                note: {type: string, maxLength: 500, description: Obligatoire si `unjustified`}
+      responses:
+        '201':
+          description: Revue enregistrée ; un abus est signalé (incident de sécurité, patient prévenu)
+        '400':
+          description: Décision ou note invalide (`invalid_outcome`, `note_required`, `note_too_long`)
+        '403':
+          description: Pas administrateur de cet établissement, ou accès du revieweur lui-même (`review_conflict`)
+        '404':
+          description: Accès introuvable dans cet établissement
+        '409':
+          description: Accès encore ouvert (`still_active`) ou déjà revu (`already_reviewed`)
 components:
   schemas:
     Theme:

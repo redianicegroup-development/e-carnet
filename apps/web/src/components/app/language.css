@@ -15,5 +15,3 @@ font[style*="vertical-align"] { vertical-align: baseline !important; }
 .language-option__names strong { font-size: 1.05rem; }
 .language-option__names span { color: var(--text-muted); font-size: .85rem; }
 .language-option__check { color: var(--primary-text); flex-shrink: 0; }
-.language-note { display: grid; gap: 6px; }
-.language-note p { margin: 0; }

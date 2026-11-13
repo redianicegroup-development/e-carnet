@@ -16,3 +16,4 @@
 .symptom-chip.is-on::before { content: "✓"; margin-right: 6px; color: var(--primary); font-weight: 800; }
 .symptom-chip:focus-within { outline: 3px solid var(--focus); outline-offset: 2px; }
 .preconsult-draft__text { white-space: pre-line; }
+.symptom-chip .pictogram { color: var(--primary); margin-inline-end: 6px; }

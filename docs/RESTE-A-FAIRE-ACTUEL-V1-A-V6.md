@@ -212,7 +212,7 @@
 - Ajouter impression/export des instantanés avec audit et règles de conservation.
 - Ajouter procédure d’incident, rectification et fin de prise en charge.
 - Ne pas ajouter de recherche libre de patients ni d’accès administrateur global.
-- Garder le « bris de glace » désactivé tant qu’une décision produit, juridique et sécurité distincte n’est pas signée.
+- Le « bris de glace » (ACS-13) est **codé mais désactivé** (`ECARNET_BREAK_GLASS_ENABLED=false`, version 1.8) : ne pas l’activer tant que l’avis juridique, la définition écrite de l’urgence et de qui l’invoque, et la validation du comité ne sont pas signés. Voir [`IMPLEMENTATION-ACS-13-BRIS-DE-GLACE.md`](IMPLEMENTATION-ACS-13-BRIS-DE-GLACE.md).
 
 ## V3.3 — Intégrations sous contrat
 

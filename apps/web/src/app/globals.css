@@ -617,6 +617,7 @@ a.setting-item:hover, button.setting-item:hover { border-color: var(--primary); 
 /* ---------- outils professionnels : raccourci de recherche et listes denses ---------- */
 .professional-history { min-width: 0; }
 .professional-history__heading { display: flex; align-items: end; justify-content: space-between; gap: 14px; margin-bottom: 12px; }
+.professional-history__heading > .list-search { flex: 1 1 auto; }
 .professional-history__heading h2 { margin: 2px 0 0; }
 .professional-quick-search { position: relative; display: flex; align-items: center; width: min(100%, 360px); }
 .professional-quick-search input { width: 100%; min-height: 42px; padding: 8px 42px 8px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text); font: inherit; font-size: .88rem; }

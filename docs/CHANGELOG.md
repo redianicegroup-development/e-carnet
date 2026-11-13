@@ -1,5 +1,22 @@
 > **Référence d’état auditée le 06/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-06.md`](ETAT-REEL-PROJET-2026-11-06.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
 
+## Version 1.8 — 12/11/2026 (base V1_11_1)
+
+- **Accès d’urgence « bris de glace » (ACS-13), désactivé par défaut** (`ECARNET_BREAK_GLASS_ENABLED=false`) : un professionnel vérifié lit la seule fiche d’urgence d’un patient qui ne peut pas consentir. Motif de la liste fermée + texte libre obligatoires, 1 h au plus et non renouvelable, périmètre limité (identité, groupe sanguin, allergies, traitements, antécédents), patient et personnes de confiance prévenus tout de suite, mention dans l’historique d’accès, audit renforcé, revue de l’administrateur sous 72 h, abus signalé. Détail et décisions restantes : `docs/IMPLEMENTATION-ACS-13-BRIS-DE-GLACE.md`.
+- **Paramètres › Langue** : la note « Traduction automatique par Google Translate… » en bas de la fenêtre est retirée (la confirmation avant le premier envoi à Google reste).
+- **Paramètres › Partager l’application** : le champ du lien et la section « Partager sur » (WhatsApp, Facebook, Telegram, X, LinkedIn, SMS, e-mail) sont retirés ; restent « Partager… » et « Copier le lien ».
+- Version `1.8.0` (racine et `@ecarnet/web`).
+
+## Version 1.7 — 12/11/2026 (base V1_10)
+
+- **PAT-19** : Paramètres › Récapitulatif des accès (désactivé, chaque semaine, chaque mois). Le résumé arrive dans les notifications, par type de structure, sans nom ni donnée médicale. Une fréquence mal formée répond maintenant 400 au lieu de 500. **À planifier** : `send_access_summaries`, une fois par jour.
+- **PRO-15** : « Patients reçus récemment » en haut de Patients (20 au plus, 30 jours, nom et date seulement) ; unique action : nouvelle demande par QR. Réponse API sans cache navigateur.
+- **PAT-09** : export PDF et Excel par période et par rubrique (7 rubriques), mêmes paramètres pour les deux formats ; le PDF tient désormais compte de la période.
+- **PRO-16** : recherche et filtres (accents, période, état, établissement) dans consultations, rendez-vous, adressages reçus et patients récents, sur des lignes déjà chargées ; aucune recherche globale de patients.
+- **PAT-20** : Paramètres › Économie de données (automatique, toujours, jamais) : photos plus légères, courbes à la demande, polices du téléphone, pas d'animations ; 13 pictogrammes avec texte alternatif. La sécurité n'est pas concernée. Choix déclaré dans la politique de confidentialité (à faire relire).
+- Non touchés : PRO-21 (B4, demandé) ; ACS-13, PAT-24 et PRO-20 attendent leurs décisions écrites.
+- Détail : `MODIFICATIONS-2026-11-12-classe-a.md`. Version `1.7.0` (racine et `@ecarnet/web`).
+
 ## Version 1.6 — 11/11/2026 (base V1_9)
 
 - **Paramètres** (patient, professionnel, établissement) : groupe « Application » avec **Langue** (français par défaut, anglais et arabe par Google Translate, arabe de droite à gauche, confirmation avant tout envoi à Google), **Partager l’application** (menu de partage, WhatsApp, Facebook, Telegram, X, e-mail, SMS, copie du lien) et **Version de l’application** (« À jour » ou « Mise à jour disponible », bouton de mise à jour). Le lien partagé ouvre `/installer`, qui propose l’installation de la PWA (Android, iPhone, navigateurs intégrés aux réseaux sociaux).

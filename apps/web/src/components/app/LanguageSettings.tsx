@@ -64,10 +64,6 @@ export function LanguageSettings() {
           </button>
         ))}
       </div>
-      <div className="language-note muted">
-        <p><strong>Traduction automatique par Google Translate.</strong> Le texte affiché est envoyé à Google uniquement lorsque l’anglais ou l’arabe est choisi ; en français, rien n’est envoyé.</p>
-        <p>L’arabe s’affiche de droite à gauche. Le choix est mémorisé sur cet appareil.</p>
-      </div>
     </div>
   );
 }

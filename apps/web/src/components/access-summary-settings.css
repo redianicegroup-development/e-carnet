@@ -1,0 +1,12 @@
+/* Réglage du récapitulatif des accès : trois choix en cartes, lisibles et utilisables au pouce (zone tactile ≥ 44 px). */
+.access-summary { display: grid; gap: 12px; min-width: 0; }
+.access-summary p { margin: 0; overflow-wrap: anywhere; }
+.access-summary__choices { display: grid; gap: 8px; margin: 0; padding: 0; border: 0; min-width: 0; }
+.access-summary__choices legend { padding: 0; margin-bottom: 8px; }
+.access-summary__choice { display: flex; align-items: flex-start; gap: 12px; min-height: 44px; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 14px; background: var(--surface); cursor: pointer; min-width: 0; }
+.access-summary__choice.is-selected { border-color: var(--primary); background: var(--surface-tint); }
+.access-summary__choice input { flex: none; width: 20px; height: 20px; margin: 2px 0 0; accent-color: var(--primary); }
+.access-summary__choice span { display: grid; gap: 2px; min-width: 0; }
+.access-summary__choice small { color: var(--text-muted); overflow-wrap: anywhere; }
+.access-summary__choice:focus-within { outline: 3px solid var(--focus-ring, var(--primary)); outline-offset: 2px; }
+.access-summary__choices:disabled .access-summary__choice { opacity: .7; cursor: progress; }

@@ -1,0 +1,7 @@
+.carnet-export__sections { margin: 0; padding: 12px; border: 1px solid var(--border); border-radius: 12px; min-width: 0; display: grid; gap: 10px; }
+.carnet-export__sections legend { padding: 0 6px; font-weight: 700; font-size: .9rem; }
+.carnet-export__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; }
+.carnet-export__option { align-items: flex-start; min-width: 0; }
+.carnet-export__option span { display: grid; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+.carnet-export__option small { font-size: .76rem; line-height: 1.35; }
+.carnet-export__summary { margin: 0; font-size: .84rem; overflow-wrap: anywhere; }

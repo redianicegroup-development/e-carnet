@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { apiDelete, apiGet, apiUpload } from "../infrastructure/api/client";
+import { IMAGE_PROFILE_SAVER, type ImageProfile } from "../lib/data-saver";
+import { useDataSaver } from "./data-saver/useDataSaver";
 
 export type MedicalDocument = {
   id: string; original_name: string; document_type: string; document_type_label: string;
@@ -19,17 +21,18 @@ const MAX_SIZE = 10 * 1024 * 1024;
 
 function readableSize(size: number) { return `${(size / 1024 / 1024).toFixed(size < 1024 * 1024 ? 2 : 1)} Mo`; }
 
-export async function compressMedicalImage(file: File): Promise<File> {
+/** Mode normal : 1 800 px, qualité 0,8 (comportement d'origine). Économie de données (PAT-20) : le profil plus léger est passé par l'appelant. */
+export async function compressMedicalImage(file: File, profile: ImageProfile = { maxSide: 1800, quality: 0.8 }): Promise<File> {
   if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) return file;
   try {
     const bitmap = await createImageBitmap(file);
-    const scale = Math.min(1, 1800 / Math.max(bitmap.width, bitmap.height));
+    const scale = Math.min(1, profile.maxSide / Math.max(bitmap.width, bitmap.height));
     const canvas = document.createElement("canvas");
     canvas.width = Math.max(1, Math.round(bitmap.width * scale));
     canvas.height = Math.max(1, Math.round(bitmap.height * scale));
     canvas.getContext("2d")?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
     bitmap.close();
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.8));
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", profile.quality));
     if (!blob || blob.size >= file.size) return file;
     return new File([blob], file.name.replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg", lastModified: Date.now() });
   } catch {
@@ -38,6 +41,7 @@ export async function compressMedicalImage(file: File): Promise<File> {
 }
 
 export function MedicalDocuments() {
+  const saver = useDataSaver();
   const [items, setItems] = useState<MedicalDocument[] | null>(null);
   const [exams, setExams] = useState<ExamRequest[]>([]);
   const [kind, setKind] = useState("prescription");
@@ -70,7 +74,7 @@ export function MedicalDocuments() {
     if (!/^(application\/pdf|image\/(png|jpeg|webp))$/.test(original.type) || !/\.(pdf|png|jpe?g|webp)$/i.test(original.name)) {
       setError("Format refusé : utilisez uniquement PDF, PNG, JPG/JPEG ou WebP."); return;
     }
-    const file = await compressMedicalImage(original);
+    const file = await compressMedicalImage(original, saver.active ? IMAGE_PROFILE_SAVER : undefined);
     if (file.size > MAX_SIZE) { setError("Le fichier ne doit pas dépasser 10 MiB."); return; }
     setBusy(true); setError(""); setMessage("");
     try {

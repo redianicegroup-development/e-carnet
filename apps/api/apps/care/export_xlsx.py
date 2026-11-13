@@ -1,8 +1,9 @@
-"""Export Excel du carnet du patient (PAT-09) : tout le carnet, sur la période choisie.
+"""Export Excel du carnet du patient (PAT-09) : le carnet, sur la période et les rubriques choisies.
 
 Le classeur est écrit avec la bibliothèque standard (zipfile + XML) : aucune dépendance supplémentaire à verrouiller.
 Principes : une feuille par rubrique, texte brut (aucune formule), pas de fichier joint (les documents sont listés, pas copiés),
 en-têtes figés, une feuille « Résumé » qui rappelle le périmètre et la prudence à avoir avec le fichier.
+Le contenu des rubriques vient de export_filters.carnet_sections, la même fonction que le PDF : les deux formats filtrent à l’identique.
 """
 from __future__ import annotations
 
@@ -12,6 +13,8 @@ import zipfile
 from datetime import date, datetime
 from decimal import Decimal
 from xml.sax.saxutils import escape
+
+from .export_filters import SECTION_TITLES, carnet_sections, describe_period, export_audit_metadata, field_label, filter_period, format_when, parse_export_filters, parse_period, patient_display_name  # noqa: F401  (parse_period reste importable d’ici)
 
 XLSX_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 MAX_CELL_CHARS = 2000
@@ -119,131 +122,69 @@ def build_xlsx(sheets: list[Sheet]) -> bytes:
 # Contenu du carnet
 # ---------------------------------------------------------------------------------------------------------------------
 
-def parse_period(params) -> tuple[date | None, date | None]:
-    """Lit ?from=AAAA-MM-JJ&to=AAAA-MM-JJ (les deux facultatifs). Lève une ValidationError DRF si la période est incohérente."""
-    from rest_framework.exceptions import ValidationError
-
-    def one(name: str) -> date | None:
-        raw = str(params.get(name, "") or "").strip()
-        if not raw:
-            return None
-        try:
-            return date.fromisoformat(raw)
-        except ValueError:
-            raise ValidationError({name: "Date attendue au format AAAA-MM-JJ."})
-
-    start, end = one("from"), one("to")
-    if start and end and start > end:
-        raise ValidationError({"to": "La date de fin doit être égale ou postérieure à la date de début."})
-    return start, end
-
-
-def _when(value) -> str:
-    if not value:
-        return ""
-    if isinstance(value, datetime):
-        from django.utils import timezone
-
-        if timezone.is_aware(value):
-            value = timezone.localtime(value)
-        return value.strftime("%d/%m/%Y %H:%M")
-    return value.strftime("%d/%m/%Y")
-
-
-def _label(obj, name: str):
-    getter = getattr(obj, f"get_{name}_display", None)
-    return getter() if callable(getter) else getattr(obj, name, "")
-
-
-def carnet_sheets(patient, start: date | None, end: date | None, *, exported_by: str, now: datetime) -> list[Sheet]:
-    """Feuilles du carnet du patient. Uniquement SES données ; les consultations non validées et les fichiers joints sont exclus."""
+def _annex_sheets(patient, start: date | None, end: date | None) -> list[Sheet]:
+    """Feuilles propres au classeur (rappels, prises, rendez-vous) : elles n’appartiennent à aucune des rubriques de `?sections=`.
+    Elles ne figurent donc que dans l’export complet (paramètre `sections` absent), filtrées par la même période."""
     from django.db.models import Q
 
-    from apps.patients.models import ClinicalDeclaration
+    from .models import Appointment, MedicationIntake, MedicationReminder
 
-    from .models import Appointment, Consultation, HealthMeasurement, MedicalDocument, MedicationIntake, MedicationReminder, Vaccination
-
-    def within(qs, field: str, *, datetime_field: bool = False):
-        suffix = "__date" if datetime_field else ""
-        if start:
-            qs = qs.filter(**{f"{field}{suffix}__gte": start})
-        if end:
-            qs = qs.filter(**{f"{field}{suffix}__lte": end})
-        return qs
-
-    period = (f"du {start.strftime('%d/%m/%Y')} " if start else "depuis le début ") + (f"au {end.strftime('%d/%m/%Y')}" if end else "jusqu’à aujourd’hui")
-    summary: Sheet = ("Résumé", ["Information", "Valeur"], [
-        ["Titulaire", patient.user.get_full_name() or patient.user.email],
-        ["Période exportée", period],
-        ["Exporté le", _when(now)],
-        ["Exporté par", exported_by],
-        ["Contenu", "Déclarations, vaccinations, mesures, consultations validées, documents (liste seulement), rappels, prises, rendez-vous."],
-        ["Attention", "Ce fichier contient des informations de santé et n’est pas chiffré. Rangez-le en lieu sûr, ne l’envoyez que par un canal que vous maîtrisez et supprimez-le quand vous n’en avez plus besoin."],
-        ["Provenance", "Les informations déclarées par le patient ne sont pas toutes confirmées par un professionnel : vérifiez la colonne Statut."],
-    ])
-
-    declarations = within(ClinicalDeclaration.objects.filter(patient=patient), "created_at", datetime_field=True).order_by("-created_at")
-    vaccinations = within(Vaccination.objects.filter(patient=patient), "administered_on").order_by("-administered_on")
-    measurements = within(HealthMeasurement.objects.filter(patient=patient), "measured_at", datetime_field=True).order_by("-measured_at")
-    consultations = within(Consultation.objects.filter(patient=patient, validated_at__isnull=False), "validated_at", datetime_field=True).order_by("-validated_at")
-    documents = MedicalDocument.objects.filter(patient=patient)
-    if start or end:
-        dated = Q(document_date__isnull=False)
-        undated = Q(document_date__isnull=True)
-        if start:
-            dated &= Q(document_date__gte=start)
-            undated &= Q(created_at__date__gte=start)
-        if end:
-            dated &= Q(document_date__lte=end)
-            undated &= Q(created_at__date__lte=end)
-        documents = documents.filter(dated | undated)
     reminders = MedicationReminder.objects.filter(patient=patient)
     if end:
         reminders = reminders.filter(starts_on__lte=end)
     if start:
         reminders = reminders.filter(Q(ends_on__isnull=True) | Q(ends_on__gte=start))
-    intakes = within(MedicationIntake.objects.filter(reminder__patient=patient).select_related("reminder"), "scheduled_for", datetime_field=True).order_by("-scheduled_for")
-    appointments = within(Appointment.objects.filter(patient=patient), "starts_at", datetime_field=True).order_by("-starts_at")
-
+    intakes = filter_period(MedicationIntake.objects.filter(reminder__patient=patient).select_related("reminder"), "scheduled_for", start, end, datetime_field=True).order_by("-scheduled_for")
+    appointments = filter_period(Appointment.objects.filter(patient=patient), "starts_at", start, end, datetime_field=True).order_by("-starts_at")
     return [
-        summary,
-        ("Déclarations", ["Type", "Libellé", "Détails", "Statut", "Ajouté le"],
-         [[_label(d, "kind"), d.label, d.details, _label(d, "status"), _when(d.created_at)] for d in declarations]),
-        ("Vaccinations", ["Vaccin", "Dose", "Date", "Prochain rappel", "Lieu", "Professionnel", "Statut", "Notes"],
-         [[v.vaccine_name, v.dose_number, _when(v.administered_on), _when(v.next_due_on), v.facility, v.professional, _label(v, "status"), v.notes] for v in vaccinations]),
-        ("Mesures", ["Mesure", "Valeur", "Unité", "Source", "Date", "Note"],
-         [[_label(m, "kind"), m.raw_value or (str(m.value) if m.value is not None else ""), m.unit, _label(m, "source"), _when(m.measured_at), m.note] for m in measurements]),
-        ("Consultations", ["Validée le", "Professionnel", "Établissement", "Motif", "Diagnostic", "Conclusion"],
-         [[_when(c.validated_at), c.professional_name, c.facility_label, c.reason, c.diagnosis, c.conclusion] for c in consultations]),
-        ("Documents", ["Nom du fichier", "Type", "Date du document", "Émetteur", "Vérifié", "Ajouté le"],
-         [[d.original_name, _label(d, "document_type"), _when(d.document_date), d.issuer, bool(d.verified), _when(d.created_at)] for d in documents.order_by("-created_at")]),
         ("Rappels médicaments", ["Médicament", "Dosage", "Consignes", "Heures", "Début", "Fin", "Actif"],
-         [[r.name, r.dosage, r.instructions, ", ".join(str(t) for t in (r.times or [])), _when(r.starts_on), _when(r.ends_on), bool(r.active)] for r in reminders.order_by("-starts_on")]),
+         [[r.name, r.dosage, r.instructions, ", ".join(str(t) for t in (r.times or [])), format_when(r.starts_on), format_when(r.ends_on), bool(r.active)] for r in reminders.order_by("-starts_on")]),
         ("Prises", ["Médicament", "Prévue le", "Statut", "Enregistrée le"],
-         [[i.reminder.name, _when(i.scheduled_for), _label(i, "status"), _when(i.recorded_at)] for i in intakes]),
+         [[i.reminder.name, format_when(i.scheduled_for), field_label(i, "status"), format_when(i.recorded_at)] for i in intakes]),
         ("Rendez-vous", ["Date", "Motif", "Statut"],
-         [[_when(a.starts_at), a.reason, _label(a, "status")] for a in appointments]),
+         [[format_when(a.starts_at), a.reason, field_label(a, "status")] for a in appointments]),
     ]
 
 
+def carnet_sheets(patient, start: date | None, end: date | None, *, exported_by: str, now: datetime, sections=None) -> list[Sheet]:
+    """Feuilles du carnet du patient. Uniquement SES données ; les fichiers joints sont exclus (les documents sont seulement listés).
+
+    `sections` : rubriques demandées (clés de export_filters.SECTION_KEYS) ; None = tout le carnet, rappels / prises / rendez-vous compris."""
+    exported = carnet_sections(patient, start, end, sections)
+    annexes = _annex_sheets(patient, start, end) if sections is None else []
+    contents = ", ".join(SECTION_TITLES[s.key] + (" (liste seulement)" if s.key == "documents" else "") for s in exported)
+    if annexes:
+        contents += ", " + ", ".join(title.lower() for title, _, _ in annexes)
+    summary: Sheet = ("Résumé", ["Information", "Valeur"], [
+        ["Titulaire", patient_display_name(patient)],
+        ["Période exportée", describe_period(start, end)],
+        ["Exporté le", format_when(now)],
+        ["Exporté par", exported_by],
+        ["Contenu", contents],
+        ["Attention", "Ce fichier contient des informations de santé et n’est pas chiffré. Rangez-le en lieu sûr, ne l’envoyez que par un canal que vous maîtrisez et supprimez-le quand vous n’en avez plus besoin."],
+        ["Provenance", "Les informations déclarées par le patient ne sont pas toutes confirmées par un professionnel : vérifiez la colonne Statut."],
+    ])
+    return [summary, *(section.as_sheet() for section in exported), *annexes]
+
+
 def carnet_xlsx_response(request):
-    """Réponse HTTP de l'export (GET /patient/care/export/?format=xlsx&from=…&to=…). Journalisé, jamais mis en cache."""
+    """Réponse HTTP de l'export (GET /patient/care/export/?format=xlsx&from=…&to=…&sections=…). Journalisé, jamais mis en cache."""
     from django.http import HttpResponse
     from django.utils import timezone
 
     from apps.audit.services import record_event
     from apps.patients.views import patient_actor_role, profile_for
 
+    start, end, sections = parse_export_filters(request.query_params)
     patient = profile_for(request.user, request)
-    start, end = parse_period(request.query_params)
     now = timezone.now()
-    content = build_xlsx(carnet_sheets(patient, start, end, exported_by=request.user.get_full_name() or request.user.email, now=now))
+    content = build_xlsx(carnet_sheets(patient, start, end, exported_by=request.user.get_full_name() or request.user.email, now=now, sections=sections))
     record_event(
         event_type="patient.carnet.exported",
         actor=request.user,
         actor_role=patient_actor_role(request),
         patient=patient,
-        metadata={"action": "exported", "resource_type": "patient_carnet_xlsx", "from": start.isoformat() if start else "", "to": end.isoformat() if end else ""},
+        metadata=export_audit_metadata("xlsx", start, end, sections),
     )
     response = HttpResponse(content, content_type=XLSX_CONTENT_TYPE)
     response["Content-Disposition"] = f'attachment; filename="carnet-sante-{timezone.localdate(now).isoformat()}.xlsx"'
