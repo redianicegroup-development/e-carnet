@@ -47,11 +47,11 @@ export const STEPS: Step[] = [
   { icon: "document", title: "Vous retrouvez ses préconisations", text: "Le médecin lit, consulte, puis établit ses préconisations. Elles rejoignent votre carnet une fois la consultation validée." },
 ];
 
-export type Profile = { icon: IconName; label: string; title: string; points: string[]; cta: { href: string; text: string; subject?: string; track?: "signup" | "professional_signup" } };
+export type Profile = { icon: IconName; label: string; title: string; points: string[]; photo: { src: string; alt: string }; cta: { href: string; text: string; subject?: string; track?: "signup" | "professional_signup" } };
 export const PROFILES: Profile[] = [
-  { icon: "user", label: "Patients", title: "Votre santé, organisée", points: ["Présentez votre QR : le médecin consulte votre carnet", "Gardez la maîtrise des accès"], cta: { href: "/connexion", text: "Commencer", track: "signup" } },
-  { icon: "stethoscope", label: "Professionnels", title: "Un accès patient par patient", points: ["Scannez le QR du patient et consultez depuis votre espace", "Établissez vos préconisations, elles rejoignent son carnet"], cta: { href: "/connexion?mode=register&profil=professionnel", text: "Créer mon profil" } },
-  { icon: "building", label: "Établissements", title: "Gérez vos rattachements", points: ["Invitez les professionnels", "Traitez les demandes de rattachement"], cta: { href: "#contact", text: "Contacter l’équipe", subject: "establishment" } },
+  { icon: "user", label: "Patients", title: "Votre santé, organisée", points: ["Présentez votre QR : le médecin consulte votre carnet", "Gardez la maîtrise des accès"], photo: { src: "/landing/role-patient.webp", alt: "Un patient consulte son carnet sur son téléphone dans une salle d’attente ; un médecin travaille dans la pièce voisine." }, cta: { href: "/connexion", text: "Commencer", track: "signup" } },
+  { icon: "stethoscope", label: "Professionnels", title: "Un accès patient par patient", points: ["Scannez le QR du patient et consultez depuis votre espace", "Établissez vos préconisations, elles rejoignent son carnet"], photo: { src: "/landing/role-professional.webp", alt: "Un médecin en blouse consulte un téléphone dans un couloir d’hôpital." }, cta: { href: "/connexion?mode=register&profil=professionnel", text: "Créer mon profil" } },
+  { icon: "building", label: "Établissements", title: "Gérez vos rattachements", points: ["Invitez les professionnels", "Traitez les demandes de rattachement"], photo: { src: "/landing/role-establishment.webp", alt: "Une femme sort d’un hôpital en souriant, son téléphone à la main." }, cta: { href: "#contact", text: "Contacter l’équipe", subject: "establishment" } },
 ];
 
 export const SAFEGUARDS = [
@@ -93,6 +93,23 @@ export const FINAL = {
   primary: { href: "/connexion?mode=register", label: "Créer mon carnet" },
   secondary: { href: "/connexion", label: "Déjà un compte ? Se connecter" },
   note: "Utilisez des informations exactes et gardez votre compte personnel.",
+} as const;
+
+/** Photo de la carte finale : découpée selon la courbe tracée sur la maquette (fond transparent), toujours affichée. */
+export const FINAL_IMAGE = {
+  src: "/landing/cta-team.webp",
+  width: 1100,
+  height: 881,
+  alt: "Deux soignants et une collègue munie d’une tablette regardent ensemble un écran d’ordinateur.",
+} as const;
+
+/** Section qui suit le hero : paysage sur ordinateur, portrait sur mobile (même découpage que le hero, 759 px). Photo d'ambiance : alt vide. */
+export const PROBLEM_IMAGE = {
+  desktopSrc: "/landing/problem-desktop.webp",
+  desktopWidth: 1400,
+  desktopHeight: 788,
+  mobileSrc: "/landing/problem-mobile.webp",
+  alt: "",
 } as const;
 
 export const CONTACT_COPY = {

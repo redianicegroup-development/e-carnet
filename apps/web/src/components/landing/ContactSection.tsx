@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, useSyncExternalStore, type ChangeEvent, type FormEvent } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { ApiError, apiPost } from "../../infrastructure/api/client";
 import {
@@ -21,7 +22,7 @@ import {
   type ContactFields,
   type ContactSubject,
 } from "../../lib/contact";
-import { CONTACT_COPY, FINAL } from "../../lib/landing-content";
+import { CONTACT_COPY, FINAL, FINAL_IMAGE } from "../../lib/landing-content";
 import { Icon } from "../ui/Icon";
 
 type Status = "idle" | "sending" | "sent";
@@ -177,6 +178,9 @@ export function ContactSection({ privacyHref }: { privacyHref: string }) {
           <Link className="button primary" href={FINAL.primary.href} data-track="signup">{FINAL.primary.label}<Icon name="chevron" size={18} /></Link>
           <Link className="lp-cta-card__login" href={FINAL.secondary.href}>{FINAL.secondary.label}</Link>
           <p className="lp-cta-card__fine">{FINAL.note}</p>
+        </div>
+        <div className="lp-cta-card__photo">
+          <Image src={FINAL_IMAGE.src} alt={FINAL_IMAGE.alt} width={FINAL_IMAGE.width} height={FINAL_IMAGE.height} sizes="(max-width: 899px) 100vw, 520px" />
         </div>
       </div>
     </section>

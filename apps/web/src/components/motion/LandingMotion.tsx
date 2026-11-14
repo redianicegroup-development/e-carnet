@@ -150,9 +150,20 @@ export function LandingMotion({ children }: { children: ReactNode }) {
         });
       }
 
+      /* --- Photos des cartes de rôle : dévoilées au défilement (ScrollTrigger suit Lenis), réversible ; au survol ou au focus clavier,
+             le CSS les ouvre en entier. `--reveal` va de 0 (masquée) à 1 (entière) ; sans lui, la photo est simplement affichée. --- */
+      const photoCards = q("[data-photo-card]") as HTMLElement[];
+      photoCards.forEach((card, index) => {
+        const photo = card.querySelector(".lp2-role__photo") ?? card;
+        const stagger = window.innerWidth >= 900 ? index * 6 : 0; // cartes côte à côte : elles se dévoilent l'une après l'autre
+        const sync = (self: ScrollTrigger) => card.style.setProperty("--reveal", self.progress.toFixed(3));
+        ScrollTrigger.create({ trigger: photo, start: `top ${96 - stagger}%`, end: `top ${58 - stagger}%`, scrub: true, onUpdate: sync, onRefresh: sync });
+      });
+
       void document.fonts?.ready.then(() => ScrollTrigger.refresh());
       return () => {
         header?.classList.remove("is-scrolled");
+        photoCards.forEach((card) => card.style.removeProperty("--reveal"));
         ScrollTrigger.removeEventListener("refreshInit", syncHeaderHeight);
         root$.style.removeProperty("--pub-header-h");
       };

@@ -198,3 +198,20 @@ body .lp-cta-card .button.primary { width: 100%; min-height: 60px; font-size: 1.
 .lp-cta-card__fine { margin: 0; font-size: .78rem; color: rgb(255 247 230 / .62); }
 .lp-cta-card :is(a, button):focus-visible { outline: 3px solid #ffc857; outline-offset: 3px; }
 @media (min-width: 900px) { .lp-cta-card { grid-template-columns: minmax(0, 1.3fr) minmax(260px, .7fr); gap: 56px; align-items: center; } }
+
+/* Photo de la carte finale : découpée selon la courbe (fond transparent), toujours affichée.
+   Mobile : sous le texte, collée aux bords bas et gauche de la carte. Ordinateur : à gauche, pleine hauteur, courbe tournée vers le texte. */
+.lp-cta-card { --cta-pad: clamp(26px, 6vw, 52px); grid-template-areas: "copy" "actions" "photo"; }
+.lp-cta-card__copy { grid-area: copy; }
+.lp-cta-card__actions { grid-area: actions; }
+.lp-cta-card__photo { grid-area: photo; margin: 6px calc(-1 * var(--cta-pad)) calc(-1 * var(--cta-pad)); line-height: 0; pointer-events: none; }
+.lp-cta-card__photo img { display: block; width: min(100%, 520px); height: auto; }
+@media (min-width: 900px) {
+  .lp-cta-card { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); grid-template-areas: "photo copy" "photo actions"; column-gap: 40px; row-gap: 24px; align-items: center; }
+  .lp-cta-card__copy { align-self: end; }
+  .lp-cta-card__actions { align-self: start; justify-items: start; text-align: left; }
+  body .lp-cta-card .button.primary { width: min(100%, 360px); }
+  .lp-cta-card__login { place-items: center start; }
+  .lp-cta-card__photo { position: relative; align-self: stretch; min-height: 300px; margin: calc(-1 * var(--cta-pad)) 0 calc(-1 * var(--cta-pad)) calc(-1 * var(--cta-pad)); }
+  .lp-cta-card__photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: right center; }
+}

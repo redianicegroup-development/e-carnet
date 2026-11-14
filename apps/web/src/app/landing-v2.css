@@ -21,7 +21,7 @@
 .lp2-wrap { width: min(calc(100% - 32px), 1180px); margin-inline: auto; }
 .lp2-sec { width: min(calc(100% - 32px), 1180px); margin-inline: auto; padding-block: 88px; }
 .lp2-sec.lp2-flush { padding-top: 0; }
-.lp2-bleed { background: var(--lp2-bg-alt); padding-block: 88px; }
+.lp2-bleed { background: var(--lp2-bg); padding-block: 88px; }
 .lp2-bleed .lp2-flow-wrap { width: min(calc(100% - 32px), 1180px); margin-inline: auto; }
 .lp2-pause { margin-top: 14px; min-height: 44px; padding: 0 18px; border-radius: 999px; border: 1.5px solid var(--lp2-line); background: transparent; color: var(--lp2-ink); font: 600 .95rem/1 var(--lp2-f-body); cursor: pointer; }
 .lp2-pause:hover { background: var(--lp2-surface); }
@@ -174,15 +174,15 @@
 .lp2-pcard ul {margin:0; padding-left:18px; color:var(--lp2-p-muted); font-size:13px; display:grid; gap:4px}
 .lp2-pcard .lp2-mot {display:flex; justify-content:space-between; align-items:center; border:1.5px dashed var(--lp2-p-honey-2); background:#FFF6DD; border-radius:12px; padding:10px 12px; font:500 13px var(--lp2-f-mono); letter-spacing:.12em}
 .lp2-pcard .lp2-mot small {font:500 11px var(--lp2-f-body); letter-spacing:0; color:var(--lp2-p-muted)}
-.lp2-bleed--dark {background:var(--lp2-ink); color:var(--lp2-bg)}
+.lp2-bleed--dark {background:var(--lp2-bg); color:var(--lp2-ink)}
 .lp2-problem-in {width:min(calc(100% - 32px),1180px); margin-inline:auto; display:grid; grid-template-columns:5fr 7fr; gap:72px; align-items:start}
-.lp2-problem-head h2 {font-size:clamp(2.1rem,4.6vw,3.5rem); color:#fff}
-.lp2-problem-head p {margin-top:22px; max-width:40ch; font-size:1.12rem; color:rgba(255,247,230,.82)}
+.lp2-problem-head h2 {font-size:clamp(2.1rem,4.6vw,3.5rem); color:var(--lp2-ink)}
+.lp2-problem-head p {margin-top:22px; max-width:40ch; font-size:1.12rem; color:var(--lp2-muted)}
 .lp2-pains {list-style:none; margin:0; padding:0; display:grid}
-.lp2-pains li {padding:30px 0; border-top:1px solid rgba(255,247,230,.2)}
-.lp2-pains li:last-child {border-bottom:1px solid rgba(255,247,230,.2)}
-.lp2-pains h3 {font-size:clamp(1.25rem,2.2vw,1.55rem); color:var(--lp2-honey)}
-.lp2-pains p {margin-top:10px; max-width:54ch; color:rgba(255,247,230,.84)}
+.lp2-pains li {padding:30px 0; border-top:1px solid var(--lp2-line)}
+.lp2-pains li:last-child {border-bottom:1px solid var(--lp2-line)}
+.lp2-pains h3 {font-size:clamp(1.25rem,2.2vw,1.55rem); color:var(--lp2-ink)}
+.lp2-pains p {margin-top:10px; max-width:54ch; color:var(--lp2-muted)}
 .lp2-picks {list-style:none; margin:26px 0 0; padding:0; display:grid; gap:10px; max-width:540px}
 .lp2-pick {display:flex; gap:12px; align-items:flex-start; width:100%; padding:14px 16px; text-align:left; border-radius:var(--lp2-r-m); border:1.5px solid var(--lp2-line); background:transparent; color:var(--lp2-ink); font:inherit; line-height:1.4; cursor:pointer; transition:background .25s, border-color .25s, box-shadow .25s}
 .lp2-pick .lp2-i {color:var(--lp2-muted); margin-top:.1em; transition:color .25s}
@@ -219,6 +219,8 @@
 .lp2-role li .lp2-i {margin-top:.2em; color:var(--lp2-green)}
 .lp2-role.lp2-lead-card li .lp2-i {color:var(--lp2-honey)}
 .lp2-role .lp2-btn {justify-self:start; margin-top:auto}
+.lp2-role {grid-template-rows:auto auto auto auto 1fr auto}
+.lp2-role .lp2-btn {align-self:end}
 .lp2-role.lp2-lead-card .lp2-btn-primary {background:#fff; color:#1E3A34; box-shadow:none}
 .lp2-trust {display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:center}
 .lp2-trust h2 {font-size:clamp(1.9rem,3.6vw,2.9rem); margin:14px 0 22px}
@@ -280,4 +282,64 @@
   .lp2-stack .lp2-pcard {animation:none}
   .lp2-rv-wait {opacity:1; transform:none}
   .lp2-btn:hover, .lp2-tile:hover {transform:none}
+}
+
+/* ---- Retouches du 14/11/2026 ---- */
+
+/* Section qui suit le hero : photo sous le texte (colonne de gauche sur ordinateur). Paysage 16/9 sur ordinateur, portrait 4/5 sur mobile. */
+.lp2-problem-photo {margin:34px 0 0; border-radius:var(--lp2-r-l); overflow:hidden; box-shadow:var(--lp2-shadow); background:var(--lp2-bg-alt)}
+.lp2-problem-photo picture, .lp2-problem-photo img {display:block; width:100%}
+.lp2-problem-photo img {height:auto; aspect-ratio:16 / 9; object-fit:cover}
+@media (max-width:759px) {
+  .lp2-problem-photo {margin-top:24px}
+  .lp2-problem-photo img {aspect-ratio:4 / 5}
+}
+
+/* Photos des cartes de rôle : `--reveal` (0 → 1) vient du défilement (LandingMotion) ; sans lui, la photo est entière.
+   Survol de la souris ou focus clavier dans la carte : photo ouverte en entier. */
+.lp2-role__photo {--p:var(--reveal, 1); margin:10px 0 0; border-radius:22px; overflow:hidden; aspect-ratio:4 / 3; background:var(--lp2-bg-alt);
+  clip-path:inset(0 0 calc((1 - var(--p)) * 100%) 0 round 22px); transition:clip-path .35s ease}
+.lp2-role__photo img {display:block; width:100%; height:100%; object-fit:cover; transform:scale(calc(1.14 - .14 * var(--p))); opacity:calc(.35 + .65 * var(--p)); transition:transform .5s ease, opacity .35s ease}
+.lp2-role:is(:hover, :focus-within) .lp2-role__photo {--p:1}
+
+/* Les trois étapes : libellés et légendes réservés au mobile (cachés ailleurs). */
+.lp2-step-num, .lp2-step-captions {display:none}
+
+/* Mobile : le parcours tient sur un écran plein. Étape 1, 2 ou 3 en haut (chrono sous chaque pastille), la légende de l'étape courante, puis son image en bas.
+   Ordinateur et tablette : inchangés. */
+@media (max-width:759px) {
+  .lp2-bleed#parcours {min-height:calc(100svh - var(--pub-header-h, 58px)); display:flex; flex-direction:column; justify-content:center; box-sizing:border-box; padding-block:20px 8px}
+  .lp2-bleed#parcours .lp2-flow-wrap {flex:1; width:min(calc(100% - 32px), 1180px); display:flex; flex-direction:column; min-height:0}
+  .lp2-bleed#parcours .lp2-head {margin-bottom:12px}
+  .lp2-bleed#parcours .lp2-head h2 {font-size:clamp(1.45rem, 6.6vw, 1.85rem)}
+  .lp2-bleed#parcours .lp2-head .lp2-lead {display:none}
+  .lp2-flow {flex:1; min-height:0; display:flex; flex-direction:column; align-items:stretch; gap:8px}
+  .lp2-flow > div:first-child {display:grid; gap:10px}
+  .lp2-steps {grid-template-columns:repeat(3, 1fr); gap:8px; max-width:none; width:100%}
+  .lp2-step {position:relative; grid-template-columns:1fr; justify-items:center; gap:8px; padding:12px 6px 10px; text-align:center; border-radius:16px}
+  .lp2-step .lp2-orb {display:none}
+  .lp2-step-body {display:contents}
+  .lp2-step-title, .lp2-step-text {position:absolute; width:1px; height:1px; margin:0; overflow:hidden; clip-path:inset(50%); white-space:nowrap}
+  .lp2-step-num {display:block; font:700 .9rem/1.1 var(--lp2-f-display); letter-spacing:-.01em}
+  .lp2-step .lp2-bar {display:block; order:-1; width:100%; height:4px}
+  .lp2-step.lp2-done .lp2-bar i {width:100%}
+  .lp2-step-captions {display:grid}
+  .lp2-step-caption {grid-area:1 / 1; display:grid; grid-template-columns:auto 1fr; column-gap:12px; row-gap:4px; align-content:start; padding:2px 2px 0; opacity:0; visibility:hidden; transition:opacity .35s ease, visibility .35s}
+  .lp2-step-caption.lp2-on {opacity:1; visibility:visible}
+  .lp2-step-caption .lp2-orb {grid-row:1 / span 3; width:44px; height:44px; border-radius:14px}
+  .lp2-step-count {font:600 .72rem/1 var(--lp2-f-mono); letter-spacing:.08em; text-transform:uppercase; color:var(--lp2-link)}
+  .lp2-step-caption strong {font:700 1.2rem/1.15 var(--lp2-f-display); letter-spacing:-.02em}
+  .lp2-step-copy {color:var(--lp2-muted); font-size:.95rem; line-height:1.45}
+  .lp2-pause {margin-top:0; justify-self:start; min-height:40px; padding:0 14px; font-size:.85rem}
+  .lp2-flow-phone {flex:1; min-height:230px; padding:0; display:block; position:relative}
+  .lp2-flow-phone .lp2-blob {inset:6% 0 0 0; border-radius:var(--lp2-r-l)}
+  .lp2-flow-phone .lp2-hand-stack.lp2-flow-stack {position:absolute; inset:0; display:block; width:100%; padding:8px 0 0}
+  .lp2-flow-shot {position:absolute; inset:0}
+  .lp2-flow-shot img {width:100%; height:100%; object-fit:contain; object-position:center bottom}
+}
+@media (max-width:759px) and (prefers-reduced-motion:reduce) {
+  .lp2-step-caption {transition:none}
+}
+@media (prefers-reduced-motion:reduce) {
+  .lp2-role__photo, .lp2-role__photo img {transition:none}
 }

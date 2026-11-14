@@ -26,10 +26,6 @@ export function DetailRows() {
                 Un proche de confiance peut lire votre fiche d’urgence
               </li>
             </ul>
-            <p className="lp2-note">
-              <svg className="lp2-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l9 16H3z" /><path d="M12 10v4M12 17v.01" /></svg>
-              <span>À savoir : la carte ouverte par QR est conservée jusqu’à 24 h sur l’appareil qui la consulte. Utilisez un appareil de confiance.</span>
-            </p>
           </div>
           <div className="lp2-stage lp2-green lp2-rv">
             <MaskedEmergencyCard />

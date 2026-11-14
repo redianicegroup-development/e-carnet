@@ -152,3 +152,33 @@ test("landing (4e passe) : vraie carte d'urgence masquée, rebond léger, images
   assert.match(contact, /id="contact"/);
   assert.doesNotMatch(contact, /lp-contact__ask|lp-contact__warning|CONTACT_COPY\.points/);
 });
+
+test("retouches du 14/11/2026 : même fond crème entre le hero et le pied de page, photos WebP, trois étapes plein écran sur mobile", () => {
+  // Fond : toutes les bandes pleine largeur prennent le crème commun (plus de bande pêche ni de bande sombre).
+  assert.match(css, /\.lp2-bleed \{ background: var\(--lp2-bg\);/);
+  assert.match(css, /\.lp2-bleed--dark \{background:var\(--lp2-bg\); color:var\(--lp2-ink\)\}/);
+  assert.doesNotMatch(css, /\.lp2-bleed \{ background: var\(--lp2-bg-alt\)/);
+  // Photos : fichiers WebP présents, branchés depuis landing-content.
+  const content = read("src/lib/landing-content.ts");
+  for (const file of ["role-patient", "role-professional", "role-establishment", "cta-team", "problem-desktop", "problem-mobile"]) {
+    assert.ok(existsSync(new URL(`../public/landing/${file}.webp`, import.meta.url)), `${file}.webp présent`);
+    assert.match(content, new RegExp(`/landing/${file}\\.webp`));
+  }
+  assert.match(content, /label: "Patients"[^\n]*role-patient\.webp/);
+  assert.match(content, /label: "Professionnels"[^\n]*role-professional\.webp/);
+  assert.match(content, /label: "Établissements"[^\n]*role-establishment\.webp/);
+  // Cartes de rôle : photo dévoilée au défilement (ScrollTrigger/Lenis) ou au survol/focus ; carte finale : toujours affichée.
+  assert.match(read("src/components/landing2/RoleCards.tsx"), /data-photo-card/);
+  assert.match(css, /\.lp2-role:is\(:hover, :focus-within\) \.lp2-role__photo \{--p:1\}/);
+  assert.match(read("src/components/motion/LandingMotion.tsx"), /\[data-photo-card\][\s\S]*ScrollTrigger\.create\(\{ trigger: photo/);
+  assert.match(read("src/components/landing/ContactSection.tsx"), /className="lp-cta-card__photo"/);
+  // Section après le hero : image 13 (ordinateur) / 14 (mobile) via <picture>, mêmes 759 px que le hero.
+  assert.match(read("src/components/landing2/ProblemSection.tsx"), /<source media="\(max-width: 759px\)" srcSet=\{PROBLEM_IMAGE\.mobileSrc\}/);
+  // Trois étapes : mobile plein écran (100svh), légendes empilées, chrono lancé quand le parcours est à l'écran.
+  assert.match(css, /\.lp2-bleed#parcours \{min-height:calc\(100svh - var\(--pub-header-h, 58px\)\)/);
+  const flow = read("src/components/landing2/FlowSection.tsx");
+  assert.match(flow, /className="lp2-step-captions" aria-hidden="true"/);
+  assert.match(flow, /\(!mobile \|\| visible\)/);
+  // Note « À savoir » retirée de la section carte d'urgence.
+  assert.doesNotMatch(read("src/components/landing2/DetailRows.tsx"), /conservée jusqu/);
+});

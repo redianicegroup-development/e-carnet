@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { PROFILES } from "../../lib/landing-content";
 import { RoleCta } from "./RoleCta";
 
@@ -7,7 +8,7 @@ const ICONS = [
   <svg key="e" className="lp2-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V5h9v15M14 10h5v10M3 20h18" /><path d="M8 9h3M8 13h3M8 17h3" /></svg>,
 ];
 
-/** Rôles : le texte vient de PROFILES (une seule source, comme les boutons : liens, suivi, objet du contact). */
+/** Rôles : le texte et la photo viennent de PROFILES (une seule source, comme les boutons : liens, suivi, objet du contact). */
 export function RoleCards() {
   return (
     <>
@@ -17,7 +18,7 @@ export function RoleCards() {
       </div>
       <div className="lp2-roles">
         {PROFILES.map((profile, index) => (
-          <article key={profile.label} className={`lp2-role lp2-rv${index === 0 ? " lp2-lead-card" : ""}`}>
+          <article key={profile.label} className={`lp2-role lp2-rv${index === 0 ? " lp2-lead-card" : ""}`} data-photo-card>
             <span className={`lp2-orb${index === 1 ? " lp2-g" : ""}`}>{ICONS[index]}</span>
             <p className="lp2-label">{profile.label}</p>
             <h3>{profile.title}</h3>
@@ -31,6 +32,10 @@ export function RoleCards() {
               ))}
             </ul>
             <RoleCta index={index} />
+            {/* Photo : dévoilée au défilement (LandingMotion, via ScrollTrigger et Lenis) ; ouverte en entier au survol de la souris ou au focus clavier (CSS). Sans mouvement, elle est simplement affichée. */}
+            <figure className="lp2-role__photo">
+              <Image src={profile.photo.src} alt={profile.photo.alt} width={1200} height={900} sizes="(max-width: 900px) 92vw, 380px" />
+            </figure>
           </article>
         ))}
       </div>
