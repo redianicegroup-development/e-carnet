@@ -13,6 +13,7 @@ import { AdminSettingsClient } from "../../components/AdminSettingsClient";
 import { AdminOperationsClient } from "../../components/AdminOperationsClient";
 import { AdminAuditJournal } from "../../components/AdminAuditJournal";
 import { useConfirm } from "../../components/modal/ConfirmProvider";
+import { DataSaverBanner } from "../../components/data-saver/DataSaverBanner";
 import { BrandMark } from "../../components/ui/BrandMark";
 import { Icon, type IconName } from "../../components/ui/Icon";
 import { AppSidebar, type SidebarItem, type SidebarMenuItem } from "../../components/shell/AppSidebar";
@@ -184,7 +185,7 @@ export default function AdminPage() {
   if (!dashboard) return <main className="shell admin-shell"><section className="admin-login card">
     <Link href="/" className="brand admin-login__brand" aria-label="Mon E-Carnet — retourner à la page d’accueil">
       <BrandMark />
-      <span className="brand-text"><strong>Mon E‑Carnet</strong><small>Retour à l’accueil</small></span>
+      <span className="brand-text"><strong className="notranslate" translate="no">Mon E‑Carnet</strong><small>Retour à l’accueil</small></span>
     </Link>
     <span className="eyebrow">Mon E‑Carnet · Administration</span><h1>Console d’administration</h1>
     <p className="muted">Accès réservé aux superadministrateurs autorisés.</p>
@@ -252,9 +253,10 @@ export default function AdminPage() {
       <header className="space-mobile-header">
         <Link className="space-mobile-header__brand" href="/admin/" aria-label="Mon E-Carnet, accueil administration">
           <BrandMark />
-          <span><strong>Mon E-Carnet</strong><small>Administration</small></span>
+          <span><strong className="notranslate" translate="no">Mon E‑Carnet</strong><small>Administration</small></span>
         </Link>
       </header>
+      <DataSaverBanner />
       <header className="admin-page-heading"><div><span className="eyebrow">Console privée</span><h1>Administration Mon E‑Carnet</h1><p className="muted">Actualisé {formatDate(dashboard.generated_at)} · synchronisation automatique toutes les 2 min</p></div><button type="button" className={`admin-refresh-icon${manualRefreshing ? " is-refreshing" : ""}`} aria-label="Actualiser les données" title="Actualiser les données" aria-busy={manualRefreshing} disabled={manualRefreshing} onClick={() => void loadDashboard(true, true)}><Icon name="refresh" size={20} /></button></header>
       {refreshMessage && <p className="admin-refresh-note" role="status">{refreshMessage}</p>}
       <div className="admin-workspace__content">

@@ -19,7 +19,7 @@ test("la carte d’urgence affiche identité, groupe sanguin, ville, allergies, 
   assert.match(styles, /@container ecard \(max-width: 430px\) \{[^}]*\.ecard__body \{ grid-template-columns: minmax\(0, 1fr\)/);
 });
 
-test("les réglages portent la carte virtuelle et le QR public ; l’accueil n’en affiche plus", () => {
+test("les réglages portent la carte virtuelle (sans QR) et la carte professionnelle ; l’accueil n’en affiche plus", () => {
   const settings = read("src/components/PatientEmergencyCardSettingsClient.tsx");
   const image = read("src/components/emergency-card/emergency-card-image.ts");
   const visual = read("src/components/emergency-card/EmergencyCardVisual.tsx");
@@ -29,16 +29,23 @@ test("les réglages portent la carte virtuelle et le QR public ; l’accueil n�
   assert.match(settings, /downloadEmergencyCardPng\(shown, photo\)/);
   assert.match(settings, /Télécharger en PNG/);
   // « Ma carte virtuelle » ne porte plus qu'un lien : ville, contact et le reste se modifient dans les déclarations du carnet
-  assert.match(settings, /href="\/patient\/carnet#carte-urgence">Modifier ma carte</);
+  assert.match(settings, /"\/patient\/carnet#carte-urgence"/);
+  assert.match(settings, /"Modifier ma carte"/);
   assert.doesNotMatch(settings, /city: city|setCity|setContactName|setContactPhone|<input/);
   // Le QR public ne fait plus partie de l’accordéon de la carte : ni renouvellement ni panneau QR local.
   assert.doesNotMatch(settings, /Renouveler|rotate|offline|Carte imprimable|<details|ecard-details/i);
   assert.doesNotMatch(read("src/components/emergency-card/emergency-card.css"), /ecard-details|ecard-offline/);
   assert.doesNotMatch(settings, /ecard-qr|qrOpen|qrPanelId/);
-  assert.match(settings, /Le QR public de cette carte se gère ici/);
+  assert.doesNotMatch(settings, /Le QR public de cette carte se gère ici|QR de ma carte|Activer mon QR/);
+  assert.match(settings, /QR public encore actif/, "repli : un ancien QR actif reste désactivable");
+  // Carte professionnelle : même panneau, même position (sous le profil, avant l'annuaire des réglages), sans QR.
+  const professionalSettings = read("src/components/ProfessionalSettingsClient.tsx");
+  assert.match(professionalSettings, /<PatientEmergencyCardSettingsClient variant="professional" \/>/);
+  assert.ok(professionalSettings.indexOf("<PatientEmergencyCardSettingsClient") < professionalSettings.indexOf("<SettingsDirectory"));
+  assert.match(settings, /Ma carte professionnelle/);
   // L’activation et la désactivation du QR stable se font dans Moi (paramètres) : l’accueil patient n’affiche plus la carte.
   assert.doesNotMatch(account, /QRCodeSVG|settings-account-summary__emergency-qr|emergency-card\//);
-  assert.match(settings, /<QRCodeSVG value=\{publicUrl\}/);
+  assert.doesNotMatch(settings, /QRCodeSVG/, "le QR de la carte virtuelle n'est plus affiché");
   assert.match(read("src/components/emergency-card/useEmergencyCard.ts"), /apiGet<EmergencyCardData>\("\/api\/v1\/patient\/emergency-card\//);
   assert.match(settings, /apiPatch<EmergencyCard>\("\/api\/v1\/patient\/emergency-card\//);
   assert.match(settings, /qr_enabled/);

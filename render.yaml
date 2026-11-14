@@ -88,3 +88,6 @@ services:
       # A8 non tranché : accès clinique administratif fermé en configuration de référence.
       - key: ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ
         value: "false"
+      # PRO-21 : création des laboratoires par les établissements. Le code répond 404 (« pas encore activés ») tant que ce drapeau n'est pas "true".
+      - key: ECARNET_LAB_ENABLED
+        value: "true"

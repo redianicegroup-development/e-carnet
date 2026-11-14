@@ -104,6 +104,7 @@ export function EstablishmentProfileEditor({ scope, establishmentId, submitLabel
       setLogo(saved.logo);
       setLogoChanged(false);
       setMessage(`Enregistré le ${when(saved.updated_at)}. L’équipe Mon E‑Carnet voit cette mise à jour.`);
+      window.dispatchEvent(new Event("ecarnet:establishment-updated")); // le header et la sidebar reprennent le nouveau logo
       onSaved?.(saved, wasComplete);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Enregistrement impossible.");

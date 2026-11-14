@@ -39,6 +39,8 @@ services:
       ECARNET_VAPID_PUBLIC_KEY: ${ECARNET_VAPID_PUBLIC_KEY:-}
       ECARNET_VAPID_PRIVATE_KEY: ${ECARNET_VAPID_PRIVATE_KEY:-}
       ECARNET_VAPID_SUBJECT: ${ECARNET_VAPID_SUBJECT:-}
+      # PRO-21 : création des laboratoires (sans ce drapeau à true, l'API répond 404 sur les routes laboratoire)
+      ECARNET_LAB_ENABLED: ${ECARNET_LAB_ENABLED:-true}
     command: sh -c "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"
     ports:
       - "127.0.0.1:8000:8000"

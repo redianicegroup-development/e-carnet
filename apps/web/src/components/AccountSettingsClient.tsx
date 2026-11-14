@@ -36,7 +36,7 @@ const sections: SettingsNavItem[] = [
   { id: "hors-connexion", title: "Hors connexion", description: "Naviguer sans réseau avec une copie chiffrée de vos données, en lecture seule.", icon: "download" },
   { id: "proches", title: "Proches et personnes représentées", description: "Gérer les dossiers distincts des enfants représentés.", icon: "users" },
   { id: "proches-de-confiance", title: "Proches de confiance", description: "Inviter ou retirer un accès limité à la fiche d’urgence.", icon: "users" },
-  { id: "compte", title: "Paramètres du compte", description: "Personnaliser l’apparence de l’application.", icon: "sparkle" },
+  { id: "compte", title: "Personnalisation de mon compte", description: "Personnaliser l’apparence de l’application.", icon: "sparkle" },
   { id: "securite", title: "Sécurité et connexion", description: "Fournisseurs de connexion et appareils connectés.", icon: "lock" },
   { id: "en-savoir-plus", title: "En savoir plus", description: "Aide, informations et documents Mon E‑Carnet.", icon: "help" },
   { id: "avis", title: "Votre avis", description: "Partager une suggestion ou signaler un problème.", icon: "pencil" },

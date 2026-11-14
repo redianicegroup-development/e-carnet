@@ -35,7 +35,7 @@ export const SPACES: Record<SpaceId, { label: string; role: string; home: string
     tabs: [
       { id: "home", label: "Accueil", long: "Accueil", href: "/etablissement", icon: "home", match: exact("/etablissement") },
       { id: "dossiers", label: "Dossiers", long: "Dossiers patients de l’établissement", href: "/etablissement/dossiers", icon: "folder", match: section("/etablissement/dossiers") },
-      { id: "equipe", label: "Équipe", long: "Professionnels et administrateurs", href: "/etablissement/medecins", icon: "users", match: section("/etablissement/medecins") },
+      { id: "equipe", label: "Médecins", long: "Médecins, codes et rattachements", href: "/etablissement/medecins", icon: "users", match: section("/etablissement/medecins"), featured: true },
       { id: "demandes", label: "Demandes", long: "Demandes et suivi des rattachements", href: "/etablissement/demandes", icon: "document", match: section("/etablissement/demandes") },
       { id: "parametres", label: "Paramètres", long: "Pré-consultation · ordonnances · compte", href: "/etablissement/parametres", icon: "sliders", match: section("/etablissement/parametres", "/etablissement/fiche") },
     ],

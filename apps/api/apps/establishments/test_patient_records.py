@@ -1,3 +1,4 @@
+import base64
 from datetime import date, timedelta
 from decimal import Decimal
 from unittest.mock import patch
@@ -10,6 +11,7 @@ from rest_framework.test import APIClient
 from apps.audit.models import AuditEvent
 from apps.audit.services import record_event
 from apps.care.models import CareEncounter, Consultation, HealthMeasurement, MedicalDocument, PatientNotification, Vaccination
+from apps.identity.models import AccountProfile
 from apps.establishments.models import Establishment, EstablishmentAdministrator, EstablishmentRecordOpening
 from apps.patients.models import PatientProfile
 from apps.professionals.models import ProfessionalProfile
@@ -95,6 +97,41 @@ class EstablishmentPatientRecordsTests(TestCase):
         self.assertEqual(response["Cache-Control"], "private, no-store")
         self.assertNotIn(str(remote.id), [row["id"] for row in data["items"]])
         self.assertNotIn(draft_only.id, [row["id"] for row in data["items"]])
+
+    def test_patient_list_exposes_the_profile_photo_and_serves_stored_photos_to_the_administrator_only(self):
+        external = self.patient("patient-photo-url", first_name="Awa")
+        stored = self.patient("patient-photo-data", first_name="Koffi")
+        no_photo = self.patient("patient-no-photo", first_name="Yao")
+        for patient in (external, stored, no_photo):
+            self.encounter(patient, self.establishment)
+        AccountProfile.objects.create(user=external.user, avatar_url="https://images.example.org/awa.webp")
+        png = base64.b64encode(b"\x89PNG fake-image").decode()
+        AccountProfile.objects.create(user=stored.user, avatar_data=f"data:image/webp;base64,{png}")
+
+        response = self.client.get(self.list_url, {"page_size": "10"})
+
+        self.assertEqual(response.status_code, 200)
+        photos = {row["id"]: row["avatar_url"] for row in response.data["data"]["items"]}
+        self.assertEqual(photos[str(external.id)], "https://images.example.org/awa.webp")
+        self.assertTrue(photos[str(stored.id)].startswith(f"/api/v1/establishments/{self.establishment.id}/patients/{stored.id}/avatar/?v="))
+        self.assertNotIn("base64", photos[str(stored.id)])
+        self.assertEqual(photos[str(no_photo.id)], "")
+
+        avatar_url = lambda patient: f"/api/v1/establishments/{self.establishment.id}/patients/{patient.id}/avatar/"
+        image = self.client.get(avatar_url(stored))
+        self.assertEqual(image.status_code, 200)
+        self.assertEqual(image["Content-Type"], "image/webp")
+        self.assertEqual(image["X-Content-Type-Options"], "nosniff")
+        self.assertEqual(self.client.get(avatar_url(external)).status_code, 404, "une photo hébergée ailleurs n'est pas servie par cette route")
+        self.assertEqual(self.client.get(avatar_url(no_photo)).status_code, 404)
+
+        outsider = APIClient()
+        outsider.force_authenticate(self.outsider)
+        self.assertEqual(outsider.get(avatar_url(stored)).status_code, 404, "ni administrateur ni périmètre : rien n'est révélé")
+        remote = self.patient("patient-remote-photo", first_name="Distant")
+        self.encounter(remote, self.other_establishment)
+        AccountProfile.objects.create(user=remote.user, avatar_data=f"data:image/webp;base64,{png}")
+        self.assertEqual(self.client.get(avatar_url(remote)).status_code, 404, "un patient d'un autre établissement est hors périmètre")
 
     def test_opening_requires_a_closed_reason_and_note_only_for_other(self):
         patient = self.patient("patient-reasons")

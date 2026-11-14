@@ -233,12 +233,23 @@ test("PAT-20 : courbes à la demande, bandeau explicite, réglage dans les param
   assert.match(measurements, /dynamic\(\(\) => import\("\.\/MeasurementTrends"\)/);
   assert.match(measurements, /saver\.active && !trendsRequested/);
   assert.match(measurements, /Afficher les courbes/);
-  assert.equal(saver.DATA_SAVER_BANNER_TITLE, "Mode économie de données activé");
-  assert.match(read("src/components/data-saver/DataSaverBanner.tsx"), /data-data-saver/);
-  assert.match(read("src/app/patient/layout.tsx"), /<DataSaverBanner \/>/);
-  const settings = read("src/components/AccountSettingsClient.tsx");
-  assert.match(settings, /id: "economie-donnees", title: "Économie de données"/);
-  assert.match(settings, /<DataSaverSettings \/>/);
+  assert.equal(saver.DATA_SAVER_SLOW_TITLE, "Mauvaise connexion, mode économie activé");
+  assert.equal(saver.dataSaverBannerTitle("auto", { effectiveType: "2g" }), saver.DATA_SAVER_SLOW_TITLE, "réseau lent : message « Mauvaise connexion »");
+  assert.equal(saver.dataSaverBannerTitle("auto", { effectiveType: "4g" }), "", "bonne connexion : le mode se désactive tout seul, pas de bandeau");
+  assert.equal(saver.dataSaverBannerTitle("always", { effectiveType: "4g" }), saver.DATA_SAVER_ON_TITLE);
+  assert.equal(saver.dataSaverBannerTitle("auto", { saveData: true }), saver.DATA_SAVER_ON_TITLE);
+  assert.equal(saver.dataSaverBannerTitle("never", { effectiveType: "2g" }), "");
+  const banner = read("src/components/data-saver/DataSaverBanner.tsx");
+  assert.match(banner, /data-data-saver/);
+  assert.match(banner, /name=\{slow \? "signal" : "sliders"\}/, "icône de réseau faible dans le bandeau");
+  // Le bandeau et le mode vivent dans la coque commune (patient, professionnel, établissement, laboratoire) et dans l'administration.
+  assert.match(read("src/components/shell/SpaceShell.tsx"), /<DataSaverBanner visible=\{!bare\} \/>/);
+  assert.match(read("src/app/admin/page.tsx"), /<DataSaverBanner \/>/);
+  for (const file of ["AccountSettingsClient", "ProfessionalSettingsClient", "EstablishmentSettingsClient", "AdminSettingsClient"]) {
+    const settings = read(`src/components/${file}.tsx`);
+    assert.match(settings, /id: "economie-donnees", title: "Économie de données"/, `${file} : réglage Économie de données`);
+    assert.match(settings, /<DataSaverSettings \/>/, `${file} : fenêtre du réglage`);
+  }
 });
 
 test("PAT-20 : l'économie de données ne touche à aucune fonction de sécurité", () => {
@@ -278,4 +289,41 @@ test("PAT-20 : le choix du mode reste dans le navigateur, déclaré dans la poli
   assert.match(hook, /localStorage\.setItem\(DATA_SAVER_KEY, next\)/);
   assert.match(hook, /catch/, "stockage refusé : aucune erreur affichée");
   assert.match(read("src/app/confidentialite/page.tsx"), /Économie de données \(localStorage\)/);
+});
+
+test("retouches du 13/11/2026 : logo non traduit, onglet Médecins en évidence, tuile Labo dans Demandes, logo de la structure en avatar", () => {
+  for (const file of ["src/components/shell/SpaceShell.tsx", "src/components/shell/AppSidebar.tsx", "src/components/public/PublicHeader.tsx", "src/app/admin/page.tsx", "src/app/staff/layout.tsx"]) {
+    assert.match(read(file), /className="notranslate" translate="no">/, `${file} : le logo « Mon E‑Carnet » ne se traduit pas`);
+  }
+  assert.match(read("src/lib/spaces.ts"), /id: "equipe", label: "Médecins"[^\n]*featured: true/, "3e onglet de l'espace établissement mis en évidence");
+  const consoleSource = read("src/components/EstablishmentConsole.tsx");
+  assert.equal((consoleSource.match(/title="Laboratoires"/g) ?? []).length, 1, "une seule tuile Laboratoires");
+  assert.ok(consoleSource.indexOf('title="Laboratoires"') > consoleSource.indexOf('view === "requests"'), "la tuile Laboratoires est dans la vue Demandes");
+  const shell = read("src/components/shell/SpaceShell.tsx");
+  assert.match(shell, /organisationSpace = space === "establishment" \|\| space === "laboratory"/);
+  assert.match(shell, /avatarUrl: organisation\?\.logo \|\| undefined/, "logo téléversé, jamais la photo Google");
+  assert.match(read("src/components/EstablishmentProfileEditor.tsx"), /ecarnet:establishment-updated/);
+  assert.match(read("src/components/AccountSettingsClient.tsx"), /Personnalisation de mon compte/);
+});
+
+test("retouches du 13/11/2026 : notifications actives par défaut, avec le choix « désactiver » respecté", () => {
+  const push = read("src/lib/push.ts");
+  assert.match(push, /PUSH_OPT_OUT_KEY/);
+  assert.match(push, /export async function pushServerReady/);
+  const auto = read("src/components/PushAutoEnable.tsx");
+  assert.match(auto, /isPushOptedOut\(\)/, "un refus explicite n'est jamais contourné");
+  assert.match(auto, /Notification\.permission === "denied"/, "un navigateur qui bloque n'est jamais relancé");
+  assert.match(auto, /pushServerReady\(\)/, "pas de demande de permission si le serveur ne sait pas envoyer");
+  assert.match(auto, /wasPushAsked\(\)/, "une seule demande automatique par appareil");
+  assert.match(read("src/components/PushNotificationToggle.tsx"), /setPushOptOut\(true\)/);
+  assert.match(read("src/components/shell/SpaceShell.tsx"), /<PushAutoEnable \/>/);
+});
+
+test("retouches du 13/11/2026 : dossiers de l'établissement en photos, fiche simple puis motif", () => {
+  const records = read("src/components/EstablishmentPatientRecords.tsx");
+  assert.match(records, /className="patient-grid"/);
+  assert.match(records, /<PatientDetail patient=\{detail\}/);
+  assert.match(records, /Voir le dossier/);
+  assert.match(records, /avatar_url\?: string/);
+  assert.match(records, /rowDate\(/, "informations datées, plus récentes en premier");
 });

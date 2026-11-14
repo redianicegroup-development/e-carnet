@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useSyncExternalStore } from "react";
-import { DATA_SAVER_EVENT, DATA_SAVER_KEY, SERVER_SNAPSHOT, dataSaverReason, decodeSnapshot, encodeSnapshot, isDataSaverActive, parseDataSaverSetting, type ConnectionInfo, type DataSaverSetting } from "../../lib/data-saver";
+import { DATA_SAVER_EVENT, DATA_SAVER_KEY, SERVER_SNAPSHOT, dataSaverBannerTitle, dataSaverReason, decodeSnapshot, encodeSnapshot, isDataSaverActive, parseDataSaverSetting, type ConnectionInfo, type DataSaverSetting } from "../../lib/data-saver";
 
 /* Lecture réactive du mode économie de données : réglage enregistré sur l'appareil + état de la connexion.
    Seul le CHOIX du patient (« automatique », « toujours », « jamais ») est conservé dans le navigateur : aucune donnée de santé. */
@@ -36,7 +36,7 @@ export function useDataSaver() {
   const raw = useSyncExternalStore(subscribe, snapshot, () => SERVER_SNAPSHOT);
   const state = useMemo(() => {
     const { setting, info } = decodeSnapshot(raw);
-    return { setting, active: isDataSaverActive(setting, info), reason: dataSaverReason(setting, info) };
+    return { setting, active: isDataSaverActive(setting, info), reason: dataSaverReason(setting, info), title: dataSaverBannerTitle(setting, info) };
   }, [raw]);
   const setSetting = useCallback((next: DataSaverSetting) => {
     try { window.localStorage.setItem(DATA_SAVER_KEY, next); } catch { /* stockage refusé : le choix ne sera pas gardé, rien d'autre ne change */ }

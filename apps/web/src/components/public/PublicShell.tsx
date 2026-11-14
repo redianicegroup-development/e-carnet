@@ -17,7 +17,7 @@ export function PublicFooter() {
       <ScrollToTopOnNavigate />
       <div className="pub-footer__cards">
         <section className="pub-footer__card pub-footer__card--brand" aria-label="Mon E‑Carnet">
-          <Link className="pub-footer__logo" href="/" aria-label="Mon E-Carnet, accueil"><BrandMark detail /><span>Mon E‑Carnet</span></Link>
+          <Link className="pub-footer__logo" href="/" aria-label="Mon E-Carnet, accueil"><BrandMark detail /><span className="notranslate" translate="no">Mon E‑Carnet</span></Link>
           <div className="pub-footer__brand-foot">
             <p className="pub-footer__slogan">Gardez le fil avec Mon E‑Carnet.</p>
             <p className="pub-footer__tagline">Un carnet de santé personnel, <span>organisé selon vos choix.</span></p>

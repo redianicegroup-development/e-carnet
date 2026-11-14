@@ -6,7 +6,7 @@ export function BrandLogo({ height = 56, label = "Mon E‑Carnet" }: { height?: 
     <span className="brand-logo" role="img" aria-label={label} style={{ height }}>
       {/* eslint-disable-next-line @next/next/no-img-element -- logo WebP versionné et servi depuis Cloudinary */}
       <img src={PROJECT_LOGO_WEBP} alt="" draggable={false} referrerPolicy="no-referrer" />
-      <span aria-hidden="true">{label}</span>
+      <span aria-hidden="true" className="notranslate" translate="no">{label}</span>
     </span>
   );
 }

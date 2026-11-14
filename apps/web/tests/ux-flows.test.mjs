@@ -181,13 +181,11 @@ test("UX-02 : l’accueil regroupe les alertes en « À faire » et ne répète 
   assert.match(home, /<PatientHomeIdentity account=\{account\} \/>/);
 });
 
-test("UX-04 : deux QR, deux noms — carte virtuelle (secours) et accès temporaire de 5 minutes (professionnel)", () => {
+test("UX-04 : un seul QR proposé — l’accès temporaire de 5 minutes (professionnel) ; la carte virtuelle n’a plus de QR", () => {
   const identity = read("src/components/PatientEmergencyCardSettingsClient.tsx");
   const grants = read("src/components/PatientAccessGrants.tsx");
   const home = read("src/components/PatientHome.tsx");
-  assert.match(identity, /voit votre carte virtuelle, sans se connecter/);
-  assert.match(identity, /autre QR, valable 5 minutes/);
-  assert.match(identity, /href="\/patient\/consultations#preparer"/);
+  assert.doesNotMatch(identity, /QRCodeSVG|Activer mon QR|valable 5 minutes/, "plus de second QR à côté de l’accès temporaire");
   assert.match(grants, /Accès temporaire pour un professionnel/);
   assert.match(grants, /Ce n’est pas le QR de votre carte virtuelle/);
   assert.match(read("src/components/PatientConsultationFlow.tsx"), /Accès temporaire pour le professionnel/);

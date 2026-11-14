@@ -43,6 +43,7 @@ const PATHS = {
   download: <path d="M12 4v11M7.5 11 12 15.5 16.5 11M5 20h14" />,
   phone: <path d="M6.6 4h3l1.4 4-2 1.3a11 11 0 0 0 5.7 5.7l1.3-2 4 1.4v3a2 2 0 0 1-2.2 2A15.5 15.5 0 0 1 4.6 6.2 2 2 0 0 1 6.6 4z" />,
   arrowUp: <><path d="M12 19V5" /><path d="m5 12 7-7 7 7" /></>,
+  signal: <><path d="M5 19v-2.5" /><path d="M10 19v-5.5" opacity=".35" /><path d="M15 19V9.5" opacity=".35" /><path d="M20 19V5" opacity=".35" /></>,
   sliders: <><path d="M4 7h9M17 7h3M4 12h3M11 12h9M4 17h11M19 17h1" /><circle cx="15" cy="7" r="2" /><circle cx="9" cy="12" r="2" /><circle cx="17" cy="17" r="2" /></>,
 } satisfies Record<string, ReactElement>;
 

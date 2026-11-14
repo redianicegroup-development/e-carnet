@@ -71,6 +71,34 @@ export async function subscribeToPush(): Promise<PushResult> {
   }
 }
 
+/* Notifications actives par défaut (13/11/2026) : l'application s'abonne toute seule dès que le navigateur et le serveur le permettent.
+   Deux garde-fous : (1) le choix « Désactiver » de la personne est gardé sur l'appareil et jamais contourné ; (2) un navigateur qui a bloqué
+   les notifications n'est jamais relancé. Le premier abonnement exige un geste (iOS) : il est demandé au premier toucher, une seule fois. */
+export const PUSH_OPT_OUT_KEY = "ecarnet-push-opt-out";
+export const PUSH_ASKED_KEY = "ecarnet-push-asked";
+
+function readFlag(key: string): boolean {
+  try { return window.localStorage.getItem(key) === "1"; } catch { return false; }
+}
+function writeFlag(key: string, on: boolean): void {
+  try { if (on) window.localStorage.setItem(key, "1"); else window.localStorage.removeItem(key); } catch { /* stockage refusé : le choix ne sera pas gardé */ }
+}
+export const isPushOptedOut = () => readFlag(PUSH_OPT_OUT_KEY);
+export const setPushOptOut = (on: boolean) => writeFlag(PUSH_OPT_OUT_KEY, on);
+export const wasPushAsked = () => readFlag(PUSH_ASKED_KEY);
+export const markPushAsked = () => writeFlag(PUSH_ASKED_KEY, true);
+
+/** Le serveur sait-il envoyer des notifications (clés VAPID posées) ? Évite de demander la permission pour rien. */
+export async function pushServerReady(): Promise<boolean> {
+  try {
+    const response = await fetch(`${BASE}/vapid-key/`, { credentials: "include", cache: "no-store" });
+    const key = (await response.json().catch(() => null))?.data as { enabled?: boolean; public_key?: string } | undefined;
+    return response.ok && key?.enabled === true && Boolean(key.public_key);
+  } catch {
+    return false;
+  }
+}
+
 /** Retire l'abonnement de cet appareil (navigateur) puis du serveur. Sans effet si le navigateur n'a pas de service worker. */
 export async function unsubscribeFromPush(): Promise<void> {
   if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return;

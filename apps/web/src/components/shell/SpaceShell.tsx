@@ -18,6 +18,8 @@ import { GooeyAccountMenu } from "./GooeyAccountMenu";
 import { AppSidebar, type SidebarItem, type SidebarMenuItem } from "./AppSidebar";
 import { TrustedDelegationBanner } from "../TrustedDelegationBanner";
 import { OfflineCacheKeeper } from "../OfflineCacheKeeper";
+import { PushAutoEnable } from "../PushAutoEnable";
+import { DataSaverBanner } from "../data-saver/DataSaverBanner";
 import { ScrollToTopOnNavigate } from "../ScrollToTopOnNavigate";
 import { cleanUpBeforeLogout } from "../../lib/logout";
 import { purgeOfflineSnapshot } from "../../lib/offline-snapshot";
@@ -61,6 +63,11 @@ export function initials(account: Pick<SpaceAccount, "first_name" | "last_name" 
   return `${account.first_name[0] ?? ""}${account.last_name[0] ?? ""}`.toUpperCase() || (account.email[0] ?? "?").toUpperCase();
 }
 
+/** Initiales d'une structure (« Redianice Santé » → RS) : affichées quand son logo n'est pas encore téléversé. */
+function organisationInitials(name: string) {
+  return name.trim().split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase() || "ET";
+}
+
 export function AvatarBadge({ account, size = 40 }: { account: Pick<SpaceAccount, "first_name" | "last_name" | "email" | "avatar_url">; size?: number }) {
   const style = { width: size, height: size, fontSize: Math.round(size * 0.38) };
   // eslint-disable-next-line @next/next/no-img-element -- avatar externe fourni par le compte
@@ -95,6 +102,10 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
   const [switching, setSwitching] = useState(false);
   const [switchError, setSwitchError] = useState("");
   const synced = useRef(false);
+  // Espaces établissement et laboratoire : l'avatar du header et de la sidebar est le logo téléversé de la structure (jamais la photo Google du compte).
+  const organisationSpace = space === "establishment" || space === "laboratory";
+  const [organisation, setOrganisation] = useState<{ name: string; logo: string } | null>(null);
+  const [organisationTick, setOrganisationTick] = useState(0);
   const [logoutMessage, setLogoutMessage] = useState("");
   function toggleNav() { setNavCollapsed((current) => !current); }
   // « Changer d'espace » : un seul compte, deux espaces. Le serveur ne reconnaît qu'un contexte actif à la fois, c'est lui qu'on bascule.
@@ -151,6 +162,21 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
       .catch((error: unknown) => { if (active && error instanceof ApiError && error.status === 404) setClinicalReady(false); });
     return () => { active = false; };
   }, [space, state.status, pathname, clinicalTick]);
+
+  useEffect(() => {
+    if (!organisationSpace || state.status !== "ready") return;
+    let active = true;
+    apiGet<{ name: string; logo?: string | null }[]>("/api/v1/establishments/")
+      .then((items) => { if (active && items[0]) setOrganisation({ name: items[0].name, logo: items[0].logo ?? "" }); })
+      .catch(() => undefined); // sans réponse : initiales du compte, jamais la photo Google
+    return () => { active = false; };
+  }, [organisationSpace, state.status, organisationTick]);
+
+  useEffect(() => {
+    const refresh = () => setOrganisationTick((value) => value + 1);
+    window.addEventListener("ecarnet:establishment-updated", refresh);
+    return () => window.removeEventListener("ecarnet:establishment-updated", refresh);
+  }, []);
 
   useEffect(() => {
     const refresh = () => setClinicalTick((value) => value + 1);
@@ -260,6 +286,11 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
   }, [spaceRedirect, router]);
 
   const moi = config.tabs[config.tabs.length - 1];
+  const shownAccount = state.status === "ready"
+    ? organisationSpace
+      ? { name: displayName(state.account), email: state.account.email, initials: organisation ? organisationInitials(organisation.name) : initials(state.account), avatarUrl: organisation?.logo || undefined }
+      : { name: displayName(state.account), email: state.account.email, initials: initials(state.account), avatarUrl: state.account.avatar_url || undefined }
+    : null;
   const showAdminLink = space === "patient" && state.status === "ready" && state.account.is_admin === true;
 
   const switchTarget = state.status === "ready" ? spaceSwitchTarget(space, state.account.contexts) : null;
@@ -290,7 +321,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
         ariaLabel={`Navigation de l’${config.label.toLowerCase()}`}
         brand={{ href: bare || state.status !== "ready" ? "/" : config.home, title: "Mon E-Carnet", subtitle: config.label }}
         items={items}
-        account={state.status === "ready" ? { name: displayName(state.account), email: state.account.email, initials: initials(state.account), avatarUrl: state.account.avatar_url || undefined } : null}
+        account={shownAccount}
         accountHref={moi.href}
         menu={menu}
         notice={logoutMessage || switchError}
@@ -305,15 +336,16 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
           <header className="space-mobile-header">
             <Link className="space-mobile-header__brand" href={config.home} aria-label={`Mon E-Carnet, accueil ${config.label.toLowerCase()}`}>
               <BrandMark />
-              <span><strong>Mon E‑Carnet</strong><small>{config.label}</small></span>
+              <span><strong className="notranslate" translate="no">Mon E‑Carnet</strong><small>{config.label}</small></span>
             </Link>
             {/* Menu du compte en goutte (barre haute mobile) : sur grand écran, le même menu est dans la sidebar. */}
             <div className="space-mobile-header__actions">
               {space === "patient" && state.status === "ready" && <NotificationBell placement="mobile" />}
-              {state.status === "ready" && <GooeyAccountMenu account={{ name: displayName(state.account), email: state.account.email, initials: initials(state.account), avatarUrl: state.account.avatar_url || undefined }} menu={menu} notice={logoutMessage || switchError} />}
+              {shownAccount && <GooeyAccountMenu account={shownAccount} menu={menu} notice={logoutMessage || switchError} />}
             </div>
           </header>
         )}
+        <DataSaverBanner visible={!bare} />
         {state.status === "loading" && <ScreenLoader label={state.label} />}
         {state.status === "anonymous" && !bare && <div className="skeleton" role="status" aria-live="polite"><span className="sr-only">Redirection vers la connexion…</span><i /><i /><i /></div>}
         {state.status === "error" && !bare && (
@@ -326,6 +358,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
             <PatientAccessQrContext.Provider value={{ qr: patientAccessQr, setQr: setPatientAccessQr }}>
               {space === "patient" && state.status === "ready" && !bare && <TrustedDelegationBanner />}
               {state.status === "ready" && !bare && <OfflineCacheKeeper space={space} />}
+              {space === "patient" && state.status === "ready" && !bare && <PushAutoEnable />}
               <Fragment key={refreshKey}>{children}</Fragment>
             </PatientAccessQrContext.Provider>
           </AccountContext.Provider>

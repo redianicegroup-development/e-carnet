@@ -58,7 +58,7 @@ test("dossier patient et dossier médecin : une seule présentation commune (Dos
   for (const title of ["Profil professionnel", "Établissement actif", "Cachet et signature"]) assert.match(doctor, new RegExp(`title: "${title}"`), title);
 });
 
-test("accueils patient et professionnel : un seul bloc (dossier unifié), sans carte virtuelle ; le QR se gère dans Moi", () => {
+test("accueils patient et professionnel : un seul bloc (dossier unifié), sans carte virtuelle ; la carte se gère dans Moi (plus de QR à activer)", () => {
   const home = read("src/components/PatientHomeIdentity.tsx");
   const pro = read("src/components/ProfessionalDossier.tsx");
   for (const [name, source] of [["patient", home], ["professionnel", pro]]) {
@@ -67,8 +67,8 @@ test("accueils patient et professionnel : un seul bloc (dossier unifié), sans c
   }
   assert.match(read("src/components/DossierCard.tsx"), /dossier-inlines/, "les rubriques sont dans la même carte que l'en-tête");
   const settings = read("src/components/PatientEmergencyCardSettingsClient.tsx");
-  assert.match(settings, /patient-dossier__qr/);
-  assert.match(settings, /toggleQr/);
+  assert.doesNotMatch(settings, /QRCodeSVG|Activer mon QR/, "plus de QR à activer (décision 13/11/2026)");
+  assert.match(settings, /disableQr/, "un QR déjà actif reste désactivable");
 });
 
 test("le métier d'un professionnel s'affiche sous son nom sur les deux accueils et sur sa carte", () => {

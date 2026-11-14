@@ -68,5 +68,13 @@ export function imageProfile(active: boolean): ImageProfile {
   return active ? IMAGE_PROFILE_SAVER : IMAGE_PROFILE_NORMAL;
 }
 
-export const DATA_SAVER_BANNER_TITLE = "Mode économie de données activé";
-export const DATA_SAVER_BANNER_TEXT = "Photos plus légères, courbes à afficher à la demande, pas d’animations. Vos accès et votre sécurité ne changent pas.";
+/** Titre du bandeau : dit d'abord ce que la personne vit (« mauvaise connexion »), puis ce que l'application a fait. */
+export const DATA_SAVER_SLOW_TITLE = "Mauvaise connexion, mode économie activé";
+export const DATA_SAVER_ON_TITLE = "Mode économie activé";
+export const DATA_SAVER_BANNER_TEXT = "Photos plus légères, pas d’animations. Vos accès et votre sécurité ne changent pas.";
+
+/** Mauvais réseau (réglage « Automatique », réseau lent) : message « Mauvaise connexion ». Autres cas (choix « Toujours », demande du téléphone) : titre neutre, la raison est dite en dessous. */
+export function dataSaverBannerTitle(setting: DataSaverSetting, info: ConnectionInfo | null | undefined): string {
+  if (!isDataSaverActive(setting, info)) return "";
+  return setting === "auto" && info?.saveData !== true ? DATA_SAVER_SLOW_TITLE : DATA_SAVER_ON_TITLE;
+}

@@ -1,3 +1,5 @@
+import base64
+import binascii
 import logging
 from datetime import timedelta
 from math import ceil
@@ -6,6 +8,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.db.models import Count, Max, OuterRef, Q, Subquery
+from django.http import Http404, HttpResponse
 from django.utils import timezone
 from rest_framework import serializers
 from rest_framework.permissions import IsAuthenticated
@@ -173,6 +176,40 @@ def _view_events_for(establishment, patient_id=None):
     return events
 
 
+def patient_avatar_url(establishment_id, patient):
+    """Photo de profil du patient pour l'administrateur de la structure : URL externe telle quelle, ou route dédiée si l'image est stockée en base.
+    Un dossier sans compte (enfant représenté) n'a pas de photo : l'interface montre alors les initiales."""
+    profile = getattr(patient.user, "account_profile", None) if patient.user_id else None
+    if not profile:
+        return ""
+    if profile.avatar_data:
+        return f"/api/v1/establishments/{establishment_id}/patients/{patient.id}/avatar/?v={int(profile.updated_at.timestamp())}"
+    return profile.avatar_url or ""
+
+
+class EstablishmentPatientAvatarView(APIView):
+    """Photo d'un patient du périmètre de l'établissement, servie à l'administrateur de la structure uniquement (comme la photo des médecins).
+    Un patient hors périmètre, un laboratoire ou un autre établissement : 404, sans rien révéler."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, establishment_id, patient_id):
+        administrator = active_administrator(request.user, establishment_id) if request.user.is_active else None
+        if not administrator:
+            raise Http404
+        patient = eligible_patients(administrator.establishment).filter(pk=patient_id).first()
+        profile = getattr(patient.user, "account_profile", None) if patient and patient.user_id else None
+        if not profile or not profile.avatar_data:
+            raise Http404
+        try:
+            image = base64.b64decode(profile.avatar_data.split(",", 1)[1], validate=True)
+        except (IndexError, ValueError, binascii.Error):
+            raise Http404
+        response = HttpResponse(image, content_type="image/webp")
+        response["Cache-Control"] = "private, max-age=3600"
+        response["X-Content-Type-Options"] = "nosniff"
+        return response
+
+
 class EstablishmentPatientListView(APIView):
     """Liste de repérage sans contenu clinique, paginée et limitée aux patients de la structure."""
     permission_classes = [IsAuthenticated]
@@ -189,7 +226,7 @@ class EstablishmentPatientListView(APIView):
 
         establishment = administrator.establishment
         now = timezone.now()
-        patient_queryset = _apply_name_search(eligible_patients(establishment), request.query_params.get("search"))
+        patient_queryset = _apply_name_search(eligible_patients(establishment), request.query_params.get("search")).select_related("user__account_profile")
         events = _view_events_for(establishment).filter(patient_id=OuterRef("pk"))
         views_filter = Q(audit_events__establishment=establishment, audit_events__event_type__in=VIEW_EVENT_TYPES)
         recent_views_filter = views_filter & Q(audit_events__created_at__gte=now - timedelta(days=30))
@@ -217,6 +254,7 @@ class EstablishmentPatientListView(APIView):
                 "first_name": patient.display_first_name(),
                 "last_name": patient.display_last_name(),
                 "age": _age_on(patient.birth_date, today),
+                "avatar_url": patient_avatar_url(establishment.id, patient),
                 "last_service_at": last_service.get(patient.pk),
                 "views_total": patient.views_total,
                 "views_30d": patient.views_30d,

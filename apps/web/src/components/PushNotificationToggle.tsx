@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { currentPushSubscription, pushSupport, subscribeToPush, unsubscribeFromPush } from "../lib/push";
+import { currentPushSubscription, pushServerReady, pushSupport, setPushOptOut, subscribeToPush, unsubscribeFromPush } from "../lib/push";
 
 type State = "loading" | "off" | "on" | "denied" | "unsupported" | "ios-install" | "unavailable" | "error";
 
@@ -13,6 +13,7 @@ const MESSAGES: Partial<Record<State, string>> = {
   error: "Activation impossible pour le moment. Réessayez dans un instant.",
 };
 
+/** Notifications actives par défaut : l'application s'abonne toute seule (voir PushAutoEnable). Ici, la personne peut les couper sur cet appareil ; son choix est respecté. */
 export function PushNotificationToggle() {
   const [state, setState] = useState<State>("loading");
 
@@ -23,7 +24,10 @@ export function PushNotificationToggle() {
       if (support !== "ok") return active && setState(support === "ios-install" ? "ios-install" : "unsupported");
       if (Notification.permission === "denied") return active && setState("denied");
       const subscription = await currentPushSubscription().catch(() => null);
-      if (active) setState(subscription && Notification.permission === "granted" ? "on" : "off");
+      if (subscription && Notification.permission === "granted") return active && setState("on");
+      // Pas d'abonnement : on le dit tout de suite si le serveur ne sait pas envoyer, au lieu d'un bouton qui échouerait.
+      const ready = await pushServerReady();
+      if (active) setState(ready ? "off" : "unavailable");
     })();
     return () => { active = false; };
   }, []);
@@ -31,11 +35,13 @@ export function PushNotificationToggle() {
   async function toggle() {
     if (state === "on") {
       setState("loading");
+      setPushOptOut(true); // choix explicite : plus d'abonnement automatique sur cet appareil
       await unsubscribeFromPush();
       setState("off");
       return;
     }
     setState("loading");
+    setPushOptOut(false);
     const result = await subscribeToPush(); // directement dans le clic : exigé par iOS
     setState(result === "subscribed" ? "on" : result === "denied" ? "denied" : result === "unavailable" ? "unavailable" : "error");
   }

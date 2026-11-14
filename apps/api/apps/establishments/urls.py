@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .clinical_views import (
+    EstablishmentPatientAvatarView,
     EstablishmentPatientListView,
     EstablishmentPatientRecordsView,
     EstablishmentPatientViewHistoryView,
@@ -63,6 +64,7 @@ urlpatterns = [
     path("<uuid:establishment_id>/memberships/<uuid:membership_id>/avatar/", EstablishmentMemberAvatarView.as_view()),
     path("<uuid:establishment_id>/profile/", EstablishmentProfileView.as_view()),
     path("<uuid:establishment_id>/patients/", EstablishmentPatientListView.as_view()),
+    path("<uuid:establishment_id>/patients/<uuid:patient_id>/avatar/", EstablishmentPatientAvatarView.as_view()),
     path("<uuid:establishment_id>/patients/<uuid:patient_id>/openings/", EstablishmentRecordOpeningCreateView.as_view()),
     path("<uuid:establishment_id>/openings/", EstablishmentRecordOpeningsView.as_view()),
     path("<uuid:establishment_id>/openings/<uuid:opening_id>/close/", EstablishmentRecordOpeningCloseView.as_view()),

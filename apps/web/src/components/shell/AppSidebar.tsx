@@ -269,7 +269,7 @@ export function AppSidebar({ ariaLabel, brand, items, listRole, listLabel, accou
       <div className="sb__head">
         <Link className="sb__brand" href={brand.href} aria-label={`${brand.title}, ${brand.subtitle.toLowerCase()} : retour à l’accueil`}>
           <BrandMark />
-          <span className="sb__brand-text"><strong>{brand.title}</strong><small>{brand.subtitle}</small></span>
+          <span className="sb__brand-text"><strong className="notranslate" translate="no">{brand.title}</strong><small>{brand.subtitle}</small></span>
         </Link>
         <button type="button" className="sb__toggle" onClick={onToggle} aria-expanded={!rail} aria-label={rail ? "Déplier la navigation" : "Replier la navigation"} data-tip={rail ? "Déplier" : "Replier"}>
           <Icon name="sidebar" size={20} />
