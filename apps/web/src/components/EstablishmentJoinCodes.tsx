@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { apiGet, apiPost } from "../infrastructure/api/client";
 import "./join-codes.css";
 import { expiryLabel, usableCodes, type ActiveJoinCode } from "../lib/join-codes";
+import { joinCodeMessage } from "../lib/share";
+import { ShareCodeButton } from "./ShareCodeButton";
 
 /* « Code à remettre à un médecin » : les codes valables restent affichés pendant leurs 48 h (le serveur les conserve chiffrés),
    puis disparaissent d'eux-mêmes. Un code utilisé par un médecin disparaît aussi : il ne sert qu'une fois. */
@@ -51,7 +53,7 @@ export function EstablishmentJoinCodes({ establishmentId, active, onChange }: { 
     <p className="muted">Code à usage unique, il reste affiché 48 h. Remettez-le directement au médecin.</p>
     {codes === null && active ? <p className="empty" role="status">Chargement…</p> : shown.length > 0 && <ul className="join-codes__list" aria-live="polite">{shown.map((item) => <li key={item.id} className="join-codes__item">
       <p className="code-box">{item.code}</p>
-      <div className="join-codes__meta"><span className="muted">{expiryLabel(item.expires_at, now)} · valable jusqu’au {new Date(item.expires_at).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}</span><button type="button" className="button small" onClick={() => void copy(item.code)}>{copied === item.code ? "Copié" : "Copier"}</button></div>
+      <div className="join-codes__meta"><span className="muted">{expiryLabel(item.expires_at, now)} · valable jusqu’au {new Date(item.expires_at).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}</span><span className="code-with-share"><button type="button" className="button small" onClick={() => void copy(item.code)}>{copied === item.code ? "Copié" : "Copier"}</button><ShareCodeButton title="le code médecin" buildText={() => joinCodeMessage({ code: item.code, expiresAt: item.expires_at, accessUrl: `${window.location.origin}/professionnel/acces` })} /></span></div>
     </li>)}</ul>}
     {codes !== null && active && shown.length === 0 && <p className="empty">Aucun code actif pour le moment.</p>}
     <div className="actions"><button type="button" className="button primary" disabled={!active || busy} onClick={() => void create()}>{busy ? "Création…" : shown.length ? "Générer un autre code" : "Générer un code médecin"}</button></div>

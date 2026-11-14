@@ -18,9 +18,10 @@ test("une session expirée redirige vers la connexion et les erreurs de connexio
   assert.match(shell, /isSessionMissing\(error\)[\s\S]*setState\(\{ status: "anonymous" \}\)/);
   assert.match(shell, /router\.replace\(`\/connexion\?next=/);
   assert.doesNotMatch(shell, /Votre session a expiré ou vous n’êtes pas connecté/);
-  assert.match(auth, /<AuthErrorDialog message=\{errorModal\}/);
-  assert.match(auth, /<ModalIllustration mood="oops"/);
-  assert.match(auth, /role="alertdialog" aria-modal="true"/);
+  const outcome = read("src/components/modal/OutcomeDialog.tsx");
+  assert.match(auth, /<OutcomeDialog tone="error" message=\{errorModal\}/);
+  assert.match(outcome, /<ModalIllustration mood=\{tone === "error" \? "oops" : "success"\}/);
+  assert.match(outcome, /"alertdialog" : "dialog"\} aria-modal="true"/);
 });
 
 test("les salutations d’accueil sont des toasts illustrés, accessibles, non bloquants et responsive", () => {

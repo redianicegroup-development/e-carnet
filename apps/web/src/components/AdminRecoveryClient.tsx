@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { ApiError, apiGet, apiPatch, apiPost } from "../infrastructure/api/client";
+import { loginUrlFor, recoveryPasswordMessage } from "../lib/share";
+import { ShareCodeButton } from "./ShareCodeButton";
 import "./admin-recovery.css";
 
 type RecoveryEvent = { id: string; event_type: string; label: string; email: string; name: string; failures: number | null; by_team?: boolean; created_at: string };
@@ -224,7 +226,7 @@ export function AdminRecoveryClient() {
       {issued && <div className="admin-recovery__issued" role="status" aria-live="polite">
         <strong>Mot de passe temporaire — affiché une seule fois</strong>
         <p className="admin-recovery__secret"><code>{issued.temporary_password}</code></p>
-        <div className="actions"><button type="button" className="button small" onClick={() => void copyPassword()}>{copied ? "Copié" : "Copier"}</button><button type="button" className="button small" onClick={() => setIssued(null)}>Je l’ai transmis, fermer</button></div>
+        <div className="actions"><button type="button" className="button small" onClick={() => void copyPassword()}>{copied ? "Copié" : "Copier"}</button><ShareCodeButton title="le mot de passe temporaire" buildText={() => recoveryPasswordMessage({ email: issued.account.email, password: issued.temporary_password, loginUrl: loginUrlFor(window.location.origin), expiresAt: issued.expires_at })} /><button type="button" className="button small" onClick={() => setIssued(null)}>Je l’ai transmis, fermer</button></div>
         <p className="muted">Valable jusqu’au {formatDate(issued.expires_at)}. Transmettez-le par appel ou message direct, jamais par e-mail. La personne devra le remplacer dès sa connexion ; ses autres appareils sont déconnectés et elle est prévenue par e-mail.</p>
       </div>}
     </section>

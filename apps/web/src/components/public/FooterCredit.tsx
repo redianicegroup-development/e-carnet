@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { FocusEvent, MouseEvent, PointerEvent } from "react";
-import { AKATECH_URL } from "../../lib/credits";
+import { AKATECH_URL, REDIANICE_URL } from "../../lib/credits";
 
 const AKATECH_LOGO_SRC = "/brand/akatech-studio-logo.webp";
 const REDIANICE_LOGO_SRC = "/brand/redianice-logo-stack.webp";
@@ -125,7 +125,7 @@ export function FooterCredit() {
   return <CreditReveal name="AKATech Studio" logoSrc={AKATECH_LOGO_SRC} href={AKATECH_URL} label="AKATech Studio" />;
 }
 
-/** « Redianice » du pied de page, avec son logo (guide de marque) au survol ou au toucher, comme AKATech Studio. */
+/** « Redianice » du pied de page, avec son logo (guide de marque) au survol ou au toucher, comme AKATech Studio. Le nom ouvre le site de Redianice. */
 export function RedianiceCredit() {
-  return <CreditReveal name="Redianice" logoSrc={REDIANICE_LOGO_SRC} label="Redianice" />;
+  return <CreditReveal name="Redianice" logoSrc={REDIANICE_LOGO_SRC} href={REDIANICE_URL} label="Redianice" />;
 }

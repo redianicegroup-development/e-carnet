@@ -1,21 +1,19 @@
 "use client";
 import { announceAuthChange } from "../lib/themeStorage";
-import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createPortal } from "react-dom";
 import { apiGet, primeCsrf, readCsrfToken } from "../infrastructure/api/client";
 import { safeOAuthNext } from "../lib/auth";
-import { ModalIllustration } from "./modal/ModalIllustration";
-import { useDialogBehavior } from "./modal/useDialogBehavior";
-import { GooLayer } from "./ui/GooLayer";
+import { OutcomeDialog } from "./modal/OutcomeDialog";
+import { firstAccessCopy, type FirstAccess, type OutcomeCopy } from "../lib/access-outcome";
 import { useAuthUi, type AuthMode } from "./auth/AuthUiContext";
 const API = "";
 const PROVIDERS = ["google", "facebook", "apple"] as const;
 const PROVIDER_LABEL = { google: "Google", facebook: "Facebook", apple: "Apple" } as const;
 const SUCCESS_DELAY_MS = 1500;
 const MOBILE_QUERY = "(max-width: 859px)";
-type Account = { must_change_password?: boolean; recovery_configured?: boolean; contexts?: Array<{ role: string; is_active: boolean; onboarding_completed: boolean }> };
+type Account = { must_change_password?: boolean; first_access?: FirstAccess | null; recovery_configured?: boolean; contexts?: Array<{ role: string; is_active: boolean; onboarding_completed: boolean }> };
 function destinationFor(account: Account, mode: AuthMode, requested: string | null) {
   // Mot de passe temporaire remis par l'équipe : rien d'autre n'est accessible avant de l'avoir remplacé.
   if (account.must_change_password) return "/connexion/nouveau-mot-de-passe";
@@ -27,6 +25,13 @@ function destinationFor(account: Account, mode: AuthMode, requested: string | nu
   if (context.role === "professional") return context.onboarding_completed ? "/professionnel" : "/professionnel/onboarding";
   if (context.role === "establishment") return context.onboarding_completed ? "/etablissement" : "/etablissement/fiche";
   return context.onboarding_completed ? "/patient" : "/onboarding/identite";
+}
+/* Titre du modal d'erreur de connexion : le motif clair est dans le message du serveur, le titre dit de quoi il s'agit. */
+function errorTitleFor(status: number, code: unknown, login: boolean): string {
+  if (code === "temporary_password_expired") return "Mot de passe temporaire expiré";
+  if (code === "invalid_credentials" || status === 401) return "E-mail ou mot de passe incorrect";
+  if (status === 429) return "Trop de tentatives";
+  return login ? "Connexion impossible" : "Création impossible";
 }
 function ProviderIcon({ provider }: { provider: string }) {
   if (provider === "google") return <svg aria-hidden="true" viewBox="0 0 24 24" className="provider-icon"><path fill="#4285F4" d="M21.8 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.5a4.7 4.7 0 0 1-2 3.1v2.6h3.2c1.9-1.8 3.1-4.4 3.1-7.5Z"/><path fill="#34A853" d="M12 22c2.8 0 5.2-.9 6.9-2.4l-3.2-2.6c-.9.6-2.1 1-3.7 1-2.8 0-5.2-1.9-6-4.5H2.7v2.7A10.4 10.4 0 0 0 12 22Z"/><path fill="#FBBC05" d="M6 13.5a6.2 6.2 0 0 1 0-3.9V6.9H2.7a10.1 10.1 0 0 0 0 9.2L6 13.5Z"/><path fill="#EA4335" d="M12 5.1c1.5 0 2.8.5 3.8 1.5l2.8-2.8C17.2 2.1 14.8 1 12 1a10.4 10.4 0 0 0-9.3 5.9L6 9.5c.8-2.6 3.2-4.4 6-4.4Z"/></svg>;
@@ -60,6 +65,9 @@ export function AuthForms() {
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState("");
   const [errorModal, setErrorModal] = useState("");
+  const [errorTitle, setErrorTitle] = useState("");
+  // Première connexion avec un mot de passe temporaire : modal « accès accordé » avant l'écran du nouveau mot de passe.
+  const [granted, setGranted] = useState<{ copy: OutcomeCopy; destination: string } | null>(null);
   const firstField = useRef<HTMLInputElement>(null);
   const focusAfterStep = useRef(false);
   const redirectTimer = useRef<number | undefined>(undefined);
@@ -98,16 +106,21 @@ export function AuthForms() {
       const p = await r.json().catch(() => ({}));
       if (!tokenResponse.ok || !r.ok) {
         const detail = p.message ?? p.detail ?? (r.status === 401 ? "Adresse e-mail ou mot de passe incorrect. Vérifiez vos informations et réessayez." : r.status === 429 ? "Trop de tentatives. Patientez quelques minutes avant de réessayer." : "La demande n’a pas abouti. Vérifiez les informations saisies puis réessayez.");
-        setMessage(""); setStatus("error"); setErrorModal(typeof detail === "string" ? detail : "Certains champs sont invalides. Vérifiez vos informations."); return;
+        setMessage(""); setStatus("error"); setErrorTitle(errorTitleFor(r.status, p.code, mode === "login")); setErrorModal(typeof detail === "string" ? detail : "Certains champs sont invalides. Vérifiez vos informations."); return;
       }
       // Le personnage de la scène te salue par ton prénom avant l'ouverture de l'espace (aucune attente en mouvement réduit).
       const account = (p.data ?? {}) as Account & { first_name?: string };
       setFirstName((account.first_name ?? form.first_name).trim());
-      setStatus("success"); setMessage("Bienvenue ! Ouverture de votre espace…");
       const destination = destinationFor(account, mode, new URLSearchParams(window.location.search).get("next"));
+      if (mode === "login" && account.must_change_password && account.first_access) {
+        // Accès ouvert par un mot de passe temporaire : on dit de quelle structure, puis seulement le nouveau mot de passe.
+        setStatus("success"); setMessage(""); setGranted({ copy: firstAccessCopy(account.first_access), destination });
+        return;
+      }
+      setStatus("success"); setMessage("Bienvenue ! Ouverture de votre espace…");
       const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       redirectTimer.current = window.setTimeout(() => { announceAuthChange(); router.replace(destination); }, calm ? 0 : SUCCESS_DELAY_MS);
-    } catch { setMessage(""); setStatus("error"); setErrorModal("Le service de connexion est momentanément inaccessible. Vérifiez votre connexion puis réessayez."); }
+    } catch { setMessage(""); setStatus("error"); setErrorTitle("Service inaccessible"); setErrorModal("Le service de connexion est momentanément inaccessible. Vérifiez votre connexion puis réessayez."); }
   }
 
   const requested = typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("next");
@@ -150,21 +163,7 @@ export function AuthForms() {
       <p className="ax-switch" data-ax-item>{login ? "Pas encore de compte ?" : "Vous avez déjà un compte ?"} <button type="button" onClick={() => switchMode(login ? "register" : "login")}>{login ? "Créer mon carnet" : "Se connecter"}</button></p>
       <p className="ax-message" role="status" aria-live="polite" hidden={!message}>{message}</p>
     </form>
-    {errorModal && createPortal(<AuthErrorDialog message={errorModal} title={login ? "Connexion impossible" : "Création impossible"} onClose={() => { setErrorModal(""); setStatus("idle"); }} />, document.body)}
-  </div>;
-}
-
-function AuthErrorDialog({ title, message, onClose }: { title: string; message: string; onClose: () => void }) {
-  const dialog = useRef<HTMLElement>(null);
-  const closeButton = useRef<HTMLButtonElement>(null);
-  const titleId = useId();
-  useDialogBehavior({ open: true, container: dialog, initialFocus: closeButton, onEscape: onClose });
-  return <div className="modal-backdrop modal-backdrop--confirm" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-    <section ref={dialog} className="modal-dialog modal-confirm" data-tone="danger" role="alertdialog" aria-modal="true" aria-labelledby={titleId}>
-      <ModalIllustration mood="oops" size="md" />
-      <div className="modal-copy"><h2 id={titleId}>{title}</h2><p className="modal-message">{message}</p></div>
-      <div className="modal-actions modal-actions--single"><button ref={closeButton} type="button" className="button primary" onClick={onClose}>Compris</button></div>
-    </section>
-    <GooLayer target={dialog} />
+    {errorModal && <OutcomeDialog tone="error" message={errorModal} title={errorTitle || (login ? "Connexion impossible" : "Création impossible")} onClose={() => { setErrorModal(""); setErrorTitle(""); setStatus("idle"); }} />}
+    {granted && <OutcomeDialog tone="success" title={granted.copy.title} message={granted.copy.message} note={granted.copy.note} actionLabel="Choisir mon mot de passe" onClose={() => { const { destination } = granted; setGranted(null); announceAuthChange(); router.replace(destination); }} />}
   </div>;
 }

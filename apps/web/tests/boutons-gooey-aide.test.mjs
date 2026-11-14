@@ -59,11 +59,12 @@ test("toute modal et toute confirmation apparaît par le calque gooey, calé sur
   assert.match(layer, /offsetWidth/);
   assert.match(layer, /ResizeObserver/);
   assert.match(layer, /aria-hidden="true"/);
-  for (const file of ["modal/ConfirmProvider", "AuthForms", "SettingsModal", "LandingFeedbackWidget", "ProductSurveyModal", "ProductExperienceSurveyModal"]) {
+  // AuthForms n'a plus sa propre modale d'erreur : la connexion passe par OutcomeDialog, qui pose le calque.
+  for (const file of ["modal/ConfirmProvider", "modal/OutcomeDialog", "SettingsModal", "LandingFeedbackWidget", "ProductSurveyModal", "ProductExperienceSurveyModal"]) {
     assert.match(read(`src/components/${file}.tsx`), /<GooLayer target=\{/, `${file} doit poser le calque gooey`);
   }
   // le calque vient après le panneau : sa référence existe quand il se cale
-  for (const file of ["modal/ConfirmProvider", "SettingsModal", "LandingFeedbackWidget"]) {
+  for (const file of ["modal/ConfirmProvider", "modal/OutcomeDialog", "SettingsModal", "LandingFeedbackWidget"]) {
     const source = read(`src/components/${file}.tsx`);
     assert.ok(source.indexOf("</section>") < source.indexOf("<GooLayer"), `${file} : le calque doit suivre le panneau`);
   }

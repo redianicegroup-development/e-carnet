@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { ApiError, apiGet, apiPost } from "../infrastructure/api/client";
 import { useConfirm } from "./modal/ConfirmProvider";
+import { ShareCodeButton } from "./ShareCodeButton";
 import "./admin-establishments.css";
 
 type AccessState = "temporary_password" | "expired" | "activated" | "revoked";
@@ -344,6 +345,7 @@ export function AdminEstablishmentsClient({ aside }: { aside?: ReactNode }) {
             <div className="admin-inline-actions">
               <button type="button" className="button small primary" onClick={() => void copy(transmissionMessage(credentials), "Message copié. Transmettez-le uniquement au responsable concerné.", "admin-establishment-temporary-password")}>Copier le message à transmettre</button>
               <button type="button" className="button small" onClick={() => void copy(credentials.password, "Mot de passe copié.", "admin-establishment-temporary-password")}>Copier le mot de passe</button>
+              <ShareCodeButton title="les identifiants du responsable" buildText={() => transmissionMessage(credentials)} />
               <button type="button" className="button small" onClick={() => { setCredentials(null); setCopyStatus(""); }}>J’ai transmis, masquer</button>
             </div>
             <p className="muted" role="status" aria-live="polite">{copyStatus}</p>

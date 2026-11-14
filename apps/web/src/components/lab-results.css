@@ -18,3 +18,6 @@
 .lab-status--deposited { background: color-mix(in srgb, var(--primary, currentColor) 18%, transparent); }
 .lab-status--replaced { background: color-mix(in srgb, var(--primary, currentColor) 8%, transparent); border: 1px dashed var(--primary, currentColor); }
 .lab-status--abandoned { background: transparent; border: 1px solid var(--border, rgba(0, 0, 0, .3)); color: var(--muted, inherit); }
+/* Administrateurs du laboratoire interne. */
+.lab-admins { list-style: none; margin: 6px 0 0; padding: 0; gap: 8px; }
+.lab-admins > li { padding: 8px 12px; border-radius: 12px; background: var(--surface-tint); overflow-wrap: anywhere; }

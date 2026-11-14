@@ -179,11 +179,17 @@ class StaffOnboardingFlowTests(TestCase):
         done = client.post(PASSWORD_URL, {"current_password": temporary, "new_password": NEW_PASSWORD}, format="json")
         self.assertEqual(done.status_code, 200, done.data)
 
-    def test_an_expired_temporary_password_is_refused_like_any_wrong_password(self):
+    def test_an_expired_temporary_password_is_refused_with_a_clear_reason_only_to_whoever_knows_it(self):
         temporary = self.create().data["data"]["temporary_password"]
         AccountProfile.objects.filter(user__email=EMAIL).update(temporary_password_expires_at=timezone.now() - timedelta(seconds=1))
         refused = self.login(temporary)[1]
-        self.assertEqual((refused.status_code, refused.data["message"]), (400, "Email ou mot de passe incorrect."))
+        self.assertEqual((refused.status_code, refused.data["code"]), (400, "temporary_password_expired"))
+        self.assertIn("a expiré", refused.data["message"])
+        # Un mauvais mot de passe ne révèle rien : même réponse que pour une adresse inconnue.
+        wrong = self.login("pas-le-bon-mot-de-passe-1")[1]
+        unknown = self.login("pas-le-bon-mot-de-passe-1", "inconnu@example.test")[1]
+        self.assertEqual((wrong.status_code, wrong.data["code"]), (400, "invalid_credentials"))
+        self.assertEqual((unknown.status_code, unknown.data["message"]), (400, wrong.data["message"]))
         listing = self.client.get(STAFF_URL).data["data"]["items"][0]
         self.assertEqual(listing["access"]["state"], "expired")
         reissued = self.client.post(f"/api/v1/establishments/startup/{listing['id']}/administrator-invitation/", {}, format="json")

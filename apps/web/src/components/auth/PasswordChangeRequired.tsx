@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ApiError, apiGet, apiPost } from "../../infrastructure/api/client";
 import { isSessionMissing } from "../../lib/session";
+import { PasswordField } from "./PasswordField";
 
 type Account = {
   email: string;
@@ -30,7 +31,7 @@ export function PasswordChangeRequired() {
   const router = useRouter();
   const [load, setLoad] = useState<Load>({ status: "loading" });
   const [values, setValues] = useState({ current: "", next: "", confirmation: "", firstName: "", lastName: "" });
-  const [reveal, setReveal] = useState(false);
+  const [needsCurrent, setNeedsCurrent] = useState(false);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -56,19 +57,21 @@ export function PasswordChangeRequired() {
     const needsNames = !load.account.first_name || !load.account.last_name;
     if (values.next.length < MIN_LENGTH) { setMessage(`Le nouveau mot de passe doit contenir au moins ${MIN_LENGTH} caractères.`); return; }
     if (values.next !== values.confirmation) { setMessage("Les deux mots de passe doivent être identiques."); return; }
-    if (values.next === values.current) { setMessage("Choisissez un mot de passe différent du mot de passe temporaire."); return; }
+    if (needsCurrent && values.next === values.current) { setMessage("Choisissez un mot de passe différent du mot de passe temporaire."); return; }
     if (needsNames && (!values.firstName.trim() || !values.lastName.trim())) { setMessage("Renseignez votre prénom et votre nom."); return; }
     setBusy(true);
     setMessage("");
     try {
       const account = await apiPost<Account>("/api/v1/identity/me/password/", {
-        current_password: values.current,
+        ...(needsCurrent ? { current_password: values.current } : {}),
         new_password: values.next,
         ...(needsNames ? { first_name: values.firstName.trim(), last_name: values.lastName.trim() } : {}),
       });
       setMessage("Mot de passe enregistré. Ouverture de votre espace…");
       router.replace(destinationAfterPasswordChange(account));
     } catch (reason) {
+      const code = reason instanceof ApiError && reason.details && typeof reason.details === "object" ? (reason.details as { code?: string }).code : undefined;
+      if (code === "current_password_required") setNeedsCurrent(true);
       setMessage(reason instanceof ApiError ? reason.message : "Le mot de passe n’a pas pu être enregistré. Réessayez.");
       setBusy(false);
     }
@@ -85,17 +88,16 @@ export function PasswordChangeRequired() {
         {load.status === "error" && <p className="notice error" role="alert">{load.message}</p>}
         {load.status === "ready" && (
           <form className="grid" onSubmit={submit} aria-busy={busy}>
-            <p className="muted">Vous vous êtes connecté(e) avec un mot de passe temporaire remis par l’équipe Mon E‑Carnet. Pour protéger votre compte, remplacez-le maintenant : il ne pourra plus servir ensuite.</p>
+            <p className="muted">Vous vous êtes connecté(e) avec un mot de passe temporaire. Pour protéger votre compte, choisissez maintenant votre mot de passe : le temporaire ne pourra plus servir ensuite.</p>
             {needsNames && (
               <div className="field-row">
                 <label className="field"><span>Prénom</span><input required autoComplete="given-name" maxLength={80} value={values.firstName} onChange={(event) => setValues({ ...values, firstName: event.target.value })} /></label>
                 <label className="field"><span>Nom</span><input required autoComplete="family-name" maxLength={80} value={values.lastName} onChange={(event) => setValues({ ...values, lastName: event.target.value })} /></label>
               </div>
             )}
-            <label className="field"><span>Mot de passe temporaire</span><input required type={reveal ? "text" : "password"} autoComplete="current-password" value={values.current} onChange={(event) => setValues({ ...values, current: event.target.value })} /></label>
-            <label className="field"><span>Nouveau mot de passe</span><input required type={reveal ? "text" : "password"} minLength={MIN_LENGTH} autoComplete="new-password" aria-describedby="new-password-hint" value={values.next} onChange={(event) => setValues({ ...values, next: event.target.value })} /><small id="new-password-hint" className="muted">{MIN_LENGTH} caractères minimum. Choisissez un mot de passe que vous n’utilisez pas ailleurs.</small></label>
-            <label className="field"><span>Confirmer le nouveau mot de passe</span><input required type={reveal ? "text" : "password"} minLength={MIN_LENGTH} autoComplete="new-password" value={values.confirmation} onChange={(event) => setValues({ ...values, confirmation: event.target.value })} /></label>
-            <label className="check-row"><input type="checkbox" checked={reveal} onChange={(event) => setReveal(event.target.checked)} /><span>Afficher les mots de passe</span></label>
+            {needsCurrent && <PasswordField id="current-password" label="Mot de passe temporaire" required autoComplete="current-password" value={values.current} onChange={(event) => setValues({ ...values, current: event.target.value })} />}
+            <PasswordField id="new-password" label="Nouveau mot de passe" required minLength={MIN_LENGTH} autoComplete="new-password" aria-describedby="new-password-hint" value={values.next} onChange={(event) => setValues({ ...values, next: event.target.value })} hint={<small id="new-password-hint" className="muted">{MIN_LENGTH} caractères minimum. Choisissez un mot de passe que vous n’utilisez pas ailleurs.</small>} />
+            <PasswordField id="confirm-password" label="Confirmer le nouveau mot de passe" required minLength={MIN_LENGTH} autoComplete="new-password" value={values.confirmation} onChange={(event) => setValues({ ...values, confirmation: event.target.value })} />
             <button className="button primary" type="submit" disabled={busy}>{busy ? "Enregistrement…" : "Enregistrer mon mot de passe"}</button>
             <p className="status" role="status" aria-live="polite">{message}</p>
           </form>

@@ -5,6 +5,8 @@ import Link from "next/link";
 import { apiPost } from "../infrastructure/api/client";
 import { useProfessionalProfile, type Membership } from "./ClinicalGate";
 import { useConfirm } from "./modal/ConfirmProvider";
+import { OutcomeDialog, type OutcomeDialogProps } from "./modal/OutcomeDialog";
+import { CODE_ERROR_FALLBACK, errorReason, joinRequestSentCopy } from "../lib/access-outcome";
 import { PageHeader } from "./ui/PageHeader";
 import { CollapsibleSection } from "./ui/CollapsibleSection";
 import { EstablishmentLogo } from "./EstablishmentLogo";
@@ -24,6 +26,7 @@ export function ProfessionalAccess() {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [agreementAccepted, setAgreementAccepted] = useState(false);
+  const [outcome, setOutcome] = useState<Omit<OutcomeDialogProps, "onClose"> | null>(null);
   const confirm = useConfirm();
 
   if (state.status === "loading") return <div className="skeleton" role="status"><span className="sr-only">Chargement…</span><i /><i /></div>;
@@ -37,15 +40,35 @@ export function ProfessionalAccess() {
     try { await action(); setMessage(done); reload(); window.dispatchEvent(new Event("ecarnet:professional-updated")); } catch (error) { setMessage(error instanceof Error ? error.message : "Action impossible."); } finally { setBusy(false); }
   }
 
+  /* Saisie du code médecin. Succès : la demande est envoyée à l'établissement, qui doit la confirmer (ce n'est pas encore un accès accordé).
+     Erreur : le motif exact du serveur (code expiré, déjà utilisé, inconnu…) s'affiche dans un modal. */
+  async function redeemCode() {
+    setBusy(true);
+    setMessage("");
+    try {
+      const sent = await apiPost<{ establishment_name?: string }>("/api/v1/establishments/join-codes/redeem/", { code: code.trim(), agreement_accepted: agreementAccepted, agreement_version: "2026-10-08-v1" });
+      setCode(""); setAgreementAccepted(false);
+      setMessage("Demande envoyée. L’administrateur de l’établissement doit maintenant la confirmer.");
+      setOutcome({ tone: "success", ...joinRequestSentCopy(sent?.establishment_name ?? "") });
+      reload();
+      window.dispatchEvent(new Event("ecarnet:professional-updated"));
+    } catch (error) {
+      const reason = errorReason(error, CODE_ERROR_FALLBACK);
+      setMessage(reason);
+      setOutcome({ tone: "error", title: "Code refusé", message: reason });
+    } finally { setBusy(false); }
+  }
+
   return (
     <div className="stack-lg">
+      {outcome && <OutcomeDialog {...outcome} onClose={() => setOutcome(null)} />}
       <PageHeader title="Mon rattachement" lead="Vous accédez à vos patients dès que votre établissement confirme votre rattachement." />
 
       <section className="card" aria-labelledby="code-title">
         <span className="eyebrow">Rattachement</span>
         <h2 id="code-title">Saisir mon code médecin</h2>
         <p className="muted">Le code vous est remis par votre établissement. Il est valable 48 h. L’administrateur confirme ensuite votre rattachement.</p>
-        <form onSubmit={(event) => { event.preventDefault(); void run(async () => { await apiPost("/api/v1/establishments/join-codes/redeem/", { code: code.trim(), agreement_accepted: agreementAccepted, agreement_version: "2026-10-08-v1" }); setCode(""); setAgreementAccepted(false); }, "Demande envoyée. L’administrateur de l’établissement doit maintenant la confirmer."); }}>
+        <form onSubmit={(event) => { event.preventDefault(); void redeemCode(); }}>
           <label className="field"><span>Code médecin</span><input className="mono" value={code} onChange={(event) => setCode(event.target.value)} autoComplete="off" spellCheck={false} required minLength={6} placeholder="XXXX-XXXX" disabled={busy} /></label>
           <label className="field"><span><input type="checkbox" required checked={agreementAccepted} onChange={(event) => setAgreementAccepted(event.target.checked)} disabled={busy} /> J’accepte les <Link href="/conditions-rattachement" target="_blank" rel="noreferrer">conditions d’accès et de rattachement médecin</Link>.</span></label>
           <button className="button primary" type="submit" disabled={busy || !agreementAccepted || code.trim().length < 6}>{busy ? "Envoi…" : "Envoyer ma demande"}</button>

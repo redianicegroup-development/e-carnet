@@ -6,7 +6,7 @@ import { InfoPageMotion } from "../../components/motion/InfoPageMotion";
 import { BrandLogoFigure, CreditsStackFigure, CreditsTeamFigure } from "../../components/public/figures/CreditsFigures";
 import { DocHero } from "../../components/public/figures/DocHero";
 import { PublicShell } from "../../components/public/PublicShell";
-import { RedianiceLogo } from "../../components/public/RedianiceLogo";
+import { RedianiceLink, RedianiceLogoLink } from "../../components/public/RedianiceLogo";
 import { BrandLogo } from "../../components/ui/BrandLogo";
 import { Icon } from "../../components/ui/Icon";
 import { CREDITS_BUILT_WITH, CREDITS_ORIGINS, CREDITS_TEAM, CREDITS_UPDATED } from "../../lib/credits";
@@ -29,7 +29,7 @@ export default function CreditsPage() {
             <BrandLogo height={60} />
             <span className="eyebrow">Crédits et remerciements</span>
             <h1>Merci à celles et ceux qui ont rendu ce carnet possible.</h1>
-            <p className="lead">Mon E-Carnet est porté par Redianice, une startup qui construit des outils simples au service de la santé. L’application est développée par AKATech Studio, dont le fondateur fait partie de l’équipe.</p>
+            <p className="lead">Mon E-Carnet est porté par <RedianiceLink />, une startup qui construit des outils simples au service de la santé. L’application est développée par AKATech Studio, dont le fondateur fait partie de l’équipe.</p>
           </div>
           <DocHero icon="sparkle" />
         </header>
@@ -60,7 +60,7 @@ export default function CreditsPage() {
             {CREDITS_ORIGINS.map((entry) => (
               <article className="card credits__card" key={entry.id}>
                 <span className="setting-item__icon" aria-hidden="true" data-draw-icon><Icon name={entry.icon} /></span>
-                <h3>{entry.id === "redianice" ? <RedianiceLogo width={150} /> : entry.name}</h3>
+                <h3>{entry.id === "redianice" ? <RedianiceLogoLink width={150} /> : entry.name}</h3>
                 <span className="credits__role">{entry.role}</span>
                 <p className="muted">{entry.text}</p>
                 {entry.href && <a className="credits__ext" href={entry.href} target="_blank" rel="noopener noreferrer">Visiter le site<span className="sr-only"> d’{entry.name} (s’ouvre dans un nouvel onglet)</span><Icon name="chevron" size={14} /></a>}

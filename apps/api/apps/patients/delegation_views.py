@@ -166,7 +166,10 @@ class DelegationJoinCodeRedeemView(APIView):
         item.save(update_fields=("delegate", "status", "accepted_at", "expires_at", "updated_at"))
         record_event(event_type="delegation.accepted", actor=request.user, actor_role="delegate", patient=item.patient, metadata={"delegation_id": str(item.id), "action": "accepted"})
         notify_patient(item.patient, kind="delegation.accepted", title="Votre proche a accepté", body="Votre invitation comme proche de confiance a été acceptée.", metadata={"delegation_id": str(item.id)}, coalesce_key=f"delegation-accepted:{item.id}")
-        return Response({"success": True, "data": delegation_payload(item)})
+        payload = delegation_payload(item)
+        # Même détail que la liste « Carnets de proches » du proche : sert au modal « accès accordé ».
+        payload.update({"patient_first_name": item.patient.display_first_name(), "patient_last_name": item.patient.display_last_name()})
+        return Response({"success": True, "data": payload})
 
 
 class PatientDelegationActionView(APIView):
@@ -255,7 +258,10 @@ class DelegationInvitationDecisionView(APIView):
         item.save(update_fields=("delegate", "status", "accepted_at", "expires_at", "updated_at"))
         record_event(event_type="delegation.accepted", actor=request.user, actor_role="delegate", patient=item.patient, metadata={"delegation_id": str(item.id), "action": "accepted"})
         notify_patient(item.patient, kind="delegation.accepted", title="Votre proche a accepté", body="Votre invitation comme proche de confiance a été acceptée.", metadata={"delegation_id": str(item.id)}, coalesce_key=f"delegation-accepted:{item.id}")
-        return Response({"success": True, "data": delegation_payload(item)})
+        payload = delegation_payload(item)
+        # Même détail que la liste « Carnets de proches » du proche : sert au modal « accès accordé ».
+        payload.update({"patient_first_name": item.patient.display_first_name(), "patient_last_name": item.patient.display_last_name()})
+        return Response({"success": True, "data": payload})
 
 
 class MyDelegationsView(APIView):

@@ -7,7 +7,9 @@ import { AvatarPicker } from "./AvatarPicker";
 /* Formulaire unique de la structure, utilisé à trois endroits : la fiche d'onboarding (« all »), « Informations administratives »
    (« identity ») et « Coordonnées » (« contact ») des paramètres. Une seule source pour les règles :
    - modifiables : logo, nom (pré‑rempli, tout renommage est daté et visible de l'équipe), type, ville, adresse / BP (facultative), téléphone ;
-   - verrouillés : l'e‑mail (celui du compte avec lequel l'équipe a ouvert l'accès) et le responsable. */
+   - verrouillés : l'e‑mail (celui du compte avec lequel l'accès a été ouvert) et le responsable.
+   Laboratoire interne d'un établissement : le type est verrouillé (« Laboratoire »), l'établissement qui a demandé le rattachement remplace le
+   responsable, et le code interne n'est jamais montré. Dans la fiche d'onboarding (« all »), aucune structure ne voit son code interne. */
 export type EstablishmentProfile = {
   id: string;
   name: string;
@@ -24,6 +26,11 @@ export type EstablishmentProfile = {
   name_updated_at: string | null;
   original_name: string;
   profile_complete: boolean;
+  /** Laboratoire interne d'un établissement (voir `Establishment.is_laboratory`). */
+  is_laboratory?: boolean;
+  /** Nom de l'établissement qui a demandé le rattachement du laboratoire ; vide pour une structure ordinaire. */
+  parent_name?: string;
+  locked_fields?: string[];
 };
 export type EditorScope = "all" | "identity" | "contact";
 type Load = { status: "loading" } | { status: "error"; message: string; unauthorized: boolean } | { status: "ready"; profile: EstablishmentProfile };
@@ -121,6 +128,10 @@ export function EstablishmentProfileEditor({ scope, establishmentId, submitLabel
   const identity = scope !== "contact";
   const contact = scope !== "identity";
   const renamed = Boolean(profile.name_updated_at && profile.original_name);
+  const lab = Boolean(profile.is_laboratory);
+  const typeLocked = lab || Boolean(profile.locked_fields?.includes("establishment_type"));
+  // Le code interne est un repère de l'équipe : jamais dans l'onboarding, ni pour un laboratoire.
+  const showInternalCode = scope === "identity" && !lab;
 
   return (
     <form className="grid establishment-editor" onSubmit={submit}>
@@ -129,13 +140,13 @@ export function EstablishmentProfileEditor({ scope, establishmentId, submitLabel
           <AvatarPicker subject="logo" value={logo} onChange={(value) => { setLogo(value); setLogoChanged(true); }} fallback={establishmentInitials(values.name || profile.name)} disabled={busy} />
           <p className="muted">Logo de votre structure (facultatif). Touchez-le pour le changer ; il s’affiche dans votre espace et pour l’équipe Mon E‑Carnet.</p>
         </div>
-        <label className="field"><span>Nom de l’établissement</span>
+        <label className="field"><span>{lab ? "Nom du laboratoire" : "Nom de l’établissement"}</span>
           <input required minLength={2} maxLength={180} autoComplete="organization" value={values.name} onChange={(event) => set("name", event.target.value)} disabled={busy} />
-          <small className="muted">Pré‑rempli avec le nom vérifié par l’équipe. Si vous le modifiez, l’équipe en est informée (ancien nom et date conservés).</small>
+          <small className="muted">{lab ? "Pré‑rempli d’après votre établissement. Si vous le modifiez, l’équipe en est informée (ancien nom et date conservés)." : "Pré‑rempli avec le nom vérifié par l’équipe. Si vous le modifiez, l’équipe en est informée (ancien nom et date conservés)."}</small>
         </label>
-        <label className="field"><span>Type de structure</span>
-          <select required value={values.establishment_type} onChange={(event) => set("establishment_type", event.target.value)} disabled={busy}>
-            {[...new Set([values.establishment_type, ...ESTABLISHMENT_TYPES])].filter(Boolean).map((type) => <option key={type} value={type}>{type}</option>)}
+        <label className="field"><span>{typeLocked ? "Type de structure (verrouillé)" : "Type de structure"}</span>
+          <select required value={values.establishment_type} onChange={(event) => set("establishment_type", event.target.value)} disabled={busy || typeLocked} aria-readonly={typeLocked || undefined}>
+            {[...new Set([values.establishment_type, ...(typeLocked ? [] : ESTABLISHMENT_TYPES)])].filter(Boolean).map((type) => <option key={type} value={type}>{type}</option>)}
           </select>
         </label>
       </>}
@@ -150,11 +161,16 @@ export function EstablishmentProfileEditor({ scope, establishmentId, submitLabel
           <input type="email" value={profile.email} readOnly aria-readonly="true" autoComplete="off" />
           <small className="muted">C’est l’e‑mail du compte avec lequel votre accès a été ouvert : il ne se modifie pas ici.</small>
         </label>
-        <label className="field"><span>Responsable (verrouillé)</span><input value={profile.responsible_name || "—"} readOnly aria-readonly="true" autoComplete="off" /></label>
+        {lab
+          ? <label className="field"><span>Établissement (verrouillé)</span>
+            <input value={profile.parent_name || "—"} readOnly aria-readonly="true" autoComplete="off" />
+            <small className="muted">C’est l’établissement qui a demandé le rattachement de votre laboratoire.</small>
+          </label>
+          : <label className="field"><span>Responsable (verrouillé)</span><input value={profile.responsible_name || "—"} readOnly aria-readonly="true" autoComplete="off" /></label>}
       </>}
 
       <dl className="settings-details establishment-editor__meta">
-        {identity && <div><dt>Code interne</dt><dd>{profile.internal_code ?? "Attribué après activation"}</dd></div>}
+        {showInternalCode && <div><dt>Code interne</dt><dd>{profile.internal_code ?? "Attribué après activation"}</dd></div>}
         {renamed && <div><dt>Nom vérifié à l’origine</dt><dd>{profile.original_name}</dd></div>}
         {profile.updated_at && <div><dt>Dernière mise à jour</dt><dd>{when(profile.updated_at)}</dd></div>}
       </dl>

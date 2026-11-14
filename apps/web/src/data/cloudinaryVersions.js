@@ -35,6 +35,7 @@ export const CLOUDINARY_VERSIONS = {
   "/illustrations/modal/success.svg": 1792314993,
   "/illustrations/modal/welcome.svg": 1792314993,
   "/landing/carte-titulaire.webp": 1794290432,
+  "/landing/cta-carnet.webp": 1794671446,
   "/landing/cta-team.webp": 1794667979,
   "/landing/hand-accueil.webp": 1794290434,
   "/landing/hand-carnet.webp": 1794249994,
@@ -45,7 +46,7 @@ export const CLOUDINARY_VERSIONS = {
   "/landing/hero-mobile.webp": 1793966778,
   "/landing/problem-desktop.webp": 1794667987,
   "/landing/problem-mobile.webp": 1794667989,
-  "/landing/role-establishment.webp": 1794667990,
-  "/landing/role-patient.webp": 1794667991,
-  "/landing/role-professional.webp": 1794667991,
+  "/landing/role-establishment.webp": 1794671458,
+  "/landing/role-patient.webp": 1794671459,
+  "/landing/role-professional.webp": 1794671460,
 }

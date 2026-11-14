@@ -76,10 +76,19 @@ export function listLabHistory(options: { status?: LabDepositStatus; from?: stri
   return apiGet<LabHistory>(`${BASE}/laboratory/deposits/${suffix ? `?${suffix}` : ""}`);
 }
 
-/* ---------- établissement : ses laboratoires ---------- */
+/* ---------- établissement : son laboratoire interne et ses administrateurs ---------- */
 export type LabAccess = { email: string; state: "temporary_password" | "expired" | "activated" | "revoked"; expires_at: string | null } | null;
-export type EstablishmentLab = { id: string; name: string; status: string; administrator: { name: string; email: string } | null; access: LabAccess; created_at: string };
+export type LabAdministrator = { name: string; email: string; access: LabAccess };
+export type EstablishmentLab = {
+  id: string; name: string; status: string; created_at: string;
+  administrators: LabAdministrator[]; can_add_administrator: boolean;
+};
 export const listLaboratories = (establishmentId: string) => apiGet<EstablishmentLab[]>(`/api/v1/establishments/${establishmentId}/laboratories/`);
-export type CreatedLab = { email: string; temporary_password?: string; [key: string]: unknown };
-export const createLaboratory = (establishmentId: string, input: { name: string; admin_email: string; admin_first_name?: string; admin_last_name?: string }) =>
+export type CreatedLab = {
+  email: string; temporary_password?: string; login_url?: string; expires_at?: string | null;
+  laboratory?: { id: string; name: string }; laboratory_created?: boolean;
+  [key: string]: unknown;
+};
+/** Aucun nom de laboratoire : c'est le laboratoire interne de l'établissement. On ne saisit que l'administrateur. */
+export const createLaboratory = (establishmentId: string, input: { admin_email: string; admin_first_name: string; admin_last_name: string }) =>
   apiPost<CreatedLab>(`/api/v1/establishments/${establishmentId}/laboratories/`, input);

@@ -95,12 +95,12 @@ export const FINAL = {
   note: "Utilisez des informations exactes et gardez votre compte personnel.",
 } as const;
 
-/** Photo de la carte finale : découpée selon la courbe tracée sur la maquette (fond transparent), toujours affichée. */
+/** Photo de la carte finale : carrée (1254 × 1254), toujours affichée ; le texte et le bouton se posent par-dessus, sur un dégradé vert. */
 export const FINAL_IMAGE = {
-  src: "/landing/cta-team.webp",
-  width: 1100,
-  height: 881,
-  alt: "Deux soignants et une collègue munie d’une tablette regardent ensemble un écran d’ordinateur.",
+  src: "/landing/cta-carnet.webp",
+  width: 1254,
+  height: 1254,
+  alt: "Un homme souriant tend son téléphone vers l’objectif : l’écran affiche l’espace patient de Mon E‑Carnet.",
 } as const;
 
 /** Section qui suit le hero : paysage sur ordinateur, portrait sur mobile (même découpage que le hero, 759 px). Photo d'ambiance : alt vide. */

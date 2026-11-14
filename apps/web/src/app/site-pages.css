@@ -319,4 +319,10 @@ body .public-scroll-top { position: fixed; }
 /* Logo Redianice : masque aux couleurs du texte (guide de marque) */
 .rdn-logo { display: block; max-width: 100%; aspect-ratio: 900 / 145; background: currentColor; -webkit-mask: url(/brand/redianice-logo.png) center / contain no-repeat; mask: url(/brand/redianice-logo.png) center / contain no-repeat; }
 .about__rdn { margin: 2px 0 8px; }
+/* Liens Redianice (logo ou nom dans un texte) : héritent la couleur du texte, soulignés et visibles au clavier. */
+.rdn-link { color: inherit; border-radius: 6px; }
+.rdn-link:not(.rdn-link--text) { display: block; width: max-content; max-width: 100%; }
+.rdn-link--text { font-weight: 700; text-decoration: underline; text-decoration-color: var(--primary); text-decoration-thickness: 2px; text-underline-offset: 3px; }
+.rdn-link:hover { color: var(--primary-text); }
+.rdn-link:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
 .credit-reveal__link--plain { cursor: default; }

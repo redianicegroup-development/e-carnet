@@ -12,7 +12,7 @@ from rest_framework.test import APIClient
 
 from apps.audit.models import AuditEvent
 from apps.establishments.models import Establishment, EstablishmentAdministrator
-from apps.identity.models import AccountContext
+from apps.identity.models import AccountContext, AccountProfile
 from apps.patients.models import PatientProfile
 from .models import AccessGrant, CareEncounter, Consultation, ExamRequest, MedicalDocument, PatientNotification, PendingConsultation, PendingExam
 from .pending_services import exam_qr_token
@@ -503,26 +503,67 @@ class ClinicAdministratorCreatesALaboratoryTests(TestCase):
         self.url = f"/api/v1/establishments/{self.clinic.id}/laboratories/"
 
     def create(self, **extra):
-        return self.client.post(self.url, {"name": "Laboratoire Biolab", "admin_email": "biolab@example.test", "admin_first_name": "Moussa", "admin_last_name": "Traore", **extra}, format="json")
+        return self.client.post(self.url, {"admin_email": "biolab@example.test", "admin_first_name": "Moussa", "admin_last_name": "Traore", **extra}, format="json")
 
-    def test_the_clinic_admin_opens_a_laboratory_and_its_administrator_account(self):
+    def internal_lab(self):
+        return Establishment.objects.get(parent=self.clinic, is_laboratory=True)
+
+    def test_the_clinic_admin_opens_its_internal_laboratory_without_typing_any_name(self):
         response = self.create()
         self.assertEqual(response.status_code, 201, response.data)
         self.assertEqual(response["Cache-Control"], "no-store")
         self.assertTrue(response.data["data"]["temporary_password"])  # révélé une seule fois
-        lab = Establishment.objects.get(name="Laboratoire Biolab")
+        self.assertTrue(response.data["data"]["laboratory_created"])
+        lab = self.internal_lab()
+        self.assertEqual(lab.name, f"Laboratoire {self.clinic.name}")  # déduit de l'établissement, jamais saisi
         self.assertTrue(lab.is_laboratory)
         self.assertEqual((lab.parent_id, lab.establishment_type, lab.status), (self.clinic.id, "Laboratoire", "active"))
         self.assertTrue(EstablishmentAdministrator.objects.filter(establishment=lab, user__email="biolab@example.test", status="active").exists())
         self.assertTrue(AuditEvent.objects.filter(event_type="laboratory.created", establishment=self.clinic).exists())
         listed = self.client.get(self.url).data["data"]
-        self.assertEqual([row["name"] for row in listed], ["Laboratoire Biolab"])
+        self.assertEqual([row["name"] for row in listed], [lab.name])
+        self.assertEqual([row["email"] for row in listed[0]["administrators"]], ["biolab@example.test"])
+
+    def test_a_name_sent_by_an_old_client_is_ignored(self):
+        self.assertEqual(self.create(name="Biolab Express").status_code, 201)
+        self.assertFalse(Establishment.objects.filter(name="Biolab Express").exists())
+
+    def test_several_administrators_share_the_one_internal_laboratory(self):
+        first = self.create()
+        second = self.create(admin_email="deuxieme@example.test", admin_first_name="Aïcha", admin_last_name="Diallo")
+        self.assertEqual((first.status_code, second.status_code), (201, 201), second.data)
+        self.assertTrue(first.data["data"]["laboratory_created"])
+        self.assertFalse(second.data["data"]["laboratory_created"])
+        self.assertEqual(Establishment.objects.filter(parent=self.clinic, is_laboratory=True).count(), 1)
+        lab = self.internal_lab()
+        # Le premier administrateur garde son accès : ajouter quelqu'un n'en retire personne.
+        active = set(EstablishmentAdministrator.objects.filter(establishment=lab, status="active").values_list("user__email", flat=True))
+        self.assertEqual(active, {"biolab@example.test", "deuxieme@example.test"})
+        self.assertEqual(len(self.client.get(self.url).data["data"][0]["administrators"]), 2)
+        # Chacun reçoit son propre mot de passe temporaire.
+        self.assertNotEqual(first.data["data"]["temporary_password"], second.data["data"]["temporary_password"])
+        self.assertEqual(AuditEvent.objects.filter(event_type="laboratory.created", establishment=self.clinic).count(), 1)
+        self.assertEqual(AuditEvent.objects.filter(event_type="laboratory.administrator.added", establishment=self.clinic).count(), 2)
+        # Les deux administrateurs sont bien dans l'espace laboratoire.
+        for email in ("biolab@example.test", "deuxieme@example.test"):
+            client = APIClient()
+            client.force_authenticate(User.objects.get(email=email))
+            contexts = client.get("/api/v1/identity/me/").data["data"]["contexts"]
+            self.assertTrue(any(c.get("is_laboratory") for c in contexts), email)
+
+    def test_the_number_of_administrators_is_capped(self):
+        from apps.establishments.laboratories import MAX_LAB_ADMINISTRATORS
+        for index in range(MAX_LAB_ADMINISTRATORS):
+            self.assertEqual(self.create(admin_email=f"admin{index}@example.test").status_code, 201)
+        refused = self.create(admin_email="trop@example.test")
+        self.assertEqual((refused.status_code, refused.data["code"]), (409, "too_many_administrators"))
+        self.assertFalse(User.objects.filter(email="trop@example.test").exists())
 
     def test_an_existing_account_is_never_attached_by_a_clinic_admin(self):
         User.objects.create_user(username="someone", email="biolab@example.test", password="local-test-password")
         response = self.create()
         self.assertEqual(response.status_code, 409)
-        self.assertFalse(Establishment.objects.filter(name="Laboratoire Biolab").exists())
+        self.assertFalse(Establishment.objects.filter(parent=self.clinic).exists())  # rien n'est créé, pas même le laboratoire
         # Même en insistant : `use_existing_account` n'est pas pris en compte pour un administrateur d'établissement.
         self.assertEqual(self.create(use_existing_account=True).status_code, 409)
 
@@ -530,19 +571,80 @@ class ClinicAdministratorCreatesALaboratoryTests(TestCase):
         stranger = User.objects.create_user(username="lab-create-stranger", password="local-test-password")
         outsider = APIClient()
         outsider.force_authenticate(stranger)
-        self.assertEqual(outsider.post(self.url, {"name": "X", "admin_email": "x@example.test"}, format="json").status_code, 403)
+        self.assertEqual(outsider.post(self.url, {"admin_email": "x@example.test", "admin_first_name": "X", "admin_last_name": "Y"}, format="json").status_code, 403)
         self.create()
         lab_admin = User.objects.get(email="biolab@example.test")
         lab_client = APIClient()
         lab_client.force_authenticate(lab_admin)
-        lab = Establishment.objects.get(name="Laboratoire Biolab")
-        self.assertEqual(lab_client.post(f"/api/v1/establishments/{lab.id}/laboratories/", {"name": "Sous-labo", "admin_email": "sub@example.test"}, format="json").status_code, 403)
+        lab = self.internal_lab()
+        self.assertEqual(lab_client.post(f"/api/v1/establishments/{lab.id}/laboratories/", {"admin_email": "sub@example.test", "admin_first_name": "A", "admin_last_name": "B"}, format="json").status_code, 403)
 
-    def test_name_and_email_are_validated_and_duplicates_refused(self):
-        self.assertEqual(self.create(name="  ").status_code, 400)
+    def test_email_and_names_are_validated_and_an_existing_administrator_is_refused(self):
         self.assertEqual(self.create(admin_email="pas-un-email").status_code, 400)
+        self.assertEqual(self.create(admin_first_name="  ").status_code, 400)
+        self.assertEqual(self.create(admin_last_name="").status_code, 400)
+        self.assertFalse(Establishment.objects.filter(parent=self.clinic).exists())
         self.assertEqual(self.create().status_code, 201)
-        self.assertEqual(self.create(admin_email="autre@example.test").status_code, 409)
+        # Même adresse : le compte a déjà été activé ou attend son premier accès (renouvelé) ; une adresse déjà active est refusée.
+        AccountProfile.objects.filter(user__email="biolab@example.test").update(must_change_password=False)
+        self.assertEqual(self.create().status_code, 409)
+
+    def test_the_laboratory_name_is_not_doubled_when_the_clinic_is_already_a_laboratory_name(self):
+        from apps.establishments.laboratories import internal_laboratory_name
+        self.clinic.name = "Laboratoire Central"
+        self.assertEqual(internal_laboratory_name(self.clinic), "Laboratoire Central")
+        self.clinic.name = "Clinique Ccf"
+        self.assertEqual(internal_laboratory_name(self.clinic), "Laboratoire Clinique Ccf")
+
+
+@override_settings(ECARNET_LAB_ENABLED=True)
+class LaboratoryOnboardingProfileTests(TestCase):
+    """Fiche d'onboarding du laboratoire : établissement de rattachement visible, type verrouillé, pas de code interne."""
+
+    def setUp(self):
+        creator = User.objects.create_user(username="lab-profile-creator", password="local-test-password")
+        _, _, self.clinic = make_clinic_doctor(creator, "lab-profile")
+        self.admin = User.objects.create_user(username="lab-profile-admin", password="local-test-password", email="boss@example.test")
+        EstablishmentAdministrator.objects.create(establishment=self.clinic, user=self.admin, assigned_by=creator, status="active")
+        boss = APIClient()
+        boss.force_authenticate(self.admin)
+        for email in ("un@example.test", "deux@example.test"):
+            boss.post(f"/api/v1/establishments/{self.clinic.id}/laboratories/", {"admin_email": email, "admin_first_name": "Prénom", "admin_last_name": "Nom"}, format="json")
+        self.lab = Establishment.objects.get(parent=self.clinic, is_laboratory=True)
+        self.url = f"/api/v1/establishments/{self.lab.id}/profile/"
+
+    def client_for(self, email):
+        client = APIClient()
+        client.force_authenticate(User.objects.get(email=email))
+        return client
+
+    def test_the_laboratory_sees_who_asked_for_the_attachment_and_never_an_internal_code(self):
+        self.assertTrue(self.lab.internal_code)  # le code existe côté équipe…
+        data = self.client_for("un@example.test").get(self.url).data["data"]
+        self.assertEqual(data["parent_name"], self.clinic.name)
+        self.assertIsNone(data["internal_code"])  # …mais n'est jamais divulgué au laboratoire
+        self.assertIn("establishment_type", data["locked_fields"])
+
+    def test_each_administrator_sees_his_own_locked_email(self):
+        self.assertEqual(self.client_for("un@example.test").get(self.url).data["data"]["email"], "un@example.test")
+        self.assertEqual(self.client_for("deux@example.test").get(self.url).data["data"]["email"], "deux@example.test")
+
+    def test_the_structure_type_of_a_laboratory_cannot_be_changed(self):
+        client = self.client_for("un@example.test")
+        refused = client.patch(self.url, {"establishment_type": "Clinique", "city": "Abidjan", "phone": "+225 07 00 00 00 00"}, format="json")
+        self.assertEqual(refused.status_code, 400, refused.data)
+        self.lab.refresh_from_db()
+        self.assertEqual(self.lab.establishment_type, "Laboratoire")
+        accepted = client.patch(self.url, {"establishment_type": "Laboratoire", "city": "Abidjan", "phone": "+225 07 00 00 00 00"}, format="json")
+        self.assertEqual(accepted.status_code, 200, accepted.data)
+        self.assertTrue(accepted.data["data"]["profile_complete"])
+
+    def test_a_clinic_keeps_its_internal_code_and_an_empty_parent_name(self):
+        client = APIClient()
+        client.force_authenticate(self.admin)
+        data = client.get(f"/api/v1/establishments/{self.clinic.id}/profile/").data["data"]
+        self.assertEqual(data["parent_name"], "")
+        self.assertNotIn("establishment_type", data["locked_fields"])
 
 
 class LaboratoryFlagTests(TestCase):
@@ -569,4 +671,4 @@ class LaboratoryFlagTests(TestCase):
         EstablishmentAdministrator.objects.create(establishment=clinic, user=admin, assigned_by=creator, status="active")
         client = APIClient()
         client.force_authenticate(admin)
-        self.assertEqual(client.post(f"/api/v1/establishments/{clinic.id}/laboratories/", {"name": "X", "admin_email": "x@example.test"}, format="json").status_code, 404)
+        self.assertEqual(client.post(f"/api/v1/establishments/{clinic.id}/laboratories/", {"admin_email": "x@example.test", "admin_first_name": "X", "admin_last_name": "Y"}, format="json").status_code, 404)

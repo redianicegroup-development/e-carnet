@@ -7,7 +7,7 @@ import { PulseLine } from "../../components/motion/PulseLine";
 import { AboutChainFigure } from "../../components/public/figures/AboutChainFigure";
 import { ActorsFigure } from "../../components/public/figures/ActorsFigure";
 import { PublicShell } from "../../components/public/PublicShell";
-import { RedianiceLogo } from "../../components/public/RedianiceLogo";
+import { RedianiceLink, RedianiceLogoLink } from "../../components/public/RedianiceLogo";
 import { Icon, type IconName } from "../../components/ui/Icon";
 import { CREDITS_TEAM } from "../../lib/credits";
 
@@ -40,7 +40,7 @@ export default function AboutPage() {
           <div className="info-page__head-copy">
             <span className="eyebrow">À propos</span>
             <h1>Un carnet qui suit votre santé dans la durée.</h1>
-            <p className="lead">Mon E‑Carnet est un carnet de santé numérique porté par la startup Redianice. Il garde vos informations au même endroit, et c’est vous qui décidez qui peut les consulter.</p>
+            <p className="lead">Mon E‑Carnet est un carnet de santé numérique porté par la startup <RedianiceLink />. Il garde vos informations au même endroit, et c’est vous qui décidez qui peut les consulter.</p>
             <div className="about__pulse" aria-hidden="true"><PulseLine /></div>
           </div>
           <DocHero icon="heart" />
@@ -84,8 +84,8 @@ export default function AboutPage() {
         <section className="about__block" aria-labelledby="equipe">
           <div className="about__intro">
             <h2 id="equipe">L’équipe</h2>
-            <RedianiceLogo width={150} className="about__rdn" />
-            <p className="muted">Une petite équipe, réunie autour de la startup Redianice. Le développeur du projet est aussi le fondateur d’AKATech Studio.</p>
+            <RedianiceLogoLink width={150} className="about__rdn" />
+            <p className="muted">Une petite équipe, réunie autour de la startup <RedianiceLink />. Le développeur du projet est aussi le fondateur d’AKATech Studio.</p>
           </div>
           <ul className="about-team">
             {CREDITS_TEAM.map((member) => (

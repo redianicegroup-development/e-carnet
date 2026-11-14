@@ -534,9 +534,18 @@ class EstablishmentProfileView(APIView):
     @staticmethod
     def body(establishment, user=None):
         missing = [field for field in PROFILE_FIELDS if not getattr(establishment, field)]
-        data = {**payload(establishment), "required_fields": list(PROFILE_FIELDS), "locked_fields": [*EstablishmentProfileView.LOCKED_FIELDS, "email"], "missing_fields": missing, "profile_complete": not missing}
+        locked = [*EstablishmentProfileView.LOCKED_FIELDS, "email"]
+        data = {**payload(establishment), "required_fields": list(PROFILE_FIELDS), "locked_fields": locked, "missing_fields": missing, "profile_complete": not missing}
         if not data["email"] and user is not None:
             data["email"] = user.email  # affiché verrouillé : c'est l'e‑mail du compte, enregistré à la première sauvegarde
+        # Établissement qui a demandé le rattachement (laboratoire interne) : l'administrateur du laboratoire le voit, verrouillé.
+        data["parent_name"] = establishment.parent.name if establishment.parent_id else ""
+        if establishment.is_laboratory:
+            # Un laboratoire n'a pas de code interne à montrer, son type est verrouillé, et chacun de ses administrateurs voit SON e‑mail.
+            data["internal_code"] = None
+            data["locked_fields"] = [*locked, "establishment_type"]
+            if user is not None:
+                data["email"] = user.email
         return data
 
     def get(self, request, establishment_id):
@@ -554,6 +563,8 @@ class EstablishmentProfileView(APIView):
         for field in self.LOCKED_FIELDS:
             if field in request.data and str(request.data[field]).strip() != getattr(establishment, field):
                 return Response({"success": False, "message": "Le responsable est déduit du compte qui a ouvert l’accès : écrivez à l’équipe Mon E‑Carnet pour le modifier."}, status=400)
+        if establishment.is_laboratory and "establishment_type" in request.data and str(request.data["establishment_type"]).strip() != establishment.establishment_type:
+            return Response({"success": False, "message": "Le type d’un laboratoire est verrouillé : c’est « Laboratoire »."}, status=400)
         previous_name = establishment.name
         serializer = EstablishmentProfileSerializer(establishment, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -564,7 +575,9 @@ class EstablishmentProfileView(APIView):
             establishment.original_name = establishment.original_name or previous_name
             establishment.name_updated_at = timezone.now()
         # E‑mail de contact = e‑mail du compte du responsable (verrouillé) : jamais saisi, jamais pris dans la requête.
-        establishment.email = request.user.email
+        # Laboratoire interne : plusieurs administrateurs, l'e‑mail de la structure reste celui du premier.
+        if not (establishment.is_laboratory and establishment.email):
+            establishment.email = request.user.email
         if logo is not None:
             store_logo(establishment, logo)
         establishment.save()
@@ -839,7 +852,8 @@ class EstablishmentJoinCodeRedeemView(APIView):
         join_code.save(update_fields=("consumed_at", "code_encrypted"))
         record_event(event_type="establishment.join_code.consumed", actor=request.user, actor_role="professional", establishment=join_code.establishment, metadata={"action": "consumed", "status": "pending", "join_code_id": str(join_code.id), "membership_id": str(membership.id)})
         record_event(event_type="membership.requested", actor=request.user, actor_role="professional", establishment=join_code.establishment, metadata={"action": "requested", "status": "pending", "membership_id": str(membership.id), "agreement_version": membership.agreement_version, "agreement_accepted_at": membership.agreement_accepted_at.isoformat()})
-        return Response({"success": True, "data": MembershipSerializer(membership).data}, status=201 if created else 200)
+        # Le nom de l'établissement sert au modal « demande envoyée à X » (la demande attend la confirmation de l'établissement).
+        return Response({"success": True, "data": {**MembershipSerializer(membership).data, "establishment_name": join_code.establishment.name}}, status=201 if created else 200)
 
 
 class MembershipRequestView(APIView):

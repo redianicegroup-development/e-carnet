@@ -44,12 +44,17 @@ def login_url() -> str:
 
 
 def provision_administrator(
-    *, establishment: Establishment, assigned_by, email: str, first_name: str = "", last_name: str = "", use_existing_account: bool = False
+    *, establishment: Establishment, assigned_by, email: str, first_name: str = "", last_name: str = "", use_existing_account: bool = False,
+    replace_current: bool = True,
 ) -> ProvisionedAccess:
     """Crée (ou rattache) le compte du responsable et le désigne administrateur actif de la structure.
 
     À appeler dans une transaction. Lève AccountConflict, sans rien écrire, si l'e‑mail désigne un compte que le staff n'a pas
-    explicitement choisi de rattacher (le mot de passe d'un compte existant n'est jamais modifié)."""
+    explicitement choisi de rattacher (le mot de passe d'un compte existant n'est jamais modifié).
+
+    `replace_current=True` (équipe Mon E‑Carnet, un seul responsable par établissement) : le nouvel administrateur remplace l'ancien.
+    `replace_current=False` (laboratoire interne d'un établissement) : il s'ajoute aux administrateurs déjà actifs, qui gardent leur accès ;
+    le responsable et l'e‑mail de la structure déjà renseignés ne sont alors pas écrasés."""
     email = email.strip().lower()
     matches = list(User.objects.filter(email__iexact=email)[:2])
     if len(matches) > 1:
@@ -71,13 +76,16 @@ def provision_administrator(
 
     now = timezone.now()
     current = EstablishmentAdministrator.objects.filter(establishment=establishment, status="active")
-    current.exclude(user=user).update(status="ended", ended_at=now)
+    if replace_current:
+        current.exclude(user=user).update(status="ended", ended_at=now)
     if not current.filter(user=user).exists():
         EstablishmentAdministrator.objects.create(establishment=establishment, user=user, assigned_by=assigned_by, status="active")
 
-    establishment.responsible_name = f"{user.first_name} {user.last_name}".strip()
+    if replace_current or not establishment.responsible_name:
+        establishment.responsible_name = f"{user.first_name} {user.last_name}".strip()
     # L'e‑mail de contact de la structure est celui du compte ouvert : verrouillé, jamais ressaisi dans la fiche.
-    establishment.email = user.email
+    if replace_current or not establishment.email:
+        establishment.email = user.email
     establishment.save(update_fields=("responsible_name", "email", "updated_at"))
 
     context, _ = AccountContext.objects.get_or_create(user=user, role="establishment")

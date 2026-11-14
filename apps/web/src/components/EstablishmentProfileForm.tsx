@@ -16,19 +16,23 @@ const next = "/connexion?next=%2Fetablissement%2Ffiche";
 export function EstablishmentProfileForm() {
   const router = useRouter();
   const [wasComplete, setWasComplete] = useState(false);
+  const [isLab, setIsLab] = useState(false);
+  const noun = isLab ? "laboratoire" : "établissement";
   const [message, setMessage] = useState("");
 
   return (
     <main className="auth-shell">
       <section className="card auth-form establishment-profile" aria-labelledby="profile-title">
         <span className="brand"><BrandMark /></span>
-        <span className="eyebrow">{wasComplete ? "Fiche de l’établissement" : "Dernière étape"}</span>
-        <h1 id="profile-title">{wasComplete ? "Modifier la fiche de votre établissement" : "Complétez la fiche de votre établissement"}</h1>
-        <p className="muted">Ces informations aident les médecins à reconnaître votre structure. Tant que le type, la ville et le téléphone ne sont pas renseignés, vous ne pouvez pas créer de code de rattachement.</p>
+        <span className="eyebrow">{wasComplete ? `Fiche du ${noun}` : "Dernière étape"}</span>
+        <h1 id="profile-title">{wasComplete ? `Modifier la fiche de votre ${noun}` : `Complétez la fiche de votre ${noun}`}</h1>
+        {isLab
+          ? <p className="muted">Ces informations aident les médecins et les patients à reconnaître votre laboratoire. La ville et le téléphone sont à renseigner pour accéder à votre espace.</p>
+          : <p className="muted">Ces informations aident les médecins à reconnaître votre structure. Tant que le type, la ville et le téléphone ne sont pas renseignés, vous ne pouvez pas créer de code de rattachement.</p>}
         <EstablishmentProfileEditor
           scope="all"
           submitLabel={wasComplete ? "Enregistrer les modifications" : "Enregistrer et accéder à mon espace"}
-          onLoaded={(profile) => setWasComplete(profile.profile_complete)}
+          onLoaded={(profile) => { setWasComplete(profile.profile_complete); setIsLab(Boolean(profile.is_laboratory)); }}
           onUnauthorized={() => router.replace(next)}
           onSaved={async (saved, completeBefore) => {
             if (completeBefore || !saved.profile_complete) return;

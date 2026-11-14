@@ -1,8 +1,10 @@
-"""PRO-21 — laboratoires rattachés à un établissement.
+"""PRO-21 — le laboratoire interne d'un établissement et ses administrateurs.
 
-L'administrateur d'un établissement saisit le nom du laboratoire et l'e‑mail de son administrateur. Le compte est ouvert comme celui
-d'un responsable d'établissement (mot de passe temporaire révélé UNE fois, à transmettre hors application) ; il se connecte ensuite
-et arrive dans l'espace laboratoire. Le laboratoire n'a ni code médecin, ni dossiers, ni lecture clinique (voir `Establishment.is_laboratory`)."""
+Un établissement a UN laboratoire interne (créé au premier rattachement, nommé d'après l'établissement) : l'administrateur de l'établissement
+ne saisit donc jamais de nom de laboratoire, seulement le prénom, le nom et l'e‑mail d'un administrateur de ce laboratoire. Il peut en
+rattacher plusieurs : chacun reçoit son propre compte, ouvert comme celui d'un responsable d'établissement (mot de passe temporaire révélé
+UNE fois, à transmettre hors application) ; il se connecte ensuite et arrive dans l'espace laboratoire. Le laboratoire n'a ni code médecin,
+ni dossiers, ni lecture clinique (voir `Establishment.is_laboratory`)."""
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.validators import validate_email
 from django.db import transaction
@@ -16,9 +18,39 @@ from apps.care.pending_services import DISABLED_MESSAGE, lab_enabled
 
 from .models import Establishment, generate_internal_code
 from .provisioning import AccountConflict, provision_administrator
-from .views import access_response_data, access_summary, account_conflict_response, active_administrator, administrator_summary, secret_response
+from apps.identity.temporary_password import temporary_password_expired
+
+from .views import access_response_data, account_conflict_response, active_administrator, secret_response
 
 LAB_TYPE_LABEL = "Laboratoire"
+# Plafond de comptes administrateurs du laboratoire interne : chaque ajout ouvre un compte avec mot de passe temporaire.
+MAX_LAB_ADMINISTRATORS = 10
+
+
+def internal_laboratory_name(parent):
+    """Nom du laboratoire interne, déduit de l'établissement (jamais saisi)."""
+    if parent.name.strip().lower().startswith("laboratoire"):
+        return parent.name.strip()[:180]
+    return f"Laboratoire {parent.name.strip()}"[:180]
+
+
+def internal_laboratory(parent):
+    """Le laboratoire interne d'un établissement : le plus ancien laboratoire rattaché (les premières versions en permettaient plusieurs)."""
+    return parent.laboratories.order_by("created_at").first()
+
+
+def _access_of(admin):
+    """État de l'accès d'un administrateur : temporary_password (jamais connecté), expired, activated."""
+    profile = getattr(admin.user, "account_profile", None)
+    if not (profile and profile.must_change_password):
+        return {"email": admin.user.email, "state": "activated", "expires_at": None}
+    return {"email": admin.user.email, "state": "expired" if temporary_password_expired(profile) else "temporary_password", "expires_at": profile.temporary_password_expires_at}
+
+
+def administrators_of(lab):
+    """Administrateurs actifs du laboratoire, du plus ancien au plus récent (historique préchargé)."""
+    active = sorted((item for item in lab.administrator_history.all() if item.status == "active"), key=lambda item: item.started_at)
+    return [{"name": f"{item.user.first_name} {item.user.last_name}".strip(), "email": item.user.email, "access": _access_of(item)} for item in active]
 
 
 class EstablishmentLaboratoriesView(APIView):
@@ -36,39 +68,62 @@ class EstablishmentLaboratoriesView(APIView):
         parent = self._parent(request, establishment_id)
         if not parent:
             return Response({"success": False, "message": "Vous n’êtes pas administrateur de cet établissement actif."}, status=403)
-        labs = parent.laboratories.prefetch_related("administrator_history__user__account_profile").order_by("name")
-        items = [{"id": str(lab.id), "name": lab.name, "status": lab.status, "administrator": administrator_summary(lab), "access": access_summary(lab), "created_at": lab.created_at} for lab in labs]
+        labs = parent.laboratories.prefetch_related("administrator_history__user__account_profile").order_by("created_at")
+        items = []
+        for lab in labs:
+            administrators = administrators_of(lab)
+            items.append({
+                "id": str(lab.id), "name": lab.name, "status": lab.status, "created_at": lab.created_at,
+                "administrators": administrators, "can_add_administrator": len(administrators) < MAX_LAB_ADMINISTRATORS,
+                # Compatibilité avec les clients d'avant la V1.15 (un seul administrateur par laboratoire).
+                "administrator": {"name": administrators[0]["name"], "email": administrators[0]["email"]} if administrators else None,
+                "access": administrators[0]["access"] if administrators else None,
+            })
         return Response({"success": True, "data": items})
 
     @transaction.atomic
     def post(self, request, establishment_id):
+        """Rattache un administrateur au laboratoire interne de l'établissement (créé au premier rattachement). Aucun nom de laboratoire n'est saisi."""
         if not lab_enabled():
             return Response({"success": False, "message": DISABLED_MESSAGE}, status=404)
         parent = self._parent(request, establishment_id)
         if not parent:
             return Response({"success": False, "message": "Vous n’êtes pas administrateur de cet établissement actif."}, status=403)
-        name = " ".join(str(request.data.get("name", "")).split())
         email = str(request.data.get("admin_email", "")).strip().lower()
-        first_name = str(request.data.get("admin_first_name", "")).strip()[:120]
-        last_name = str(request.data.get("admin_last_name", "")).strip()[:120]
-        if not name or len(name) > 180:
-            return Response({"success": False, "message": "Le nom du laboratoire est requis (180 caractères maximum)."}, status=400)
+        first_name = " ".join(str(request.data.get("admin_first_name", "")).split())[:120]
+        last_name = " ".join(str(request.data.get("admin_last_name", "")).split())[:120]
         try:
             validate_email(email)
         except DjangoValidationError:
             return Response({"success": False, "message": "L’e‑mail de l’administrateur du laboratoire est requis : c’est son identifiant de connexion."}, status=400)
-        if parent.laboratories.filter(name__iexact=name).exists():
-            return Response({"success": False, "code": "duplicate_name", "message": "Un laboratoire portant ce nom est déjà rattaché à votre établissement."}, status=409)
+        if not first_name or not last_name:
+            return Response({"success": False, "message": "Le prénom et le nom de l’administrateur du laboratoire sont requis."}, status=400)
+        # Verrou sur l'établissement : deux rattachements simultanés ne créent jamais deux laboratoires internes.
+        parent = Establishment.objects.select_for_update().get(pk=parent.pk)
+        lab = internal_laboratory(parent)
+        created_lab = lab is None
+        if lab is not None:
+            if lab.status != "active":
+                return Response({"success": False, "code": "laboratory_inactive", "message": "Le laboratoire de votre établissement n’est pas actif : écrivez à l’équipe Mon E‑Carnet."}, status=409)
+            if lab.administrator_history.filter(status="active").count() >= MAX_LAB_ADMINISTRATORS:
+                return Response({"success": False, "code": "too_many_administrators", "message": f"Le laboratoire a déjà {MAX_LAB_ADMINISTRATORS} administrateurs : c’est le maximum."}, status=409)
         try:
             with transaction.atomic():
-                lab = Establishment.objects.create(
-                    name=name, status="active", activated_at=timezone.now(), created_by=request.user, internal_code=generate_internal_code(),
-                    is_laboratory=True, parent=parent, establishment_type=LAB_TYPE_LABEL, city=parent.city,
-                )
+                if created_lab:
+                    lab = Establishment.objects.create(
+                        name=internal_laboratory_name(parent), status="active", activated_at=timezone.now(), created_by=request.user, internal_code=generate_internal_code(),
+                        is_laboratory=True, parent=parent, establishment_type=LAB_TYPE_LABEL, city=parent.city,
+                    )
                 # `use_existing_account` n'est JAMAIS passé : un administrateur d'établissement ne peut pas rattacher le compte
                 # existant de quelqu'un d'autre (seule l'équipe Mon E‑Carnet le peut). Adresse déjà connue → 409.
-                access = provision_administrator(establishment=lab, assigned_by=request.user, email=email, first_name=first_name, last_name=last_name)
+                # `replace_current=False` : les administrateurs déjà actifs du laboratoire gardent leur accès.
+                access = provision_administrator(establishment=lab, assigned_by=request.user, email=email, first_name=first_name, last_name=last_name, replace_current=False)
         except AccountConflict as conflict:
             return account_conflict_response(conflict)
-        record_event(event_type="laboratory.created", actor=request.user, actor_role="establishment_admin", establishment=parent, metadata={"action": "created", "resource_type": "establishment", "resource_id": str(lab.id)})
-        return secret_response(access_response_data(lab, access), status=201)
+        if created_lab:
+            record_event(event_type="laboratory.created", actor=request.user, actor_role="establishment_admin", establishment=parent, metadata={"action": "created", "resource_type": "establishment", "resource_id": str(lab.id)})
+        record_event(event_type="laboratory.administrator.added", actor=request.user, actor_role="establishment_admin", establishment=parent, metadata={"action": "added", "resource_type": "establishment", "resource_id": str(lab.id)})
+        data = access_response_data(lab, access)
+        data["laboratory"] = {"id": str(lab.id), "name": lab.name}
+        data["laboratory_created"] = created_lab
+        return secret_response(data, status=201)

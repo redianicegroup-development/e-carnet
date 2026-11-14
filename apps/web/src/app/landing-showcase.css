@@ -184,7 +184,7 @@
 @media (min-width: 1040px) { .lp-features__grid { grid-template-columns: repeat(4, 1fr); } }
 
 /* Appel final : une carte sombre, une seule action principale, la connexion en simple lien. */
-.lp-cta-card { --primary: #cde8d6; --on-primary: #14302a; position: relative; overflow: hidden; display: grid; gap: 26px; padding: clamp(26px, 6vw, 52px); border-radius: 32px; color: #fff7e6; background: radial-gradient(120% 90% at 100% 0%, rgb(255 200 87 / .14), transparent 55%), linear-gradient(160deg, #1e3a34 0%, #244b41 100%); box-shadow: 0 30px 60px -34px rgb(30 58 52 / .75); }
+.lp-cta-card { --primary: #cde8d6; --on-primary: #14302a; position: relative; overflow: hidden; padding: 0; border-radius: 32px; color: #fff7e6; background: radial-gradient(120% 90% at 100% 0%, rgb(255 200 87 / .14), transparent 55%), linear-gradient(160deg, #1e3a34 0%, #244b41 100%); box-shadow: 0 30px 60px -34px rgb(30 58 52 / .75); }
 .lp-cta-card__copy { display: grid; gap: 12px; align-content: start; }
 .lp-cta-card h2 { margin: 0; color: #fff7e6; font-size: clamp(1.8rem, 6.4vw, 2.9rem); line-height: 1.05; letter-spacing: -.035em; }
 .lp-cta-card .lead { margin: 0; color: rgb(255 247 230 / .84); font-size: clamp(1rem, 3.6vw, 1.2rem); }
@@ -197,21 +197,23 @@ body .lp-cta-card .button.primary { width: 100%; min-height: 60px; font-size: 1.
 .lp-cta-card__login:hover { color: #fff; }
 .lp-cta-card__fine { margin: 0; font-size: .78rem; color: rgb(255 247 230 / .62); }
 .lp-cta-card :is(a, button):focus-visible { outline: 3px solid #ffc857; outline-offset: 3px; }
-@media (min-width: 900px) { .lp-cta-card { grid-template-columns: minmax(0, 1.3fr) minmax(260px, .7fr); gap: 56px; align-items: center; } }
 
-/* Photo de la carte finale : découpée selon la courbe (fond transparent), toujours affichée.
-   Mobile : sous le texte, collée aux bords bas et gauche de la carte. Ordinateur : à gauche, pleine hauteur, courbe tournée vers le texte. */
-.lp-cta-card { --cta-pad: clamp(26px, 6vw, 52px); grid-template-areas: "copy" "actions" "photo"; }
-.lp-cta-card__copy { grid-area: copy; }
-.lp-cta-card__actions { grid-area: actions; }
-.lp-cta-card__photo { grid-area: photo; margin: 6px calc(-1 * var(--cta-pad)) calc(-1 * var(--cta-pad)); line-height: 0; pointer-events: none; }
-.lp-cta-card__photo img { display: block; width: min(100%, 520px); height: auto; }
-@media (min-width: 900px) {
-  .lp-cta-card { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); grid-template-areas: "photo copy" "photo actions"; column-gap: 40px; row-gap: 24px; align-items: center; }
-  .lp-cta-card__copy { align-self: end; }
-  .lp-cta-card__actions { align-self: start; justify-items: start; text-align: left; }
+/* Photo de la carte finale : carrée, texte et bouton par-dessus, sur un dégradé qui rejoint le vert de la carte (comme la carte « World-Class Healthcare » de la maquette).
+   Mobile et tablette : la photo occupe le haut de la carte (carrée, pleine largeur) ; le texte commence sous le téléphone, le dégradé ne touche que le bas de la photo.
+   Ordinateur (≥ 1100 px) : la photo, carrée et pleine hauteur, est à gauche ; le dégradé la fond vers la droite, où se lit le texte. */
+.lp-cta-card { --cta-pad: clamp(26px, 6vw, 52px); container-type: inline-size; }
+/* Mobile : la photo est remontée de 10 % (le haut du crâne sort un peu) pour que l'écran du téléphone, de 36 % à 92 % de la photo, reste entièrement lisible.
+   Le dégradé ne commence qu'après le téléphone et le texte démarre juste sous lui (84 % de la largeur de la carte). */
+.lp-cta-card__photo { position: absolute; top: 0; left: 0; width: 100%; aspect-ratio: 1 / 1; margin: 0; line-height: 0; pointer-events: none; z-index: 0; transform: translateY(-10%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 74%, transparent 100%); mask-image: linear-gradient(to bottom, #000 0%, #000 74%, transparent 100%); }
+.lp-cta-card__photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.lp-cta-card__photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to bottom, rgb(30 58 52 / 0) 0%, rgb(30 58 52 / 0) 78%, rgb(30 58 52 / .8) 94%, rgb(30 58 52 / .96) 100%); }
+.lp-cta-card__content { position: relative; z-index: 1; display: grid; gap: 26px; padding: 84vw var(--cta-pad) var(--cta-pad); padding-top: 84cqw; }
+@media (min-width: 1100px) {
+  .lp-cta-card__photo { width: auto; height: 100%; transform: none; -webkit-mask-image: linear-gradient(to right, #000 0%, #000 70%, transparent 100%); mask-image: linear-gradient(to right, #000 0%, #000 70%, transparent 100%); }
+  .lp-cta-card__photo::after { background: linear-gradient(to right, rgb(30 58 52 / 0) 0%, rgb(30 58 52 / 0) 48%, rgb(30 58 52 / .92) 86%, rgb(30 58 52 / .96) 100%); }
+  .lp-cta-card__content { width: 52%; margin-left: auto; padding: var(--cta-pad); }
+  .lp-cta-card__actions { justify-items: start; text-align: left; }
   body .lp-cta-card .button.primary { width: min(100%, 360px); }
   .lp-cta-card__login { place-items: center start; }
-  .lp-cta-card__photo { position: relative; align-self: stretch; min-height: 300px; margin: calc(-1 * var(--cta-pad)) 0 calc(-1 * var(--cta-pad)) calc(-1 * var(--cta-pad)); }
-  .lp-cta-card__photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: right center; }
 }

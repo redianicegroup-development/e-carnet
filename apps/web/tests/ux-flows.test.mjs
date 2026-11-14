@@ -29,7 +29,8 @@ test("le login a deux volets sur grand écran et un écran d'accueil puis un for
   assert.match(forms, /ax-welcome-actions/);
   assert.match(css, /@media \(min-width: 860px\)/);
   assert.match(css, /\.ax-card\[data-step="welcome"\] \.ax-form \{ display: none; \}/);
-  assert.match(forms, /createPortal\(<AuthErrorDialog/, "la modale d'erreur est rendue dans <body> (un parent transformé ne doit pas rogner son fond)");
+  assert.match(forms, /<OutcomeDialog tone="error"/);
+  assert.match(read("src/components/modal/OutcomeDialog.tsx"), /createPortal\([\s\S]*document\.body,?\s*\)/, "la modale d'erreur est rendue dans <body> (un parent transformé ne doit pas rogner son fond)");
   assert.match(forms, /context\.onboarding_completed \? "\/etablissement" : "\/etablissement\/fiche"/);
 });
 

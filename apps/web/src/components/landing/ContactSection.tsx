@@ -167,20 +167,23 @@ export function ContactSection({ privacyHref }: { privacyHref: string }) {
     <>
     <section className="lp-section lp-wrap lp-cta-section" aria-labelledby="contact-title">
       <div className="lp-cta-card" data-reveal>
-        <div className="lp-cta-card__copy">
-          <h2 id="contact-title">{FINAL.title}</h2>
-          <p className="lead">{FINAL.lead}</p>
-          <ul className="lp-cta-card__points">
-            {FINAL.points.map((point) => <li key={point}><span aria-hidden="true"><Icon name="check" size={16} /></span>{point}</li>)}
-          </ul>
-        </div>
-        <div className="lp-cta-card__actions">
-          <Link className="button primary" href={FINAL.primary.href} data-track="signup">{FINAL.primary.label}<Icon name="chevron" size={18} /></Link>
-          <Link className="lp-cta-card__login" href={FINAL.secondary.href}>{FINAL.secondary.label}</Link>
-          <p className="lp-cta-card__fine">{FINAL.note}</p>
+        {/* Texte et bouton se posent par-dessus la photo carrée (dégradé vert, voir landing-showcase.css). */}
+        <div className="lp-cta-card__content">
+          <div className="lp-cta-card__copy">
+            <h2 id="contact-title">{FINAL.title}</h2>
+            <p className="lead">{FINAL.lead}</p>
+            <ul className="lp-cta-card__points">
+              {FINAL.points.map((point) => <li key={point}><span aria-hidden="true"><Icon name="check" size={16} /></span>{point}</li>)}
+            </ul>
+          </div>
+          <div className="lp-cta-card__actions">
+            <Link className="button primary" href={FINAL.primary.href} data-track="signup">{FINAL.primary.label}<Icon name="chevron" size={18} /></Link>
+            <Link className="lp-cta-card__login" href={FINAL.secondary.href}>{FINAL.secondary.label}</Link>
+            <p className="lp-cta-card__fine">{FINAL.note}</p>
+          </div>
         </div>
         <div className="lp-cta-card__photo">
-          <Image src={FINAL_IMAGE.src} alt={FINAL_IMAGE.alt} width={FINAL_IMAGE.width} height={FINAL_IMAGE.height} sizes="(max-width: 899px) 100vw, 520px" />
+          <Image src={FINAL_IMAGE.src} alt={FINAL_IMAGE.alt} width={FINAL_IMAGE.width} height={FINAL_IMAGE.height} sizes="(max-width: 1099px) 100vw, 650px" />
         </div>
       </div>
     </section>

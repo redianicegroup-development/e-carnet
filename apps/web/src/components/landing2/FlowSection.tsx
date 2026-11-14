@@ -107,7 +107,6 @@ export function FlowSection() {
         )}
       </div>
       <div className="lp2-flow-phone">
-        <span className="lp2-blob" aria-hidden="true" />
         <div className="lp2-hand-stack lp2-flow-stack" aria-live={running ? "off" : "polite"}>
           {FLOW_STEPS.map((step, index) => (
             <div key={step.title} id={`flow-screen-${index}`} role="tabpanel" aria-labelledby={`flow-tab-${index}`} className={`lp2-flow-shot${current === index ? " lp2-on" : ""}`}>

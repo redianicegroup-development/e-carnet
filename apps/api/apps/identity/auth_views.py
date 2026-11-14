@@ -11,7 +11,7 @@ from django.http import HttpResponse, Http404
 from django.db import transaction
 from .recovery import GENERIC_FAILURE, attempt_status, question_for, reset_password_with_answer, validate_new_password, verify_recovery_answer
 from .throttles import IpScopedThrottle, LoginEmailThrottle, RecoveryEmailThrottle
-from .temporary_password import temporary_password_expired
+from .temporary_password import TEMPORARY_PASSWORD_TTL, mark_temporary_login, temporary_login_is_fresh, temporary_password_expired
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -49,13 +49,19 @@ class LoginView(APIView):
         matches = get_user_model().objects.filter(email__iexact=serializer.validated_data["email"])
         user = matches.first() if matches.count() == 1 else None
         user = authenticate(request, username=user.get_username(), password=serializer.validated_data["password"]) if user else None
-        # Un mot de passe temporaire périmé est refusé comme un mauvais mot de passe : rien n'indique qu'il a existé.
+        # Mot de passe temporaire périmé : la personne vient de le saisir correctement, on peut donc lui dire POURQUOI la connexion est refusée
+        # (cela ne révèle rien à quelqu'un qui ne le connaît pas : un mauvais mot de passe reste un simple « incorrect »).
         if user and temporary_password_expired(getattr(user, "account_profile", None)):
-            user = None
+            response = Response({
+                "success": False, "code": "temporary_password_expired",
+                "message": f"Ce mot de passe temporaire a expiré (il est valable {TEMPORARY_PASSWORD_TTL.days} jours). Demandez-en un nouveau à la personne qui vous a ouvert l’accès : l’équipe Mon E‑Carnet ou votre établissement.",
+            }, status=400)
+            return track_auth_response(request, response, "login_failure")
         if not user:
-            response = Response({"success": False, "message": "Email ou mot de passe incorrect."}, status=400)
+            response = Response({"success": False, "code": "invalid_credentials", "message": "Email ou mot de passe incorrect. Avec un mot de passe temporaire, recopiez-le exactement : tirets, majuscules et minuscules compris."}, status=400)
             return track_auth_response(request, response, "login_failure")
         login(request, user)
+        mark_temporary_login(request, getattr(user, "account_profile", None))
         response = Response({"success": True, "data": account_payload(user)})
         return track_auth_response(request, response, "login_success")
 
@@ -97,10 +103,15 @@ class PasswordChangeView(APIView):
         user = request.user
         if not user.has_usable_password():
             return Response({"success": False, "message": "Ce compte n’a pas de mot de passe à remplacer."}, status=409)
-        if not user.check_password(data["current_password"]):
-            return Response({"success": False, "message": "Le mot de passe actuel est incorrect."}, status=400)
-        if data["new_password"] == data["current_password"]:
-            return Response({"success": False, "message": "Choisissez un mot de passe différent de l’actuel."}, status=400)
+        profile, _ = AccountProfile.objects.get_or_create(user=user)
+        if data["current_password"]:
+            if not user.check_password(data["current_password"]):
+                return Response({"success": False, "code": "current_password_incorrect", "message": "Le mot de passe actuel est incorrect."}, status=400)
+        elif not temporary_login_is_fresh(request, profile):
+            # Seule une session ouverte à l'instant avec le mot de passe temporaire est dispensée de le retaper.
+            return Response({"success": False, "code": "current_password_required", "message": "Pour votre sécurité, saisissez aussi le mot de passe actuel (le mot de passe temporaire reçu)."}, status=400)
+        if user.check_password(data["new_password"]):
+            return Response({"success": False, "message": "Choisissez un mot de passe différent du mot de passe temporaire." if profile.must_change_password else "Choisissez un mot de passe différent de l’actuel."}, status=400)
         try:
             validate_password(data["new_password"], user=user)
         except DjangoValidationError as exc:
@@ -112,7 +123,6 @@ class PasswordChangeView(APIView):
         user.set_password(data["new_password"])
         user.first_name, user.last_name = first_name, last_name
         user.save(update_fields=("password", "first_name", "last_name"))
-        profile, _ = AccountProfile.objects.get_or_create(user=user)
         was_temporary = profile.must_change_password
         profile.must_change_password = False
         profile.temporary_password_expires_at = None
@@ -125,6 +135,7 @@ class PasswordChangeView(APIView):
                 establishment.responsible_name = f"{first_name} {last_name}".strip()
                 establishment.save(update_fields=("responsible_name", "updated_at"))
         update_session_auth_hash(request, user)  # la session courante survit, les autres appareils sont déconnectés
+        request.session.pop("temporary_login_at", None)
         record_event(event_type="account.password_changed", actor=user, actor_role="account", metadata={"action": "password_changed", "status": "first_login" if was_temporary else "voluntary"})
         return Response({"success": True, "data": account_payload(user)})
 

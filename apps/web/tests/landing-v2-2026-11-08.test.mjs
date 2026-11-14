@@ -160,7 +160,7 @@ test("retouches du 14/11/2026 : même fond crème entre le hero et le pied de pa
   assert.doesNotMatch(css, /\.lp2-bleed \{ background: var\(--lp2-bg-alt\)/);
   // Photos : fichiers WebP présents, branchés depuis landing-content.
   const content = read("src/lib/landing-content.ts");
-  for (const file of ["role-patient", "role-professional", "role-establishment", "cta-team", "problem-desktop", "problem-mobile"]) {
+  for (const file of ["role-patient", "role-professional", "role-establishment", "cta-carnet", "problem-desktop", "problem-mobile"]) {
     assert.ok(existsSync(new URL(`../public/landing/${file}.webp`, import.meta.url)), `${file}.webp présent`);
     assert.match(content, new RegExp(`/landing/${file}\\.webp`));
   }
@@ -181,4 +181,26 @@ test("retouches du 14/11/2026 : même fond crème entre le hero et le pied de pa
   assert.match(flow, /\(!mobile \|\| visible\)/);
   // Note « À savoir » retirée de la section carte d'urgence.
   assert.doesNotMatch(read("src/components/landing2/DetailRows.tsx"), /conservée jusqu/);
+});
+
+test("retouches du 14/11/2026 (2) : cartes de rôle et appel final en photo carrée avec texte par-dessus, fonds colorés retirés, liens Redianice", () => {
+  const roles = read("src/components/landing2/RoleCards.tsx");
+  assert.match(roles, /className="lp2-role__body"/, "texte et bouton par-dessus la photo");
+  assert.match(css, /\.lp2-role \{[^}]*aspect-ratio:1 \/ 1/, "carte de rôle carrée");
+  assert.match(css, /\.lp2-role::after \{[^}]*linear-gradient\(to top/, "dégradé sombre depuis le bas");
+  const showcase = read("src/app/landing-showcase.css");
+  assert.match(showcase, /\.lp-cta-card__photo \{[^}]*aspect-ratio: 1 \/ 1/, "photo de l'appel final carrée");
+  assert.match(showcase, /\.lp-cta-card__content \{[^}]*z-index: 1/, "texte au-dessus de la photo");
+  const content = read("src/lib/landing-content.ts");
+  assert.match(content, /cta-carnet\.webp[\s\S]*width: 1254,\s*height: 1254/);
+  // Plus de fond coloré derrière la carte d'urgence, les cartes proche/enfant et le téléphone de l'étape 3.
+  assert.doesNotMatch(css, /\.lp2-stage[^{]*\{[^}]*background/);
+  assert.doesNotMatch(css, /lp2-blob/);
+  assert.doesNotMatch(read("src/components/landing2/FlowSection.tsx"), /lp2-blob/);
+  // Redianice : un seul lien, partagé par le pied de page, la page Crédits et la page À propos.
+  const credits = read("src/lib/credits.ts");
+  assert.match(credits, /REDIANICE_URL = "https:\/\/redianice\.vercel\.app\/"/);
+  assert.match(read("src/components/public/FooterCredit.tsx"), /<CreditReveal name="Redianice"[^>]*href=\{REDIANICE_URL\}/);
+  assert.match(read("src/app/credits/page.tsx"), /RedianiceLogoLink/);
+  assert.match(read("src/app/a-propos/page.tsx"), /RedianiceLogoLink/);
 });

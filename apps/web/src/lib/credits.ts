@@ -6,6 +6,9 @@ export const CREDITS_UPDATED = "2026-10-16";
 /** Site d'AKATech Studio : lien du pied de page (survol avec le logo) et de la page Crédits. */
 export const AKATECH_URL = "https://akatech.vercel.app/";
 
+/** Site de Redianice : lien du pied de page (survol avec le logo), de la page Crédits et de la page À propos. */
+export const REDIANICE_URL = "https://redianice.vercel.app/";
+
 /** Les deux structures. Redianice porte le projet ; le développeur de l'équipe en est aussi le fondateur d'AKATech Studio. */
 export const CREDITS_ORIGINS: { id: string; name: string; role: string; icon: IconName; text: string; href?: string }[] = [
   {
@@ -14,6 +17,7 @@ export const CREDITS_ORIGINS: { id: string; name: string; role: string; icon: Ic
     role: "Startup porteuse du projet",
     icon: "heart",
     text: "Startup à l’origine de Mon E‑Carnet. Elle réunit l’équipe du projet et construit des outils simples au service du domaine de la santé.",
+    href: REDIANICE_URL,
   },
   {
     id: "akatech",

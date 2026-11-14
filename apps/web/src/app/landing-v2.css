@@ -45,8 +45,6 @@
 .lp2-btn-ghost:hover {background:var(--lp2-surface)}
 .lp2-btn-sm {min-height:42px; padding:0 18px; font-size:.95rem}
 .lp2-btn .lp2-i {width:1.1em;height:1.1em}
-.lp2-blob {position:absolute; inset:6% 4% 2% 4%; border-radius:46% 54% 50% 50% / 48% 44% 56% 52%; background:linear-gradient(150deg,var(--lp2-tint),var(--lp2-honey)); opacity:.9}
-.lp2-blob::after {content:""; position:absolute; right:-6%; bottom:6%; width:34%; aspect-ratio:1; border-radius:50%; background:var(--lp2-green); opacity:.9}
 .lp2-phone {position:relative; z-index:2; width:min(290px,78vw); aspect-ratio:9/18.6; background:var(--lp2-phone-frame); border-radius:42px; padding:9px; box-shadow:0 40px 60px -30px rgba(30,58,52,.7); flex:none}
 .lp2-phone .lp2-scr {height:100%; border-radius:34px; overflow:hidden; background:var(--lp2-p-bg); color:var(--lp2-p-ink); display:flex; flex-direction:column; position:relative; font-size:12.5px; line-height:1.35}
 .lp2-phone .lp2-notch {position:absolute; top:9px; left:50%; translate:-50% 0; width:30%; height:18px; border-radius:99px; background:var(--lp2-phone-frame); z-index:5}
@@ -120,8 +118,6 @@
 .lp2-flow.lp2-auto .lp2-step[aria-selected="true"] .lp2-bar i {animation:lp2-fill 6s linear forwards}
 @keyframes lp2-fill {to{width:100%}}
 .lp2-flow-phone {position:relative; display:grid; place-items:center; padding:24px 56px}
-.lp2-flow-phone .lp2-blob {inset:0; border-radius:var(--lp2-r-xl); opacity:.75}
-.lp2-flow-phone .lp2-blob::after {display:none}
 .lp2-screens {position:relative; flex:1}
 .lp2-screens > div {position:absolute; inset:0; display:flex; flex-direction:column; opacity:0; visibility:hidden; transition:opacity .35s, visibility .35s; background:var(--lp2-p-bg)}
 .lp2-screens > div.lp2-on {opacity:1; visibility:visible}
@@ -134,8 +130,8 @@
 .lp2-ticks .lp2-i {color:var(--lp2-green); margin-top:.18em}
 .lp2-note {margin-top:22px; padding:14px 16px; border-radius:16px; background:var(--lp2-green-soft); font-size:.95rem; display:flex; gap:10px}
 .lp2-note .lp2-i {color:var(--lp2-green); margin-top:.15em}
-.lp2-stage {position:relative; display:grid; place-items:center; padding:36px 20px; border-radius:var(--lp2-r-xl); background:linear-gradient(150deg,var(--lp2-tint),var(--lp2-bg-alt)); min-height:520px; overflow:hidden}
-.lp2-stage.lp2-green {background:linear-gradient(150deg,var(--lp2-green-soft),var(--lp2-bg-alt))}
+/* Scène des rangées (carte d'urgence, proches et enfants) : plus de fond ni de cadre coloré, les cartes se posent directement sur le crème de la page. */
+.lp2-stage {position:relative; display:grid; place-items:center; padding:36px 20px; min-height:520px}
 .lp2-ecard {width:min(380px,100%); background:var(--lp2-p-surface); color:var(--lp2-p-ink); border-radius:24px; padding:20px; box-shadow:var(--lp2-shadow); display:grid; gap:14px; font-size:14px; line-height:1.4}
 .lp2-ecard header {display:flex; justify-content:space-between; align-items:center; gap:10px}
 .lp2-ecard header strong {font:700 1rem var(--lp2-f-display)}
@@ -208,20 +204,25 @@
 .lp2-obj p {color:var(--lp2-muted)}
 .lp2-obj a {font-weight:600; white-space:nowrap}
 .lp2-roles {display:grid; grid-template-columns:repeat(3,1fr); gap:18px}
-.lp2-role {background:var(--lp2-surface); border:1px solid var(--lp2-line); border-radius:var(--lp2-r-l); padding:30px 26px; display:grid; gap:14px; align-content:start}
-.lp2-role.lp2-lead-card {background:var(--lp2-green); color:#fff; border-color:transparent}
-.lp2-role.lp2-lead-card .lp2-orb {box-shadow:none}
-.lp2-role .lp2-label {font:500 .78rem var(--lp2-f-mono); letter-spacing:.08em; text-transform:uppercase; color:var(--lp2-link)}
-.lp2-role.lp2-lead-card .lp2-label {color:#FFFFFF}
-.lp2-role h3 {font-size:1.4rem}
-.lp2-role ul {list-style:none; padding:0; margin:0 0 8px; display:grid; gap:10px}
+/* Cartes de rôle : photo carrée en fond, texte et bouton par-dessus. Le dégradé sombre part du bas (là où est le texte) et laisse le visage, en haut, entièrement visible.
+   La carte reste carrée ; si le texte est plus haut que la photo (petit écran), elle s'allonge et le dégradé continue jusqu'en bas. */
+.lp2-role {--p:var(--reveal, 1); position:relative; isolation:isolate; overflow:hidden; aspect-ratio:1 / 1; border-radius:var(--lp2-r-l); background:var(--lp2-ink); color:#fff;
+  display:grid; align-content:end; padding:26px; box-shadow:var(--lp2-shadow-soft)}
+.lp2-role::after {content:""; position:absolute; inset:0; z-index:-1; pointer-events:none;
+  background:linear-gradient(to top, rgba(18,44,38,.97) 0%, rgba(18,44,38,.93) 34%, rgba(18,44,38,.72) 52%, rgba(18,44,38,.22) 72%, rgba(18,44,38,0) 88%)}
+.lp2-role__body {display:grid; gap:12px; justify-items:start}
+.lp2-role__badge {position:absolute; top:18px; left:18px; margin:0; display:inline-flex; align-items:center; gap:10px; padding:5px 16px 5px 5px; border-radius:999px; background:rgba(18,44,38,.62); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px)}
+.lp2-role__badge .lp2-orb {width:36px; height:36px; border-radius:12px; box-shadow:none}
+.lp2-role__badge .lp2-orb .lp2-i {width:20px; height:20px}
+.lp2-role .lp2-label {font:500 .78rem var(--lp2-f-mono); letter-spacing:.08em; text-transform:uppercase; color:#fff}
+.lp2-role h3 {font-size:1.4rem; color:#fff; text-wrap:balance}
+.lp2-role ul {list-style:none; padding:0; margin:0 0 6px; display:grid; gap:8px; font-size:.98rem; line-height:1.45; color:rgba(255,255,255,.94)}
 .lp2-role li {display:flex; gap:10px; align-items:flex-start}
-.lp2-role li .lp2-i {margin-top:.2em; color:var(--lp2-green)}
-.lp2-role.lp2-lead-card li .lp2-i {color:var(--lp2-honey)}
-.lp2-role .lp2-btn {justify-self:start; margin-top:auto}
-.lp2-role {grid-template-rows:auto auto auto auto 1fr auto}
-.lp2-role .lp2-btn {align-self:end}
-.lp2-role.lp2-lead-card .lp2-btn-primary {background:#fff; color:#1E3A34; box-shadow:none}
+.lp2-role li .lp2-i {margin-top:.2em; flex:none; color:var(--lp2-honey)}
+.lp2-role .lp2-btn-primary {background:#fff; color:#1E3A34; box-shadow:none}
+.lp2-role .lp2-btn-ghost {background:rgba(255,255,255,.12); color:#fff; border-color:rgba(255,255,255,.55); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px)}
+.lp2-role .lp2-btn-ghost:hover {background:rgba(255,255,255,.22)}
+.lp2-role .lp2-btn:focus-visible {outline:3px solid var(--lp2-honey); outline-offset:3px}
 .lp2-trust {display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:center}
 .lp2-trust h2 {font-size:clamp(1.9rem,3.6vw,2.9rem); margin:14px 0 22px}
 .lp2-guards {list-style:none; padding:0; margin:0 0 24px; display:grid; gap:14px}
@@ -297,9 +298,8 @@
 
 /* Photos des cartes de rôle : `--reveal` (0 → 1) vient du défilement (LandingMotion) ; sans lui, la photo est entière.
    Survol de la souris ou focus clavier dans la carte : photo ouverte en entier. */
-.lp2-role__photo {--p:var(--reveal, 1); margin:10px 0 0; border-radius:22px; overflow:hidden; aspect-ratio:4 / 3; background:var(--lp2-bg-alt);
-  clip-path:inset(0 0 calc((1 - var(--p)) * 100%) 0 round 22px); transition:clip-path .35s ease}
-.lp2-role__photo img {display:block; width:100%; height:100%; object-fit:cover; transform:scale(calc(1.14 - .14 * var(--p))); opacity:calc(.35 + .65 * var(--p)); transition:transform .5s ease, opacity .35s ease}
+.lp2-role__photo {position:absolute; inset:0; z-index:-2; margin:0; overflow:hidden; background:var(--lp2-ink)}
+.lp2-role__photo img {display:block; width:100%; height:auto; aspect-ratio:1 / 1; max-width:none; object-fit:cover; transform:scale(calc(1.14 - .14 * var(--p))); opacity:calc(.35 + .65 * var(--p)); transition:transform .5s ease, opacity .35s ease}
 .lp2-role:is(:hover, :focus-within) .lp2-role__photo {--p:1}
 
 /* Les trois étapes : libellés et légendes réservés au mobile (cachés ailleurs). */
@@ -332,7 +332,6 @@
   .lp2-step-copy {color:var(--lp2-muted); font-size:.95rem; line-height:1.45}
   .lp2-pause {margin-top:0; justify-self:start; min-height:40px; padding:0 14px; font-size:.85rem}
   .lp2-flow-phone {flex:1; min-height:230px; padding:0; display:block; position:relative}
-  .lp2-flow-phone .lp2-blob {inset:6% 0 0 0; border-radius:var(--lp2-r-l)}
   .lp2-flow-phone .lp2-hand-stack.lp2-flow-stack {position:absolute; inset:0; display:block; width:100%; padding:8px 0 0}
   .lp2-flow-shot {position:absolute; inset:0}
   .lp2-flow-shot img {width:100%; height:100%; object-fit:contain; object-position:center bottom}

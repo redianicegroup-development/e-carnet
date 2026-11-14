@@ -19,6 +19,10 @@ from django.utils import timezone
 from .models import AccountProfile
 
 TEMPORARY_PASSWORD_TTL = timedelta(days=7)
+# La personne qui vient de se connecter AVEC le mot de passe temporaire n'a pas à le retaper pour choisir le sien : la session porte
+# l'heure de cette connexion, et le changement est accepté sans mot de passe actuel pendant cette fenêtre seulement.
+TEMPORARY_SESSION_KEY = "temporary_login_at"
+TEMPORARY_SESSION_WINDOW = timedelta(minutes=15)
 # Sans caractères ambigus (0/O, 1/l/I) : le mot de passe se dicte au téléphone ou se recopie à la main.
 _UPPER = "ABCDEFGHJKLMNPQRSTUVWXYZ"
 _LOWER = "abcdefghijkmnopqrstuvwxyz"
@@ -70,3 +74,21 @@ def has_pending_temporary_password(user) -> bool:
 
 def temporary_password_expired(profile) -> bool:
     return bool(profile and profile.must_change_password and profile.temporary_password_expires_at and profile.temporary_password_expires_at <= timezone.now())
+
+
+def mark_temporary_login(request, profile) -> None:
+    """À appeler juste après `login()` : retient (ou oublie) que cette session s'est ouverte avec un mot de passe temporaire."""
+    if profile and profile.must_change_password:
+        request.session[TEMPORARY_SESSION_KEY] = timezone.now().timestamp()
+    else:
+        request.session.pop(TEMPORARY_SESSION_KEY, None)
+
+
+def temporary_login_is_fresh(request, profile) -> bool:
+    """La session s'est ouverte, il y a moins de 15 minutes, avec le mot de passe temporaire encore en attente de remplacement."""
+    if not (profile and profile.must_change_password):
+        return False
+    started = request.session.get(TEMPORARY_SESSION_KEY)
+    if not isinstance(started, (int, float)):
+        return False
+    return 0 <= timezone.now().timestamp() - started <= TEMPORARY_SESSION_WINDOW.total_seconds()

@@ -46,6 +46,7 @@ class AccountSerializer(serializers.Serializer):
     avatar_url = serializers.SerializerMethodField()
     recovery_configured = serializers.SerializerMethodField()
     must_change_password = serializers.SerializerMethodField()
+    first_access = serializers.SerializerMethodField()
     auth_identities = serializers.SerializerMethodField()
     contexts = serializers.SerializerMethodField()
     patient_profile = serializers.SerializerMethodField()
@@ -74,6 +75,20 @@ class AccountSerializer(serializers.Serializer):
     def get_must_change_password(self, obj):
         profile = getattr(obj, "account_profile", None)
         return bool(profile and profile.must_change_password)
+
+    def get_first_access(self, obj):
+        """Première connexion avec un mot de passe temporaire : de quelle structure l'accès vient d'être accordé (sert au modal de succès)."""
+        profile = getattr(obj, "account_profile", None)
+        if not (profile and profile.must_change_password):
+            return None
+        from apps.establishments.models import EstablishmentAdministrator
+        admin = EstablishmentAdministrator.objects.filter(user=obj, status="active").select_related("establishment__parent").order_by("-started_at").first()
+        if not admin:
+            return None
+        establishment = admin.establishment
+        if establishment.is_laboratory:
+            return {"kind": "laboratory", "establishment_name": establishment.name, "parent_name": establishment.parent.name if establishment.parent_id else ""}
+        return {"kind": "establishment", "establishment_name": establishment.name, "parent_name": ""}
 
     def get_auth_identities(self, obj):
         return [{"provider": identity.provider, "display_name": identity.display_name, "avatar_url": identity.avatar_url} for identity in obj.auth_identities.all()]
@@ -133,7 +148,8 @@ class AccountIdentitySerializer(serializers.Serializer):
 
 
 class PasswordChangeSerializer(serializers.Serializer):
-    current_password = serializers.CharField(max_length=128, write_only=True, trim_whitespace=False)
+    # Facultatif seulement juste après une connexion avec le mot de passe temporaire (voir PasswordChangeView).
+    current_password = serializers.CharField(max_length=128, write_only=True, trim_whitespace=False, required=False, allow_blank=True, default="")
     new_password = serializers.CharField(min_length=12, max_length=128, write_only=True, trim_whitespace=False)
     first_name = serializers.CharField(max_length=80, required=False, allow_blank=True)
     last_name = serializers.CharField(max_length=80, required=False, allow_blank=True)
