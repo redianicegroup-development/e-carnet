@@ -22,7 +22,7 @@
 .lp-hero__w { display: inline-block; clip-path: inset(-.14em -.06em -.14em -.06em); }
 .lp-hero__wi { display: inline-block; will-change: transform; }
 /* Trois petits carrés dans le titre : deux diaporamas et l'emplacement de départ de la grande image. Ils ne comptent pas dans la lecture du titre. */
-.lp-hero__slot { position: relative; display: inline-block; width: .86em; height: .86em; border-radius: .22em; overflow: hidden; vertical-align: baseline; background: var(--surface-tint);
+.lp-hero__slot { position: relative; display: inline-block; width: 1.3em; height: 1.3em; border-radius: .26em; overflow: hidden; vertical-align: -.3em; background: var(--surface-tint);
   box-shadow: 0 0 0 .05em color-mix(in srgb, var(--bg) 80%, transparent), 0 .2em .55em -.2em color-mix(in srgb, var(--text) 55%, transparent); }
 /* L'emplacement vide n'existe que quand l'animation tourne : sans elle (mouvement réduit, JavaScript coupé), la grande image reste en carte dans le coin. */
 .lp-hero__slot--media { display: none; background: transparent; overflow: visible; }
@@ -55,7 +55,7 @@
 @media (max-width: 759px) {
   .lp-hero__media { --s0: .37; --mx: 14px; --my: 84px; --r: 20px; }
   .lp-hero__copy { gap: 14px; }
-  .lp-hero__slot { width: .95em; height: .95em; }
+  .lp-hero__slot { width: 1.5em; height: 1.5em; vertical-align: -.36em; }
   /* Sans animation (mouvement réduit, JavaScript coupé), la carte-image reste dans le coin bas : le texte monte pour ne pas la recouvrir. */
   .lp-root:not([data-motion="ready"]) .lp-hero__inner { align-items: flex-start; padding-top: 6px; }
   .lp-hero__note { display: none; }

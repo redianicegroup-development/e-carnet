@@ -36,7 +36,6 @@ export const HERO_SLIDES = [
 export const HERO_SLIDE_INTERVAL_MS = 4000;
 
 export const HERO = {
-  eyebrow: "Carnet de santé numérique",
   title: "Votre carnet de santé, sous votre contrôle.",
   lead: "Réunissez vos informations de santé, remettez votre carnet au médecin et choisissez qui peut le consulter.",
   primary: { href: "/connexion", label: "Commencer" },

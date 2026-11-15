@@ -66,7 +66,6 @@ export default function HomePage() {
         <PulseLine className="lp-hero__pulse" />
         <div className="lp-wrap lp-hero__inner">
           <div className="lp-hero__copy" data-hero-copy>
-            <span className="eyebrow" data-hero-item>{HERO.eyebrow}</span>
             <HeroTitle />
             <p className="lead" data-hero-item>{HERO.lead}</p>
             <div className="actions" data-hero-item>

@@ -1,9 +1,14 @@
 
 git add .
-git commit -m "v1.8.6 mise a jour hors ligne "
+git commit -m "v1.9 mise a jour hors ligne "
 git branch -M main
 git remote add origin https://github.com/redianicegroup-development/e-carnet.git
 git push -u origin main
 
 
             node scripts/upload-cloudinary.cjs
+Options
+     --dry-run   montre le tri (déjà présents / à envoyer) sans rien envoyer ni écrire
+     --update    envoie aussi les fichiers déjà présents dont la taille diffère de celle de Cloudinary (image remplacée sous le même nom)
+     --force     ancien comportement : tout renvoyer (overwrite), sans consulter Cloudinary
+     --help      rappel d'usage

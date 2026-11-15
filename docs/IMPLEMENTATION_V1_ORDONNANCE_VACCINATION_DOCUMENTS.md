@@ -90,7 +90,7 @@ Le loader d’espace affiche désormais : « Veuillez patienter, chargement de v
 
 Cloudinary devient le stockage des uploads applicatifs. Les documents médicaux sont envoyés comme assets privés, puis récupérés par l’API uniquement après contrôle du propriétaire et génération d’un téléchargement signé. Les avatars et logos sont envoyés comme assets images Cloudinary. Les secrets ne sont jamais placés dans le frontend : seules les variables `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` et `CLOUDINARY_BASE_FOLDER` sont lues côté serveur ou par le script de migration.
 
-Le script `scripts/upload-cloudinary.cjs` parcourt `apps/web/public` par défaut et envoie les PDF, PNG, JPG/JPEG, WebP, GIF, SVG, AVIF, WebM, MP4 et MOV. Il accepte `CLOUDINARY_SOURCE_DIR` pour un autre dossier et `--dry-run` pour simuler l’envoi. Il met à jour `apps/web/src/data/cloudinaryVersions.js` afin que la migration soit réexécutable.
+Le script `scripts/upload-cloudinary.cjs` parcourt `apps/web/public` par défaut et envoie les PDF, PNG, JPG/JPEG, WebP, GIF, SVG, AVIF, WebM, MP4 et MOV. Il accepte `CLOUDINARY_SOURCE_DIR` pour un autre dossier et `--dry-run` pour simuler l’envoi. Il met à jour `apps/web/src/data/cloudinaryVersions.js` afin que la migration soit réexécutable. Depuis le 15/11/2026 il **trie avant d'envoyer** : il liste ce qui est déjà sur Cloudinary (API Admin) et n'envoie que les fichiers absents ; `--update` renvoie aussi ceux dont la taille diffère, `--force` renvoie tout comme avant.
 
 ## Fichiers frontend touchés
 

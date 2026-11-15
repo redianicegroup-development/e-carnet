@@ -246,7 +246,11 @@ body .public-scroll-top { position: fixed; }
 }
 @media (min-width: 1200px) {
   .pub-burger { display: none; }
-  .pub-menu { position: static; display: flex; align-items: center; padding: 0; margin-left: 8px; background: none; border: 0; box-shadow: none; visibility: visible; opacity: 1; transform: none; transition: none; }
+  /* Liens de navigation centrés sur la page (et non collés au logo) : trois colonnes, marque à gauche, liens au milieu, actions à droite. */
+  .pub-header:not(.pub-header--connected) { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+  .pub-header:not(.pub-header--connected) .brand { justify-self: start; }
+  .pub-header:not(.pub-header--connected) .pub-actions { justify-self: end; margin-left: 0; }
+  .pub-menu { position: static; display: flex; align-items: center; justify-content: center; padding: 0; margin-left: 0; background: none; border: 0; box-shadow: none; visibility: visible; opacity: 1; transform: none; transition: none; }
   .pub-nav { display: flex; gap: 2px; }
   .pub-nav a { min-height: 40px; padding: 0 9px; border-bottom: 0; font-size: .9rem; }
   .pub-nav a::after { left: 9px; right: 9px; top: auto; bottom: 6px; width: auto; height: 2px; border-radius: 2px; transform: scaleX(0); transform-origin: left center; transition: transform .25s ease; }

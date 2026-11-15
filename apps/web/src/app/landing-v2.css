@@ -194,6 +194,8 @@
 .lp2-flow-shot.lp2-on {opacity:1; visibility:visible}
 .lp2-flow-shot img {width:100%; height:auto; filter:drop-shadow(0 16px 18px rgba(30,58,52,.2))}
 .lp2-hand-note {margin-top:10px; font-size:.82rem; color:var(--lp2-muted); text-align:center}
+/* Solution (15/11/2026) : l'image main + téléphone était trop grande et dépassait de l'écran. Elle est plafonnée à 440 px et à ~64 % de la hauteur de l'écran (rapport 900 × 1272), pour qu'on la voie entière à côté du texte. */
+.lp2-solution .lp2-hand-stack {width:min(100%,440px,calc(64svh * .7075 + 68px))}
 .lp2-ap-list {margin:0; padding-left:16px; display:grid; gap:3px; font-size:11.5px; font-weight:600}
 .lp2-tile p.lp2-kick {margin-top:-10px; font:600 .8rem/1.2 var(--lp2-f-body); color:var(--lp2-link)}
 .lp2-tile p.lp2-kick + p {margin-top:-10px}
@@ -269,7 +271,7 @@
   .lp2-rows {gap:72px}
   .lp2-roles {grid-template-columns:1fr}
   .lp2-after-tiles {margin-top:72px}
-  .lp2-hand-stack {width:min(86vw,420px)}
+  .lp2-hand-stack, .lp2-solution .lp2-hand-stack {width:min(86vw,420px)}
   .lp2-objs {grid-template-columns:1fr}
 }
 @media (max-width:560px) {
