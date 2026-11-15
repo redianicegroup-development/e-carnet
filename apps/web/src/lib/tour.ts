@@ -22,6 +22,8 @@ export type TourStep = {
 export const TOUR_VERSION = 1;
 /** Événement qui relance la visite de l'espace affiché (entrée « Revoir la visite guidée » du menu du compte). */
 export const TOUR_RESTART_EVENT = "ecarnet:tour-restart";
+/** Événement émis quand la visite guidée se termine ou est quittée : le guide « Comment ça marche ? » (lib/howto.ts) prend alors le relais. */
+export const TOUR_FINISHED_EVENT = "ecarnet:tour-finished";
 
 const ACCOUNT_STEP: TourStep = {
   id: "account", target: "account", icon: "user", tag: "Votre compte", title: "Profil, thème et aide",

@@ -13,7 +13,9 @@ import { ScreenLoader } from "../ui/ScreenLoader";
 import { NotificationBell } from "../notifications/NotificationBell";
 import { useNewNotifications } from "../notifications/notification-events";
 import { ProductTour } from "../tour/ProductTour";
+import { HowToTour } from "../tour/HowToTour";
 import { TOUR_RESTART_EVENT } from "../../lib/tour";
+import { HOWTO_RESTART_EVENT } from "../../lib/howto";
 import { GooeyAccountMenu } from "./GooeyAccountMenu";
 import { AppSidebar, type SidebarItem, type SidebarMenuItem } from "./AppSidebar";
 import { TrustedDelegationBanner } from "../TrustedDelegationBanner";
@@ -310,6 +312,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
     ...(switchTarget ? [{ id: "switch-space", label: switching ? "Changement d’espace…" : `Changer d’espace : ${switchTarget.label.toLowerCase()}`, icon: "refresh" as const, disabled: switching, onSelect: () => void switchSpace() }] : []),
     { id: "help", label: "Centre d’aide", icon: "help", href: "/aide" },
     { id: "tour", label: "Revoir la visite guidée", icon: "sparkle", onSelect: () => window.dispatchEvent(new Event(TOUR_RESTART_EVENT)) },
+    { id: "howto", label: "Comment ça marche ?", icon: "help", onSelect: () => window.dispatchEvent(new Event(HOWTO_RESTART_EVENT)) },
     ...(showAdminLink ? [{ id: "admin", label: "Administration", icon: "shield" as const, href: "https://e-carnetci.vercel.app/admin/", external: true }] : []),
     { id: "logout", label: signingOut ? "Déconnexion…" : "Se déconnecter", icon: "logout", tone: "danger", disabled: signingOut, onSelect: () => void logout() },
   ];
@@ -367,6 +370,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
       </main>
       {state.status === "ready" && !bare && !spaceRedirect && <GreetingModal account={state.account} space={space} />}
       {state.status === "ready" && !spaceRedirect && !bare && !passwordChangePending && !profilePending && <ProductTour space={space} accountId={state.account.id} />}
+      {state.status === "ready" && !spaceRedirect && !bare && !passwordChangePending && !profilePending && <HowToTour space={space} accountId={state.account.id} clinical={space === "professional" ? clinicalReady : true} />}
     </div>
   );
 }

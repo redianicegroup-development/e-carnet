@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useId, useRef, useState, type CSSProperties } from "react";
 import { getAnalyticsConsent, subscribeAnalyticsConsent } from "../../lib/analytics-consent";
 import {
-  availableSteps, hasSeenTour, markTourSeen, padRect, placeCard, resetTour, tourSteps, TOUR_RESTART_EVENT,
+  availableSteps, hasSeenTour, markTourSeen, padRect, placeCard, resetTour, tourSteps, TOUR_FINISHED_EVENT, TOUR_RESTART_EVENT,
   type Placement, type Rect, type TourSpace, type TourStep,
 } from "../../lib/tour";
 import { deviceStorage } from "../../lib/themeStorage";
@@ -22,7 +22,7 @@ const FIRST_DELAY_MS = 4800; // laisse passer le message de bienvenue (4,2 s) av
 const RESTART_DELAY_MS = 380; // laisse le menu du compte se refermer
 const SPOT_PAD = 6;
 
-function findTarget(name: string): HTMLElement | null {
+export function findTarget(name: string): HTMLElement | null {
   const nodes = document.querySelectorAll<HTMLElement>(`[data-tour="${name}"]`);
   for (const node of Array.from(nodes)) {
     const box = node.getBoundingClientRect();
@@ -81,6 +81,7 @@ export function ProductTour({ space, accountId }: { space: TourSpace; accountId:
 
   const finish = useCallback(() => {
     markTourSeen(deviceStorage(), accountId, space);
+    window.dispatchEvent(new Event(TOUR_FINISHED_EVENT)); // le guide « Comment ça marche ? » prend le relais
     setLeaving(true);
     window.clearTimeout(leaveTimer.current);
     leaveTimer.current = window.setTimeout(() => {
@@ -128,7 +129,8 @@ type CardProps = {
   onTarget: (rect: Rect | null) => void; onNext: () => void; onPrevious: () => void; onSkip: () => void;
 };
 
-function TourCard({ step, index, total, onTarget, onNext, onPrevious, onSkip }: CardProps) {
+/** Carte de la visite, réutilisée par le guide « Comment ça marche ? » (components/tour/HowToTour.tsx). */
+export function TourCard({ step, index, total, onTarget, onNext, onPrevious, onSkip }: CardProps) {
   const card = useRef<HTMLDivElement>(null);
   const primary = useRef<HTMLButtonElement>(null);
   const [place, setPlace] = useState<Placement | null>(null);

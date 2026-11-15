@@ -64,7 +64,7 @@ export function ProfessionalAccess() {
       {outcome && <OutcomeDialog {...outcome} onClose={() => setOutcome(null)} />}
       <PageHeader title="Mon rattachement" lead="Vous accédez à vos patients dès que votre établissement confirme votre rattachement." />
 
-      <section className="card" aria-labelledby="code-title">
+      <section className="card" aria-labelledby="code-title" data-tour="howto-attach">
         <span className="eyebrow">Rattachement</span>
         <h2 id="code-title">Saisir mon code médecin</h2>
         <p className="muted">Le code vous est remis par votre établissement. Il est valable 48 h. L’administrateur confirme ensuite votre rattachement.</p>

@@ -42,6 +42,7 @@ export function SettingsDirectory({ items, activeId, onSelect, onLogout, logoutD
               aria-haspopup="dialog"
               aria-expanded={open}
               aria-controls="settings-modal"
+              data-tour={`settings-${item.id}`}
               onClick={() => onSelect(item.id)}
             >
               <span className="setting-item__icon" aria-hidden="true"><Icon name={item.icon} size={20} /></span>

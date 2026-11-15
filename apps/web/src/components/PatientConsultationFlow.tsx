@@ -16,12 +16,12 @@ export function PatientConsultationFlow() {
     <div className="stack-lg">
       <section className="stack" aria-labelledby="flow-step1">
         <span className="eyebrow">Étape 1</span>
-        <h2 id="flow-step1">Pré-consultation</h2>
+        <h2 id="flow-step1" data-tour="howto-preconsult">Pré-consultation</h2>
         <PatientPreconsultations onDraftChange={setHasDraft} />
       </section>
       <section className="stack" aria-labelledby="flow-step2">
         <span className="eyebrow">Étape 2</span>
-        <h2 id="flow-step2">Accès temporaire pour le professionnel</h2>
+        <h2 id="flow-step2" data-tour="howto-qr">Accès temporaire pour le professionnel</h2>
         {hasDraft
           ? <PatientAccessGrants part="qr" />
           : <p className="card muted flow-locked" role="note"><Icon name="lock" size={18} /> Disponible dès que votre pré-consultation est enregistrée : le professionnel scanne ce QR pour la lire, avec votre accord.</p>}

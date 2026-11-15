@@ -105,7 +105,7 @@ export function LaboratoryScanner() {
   return <div className="stack-lg">
     <PageHeader eyebrow={name} title="Résultats d’examens" lead="Scannez le QR d’examen du patient, vérifiez son identité, puis déposez le résultat en PDF." />
     <section className="card stack" aria-labelledby="lab-scan-title">
-      <h2 id="lab-scan-title">1. Scanner le QR d’examen</h2>
+      <h2 id="lab-scan-title" data-tour="howto-lab-scan">1. Scanner le QR d’examen</h2>
       {scanning
         ? <QrScanner onResult={(value) => void resolve(value)} onClose={() => setScanning(false)} />
         : <div className="actions"><button type="button" className="button dark" onClick={() => setScanning(true)}><Icon name="qr" size={18} /> Scanner le QR</button></div>}

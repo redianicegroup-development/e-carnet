@@ -44,7 +44,7 @@ export function ProfessionalHome() {
           <p className="muted">Bonjour, {profile?.professional_title ? `${profile.professional_title} ` : ""}{displayName(account)}</p>
           <h1 className="hero-title">Votre journée,<em>en un coup d’œil</em></h1>
           <div className="button-row">
-            {ready ? <><Link className="button" href="/professionnel/patients"><Icon name="search" size={18} /> Un patient</Link><Link className="button dark" href="/professionnel/patients#scanner"><Icon name="qr" size={18} /> Scanner un QR</Link></> : <Link className="button dark" href="/professionnel/acces"><Icon name="building" size={18} /> Mon rattachement</Link>}
+            {ready ? <><Link className="button" href="/professionnel/patients"><Icon name="search" size={18} /> Un patient</Link><Link className="button dark" href="/professionnel/patients#scanner" data-tour="howto-scan"><Icon name="qr" size={18} /> Scanner un QR</Link></> : <Link className="button dark" href="/professionnel/acces"><Icon name="building" size={18} /> Mon rattachement</Link>}
           </div>
         </header>
       )}
