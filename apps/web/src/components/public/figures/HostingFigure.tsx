@@ -14,7 +14,7 @@ export function HostingFigure() {
   return (
     <Figure
       label={`Schéma : ${rows.map((row) => (row.id === "browser" ? row.title : `${row.sub} chez ${row.title}`)).join(", puis ")}.`}
-      caption="Environnement actuel. L’environnement de production pourra utiliser d’autres hébergeurs."
+      caption="Version actuelle du service. La version destinée au public pourra utiliser d’autres hébergeurs."
     >
       <Svg viewBox={`0 0 360 ${(rows.length - 1) * gap + 60}`}>
         <path data-path="flow" className="fg-track" d={`M180 60 V${(rows.length - 1) * gap}`} />

@@ -36,7 +36,7 @@ export function dataPolicy(realDataAllowed: boolean): DataPolicyText {
   }
   return {
     environmentLabel: "environnement du service",
-    faq: { q: "Puis-je saisir mes vraies données de santé ?", a: `Pas encore. Mon E-Carnet est en phase de test : saisissez uniquement des données fictives. Les données de santé réelles ne seront acceptées qu’après les validations juridique, médicale, de sécurité et d’hébergement . ${nurse}` },
+    faq: { q: "Puis-je saisir mes vraies données de santé ?", a: `Pas encore. Mon E-Carnet est en phase de test : saisissez uniquement des données fictives. Les vraies données de santé ne seront acceptées qu’après les validations juridique, médicale, de sécurité et d’hébergement. ${nurse}` },
     providersNote: "Pendant la phase de test, ne saisissez que des données fictives : aucune donnée de santé réelle n’est attendue. Ces prestataires sont listés dès maintenant pour que leurs régions et leurs accès soient documentés et vérifiés avant toute ouverture aux données réelles.",
     inputNote: "Le service est en phase de test : la saisie de données de santé réelles n’est pas autorisée à ce stade. Les prestataires listés peuvent traiter les données nécessaires à leur rôle dans le service ; les régions, copies de sauvegarde et modalités d’accès d’assistance ne sont pas toutes confirmées, ce qui est l’une des conditions de l’ouverture aux données réelles.",
     hostingNote: "Un hébergement en Côte d’Ivoire est à l’étude. Avant toute ouverture aux données de santé réelles, les régions d’hébergement, les copies, les journaux et les accès d’assistance doivent être confirmés pour chaque prestataire ; le service n’est pas ouvert au grand public.",

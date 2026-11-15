@@ -43,12 +43,12 @@ const FIELDS = {
   "ip.holder": ["Éditeur", "titulaire des droits sur le service, le nom et le logo"],
   "ip.terms": ["Éditeur", "conditions d’utilisation du nom, du logo et des contenus"],
   // Hébergement (environnement actuel)
-  "hosting.web.details": ["Hébergement", "adresse et contact officiels de l’hébergeur de l’interface web (Vercel)"],
-  "hosting.api.details": ["Hébergement", "adresse et contact officiels de l’hébergeur de l’API (Render)"],
-  "hosting.db.details": ["Hébergement", "adresse et contact officiels de l’hébergeur de la base de données (Neon)"],
-  "hosting.web.region": ["Hébergement", "région effective d’hébergement de l’interface web"],
-  "hosting.api.region": ["Hébergement", "région effective d’hébergement de l’API"],
-  "hosting.db.region": ["Hébergement", "région effective de la base de données et de ses sauvegardes"],
+  "hosting.web.details": ["Hébergement", "adresse et contact officiels de l’hébergeur du site web (Vercel)"],
+  "hosting.api.details": ["Hébergement", "adresse et contact officiels de l’hébergeur du serveur de l’application (Render)"],
+  "hosting.db.details": ["Hébergement", "adresse et contact officiels de l’hébergeur du lieu de stockage des informations (Neon)"],
+  "hosting.web.region": ["Hébergement", "pays ou région où le site web est hébergé"],
+  "hosting.api.region": ["Hébergement", "pays ou région où le serveur de l’application est hébergé"],
+  "hosting.db.region": ["Hébergement", "pays ou région où les informations et leurs copies de sauvegarde sont stockées"],
   // Confidentialité
   "privacy.controller": ["Confidentialité", "identité et coordonnées du responsable du traitement"],
   "privacy.roles": ["Confidentialité", "rôle de chaque acteur (responsable, conjoint, sous-traitant) pour chaque traitement"],
@@ -63,17 +63,17 @@ const FIELDS = {
   "retention.health": ["Conservation", "durée de conservation des déclarations de santé et pré-consultations"],
   "retention.consultations": ["Conservation", "durée de conservation des consultations et attestations"],
   "retention.access": ["Conservation", "durée de conservation des autorisations d’accès et de leur preuve"],
-  "retention.audit": ["Conservation", "durée de conservation du journal d’audit"],
+  "retention.audit": ["Conservation", "durée de conservation du journal des accès"],
   "retention.membership": ["Conservation", "durée de conservation des rattachements, invitations et codes"],
   "retention.proofs": ["Conservation", "durée de conservation des pièces justificatives de structure reçues par e-mail"],
   "retention.backups": ["Conservation", "durée de conservation des sauvegardes"],
-  "retention.visits": ["Conservation", "durée de conservation des statistiques de visites (la commande de nettoyage prévoit 90 jours sans visite, mais rien ne la planifie)"],
+  "retention.visits": ["Conservation", "durée de conservation des statistiques de visites (un effacement après 90 jours sans visite est prévu, mais il n’est pas encore programmé)"],
   "privacy.rights": ["Confidentialité", "procédure d’exercice des droits (vérification d’identité, délais de réponse)"],
   "privacy.minors": ["Confidentialité", "règles applicables aux mineurs et aux représentants légaux"],
   "privacy.helper": ["Confidentialité", "règles applicables à une personne qui aide à la saisie dans le compte d’un patient"],
   "privacy.incident": ["Confidentialité", "procédure de gestion et de notification des incidents de sécurité"],
   // CGU
-  "terms.acceptance": ["Conditions d’utilisation", "mécanisme d’acceptation des conditions (information, case à cocher, version, horodatage)"],
+  "terms.acceptance": ["Conditions d’utilisation", "façon dont les conditions sont acceptées (information, case à cocher, version, date et heure)"],
   "terms.publisherDuties": ["Conditions d’utilisation", "nature et étendue des obligations de l’éditeur"],
   "terms.liability": ["Conditions d’utilisation", "clauses de responsabilité (rédaction par un juriste)"],
   "terms.closure": ["Conditions d’utilisation", "modalités et effets de la clôture d’un compte sur les données"],
@@ -106,9 +106,9 @@ export function pendingFields(): { key: FieldKey; group: string; label: string }
 
 /** Environnement d'essai actuel (V1/V2). Régions et contrats non établis : voir FIELDS « hosting.*.region ». */
 export const HOSTS = [
-  { id: "web", role: "Interface web", name: "Vercel", detailsKey: "hosting.web.details", regionKey: "hosting.web.region" },
-  { id: "api", role: "API applicative", name: "Render", detailsKey: "hosting.api.details", regionKey: "hosting.api.region" },
-  { id: "db", role: "Base de données PostgreSQL", name: "Neon", detailsKey: "hosting.db.details", regionKey: "hosting.db.region" },
+  { id: "web", role: "Site web", name: "Vercel", detailsKey: "hosting.web.details", regionKey: "hosting.web.region" },
+  { id: "api", role: "Serveur de l’application", name: "Render", detailsKey: "hosting.api.details", regionKey: "hosting.api.region" },
+  { id: "db", role: "Stockage des informations", name: "Neon", detailsKey: "hosting.db.details", regionKey: "hosting.db.region" },
 ] as const satisfies readonly { id: string; role: string; name: string; detailsKey: FieldKey; regionKey: FieldKey }[];
 
 /** Durées de VALIDITÉ TECHNIQUE (et non de conservation) présentes dans le code et la documentation produit. */

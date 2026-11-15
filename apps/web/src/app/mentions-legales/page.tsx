@@ -37,14 +37,14 @@ const sections: LegalSectionDef[] = [
     title: "Hébergement",
     body: (
       <>
-        <p>Les informations ci-dessous concernent l’<strong>environnement actuel</strong>. L’environnement de production pourra utiliser d’autres hébergeurs ; cette page sera alors mise à jour avant toute ouverture.</p>
+        <p>Les informations ci-dessous concernent la <strong>version actuelle du service</strong>. La version destinée au public pourra utiliser d’autres hébergeurs ; cette page sera alors mise à jour avant son ouverture.</p>
         <HostingFigure />
         <LegalTable
-          caption="Hébergeurs de l’environnement actuel"
-          head={["Rôle", "Hébergeur", "Coordonnées", "Région d’hébergement"]}
+          caption="Hébergeurs de la version actuelle du service"
+          head={["Rôle", "Hébergeur", "Coordonnées", "Pays ou région d’hébergement"]}
           rows={HOSTS.map((host) => [host.role, host.name, <Fill key="d" k={host.detailsKey} />, <Fill key="r" k={host.regionKey} />])}
         />
-        <p>Les fichiers (photos de profil, logos et en-têtes d’établissement, documents médicaux, images de cachet et de signature) sont hébergés par Cloudinary ; ses coordonnées et sa région d’hébergement ne sont pas confirmées à ce jour. Cette liste ne garantit pas que les données soient conservées en Côte d’Ivoire. Les lieux de traitement et de sauvegarde sont décrits dans la <Link href="/confidentialite#sous-traitants">politique de confidentialité</Link>.</p>
+        <p>Les fichiers (photos de profil, logos et en-têtes d’établissement, documents médicaux, images de cachet et de signature) sont hébergés par Cloudinary ; ses coordonnées et le pays où il stocke les fichiers ne sont pas encore confirmés. Cette liste ne garantit pas que les données soient conservées en Côte d’Ivoire. Les lieux où les informations sont utilisées et sauvegardées sont expliqués dans la <Link href="/confidentialite#sous-traitants">politique de confidentialité</Link>.</p>
       </>
     ),
   },
@@ -53,8 +53,8 @@ const sections: LegalSectionDef[] = [
     title: "Statut du service",
     body: (
       <>
-        <p>Le service est une <strong>version actuellement disponible</strong>. Il protège les informations enregistrées et son accès est réservé aux utilisateurs autorisés.</p>
-        <p>Il n’a pas fait l’objet d’une validation juridique, médicale et technique complète. Il ne remplace ni un avis médical ni un dispositif d’urgence.</p>
+        <p>Le service est la <strong>version actuellement disponible</strong>. Il protège les informations enregistrées, et seuls les utilisateurs autorisés peuvent y accéder.</p>
+        <p>Il n’a pas encore été validé de façon complète sur les plans juridique, médical et technique. Il ne remplace ni un avis médical ni un service d’urgence.</p>
       </>
     ),
   },
@@ -63,7 +63,7 @@ const sections: LegalSectionDef[] = [
     title: "Propriété intellectuelle",
     body: (
       <>
-        <p>Titulaire des droits sur le service, son nom, son logo, son interface, ses textes et son code : <Fill k="ip.holder" />.</p>
+        <p>Titulaire des droits sur le service, son nom, son logo, son apparence, ses textes et son programme : <Fill k="ip.holder" />.</p>
         <p>Conditions d’utilisation du nom, du logo et des contenus : <Fill k="ip.terms" />.</p>
         <p>Les informations saisies par les utilisateurs dans leur carnet restent soumises aux règles décrites dans les <Link href="/cgu#contenus">conditions d’utilisation</Link>.</p>
       </>
@@ -73,14 +73,14 @@ const sections: LegalSectionDef[] = [
     id: "donnees",
     title: "Données personnelles et cookies",
     body: (
-      <p>Le traitement des données personnelles, les droits des personnes, les cookies et le stockage dans le navigateur sont décrits dans la <Link href="/confidentialite">politique de confidentialité</Link>.</p>
+      <p>La façon dont vos données personnelles sont utilisées, vos droits, les cookies et les informations gardées sur votre appareil sont expliqués dans la <Link href="/confidentialite">politique de confidentialité</Link>.</p>
     ),
   },
   {
     id: "liens",
     title: "Éléments provenant de sites tiers",
     body: (
-      <p>Le service s’appuie sur Cloudinary pour héberger des fichiers et peut afficher des éléments hébergés ailleurs, par exemple l’image de profil fournie par un fournisseur de connexion. L’éditeur ne contrôle pas ces sites. La connexion avec Google, Facebook ou Apple est soumise aux conditions de ces fournisseurs.</p>
+      <p>Le service s’appuie sur Cloudinary pour héberger des fichiers, et peut afficher des éléments hébergés ailleurs, par exemple la photo de profil fournie par Google, Facebook ou Apple. L’éditeur ne contrôle pas ces sites. Se connecter avec Google, Facebook ou Apple, c’est aussi accepter les conditions de ces entreprises.</p>
     ),
   },
   {

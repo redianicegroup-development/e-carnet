@@ -13,10 +13,10 @@ export const metadata: Metadata = {
 
 const summary = (
   <ul>
-    <li>Le service est une <strong>version actuellement disponible</strong> : seules des utilisez des informations exactes et gardez votre compte personnel.</li>
+    <li>La <strong>version actuellement disponible</strong> n’est pas destinée à recevoir des dossiers de santé réels. Donnez des informations exactes et gardez votre compte personnel.</li>
     <li>Le service ne pose pas de diagnostic, ne remplace pas un avis médical et n’est pas un service d’urgence.</li>
-    <li>Un professionnel ne lit le carnet d’un patient que dans le cadre d’une autorisation de ce patient.</li>
-    <li>Chaque utilisateur protège ses identifiants et reste responsable de ce qu’il saisit.</li>
+    <li>Un professionnel ne lit le carnet d’un patient que si ce patient lui en a donné l’accès.</li>
+    <li>Chacun protège ses identifiants (e-mail, mot de passe) et reste responsable de ce qu’il saisit.</li>
   </ul>
 );
 
@@ -27,8 +27,8 @@ const sections: LegalSectionDef[] = [
     body: (
       <>
         <p>Les présentes conditions encadrent l’utilisation du service « Mon E‑Carnet », édité par <Fill k="publisher.name" /> (voir les <Link href="/mentions-legales">mentions légales</Link>).</p>
-        <p>Le service permet de tenir un carnet de santé personnel (déclarations, documents, vaccinations, mesures, rappels de médicaments, rendez-vous), de préparer une consultation et de gérer des autorisations d’accès ; pour les professionnels autorisés, il permet aussi d’enregistrer des consultations, des prescriptions et des plans de suivi, dans les limites décrites dans le service.</p>
-        <p>La version actuellement disponible est une <strong>version actuellement disponible</strong>. Elle n’est pas destinée à recevoir des dossiers de santé réels. Elle n’a pas fait l’objet d’une validation juridique, médicale et technique complète.</p>
+        <p>Le service permet de tenir un carnet de santé personnel (déclarations, documents, vaccinations, mesures, rappels de médicaments, rendez-vous), de préparer une consultation et de gérer des autorisations d’accès ; pour les professionnels autorisés, il permet aussi d’enregistrer des consultations, des ordonnances et des plans de suivi, dans les limites prévues par le service.</p>
+        <p>La <strong>version actuellement disponible</strong> n’est pas destinée à recevoir des dossiers de santé réels. Elle n’a pas encore été validée de façon complète sur les plans juridique, médical et technique.</p>
       </>
     ),
   },
@@ -39,12 +39,12 @@ const sections: LegalSectionDef[] = [
       <dl>
         <div><dt>Service</dt><dd>L’application web et mobile « Mon E-Carnet ».</dd></div>
         <div><dt>Éditeur</dt><dd>La personne identifiée dans les mentions légales.</dd></div>
-        <div><dt>Patient</dt><dd>Titulaire d’un carnet. Il décide des accès à son carnet.</dd></div>
-        <div><dt>Professionnel</dt><dd>Professionnel de santé rattaché à un établissement, qui peut demander un accès au carnet d’un patient.</dd></div>
+        <div><dt>Patient</dt><dd>Titulaire d’un carnet. Il décide qui peut ouvrir son carnet.</dd></div>
+        <div><dt>Professionnel</dt><dd>Professionnel de santé rattaché à un établissement, qui peut ouvrir le carnet d’un patient si celui-ci lui en donne l’accès.</dd></div>
         <div><dt>Établissement</dt><dd>Structure de santé disposant d’un espace dans le service, gérée par un administrateur nominatif.</dd></div>
         <div><dt>Laboratoire</dt><dd>Laboratoire interne d’un établissement, géré par un ou plusieurs administrateurs nominatifs que l’établissement désigne. Il dépose le résultat d’un examen demandé par un médecin ; il ne consulte pas le carnet.</dd></div>
-        <div><dt>Autorisation d’accès</dt><dd>Décision d’un patient qui autorise un professionnel à consulter un périmètre défini de son carnet pendant une durée limitée.</dd></div>
-        <div><dt>Périmètre</dt><dd>Ensemble des informations couvertes par une autorisation : pré-consultation, déclarations et, si le patient les sélectionne, consultations.</dd></div>
+        <div><dt>Autorisation d’accès</dt><dd>Accord d’un patient pour qu’un professionnel consulte une partie précise de son carnet pendant une durée limitée.</dd></div>
+        <div><dt>Périmètre</dt><dd>Ce que couvre une autorisation : la pré-consultation, les déclarations et, si le patient les choisit, les consultations passées.</dd></div>
       </dl>
     ),
   },
@@ -54,7 +54,7 @@ const sections: LegalSectionDef[] = [
     body: (
       <>
         <p>L’utilisation du service suppose d’avoir pris connaissance des présentes conditions et de la <Link href="/confidentialite">politique de confidentialité</Link>.</p>
-        <p>Mécanisme d’acceptation et de preuve : <Fill k="terms.acceptance" />.</p>
+        <p>Comment ces conditions sont acceptées, et comment l’acceptation est conservée : <Fill k="terms.acceptance" />.</p>
         <p>Les médecins qui demandent un rattachement à un établissement acceptent en plus les <Link href="/conditions-rattachement">conditions de rattachement</Link>, distinctes des présentes conditions.</p>
       </>
     ),
@@ -64,10 +64,10 @@ const sections: LegalSectionDef[] = [
     title: "Compte",
     body: (
       <>
-        <p>Un compte se crée avec une adresse e-mail et un mot de passe, ou avec Google, Facebook ou Apple. Un compte correspond à une personne. Plusieurs méthodes de connexion peuvent être liées à un même compte après une connexion volontaire de l’utilisateur ; deux comptes ne sont jamais fusionnés sur la seule base d’une adresse e-mail.</p>
-        <p>L’utilisateur fournit des informations exactes dans la mesure requise par son rôle, et les met à jour. Il protège ses moyens de connexion, ne les partage pas et signale sans délai toute utilisation qu’il n’a pas autorisée.</p>
+        <p>Un compte se crée avec une adresse e-mail et un mot de passe, ou avec Google, Facebook ou Apple. Un compte correspond à une personne. Plusieurs moyens de connexion peuvent être reliés à un même compte, à la demande de l’utilisateur ; deux comptes ne sont jamais fusionnés simplement parce qu’ils ont la même adresse e-mail.</p>
+        <p>L’utilisateur donne des informations exactes, selon ce que son rôle demande, et les met à jour. Il protège ses moyens de connexion, ne les partage pas et signale sans délai toute utilisation qu’il n’a pas autorisée.</p>
         <p>L’administrateur d’un établissement ou d’un laboratoire reçoit un mot de passe temporaire, valable 7 jours. Il se connecte avec son adresse e-mail et ce mot de passe, puis choisit aussitôt son mot de passe personnel ; le mot de passe temporaire ne peut pas être conservé. Celui qui le remet (y compris avec le bouton « Partager ») ne le communique qu’à la personne concernée et répond de cette transmission.</p>
-        <p>Les droits d’un patient, d’un professionnel, d’un administrateur d’établissement, d’un administrateur de laboratoire et du personnel de l’éditeur sont distincts. Un même compte peut disposer de plusieurs rôles.</p>
+        <p>Un patient, un professionnel, un administrateur d’établissement, un administrateur de laboratoire et le personnel de l’éditeur n’ont pas les mêmes droits. Un même compte peut disposer de plusieurs rôles.</p>
         <p>Mineurs : <Fill k="privacy.minors" />.</p>
       </>
     ),
@@ -78,10 +78,10 @@ const sections: LegalSectionDef[] = [
     body: (
       <>
         <ActorsFigure variant="terms" />
-        <p><strong>Le patient</strong> décide des accès à son carnet, choisit le périmètre et la durée, et peut refuser ou révoquer une autorisation depuis son espace.</p>
-        <p><strong>Le professionnel</strong> n’accède à un carnet que dans le cadre d’une autorisation active. Il reste responsable de ses actes, des informations qu’il saisit et du respect de ses obligations professionnelles, sous réserve du droit applicable et des contrats conclus avec son établissement.</p>
-        <p><strong>L’établissement</strong> confirme le rattachement d’un professionnel à sa structure. Cette confirmation ne vaut pas certification par l’éditeur de l’identité, des diplômes ou de la compétence du professionnel. Dans la configuration de référence, l’administrateur actif voit une liste sans contenu clinique mais ne peut pas ouvrir le dossier par la fonction administrative. Un mécanisme API d’ouverture temporaire avec motif, audit et notification existe dans le code, mais reste désactivé par défaut et n’est pas exposé dans un écran utilisateur ; son activation attend la décision juridique et opérationnelle applicable. Le professionnel ne consulte que le dossier du cas qui lui est attribué, selon l’autorisation du patient. Aucun accès automatique aux données d’un autre établissement.</p>
-        <p><strong>Le laboratoire</strong> est le laboratoire interne d’un établissement : l’établissement désigne ses administrateurs nominatifs (prénom, nom, adresse e-mail), dix au plus, et en répond. Lorsqu’un médecin attend des résultats d’examens, le patient peut présenter au laboratoire un QR d’examen, distinct de son QR d’accès : il ne contient aucune donnée de santé, ne dure qu’un temps limité et peut être désactivé par le patient. Le laboratoire y voit le prénom, le nom et la date de naissance du patient et la liste des examens demandés ; il confirme l’identité de la personne présente avant de déposer un fichier PDF par examen. Il n’a accès ni au carnet, ni aux consultations, ni aux documents du patient. Le médecin reprend ensuite la consultation avec un nouveau QR d’accès du patient.</p>
+        <p><strong>Le patient</strong> décide qui peut ouvrir son carnet, pour quoi et pour combien de temps. Il peut refuser une demande ou mettre fin à un accès depuis son espace.</p>
+        <p><strong>Le professionnel</strong> n’ouvre un carnet que pendant un accès accordé par le patient. Il reste responsable de ses actes, des informations qu’il saisit et du respect de ses obligations professionnelles, sous réserve du droit applicable et des contrats conclus avec son établissement.</p>
+        <p><strong>L’établissement</strong> confirme le rattachement d’un professionnel à sa structure. Cette confirmation ne vaut pas certification par l’éditeur de l’identité, des diplômes ou de la compétence du professionnel. Par défaut, l’administrateur d’un établissement voit une liste de patients sans leurs informations de santé, et il ne peut pas ouvrir le dossier d’un patient. Une ouverture exceptionnelle, avec un motif, enregistrée et signalée au patient, est prévue ; ce mécanisme reste désactivé par défaut, tant que la décision juridique et pratique nécessaire n’a pas été prise. Le professionnel ne consulte que le dossier du patient dont il s’occupe, selon l’accord de ce patient. Aucun accès automatique aux données d’un autre établissement.</p>
+        <p><strong>Le laboratoire</strong> est le laboratoire interne d’un établissement : l’établissement désigne ses administrateurs nominatifs (prénom, nom, adresse e-mail), dix au plus, et en répond. Lorsqu’un médecin attend des résultats d’examens, le patient peut présenter au laboratoire un QR d’examen, distinct de son QR d’accès : il ne contient aucune information de santé, ne dure qu’un temps limité et peut être désactivé par le patient. Le laboratoire y voit le prénom, le nom et la date de naissance du patient et la liste des examens demandés ; il confirme l’identité de la personne présente avant de déposer un fichier PDF par examen. Il n’a accès ni au carnet, ni aux consultations, ni aux documents du patient. Le médecin reprend ensuite la consultation avec un nouveau QR d’accès du patient.</p>
         <p><strong>L’éditeur</strong> fournit le service et ne remplace ni le patient, ni le professionnel, ni l’établissement dans leurs décisions.</p>
       </>
     ),
@@ -94,20 +94,20 @@ const sections: LegalSectionDef[] = [
         <Steps
           title="En un coup d’œil"
           steps={[
-            { icon: "qr", title: "Le patient présente un QR code", text: `Il ne contient aucune donnée médicale. Validité : ${TECH_VALIDITY.qr}.` },
-            { icon: "request", title: "Le professionnel envoie une demande", text: "Le patient voit le professionnel, l’établissement et le périmètre demandé avant de décider." },
-            { icon: "decide", title: "Le patient décide", text: `S’il accepte, l’autorisation est valable ${TECH_VALIDITY.accessInitial}, avec ${TECH_VALIDITY.accessExtension}.` },
-            { icon: "clock", title: "L’autorisation prend fin", text: "À son expiration, ou si le patient la révoque." },
+            { icon: "qr", title: "Le patient montre son QR code", text: `Il ne contient aucune information de santé. Validité : ${TECH_VALIDITY.qr}.` },
+            { icon: "request", title: "Le professionnel le scanne", text: "L’accès s’ouvre aussitôt, en lecture seule : en montrant son QR, le patient donne son accord. Un seul professionnel à la fois." },
+            { icon: "decide", title: "Pour aller plus loin", text: "Consultations passées ou autre établissement : le professionnel fait une demande, que le patient accepte ou refuse." },
+            { icon: "clock", title: "L’accès prend fin", text: `Après ${TECH_VALIDITY.accessInitial} (avec ${TECH_VALIDITY.accessExtension}), ou si le patient y met fin.` },
           ]}
         />
         <ol>
-          <li>Le patient peut présenter un QR code. Ce QR code ne contient aucune donnée médicale : il permet seulement d’ouvrir un accès. Sa validité est de {TECH_VALIDITY.qr} et il ne sert qu’une fois.</li>
-          <li>Lorsque le professionnel scanne le QR code, l’accès au périmètre de base s’ouvre sans autre validation : en présentant lui-même son QR code, le patient donne son accord. Un seul professionnel peut être connecté à un patient à la fois. Un périmètre plus large (consultations passées, historique d’autres établissements) fait l’objet d’une demande que le patient accepte ou refuse, après avoir vu le professionnel, l’établissement et le périmètre.</li>
-          <li>L’accès est valable {TECH_VALIDITY.accessInitial}, avec {TECH_VALIDITY.accessExtension}. Il prend fin à son expiration, si le patient le révoque ou si le professionnel y met fin.</li>
-          <li>L’accès inclut la lecture seule des documents du patient. Aucun document n’est accessible avant que le patient ait présenté son QR code.</li>
+          <li>Le patient peut présenter un QR code. Ce QR code ne contient aucune information de santé : il sert seulement à ouvrir un accès. Sa validité est de {TECH_VALIDITY.qr} et il ne sert qu’une fois.</li>
+          <li>Lorsque le professionnel scanne le QR code, l’accès aux informations de base (pré-consultation, déclarations) s’ouvre sans autre validation : en montrant lui-même son QR code, le patient donne son accord. Un seul professionnel peut être connecté à un patient à la fois. Pour aller plus loin (consultations passées, historique d’autres établissements), le professionnel envoie une demande : le patient l’accepte ou la refuse après avoir vu qui la fait, de quel établissement, et ce qui est demandé.</li>
+          <li>L’accès est valable {TECH_VALIDITY.accessInitial}, avec {TECH_VALIDITY.accessExtension}. Il prend fin au bout de ce temps, si le patient y met fin ou si le professionnel le termine.</li>
+          <li>L’accès inclut la lecture seule des documents du patient. Aucun document n’est visible avant que le patient ait montré son QR code.</li>
         </ol>
-        <p>Le patient vérifie le professionnel, l’établissement, le périmètre et la durée avant d’autoriser. Il peut aussi remettre à un proche de confiance un mot de rattachement à usage unique : le proche utilise son propre compte et ne reçoit qu’un accès en lecture seule à la fiche d’urgence dans le périmètre prévu. Cette délégation n’est ni un partage de mot de passe ni une représentation légale. La révocation ou l’expiration d’une autorisation ou d’un adressage n’efface pas les consultations déjà validées ni les traces d’audit.</p>
-        <p>Un adressage vers un autre établissement reste ciblé et soumis à la décision du patient. En V1, l’établissement destinataire ne peut pas rechercher librement des patients, son administrateur ne reçoit pas automatiquement le contenu clinique et aucune copie n’est conservée après la fenêtre de lecture.</p>
+        <p>Avant d’accepter une demande, le patient vérifie qui la fait, de quel établissement, ce qui est demandé et pour combien de temps. Il peut aussi remettre à un proche de confiance un mot de rattachement (un code utilisable une seule fois) : le proche utilise son propre compte et peut seulement lire la fiche d’urgence. Ce n’est ni un partage de mot de passe, ni une représentation légale. Quand un accès ou un partage prend fin, les consultations déjà validées et le journal des accès (la liste de qui a ouvert quoi, et quand) ne sont pas effacés.</p>
+        <p>Un partage avec un autre établissement reste limité à ce que le patient a choisi, et dépend de sa décision. Dans la version actuelle, l’établissement qui reçoit ne peut pas chercher des patients librement, son administrateur ne reçoit pas automatiquement le contenu médical, et aucune copie n’est gardée une fois la période de lecture terminée.</p>
       </>
     ),
   },
@@ -118,10 +118,10 @@ const sections: LegalSectionDef[] = [
       <>
         <ul>
           <li>Saisissez uniquement des informations qui vous appartiennent et que vous êtes autorisé à conserver.</li>
-          <li>Ne pas saisir d’informations concernant une autre personne sans en avoir le droit.</li>
-          <li>Pour un professionnel : saisir des informations exactes et de bonne foi, distinguer les déclarations du patient de ses propres constatations, ne pas altérer ni falsifier une consultation ou une attestation.</li>
-          <li>Ne pas tenter d’accéder à un compte, à un carnet ou à une fonction sans autorisation, ne pas contourner les mesures de sécurité et ne pas perturber le service.</li>
-          <li>Respecter la confidentialité des informations auxquelles il accède.</li>
+          <li>Ne saisissez pas d’informations sur une autre personne sans en avoir le droit.</li>
+          <li>Pour un professionnel : saisissez des informations exactes et de bonne foi, distinguez ce que dit le patient de vos propres constatations, et ne modifiez pas frauduleusement une consultation ou une attestation.</li>
+          <li>N’essayez pas d’ouvrir un compte, un carnet ou une fonction sans y avoir droit, ne contournez pas les protections et ne perturbez pas le service.</li>
+          <li>Respectez la confidentialité des informations que vous ouvrez.</li>
         </ul>
       </>
     ),
@@ -131,8 +131,8 @@ const sections: LegalSectionDef[] = [
     title: "Obligations de l’éditeur",
     body: (
       <>
-        <p>L’éditeur met en œuvre les mesures techniques décrites dans la <Link href="/confidentialite#securite">politique de confidentialité</Link>.</p>
-        <p>Nature et étendue des obligations de l’éditeur : <Fill k="terms.publisherDuties" />.</p>
+        <p>L’éditeur met en place les mesures de protection décrites dans la <Link href="/confidentialite#securite">politique de confidentialité</Link>.</p>
+        <p>Ce à quoi l’éditeur s’engage, et jusqu’où : <Fill k="terms.publisherDuties" />.</p>
       </>
     ),
   },
@@ -141,8 +141,8 @@ const sections: LegalSectionDef[] = [
     title: "Contenus saisis par les utilisateurs",
     body: (
       <>
-        <p>Le service affiche l’origine de chaque information : déclarée par le patient ou saisie par un professionnel. Chaque auteur répond du contenu qu’il saisit.</p>
-        <p>Les corrections apportées aux consultations validées sont historisées. L’utilisateur conserve ses droits sur les contenus qu’il saisit. Il autorise l’éditeur à les traiter dans la mesure nécessaire au fonctionnement du service, selon la politique de confidentialité.</p>
+        <p>Le service indique qui a écrit chaque information : le patient (déclaration) ou un professionnel. Chaque auteur répond du contenu qu’il saisit.</p>
+        <p>Les corrections apportées aux consultations validées sont gardées avec leur date. L’utilisateur conserve ses droits sur ce qu’il saisit. Il autorise l’éditeur à utiliser ces contenus uniquement pour faire fonctionner le service, comme l’explique la politique de confidentialité.</p>
       </>
     ),
   },
@@ -150,7 +150,7 @@ const sections: LegalSectionDef[] = [
     id: "role-medical",
     title: "Absence de rôle médical",
     body: (
-      <p>Le service est un outil de gestion d’informations et de préparation. Il ne pose pas de diagnostic, ne remplace pas l’avis d’un professionnel de santé et ne doit pas être utilisé en cas d’urgence. En cas d’urgence, contactez immédiatement les services de secours de votre pays.</p>
+      <p>Le service est un outil pour ranger des informations et préparer les consultations. Il ne pose pas de diagnostic, ne remplace pas l’avis d’un professionnel de santé et ne doit pas être utilisé en cas d’urgence. En cas d’urgence, contactez immédiatement les services de secours de votre pays.</p>
     ),
   },
   {
@@ -168,8 +168,8 @@ const sections: LegalSectionDef[] = [
     title: "Disponibilité, maintenance et sauvegardes",
     body: (
       <>
-        <p>Le service peut évoluer ; les informations et les conditions applicables sont précisées dans les documents du service.</p>
-        <p>Sans réseau, le service permet de relire, en lecture seule, les écrans déjà consultés, au moyen d’une copie chiffrée gardée sur l’appareil. Cette copie peut ne pas refléter les dernières modifications, et aucune action (création, modification, validation) n’est possible sans réseau. Sur un appareil partagé, l’utilisateur désactive cette copie ou se déconnecte ; les modalités sont décrites dans la politique de confidentialité.</p>
+        <p>Le service peut évoluer. Les informations et les conditions qui s’appliquent sont indiquées dans les documents du service.</p>
+        <p>Sans réseau, le service permet de relire, sans rien modifier, les écrans déjà ouverts, grâce à une copie protégée (chiffrée) gardée sur l’appareil. Cette copie peut ne pas montrer les dernières modifications, et rien ne peut être créé, modifié ou validé sans réseau. Sur un appareil partagé, l’utilisateur désactive cette copie ou se déconnecte ; la politique de confidentialité explique comment.</p>
         <p>Le service ne remplace pas un avis médical, une prise en charge urgente ou les services de secours.</p>
       </>
     ),
@@ -179,8 +179,8 @@ const sections: LegalSectionDef[] = [
     title: "Sécurité et incidents",
     body: (
       <>
-        <p>L’utilisateur signale à l’éditeur toute faille ou tout accès suspect dont il a connaissance, à l’adresse indiquée dans les mentions légales.</p>
-        <p>Procédure de gestion et de notification des incidents : <Fill k="privacy.incident" />.</p>
+        <p>L’utilisateur signale à l’éditeur tout problème de sécurité ou tout accès suspect dont il a connaissance, à l’adresse indiquée dans les mentions légales.</p>
+        <p>Comment les incidents de sécurité sont traités et signalés : <Fill k="privacy.incident" />.</p>
       </>
     ),
   },
@@ -194,16 +194,16 @@ const sections: LegalSectionDef[] = [
     title: "Suspension et clôture",
     body: (
       <>
-        <p>L’éditeur peut suspendre un accès en cas d’atteinte à la sécurité, d’usage contraire aux présentes conditions ou de demande d’une autorité compétente.</p>
-        <p>L’utilisateur peut demander, depuis les paramètres de son compte, une suspension temporaire (pour une durée proposée, 90 jours au plus, traitée par l’équipe) ou la suppression de son compte. Après sa confirmation, la suppression désactive immédiatement l’accès et anonymise l’identité ; ses effets sur les données sont décrits dans la politique de confidentialité, section « Vos droits ».</p>
-        <p>Modalités et effets de la clôture d’un compte : <Fill k="terms.closure" />.</p>
+        <p>L’éditeur peut suspendre un accès en cas de menace pour la sécurité, d’usage contraire aux présentes conditions ou de demande d’une autorité compétente.</p>
+        <p>L’utilisateur peut demander, depuis les paramètres de son compte, une suspension temporaire (pour une durée proposée, 90 jours au plus, traitée par l’équipe) ou la suppression de son compte. Après sa confirmation, la suppression coupe tout de suite l’accès et rend l’identité anonyme ; ses effets sur les données sont expliqués dans la politique de confidentialité, section « Vos droits ».</p>
+        <p>Comment un compte est fermé et ce que cela change pour les données : <Fill k="terms.closure" />.</p>
       </>
     ),
   },
   {
     id: "donnees",
     title: "Données personnelles",
-    body: <p>Les données traitées, leurs destinataires, les prestataires, les durées et vos droits sont décrits dans la <Link href="/confidentialite">politique de confidentialité</Link>.</p>,
+    body: <p>Les données utilisées, leurs destinataires, les prestataires, les durées de conservation et vos droits sont expliqués dans la <Link href="/confidentialite">politique de confidentialité</Link>.</p>,
   },
   {
     id: "modification",
