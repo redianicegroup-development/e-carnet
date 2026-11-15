@@ -11,6 +11,7 @@ import { SolutionSection } from "../components/landing2/SolutionSection";
 import { ToolTiles } from "../components/landing2/ToolTiles";
 import { FaqSection } from "../components/landing/FaqSection";
 import { HeroScene } from "../components/landing/HeroScene";
+import { HeroTitle } from "../components/landing/HeroTitle";
 import { LandingMotion } from "../components/motion/LandingMotion";
 import { PulseLine } from "../components/motion/PulseLine";
 import { PublicShell } from "../components/public/PublicShell";
@@ -57,7 +58,8 @@ export default function HomePage() {
   return <PublicShell bleed>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} />
     <LandingMotion>
-      {/* Hero : l'image démarre petite dans le coin bas-droit et grossit au défilement (voir LandingMotion). */}
+      {/* Hero : texte centré ; l'image démarre en petit carré dans le titre (entre « votre » et « contrôle ») et grossit au défilement (voir HeroTitle et LandingMotion).
+          Le titre lu est HERO.title, découpé en HERO_TITLE_GROUPS pour y glisser trois petits carrés décoratifs. */}
       <section className="lp-hero" aria-labelledby="hero-title" data-hero>
         <span className="lp-hero__glow lp-hero__glow--a" aria-hidden="true" />
         <span className="lp-hero__glow lp-hero__glow--b" aria-hidden="true" />
@@ -65,7 +67,7 @@ export default function HomePage() {
         <div className="lp-wrap lp-hero__inner">
           <div className="lp-hero__copy" data-hero-copy>
             <span className="eyebrow" data-hero-item>{HERO.eyebrow}</span>
-            <h1 id="hero-title">{HERO.title}</h1>
+            <HeroTitle />
             <p className="lead" data-hero-item>{HERO.lead}</p>
             <div className="actions" data-hero-item>
               <Link className="button primary" href={HERO.primary.href} data-track="signup">{HERO.primary.label}<Icon name="chevron" size={18} /></Link>

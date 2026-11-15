@@ -13,14 +13,35 @@
 .lp-hero__glow--a { right: -14%; top: -24%; opacity: .8; background: radial-gradient(closest-side, color-mix(in srgb, var(--brand-3) 62%, transparent), transparent); }
 .lp-hero__glow--b { left: -16%; bottom: -34%; opacity: .55; background: radial-gradient(closest-side, color-mix(in srgb, var(--primary) 36%, transparent), transparent); }
 .lp-hero__pulse { position: absolute; z-index: 0; left: 0; right: 0; bottom: -22px; height: clamp(110px, 20vw, 160px); opacity: .5; pointer-events: none; }
-.lp-hero__inner { position: relative; z-index: 2; height: 100%; display: flex; align-items: center; padding-bottom: clamp(0px, 3vh, 24px); }
-.lp-hero__copy { position: relative; display: grid; gap: 18px; align-content: start; max-width: min(100%, 620px); padding-block: 24px; }
+.lp-hero__inner { position: relative; z-index: 2; height: 100%; display: flex; align-items: center; justify-content: center; padding-bottom: clamp(0px, 3vh, 24px); }
+.lp-hero__copy { position: relative; display: grid; gap: 18px; align-content: start; justify-items: center; text-align: center; width: 100%; max-width: min(100%, 880px); padding-block: 24px; }
 .lp-hero h1 { font-size: clamp(2rem, 5.4vw, 4rem); line-height: 1.04; letter-spacing: -.04em; font-weight: 800; text-wrap: balance; }
-.lp-hero .lead { font-size: clamp(1rem, 2.2vw, 1.15rem); }
+
+/* Titre : chaque groupe reste sur une ligne ; chaque mot est masqué par un cadre découpé (il monte à l'ouverture, sans toucher au DOM). */
+.lp-hero__tg { white-space: nowrap; }
+.lp-hero__w { display: inline-block; clip-path: inset(-.14em -.06em -.14em -.06em); }
+.lp-hero__wi { display: inline-block; will-change: transform; }
+/* Trois petits carrés dans le titre : deux diaporamas et l'emplacement de départ de la grande image. Ils ne comptent pas dans la lecture du titre. */
+.lp-hero__slot { position: relative; display: inline-block; width: .86em; height: .86em; border-radius: .22em; overflow: hidden; vertical-align: baseline; background: var(--surface-tint);
+  box-shadow: 0 0 0 .05em color-mix(in srgb, var(--bg) 80%, transparent), 0 .2em .55em -.2em color-mix(in srgb, var(--text) 55%, transparent); }
+/* L'emplacement vide n'existe que quand l'animation tourne : sans elle (mouvement réduit, JavaScript coupé), la grande image reste en carte dans le coin. */
+.lp-hero__slot--media { display: none; background: transparent; overflow: visible; }
+.lp-root[data-motion="ready"] .lp-hero__slot--media { display: inline-block; }
+/* Diaporama : la nouvelle photo entre par la droite, l'ancienne sort par la gauche, puis retourne en attente (sans animation) hors du cadre. */
+.lp-hero__slide { object-fit: cover; transform: translateX(101%); }
+.lp-hero__slide[data-pos="in"] { transform: none; }
+.lp-hero__slide[data-pos="out"] { transform: translateX(-101%); }
+@media (prefers-reduced-motion: no-preference) {
+  .lp-hero__slide[data-pos="in"], .lp-hero__slide[data-pos="out"] { transition: transform .85s cubic-bezier(.22, .9, .3, 1); }
+}
+.lp-hero .lead { font-size: clamp(1rem, 2.2vw, 1.15rem); max-width: 54ch; text-wrap: pretty; }
+.lp-hero .actions { justify-content: center; }
 .lp-hero__note { display: inline-flex; gap: 8px; align-items: center; margin: 0; color: var(--text-muted); font-size: .875rem; }
 
-/* L'image occupe tout le hero ; au repos elle est réduite vers le coin bas-droit. --s0 = échelle de départ, --mx/--my = marges au bord
-   (--my laisse la place au bouton « Donner votre avis », fixé en bas à droite), --r = rayon visible. LandingMotion lit ces variables : le CSS (sans JavaScript) et l'animation partent du même état. */
+/* L'image occupe tout le hero. Avec l'animation (LandingMotion), elle démarre dans le petit carré du titre, entre « votre » et « contrôle » :
+   l'état de départ est alors posé par GSAP (échelle, position et clip-path mesurés sur ce carré). Les variables ci-dessous ne servent plus qu'au repli
+   sans animation (mouvement réduit, JavaScript coupé) : l'image reste en carte réduite vers le coin bas-droit. --s0 = échelle, --mx/--my = marges au bord
+   (--my laisse la place au bouton « Noter l’application », fixé en bas à droite), --r = rayon visible. */
 .lp-hero__media { --s0: .26; --mx: 40px; --my: 112px; --r: 28px; position: absolute; inset: 0; z-index: 1; overflow: hidden; container-type: size; background: var(--text); transform-origin: 100% 100%; transform: translate(calc(var(--mx) * -1), calc(var(--my) * -1)) scale(var(--s0)); border-radius: calc(var(--r) / var(--s0)); }
 .lp-hero__media--photo picture { position: absolute; inset: 0; display: block; }
 .lp-hero__media--photo img { object-fit: cover; }
@@ -33,9 +54,14 @@
 [data-reveal-line] { opacity: 0; }
 @media (max-width: 759px) {
   .lp-hero__media { --s0: .37; --mx: 14px; --my: 84px; --r: 20px; }
-  .lp-hero__inner { align-items: flex-start; padding-top: 6px; }
   .lp-hero__copy { gap: 14px; }
+  .lp-hero__slot { width: .95em; height: .95em; }
+  /* Sans animation (mouvement réduit, JavaScript coupé), la carte-image reste dans le coin bas : le texte monte pour ne pas la recouvrir. */
+  .lp-root:not([data-motion="ready"]) .lp-hero__inner { align-items: flex-start; padding-top: 6px; }
   .lp-hero__note { display: none; }
+  /* Les deux boutons du héro sur la même ligne : « Commencer » à gauche, « Je suis professionnel » à droite, de même largeur (15/11/2026). */
+  .lp-hero .actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; width: 100%; max-width: 380px; justify-self: center; }
+  .lp-hero .actions .button { width: 100%; min-width: 0; padding-inline: 10px; font-size: .9rem; line-height: 1.15; text-wrap: balance; }
   .lp-hero__reveal { align-items: flex-start; padding-top: 34px; }
   .lp-hero__reveal-title { max-width: 14ch; }
 }

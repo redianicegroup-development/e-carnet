@@ -83,6 +83,11 @@
 .greeting-toast__spark { position: absolute; color: var(--primary); font-size: 1.2rem; }
 .greeting-toast__spark--one { top: 8px; left: 14px; }
 .greeting-toast__spark--two { right: 14px; bottom: 9px; font-size: .88rem; opacity: .7; }
+/* Voile flouté : pendant que le message est affiché (4,2 s, la durée du minuteur de GreetingModal), l'arrière-plan se floute puis se dégage en fondu. Il ne bloque rien (pointer-events: none), comme le reste de la scène. */
+.greeting-stage::before { content: ""; position: absolute; inset: 0; z-index: 0; background: color-mix(in srgb, var(--bg) 45%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); pointer-events: none; }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { .greeting-stage::before { background: color-mix(in srgb, var(--bg) 78%, transparent); } }
+@media (prefers-reduced-motion: no-preference) { .greeting-stage::before { animation: greeting-veil 4.2s ease both; } }
+@keyframes greeting-veil { 0% { opacity: 0; } 10% { opacity: 1; } 86% { opacity: 1; } 100% { opacity: 0; } }
 @media (max-width: 520px) { .greeting-toast { grid-template-columns: 66px minmax(0, 1fr); gap: 10px; padding: 12px; border-radius: 20px; } .greeting-toast__character { width: 66px; height: 66px; border-radius: 18px; } .greeting-toast__character .wc { width: 60px; height: 60px; } .greeting-toast__copy p { font-size: .76rem; } }
 @media (prefers-reduced-motion: no-preference) {
   .greeting-toast { animation: greeting-arrive .62s cubic-bezier(.2,.8,.2,1) both; }

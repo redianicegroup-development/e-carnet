@@ -9,7 +9,8 @@ const css = read("src/app/landing-v2.css");
 
 test("le héro d'origine est conservé tel quel", () => {
   assert.match(page, /<section className="lp-hero" aria-labelledby="hero-title" data-hero>/);
-  assert.match(page, /\{HERO\.title\}/);
+  assert.match(page, /<HeroTitle \/>/);
+  assert.match(read("src/components/landing/HeroTitle.tsx"), /<h1 id="hero-title"/);
   assert.match(page, /data-hero-media/);
   assert.match(page, /HERO_IMAGE/);
 });

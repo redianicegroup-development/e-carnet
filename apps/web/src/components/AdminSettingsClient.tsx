@@ -14,7 +14,7 @@ const sections: SettingsNavItem[] = [
   { id: "economie-donnees", title: "Économie de données", description: "Alléger les pages et les photos quand le réseau est lent.", icon: "download" },
   { id: "securite", title: "Sécurité et connexion", description: "Gérer les fournisseurs liés au compte.", icon: "lock" },
   { id: "en-savoir-plus", title: "En savoir plus", description: "Aide, informations et documents Mon E‑Carnet.", icon: "help" },
-  { id: "avis", title: "Votre avis", description: "Partager une suggestion ou signaler un problème.", icon: "pencil" },
+  { id: "avis", title: "Noter l’application", description: "Partager une suggestion ou signaler un problème.", icon: "pencil" },
 ];
 
 type Props = { onLogout: () => void; logoutDisabled?: boolean };

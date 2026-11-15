@@ -11,8 +11,29 @@ import { DATA_POLICY } from "./data-policy";
 export const HERO_IMAGE = {
   mobileSrc: "/landing/hero-mobile.webp",
   desktopSrc: "/landing/hero-desktop.webp",
-  alt: "Patient et infirmière préparent une consultation avec Mon E‑Carnet",
+  alt: "Une femme souriante montre son téléphone : l’écran affiche Mon E‑Carnet",
 } as const;
+
+/** Titre du héro découpé pour les trois petits carrés : chaque groupe reste sur une seule ligne (« de [photos] santé », « sous [photos] votre »…).
+    Le texte lu reste « Votre carnet de santé, sous votre contrôle. » (les carrés sont décoratifs) ; HERO.title en est la version à plat. */
+export type HeroTitleToken = string | { slot: "a" | "b" | "media" };
+export const HERO_TITLE_GROUPS: readonly (readonly HeroTitleToken[])[] = [
+  ["Votre", "carnet"],
+  ["de", { slot: "a" }, "santé,"],
+  ["sous", { slot: "b" }, "votre"],
+  [{ slot: "media" }, "contrôle."],
+];
+
+/** Petits carrés du titre : deux diaporamas (« a » et « b ») changent d’image toutes les 4 s, décalés de 2 s, jamais la même image en même temps.
+    Le carré « media » est l’emplacement de départ de la grande image du héro (voir LandingMotion). Photos recadrées en 480 × 480. */
+export const HERO_SLIDES = [
+  "/landing/hero-slide-1.webp",
+  "/landing/hero-slide-2.webp",
+  "/landing/hero-slide-3.webp",
+  "/landing/hero-slide-4.webp",
+  "/landing/hero-slide-5.webp",
+] as const;
+export const HERO_SLIDE_INTERVAL_MS = 4000;
 
 export const HERO = {
   eyebrow: "Carnet de santé numérique",

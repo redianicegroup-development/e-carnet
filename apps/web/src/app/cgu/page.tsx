@@ -42,6 +42,7 @@ const sections: LegalSectionDef[] = [
         <div><dt>Patient</dt><dd>Titulaire d’un carnet. Il décide des accès à son carnet.</dd></div>
         <div><dt>Professionnel</dt><dd>Professionnel de santé rattaché à un établissement, qui peut demander un accès au carnet d’un patient.</dd></div>
         <div><dt>Établissement</dt><dd>Structure de santé disposant d’un espace dans le service, gérée par un administrateur nominatif.</dd></div>
+        <div><dt>Laboratoire</dt><dd>Laboratoire interne d’un établissement, géré par un ou plusieurs administrateurs nominatifs que l’établissement désigne. Il dépose le résultat d’un examen demandé par un médecin ; il ne consulte pas le carnet.</dd></div>
         <div><dt>Autorisation d’accès</dt><dd>Décision d’un patient qui autorise un professionnel à consulter un périmètre défini de son carnet pendant une durée limitée.</dd></div>
         <div><dt>Périmètre</dt><dd>Ensemble des informations couvertes par une autorisation : pré-consultation, déclarations et, si le patient les sélectionne, consultations.</dd></div>
       </dl>
@@ -65,7 +66,8 @@ const sections: LegalSectionDef[] = [
       <>
         <p>Un compte se crée avec une adresse e-mail et un mot de passe, ou avec Google, Facebook ou Apple. Un compte correspond à une personne. Plusieurs méthodes de connexion peuvent être liées à un même compte après une connexion volontaire de l’utilisateur ; deux comptes ne sont jamais fusionnés sur la seule base d’une adresse e-mail.</p>
         <p>L’utilisateur fournit des informations exactes dans la mesure requise par son rôle, et les met à jour. Il protège ses moyens de connexion, ne les partage pas et signale sans délai toute utilisation qu’il n’a pas autorisée.</p>
-        <p>Les droits d’un patient, d’un professionnel, d’un administrateur d’établissement et du personnel de l’éditeur sont distincts. Un même compte peut disposer de plusieurs rôles.</p>
+        <p>L’administrateur d’un établissement ou d’un laboratoire reçoit un mot de passe temporaire, valable 7 jours. Il se connecte avec son adresse e-mail et ce mot de passe, puis choisit aussitôt son mot de passe personnel ; le mot de passe temporaire ne peut pas être conservé. Celui qui le remet (y compris avec le bouton « Partager ») ne le communique qu’à la personne concernée et répond de cette transmission.</p>
+        <p>Les droits d’un patient, d’un professionnel, d’un administrateur d’établissement, d’un administrateur de laboratoire et du personnel de l’éditeur sont distincts. Un même compte peut disposer de plusieurs rôles.</p>
         <p>Mineurs : <Fill k="privacy.minors" />.</p>
       </>
     ),
@@ -79,6 +81,7 @@ const sections: LegalSectionDef[] = [
         <p><strong>Le patient</strong> décide des accès à son carnet, choisit le périmètre et la durée, et peut refuser ou révoquer une autorisation depuis son espace.</p>
         <p><strong>Le professionnel</strong> n’accède à un carnet que dans le cadre d’une autorisation active. Il reste responsable de ses actes, des informations qu’il saisit et du respect de ses obligations professionnelles, sous réserve du droit applicable et des contrats conclus avec son établissement.</p>
         <p><strong>L’établissement</strong> confirme le rattachement d’un professionnel à sa structure. Cette confirmation ne vaut pas certification par l’éditeur de l’identité, des diplômes ou de la compétence du professionnel. Dans la configuration de référence, l’administrateur actif voit une liste sans contenu clinique mais ne peut pas ouvrir le dossier par la fonction administrative. Un mécanisme API d’ouverture temporaire avec motif, audit et notification existe dans le code, mais reste désactivé par défaut et n’est pas exposé dans un écran utilisateur ; son activation attend la décision juridique et opérationnelle applicable. Le professionnel ne consulte que le dossier du cas qui lui est attribué, selon l’autorisation du patient. Aucun accès automatique aux données d’un autre établissement.</p>
+        <p><strong>Le laboratoire</strong> est le laboratoire interne d’un établissement : l’établissement désigne ses administrateurs nominatifs (prénom, nom, adresse e-mail), dix au plus, et en répond. Lorsqu’un médecin attend des résultats d’examens, le patient peut présenter au laboratoire un QR d’examen, distinct de son QR d’accès : il ne contient aucune donnée de santé, ne dure qu’un temps limité et peut être désactivé par le patient. Le laboratoire y voit le prénom, le nom et la date de naissance du patient et la liste des examens demandés ; il confirme l’identité de la personne présente avant de déposer un fichier PDF par examen. Il n’a accès ni au carnet, ni aux consultations, ni aux documents du patient. Le médecin reprend ensuite la consultation avec un nouveau QR d’accès du patient.</p>
         <p><strong>L’éditeur</strong> fournit le service et ne remplace ni le patient, ni le professionnel, ni l’établissement dans leurs décisions.</p>
       </>
     ),

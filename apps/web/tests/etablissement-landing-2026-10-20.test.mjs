@@ -80,5 +80,5 @@ test("boutons flottants : « remonter » reste fixe à droite, « avis » est ro
   const globals = read("src/app/globals.css");
   assert.match(globals, /\.feedback-fab \{[^}]*width: 48px; height: 48px;[^}]*padding: 0;/);
   assert.match(globals, /\.feedback-fab > span:nth-child\(2\) \{ display: none; \}/);
-  assert.match(read("src/components/LandingFeedbackWidget.tsx"), /aria-label="Donner votre avis"/);
+  assert.match(read("src/components/LandingFeedbackWidget.tsx"), /aria-label="Noter l’application"/);
 });

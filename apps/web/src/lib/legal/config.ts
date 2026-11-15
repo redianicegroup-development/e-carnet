@@ -20,8 +20,8 @@ export const LEGAL_REVIEW: { status: "pending" | "validated"; reviewer: string |
 
 export const LEGAL_DOCS: Record<LegalDocKey, { path: string; title: string; short: string; version: string; lastUpdated: string }> = {
   mentions: { path: "/mentions-legales", title: "Mentions légales", short: "Mentions légales", version: "2026-11-05-v3", lastUpdated: "2026-11-05" },
-  privacy: { path: "/confidentialite", title: "Politique de confidentialité", short: "Confidentialité", version: "2026-11-06-v4", lastUpdated: "2026-11-06" },
-  terms: { path: "/cgu", title: "Conditions générales d’utilisation", short: "Conditions d’utilisation", version: "2026-11-06-v4", lastUpdated: "2026-11-06" },
+  privacy: { path: "/confidentialite", title: "Politique de confidentialité", short: "Confidentialité", version: "2026-11-14-v5", lastUpdated: "2026-11-14" },
+  terms: { path: "/cgu", title: "Conditions générales d’utilisation", short: "Conditions d’utilisation", version: "2026-11-14-v5", lastUpdated: "2026-11-14" },
 };
 
 /** Date ISO (aaaa-mm-jj) → « 10 octobre 2026 », en UTC pour un rendu identique serveur/navigateur. */
@@ -119,6 +119,8 @@ export const TECH_VALIDITY = {
   accessExtension: "2 prolongations d’une heure au plus",
   invitation: "48 heures, usage unique",
   joinCode: "48 heures, usage unique",
+  temporaryPassword: "7 jours, à remplacer dès la première connexion",
+  examQr: "14 jours par défaut ; le patient peut le désactiver",
 } as const;
 
 /** Cookies déployés par l'application. `essential` : strictement nécessaire au fonctionnement (sinon : mesure de fréquentation). Aucun outil tiers ni publicité. */

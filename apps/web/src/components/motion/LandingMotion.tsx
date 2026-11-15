@@ -6,15 +6,29 @@ import { stickyHeaderHeight, useSmoothScroll } from "./useSmoothScroll";
 
 /* Mouvement de la landing, ajouté par-dessus du HTML rendu côté serveur (le contenu reste lisible sans JavaScript).
 
-   Séquence signature : l'image du hero (une scène de l'application) démarre petite dans le coin bas-droit de l'écran,
-   puis grossit jusqu'à occuper tout l'écran à mesure qu'on défile, et rétrécit en carte à la fin — dans les deux sens,
-   car elle est liée au défilement (scrub). Le reste : titres qui se lèvent, parcours qui s'allume, démonstration du consentement.
+   Séquence signature : l'image du hero démarre en petit carré arrondi DANS le titre (entre « votre » et « contrôle », l'emplacement
+   [data-hero-slot="media"] de HeroTitle), puis grossit jusqu'à occuper tout l'écran à mesure qu'on défile, et rétrécit en carte à la
+   fin — dans les deux sens, car elle est liée au défilement (scrub). Le reste : titres qui se lèvent, parcours qui s'allume,
+   démonstration du consentement.
+
+   Le départ est mesuré sur l'emplacement réel (position et taille en mise en page, donc sans effet des transformations) : l'image
+   pleine taille est réduite pour couvrir ce carré et découpée par un clip-path carré arrondi, qui s'ouvre jusqu'au plein cadre.
 
    Tout est désactivé si l'utilisateur demande moins de mouvement (prefers-reduced-motion) : le hero reste alors une page
-   fixe, l'image restant dans son coin. Les valeurs de départ (échelle, marge, rayon) viennent des variables CSS du hero
-   (--s0, --mx, --my, --r) pour que le CSS et l'animation ne puissent pas diverger. */
+   fixe, l'image restant en carte dans son coin (état défini par le CSS du hero, variables --s0, --mx, --my, --r). */
 
-const cssNumber = (el: Element, name: string) => parseFloat(getComputedStyle(el).getPropertyValue(name)) || 0;
+/** Position d'un élément par rapport à un ancêtre positionné, d'après la mise en page seule (offsetLeft/offsetTop ignorent les transformations). */
+const offsetWithin = (el: HTMLElement, ancestor: HTMLElement) => {
+  let x = 0;
+  let y = 0;
+  let node: HTMLElement | null = el;
+  while (node && node !== ancestor) {
+    x += node.offsetLeft;
+    y += node.offsetTop;
+    node = node.offsetParent as HTMLElement | null;
+  }
+  return { x, y };
+};
 
 export function LandingMotion({ children }: { children: ReactNode }) {
   const root = useRef<HTMLDivElement>(null);
@@ -39,6 +53,8 @@ export function LandingMotion({ children }: { children: ReactNode }) {
 
       /* --- Ouverture : le titre est masqué par CSS (data-motion="pending") jusqu'à ce que tout soit prêt --- */
       const title = q("#hero-title")[0];
+      const titleWords = q("#hero-title [data-hero-word]");
+      const titleSlots = q("#hero-title [data-hero-slot]");
       const heroTrace = q(".lp-hero .pulse__trace")[0];
       gsap.set(title, { visibility: "hidden" });
       gsap.set(q("[data-hero-item]"), { autoAlpha: 0, y: 18 });
@@ -46,10 +62,13 @@ export function LandingMotion({ children }: { children: ReactNode }) {
       gsap.set(q("[data-hero-media]"), { autoAlpha: 0 });
       el.dataset.motion = "ready";
 
-      SplitText.create(title, {
-        type: "lines", mask: "lines", maskClass: "split-mask", autoSplit: true,
-        onSplit: (self) => { gsap.set(title, { visibility: "visible" }); return gsap.from(self.lines, { yPercent: 115, duration: 0.95, ease: "power4.out", stagger: 0.12, delay: 0.1 }); },
-      });
+      // Titre : chaque mot monte de derrière son cadre découpé (CSS .lp-hero__w), les trois carrés apparaissent ensuite. Pas de SplitText ici :
+      // il réécrirait le DOM du titre, or les deux diaporamas sont des composants React qui doivent garder leurs éléments.
+      gsap.set(titleWords, { yPercent: 125 });
+      gsap.set(titleSlots, { autoAlpha: 0, scale: 0.55 });
+      gsap.set(title, { visibility: "visible" });
+      gsap.to(titleWords, { yPercent: 0, duration: 0.95, ease: "power4.out", stagger: 0.07, delay: 0.1 });
+      gsap.to(titleSlots, { autoAlpha: 1, scale: 1, duration: 0.8, ease: "back.out(1.7)", stagger: 0.12, delay: 0.55 });
       gsap.delayedCall(2.5, () => { gsap.set(title, { visibility: "visible" }); }); // filet de sécurité si les polices tardent
       const tracePulse = heroTrace ? gsap.fromTo(heroTrace, { strokeDashoffset: 1, opacity: 0.28 }, { strokeDashoffset: 0, opacity: 1, duration: 1.35, repeat: -1, repeatDelay: 1.15, ease: "power2.inOut", paused: true, immediateRender: false }) : null;
       if (tracePulse) loops.push(tracePulse);
@@ -65,20 +84,32 @@ export function LandingMotion({ children }: { children: ReactNode }) {
       loops.push(gsap.to(q(".lp-hero__glow"), { scale: 1.14, duration: 4.6, yoyo: true, repeat: -1, ease: "sine.inOut", stagger: 1.2 }));
       loops.push(gsap.fromTo(q(".lp-hero .pulse__spark"), { strokeDashoffset: 0, opacity: 1 }, { strokeDashoffset: -1, duration: 5.5, repeat: -1, ease: "none", delay: 2 }));
 
-      /* --- Image qui grossit : petite dans le coin → plein écran → carte arrondie, liée au défilement (réversible) ---
+      /* --- Image qui grossit : petit carré dans le titre → plein écran → carte arrondie, liée au défilement (réversible) ---
          Le hero est épinglé juste sous l'en-tête ; on n'anime que ses enfants (consigne ScrollTrigger). Mobile : trajet plus court. */
       const media = q("[data-hero-media]")[0];
+      const slot = q('[data-hero-slot="media"]')[0];
       const reveal = q("[data-hero-reveal]")[0];
       const copy = q("[data-hero-copy]")[0];
-      if (hero && media) {
-        const s0 = cssNumber(media, "--s0") || 0.28;
-        const marginX = cssNumber(media, "--mx");
-        const marginY = cssNumber(media, "--my");
-        const radius = cssNumber(media, "--r") || 28;
+      if (hero && media && slot) {
         const rest = 0.94; // taille finale : une grande carte, pas tout à fait plein écran
-        const travel = window.innerWidth < 760 ? 1.9 : 2.4; // longueur du défilement, en hauteurs d'écran
+        const compact = window.innerWidth < 760; // mobile
+        const travel = compact ? 1.9 : 2.4; // longueur du défilement, en hauteurs d'écran
+        /* État de départ = le carré du titre. L'image (taille du hero) est réduite pour couvrir ce carré, centrée dessus, puis découpée
+           par un carré arrondi centré dans l'image. Recalculé à chaque refresh (invalidateOnRefresh) : redimensionnement, polices chargées. */
+        const startState = () => {
+          const width = media.offsetWidth;
+          const height = media.offsetHeight;
+          const side = slot.offsetWidth;
+          const square = Math.min(width, height);
+          const scale = side / square;
+          const at = offsetWithin(slot as HTMLElement, hero as HTMLElement);
+          const radius = parseFloat(getComputedStyle(slot).borderTopLeftRadius) || side * 0.22;
+          const insetX = (width - square) / 2;
+          const insetY = (height - square) / 2;
+          return { scale, x: at.x + side / 2 - width / 2, y: at.y + side / 2 - height / 2, clipPath: `inset(${insetY}px ${insetX}px ${insetY}px ${insetX}px round ${radius / scale}px)` };
+        };
 
-        gsap.set(media, { transformOrigin: "100% 100%" });
+        gsap.set(media, { transformOrigin: "50% 50%" });
         const tl = gsap.timeline({
           defaults: { ease: "none" },
           scrollTrigger: {
@@ -88,12 +119,17 @@ export function LandingMotion({ children }: { children: ReactNode }) {
         });
         // Le texte s'efface pendant que l'image grossit (fondu enchaîné) ; l'image démarre vite puis ralentit en arrivant plein écran.
         tl.fromTo(copy, { yPercent: 0, autoAlpha: 1 }, { yPercent: -10, autoAlpha: 0, duration: 0.24, ease: "power1.in", immediateRender: false }, 0.02)
-          .fromTo(media, { scale: s0, x: -marginX, y: -marginY, borderRadius: radius / s0 }, { scale: 1, x: 0, y: 0, borderRadius: 0, duration: 0.58, ease: "power1.out", immediateRender: false }, 0.02)
+          .fromTo(media,
+            { scale: () => startState().scale, x: () => startState().x, y: () => startState().y, clipPath: () => startState().clipPath, borderRadius: 0 },
+            { scale: 1, x: 0, y: 0, clipPath: "inset(0px 0px 0px 0px round 0px)", borderRadius: 0, duration: 0.58, ease: "power1.out" }, 0.02)
           .fromTo(q("[data-reveal-line]"), { yPercent: 70, autoAlpha: 0 }, { yPercent: 0, autoAlpha: 1, duration: 0.18, stagger: 0.07, ease: "power3.out", immediateRender: false }, 0.5)
           .to({}, { duration: 0.14 }) // temps de lecture, image plein écran
-          .fromTo(reveal, { autoAlpha: 1, yPercent: 0 }, { autoAlpha: 0, yPercent: -8, duration: 0.12, immediateRender: false }, 0.86)
-          // Fin : l'image rétrécit en une grande carte centrée (l'origine de l'échelle est le coin bas-droit, d'où le décalage x/y).
-          .fromTo(media, { scale: 1, x: 0, y: 0, borderRadius: 0 }, { scale: rest, x: () => -((1 - rest) * media.offsetWidth) / 2, y: () => -((1 - rest) * media.offsetHeight) / 2, borderRadius: 40 / rest, duration: 0.14, ease: "power1.inOut", immediateRender: false }, 0.86);
+          .fromTo(reveal, { autoAlpha: 1, yPercent: 0 }, { autoAlpha: 0, yPercent: -8, duration: 0.12, immediateRender: false }, 0.86);
+        // Fin, sur ordinateur : l'image rétrécit en une grande carte centrée (l'origine de l'échelle est le centre).
+        // Sur mobile (15/11/2026, 2e demande) : une fois grossie, l'image reste pleine ; elle ne rétrécit qu'en remontant, pour rentrer dans son carré
+        // du titre (c'est le même tracé à l'envers, lié au défilement). Le temps de pause garde la même longueur de défilement.
+        if (compact) tl.to({}, { duration: 0.14 }, 0.86);
+        else tl.fromTo(media, { scale: 1, borderRadius: 0 }, { scale: rest, borderRadius: 40 / rest, duration: 0.14, ease: "power1.inOut", immediateRender: false }, 0.86);
       }
       if (hero) ScrollTrigger.create({ trigger: hero, start: "top bottom", end: "bottom top", onToggle: (self) => loops.forEach((tween) => { tween.paused(!self.isActive); }) });
 

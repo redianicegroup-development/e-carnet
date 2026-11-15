@@ -11,7 +11,7 @@ export function StaffProfessionalVerification() {
         <ol className="checklist">
           <li><span className="checklist__mark">1</span><div><strong>Demande d’établissement</strong><br /><span>L’établissement envoie ses informations et preuves par e-mail à l’équipe Mon E‑Carnet.</span></div></li>
           <li><span className="checklist__mark">2</span><div><strong>Examen hors application</strong><br /><span>L’équipe examine les preuves de l’établissement hors de l’application.</span></div></li>
-          <li><span className="checklist__mark">3</span><div><strong>Création, activation et invitation</strong><br /><span>Après validation, l’équipe crée l’établissement et son administrateur nominatif, puis lui remet une invitation personnelle à usage unique valable 48 h.</span></div></li>
+          <li><span className="checklist__mark">3</span><div><strong>Création et activation</strong><br /><span>Après validation, l’équipe crée l’établissement et son administrateur nominatif, puis lui transmet un mot de passe temporaire valable 7 jours, à remplacer dès sa première connexion.</span></div></li>
           <li><span className="checklist__mark">4</span><div><strong>Vérification médicale interne et rattachement</strong><br /><span>L’établissement vérifie le médecin selon ses procédures internes. Son administrateur enregistre la décision d’adhésion; Mon E‑Carnet journalise ce rattachement sans vérifier les justificatifs médicaux.</span></div></li>
         </ol>
         <p className="notice">Le statut de spécialité visible dans Mon E‑Carnet est déclaratif. Il ne constitue pas une attestation ni une vérification médicale par Mon E‑Carnet.</p>

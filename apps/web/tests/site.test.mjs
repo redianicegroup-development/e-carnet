@@ -86,7 +86,7 @@ test("les pages publiques ont une seule remontée en haut et deux actions flotta
   assert.equal((qr.match(/<BackToTopButton\s*\/>/g) ?? []).length, 1);
   assert.match(backToTop, /aria-label="Remonter vers le haut"/);
   assert.match(backToTop, /className="sr-only">Remonter vers le haut/);
-  assert.match(feedback, /aria-label="Donner votre avis"/);
+  assert.match(feedback, /aria-label="Noter l’application"/);
   assert.match(globalStyles, /@media \(max-width: 600px\)[\s\S]*\.feedback-fab[\s\S]*\.feedback-fab > span:nth-child\(2\) \{ display: none; \}/);
   assert.match(siteStyles, /@media \(max-width: 600px\) \{ \.public-scroll-top \{ right: max\(14px/);
 });
