@@ -1,7 +1,10 @@
+import { APP_SLOGAN } from "../../lib/brand";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { BrandMark } from "../ui/BrandMark";
 import { Icon } from "../ui/Icon";
+import { SocialIcon } from "../ui/SocialIcon";
+import { socialLinks } from "../../lib/social";
 import { PwaInstallButton } from "../PwaInstallButton";
 import { LEGAL_DOCS } from "../../lib/legal/config";
 import { PROJECT_LOGO_WEBP } from "../../lib/brand";
@@ -19,15 +22,18 @@ export function PublicFooter() {
         <section className="pub-footer__card pub-footer__card--brand" aria-label="Mon E‑Carnet">
           <Link className="pub-footer__logo" href="/" aria-label="Mon E-Carnet, accueil"><BrandMark detail /><span className="notranslate" translate="no">Mon E‑Carnet</span></Link>
           <div className="pub-footer__brand-foot">
-            <p className="pub-footer__slogan">Gardez le fil avec Mon E‑Carnet.</p>
-            <p className="pub-footer__tagline">Un carnet de santé personnel, <span>organisé selon vos choix.</span></p>
+            <p className="pub-footer__slogan">{APP_SLOGAN}</p>
             <PwaInstallButton />
             <div className="pub-footer__touch">
               <span className="pub-footer__script">Restons en contact !</span>
               <nav className="pub-footer__icons" aria-label="Nous joindre">
-                <Link href="/#contact" aria-label="Nous écrire"><Icon name="mail" size={20} /></Link>
-                <Link href="/aide" aria-label="Centre d’aide"><Icon name="help" size={20} /></Link>
-                <Link href="/securite" aria-label="Sécurité"><Icon name="shield" size={20} /></Link>
+                {socialLinks().map((link) => {
+                  const icon = link.id === "email" ? <Icon name="mail" size={20} /> : <SocialIcon name={link.id} size={20} />;
+                  if (!link.href) return <span key={link.id} className="is-soon" role="img" aria-label={`${link.label} : bientôt disponible`} title="Bientôt">{icon}</span>;
+                  return link.external
+                    ? <a key={link.id} href={link.href} target="_blank" rel="noopener noreferrer" aria-label={link.label}>{icon}</a>
+                    : <Link key={link.id} href={link.href} aria-label={link.label}>{icon}</Link>;
+                })}
               </nav>
             </div>
           </div>

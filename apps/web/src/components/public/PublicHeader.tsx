@@ -5,7 +5,12 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { apiGet } from "../../infrastructure/api/client";
+import { LANGUAGES } from "../../lib/language";
+import { socialLinks } from "../../lib/social";
+import { useLanguageChooser } from "../app/LanguageSettings";
 import { BrandMark } from "../ui/BrandMark";
+import { Icon } from "../ui/Icon";
+import { SocialIcon } from "../ui/SocialIcon";
 
 type AccountContext = { role: string; is_active: boolean };
 type PublicAccount = { is_admin?: boolean; contexts: AccountContext[] };
@@ -22,8 +27,9 @@ const LANDING_SECTIONS = ["parcours", "profils", "questions", "contact"];
 
 type Current = "page" | "location" | undefined;
 
+/** Une ligne du menu : grand lien, petit losange à droite quand c'est la page ou la section en cours. */
 function NavLink({ href, current, onNavigate, children }: { href: string; current: Current; onNavigate: () => void; children: ReactNode }) {
-  return <Link href={href} aria-current={current} onClick={onNavigate}>{children}</Link>;
+  return <Link className="pub-nav__link" href={href} aria-current={current} onClick={onNavigate}><span className="pub-nav__text">{children}</span><span className="pub-nav__dot" aria-hidden="true" /></Link>;
 }
 
 function workspaceFor(account: PublicAccount): string {
@@ -64,10 +70,11 @@ export function PublicHeader() {
   const [state, setState] = useState<HeaderState>({ status: "checking" });
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
-  const headerRef = useRef<HTMLElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const burgerRef = useRef<HTMLButtonElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
   const section = useLandingSection(pathname === "/");
+  const { current: language, busy: languageBusy, choose: chooseLanguage } = useLanguageChooser();
 
   useEffect(() => {
     let active = true;
@@ -81,28 +88,31 @@ export function PublicHeader() {
     return () => { active = false; };
   }, []);
 
-  // Menu mobile ouvert : Échap le ferme (le focus revient au bouton), un appui en dehors aussi, et il se referme si l'écran devient large.
+  // Menu ouvert : la page derrière ne défile plus, le focus entre dans le menu et y reste (Tab boucle), Échap le ferme et rend le focus au bouton.
   useEffect(() => {
     if (!menuOpen) return;
-    // Le menu précède le bouton dans l'ordre de tabulation : on place le focus sur son premier lien.
-    menuRef.current?.querySelector<HTMLAnchorElement>("a")?.focus();
+    const root = document.documentElement;
+    const previousOverflow = root.style.overflow;
+    root.style.overflow = "hidden";
+    closeRef.current?.focus();
     const onKey = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      setMenuOpen(false);
-      burgerRef.current?.focus();
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+        burgerRef.current?.focus();
+        return;
+      }
+      if (event.key !== "Tab" || !menuRef.current) return;
+      const items = Array.from(menuRef.current.querySelectorAll<HTMLElement>("a[href], button:not([disabled])"));
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
     };
-    const onPointer = (event: PointerEvent) => {
-      if (headerRef.current && !headerRef.current.contains(event.target as Node)) setMenuOpen(false);
-    };
-    const wide = window.matchMedia("(min-width: 1200px)");
-    const onWide = (event: MediaQueryListEvent) => { if (event.matches) setMenuOpen(false); };
     document.addEventListener("keydown", onKey);
-    document.addEventListener("pointerdown", onPointer);
-    wide.addEventListener("change", onWide);
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.removeEventListener("pointerdown", onPointer);
-      wide.removeEventListener("change", onWide);
+      root.style.overflow = previousOverflow;
     };
   }, [menuOpen]);
 
@@ -117,31 +127,22 @@ export function PublicHeader() {
     );
   }
 
-  const close = () => setMenuOpen(false);
+  /* Fermer avant de naviguer : la page doit pouvoir défiler jusqu'à l'ancre (#parcours…) dès le clic. */
+  const close = () => {
+    document.documentElement.style.overflow = "";
+    setMenuOpen(false);
+  };
   const hash = (id: string): Current => (section === id ? "location" : undefined);
   const page = (path: string): Current => (pathname === path ? "page" : undefined);
 
   return (
-    <header className="pub-header" ref={headerRef}>
-      <Link className="brand" href="/" aria-label="Mon E-Carnet, accueil" onClick={close}>
-        <BrandMark variant="duo" />
-        <span className="brand-text"><strong className="notranslate" translate="no">Mon E‑Carnet</strong><small>Carnet de santé numérique</small></span>
-      </Link>
-      <div className="pub-menu" id="pub-menu" ref={menuRef} data-open={menuOpen ? "true" : "false"}>
-        <nav className="pub-nav" aria-label="Navigation principale">
-          <NavLink href="/#parcours" current={hash("parcours")} onNavigate={close}>Comment ça marche</NavLink>
-          <NavLink href="/#profils" current={hash("profils")} onNavigate={close}>Pour qui</NavLink>
-          <NavLink href="/securite" current={page("/securite")} onNavigate={close}>Sécurité</NavLink>
-          <NavLink href="/#questions" current={hash("questions")} onNavigate={close}>Questions</NavLink>
-          <NavLink href="/a-propos" current={page("/a-propos")} onNavigate={close}>À propos</NavLink>
-          <NavLink href="/#contact" current={hash("contact")} onNavigate={close}>Contact</NavLink>
-        </nav>
-        <Link className="pub-menu__login" href="/connexion" onClick={close}>Se connecter</Link>
-      </div>
-      <div className="pub-actions">
-        <Link className="button ghost small" href="/connexion">Se connecter</Link>
-        <Link className="button primary small" href="/connexion" data-track="signup">Commencer</Link>
-      </div>
+    <>
+      {/* En-tête public : le logo seul, sans fond ni nom, qui défile avec la page. La navigation est dans le menu (bouton à trois traits, fixé en bas). */}
+      <header className="pub-header">
+        <Link className="brand" href="/" aria-label="Mon E-Carnet, accueil" onClick={close}>
+          <BrandMark variant="duo" />
+        </Link>
+      </header>
       <button
         ref={burgerRef}
         type="button"
@@ -153,6 +154,44 @@ export function PublicHeader() {
       >
         <span aria-hidden="true" />
       </button>
-    </header>
+      <div className="pub-menu" id="pub-menu" ref={menuRef} role="dialog" aria-modal="true" aria-label="Menu principal" data-open={menuOpen ? "true" : "false"} data-lenis-prevent inert={!menuOpen}>
+        <div className="pub-menu__top">
+          <div className="pub-menu__langs notranslate" translate="no" role="group" aria-label="Langue du site">
+            {LANGUAGES.map((item) => (
+              <button type="button" key={item.code} lang={item.code} aria-label={item.native} aria-current={item.code === language ? "true" : "false"} disabled={languageBusy} onClick={() => void chooseLanguage(item.code)}>
+                {item.code.toUpperCase()}
+              </button>
+            ))}
+          </div>
+          <Link className="pub-menu__logo" href="/" aria-label="Mon E-Carnet, accueil" onClick={close}>
+            <BrandMark variant="duo" />
+          </Link>
+          <button ref={closeRef} type="button" className="pub-menu__close" aria-label="Fermer le menu" onClick={() => { close(); burgerRef.current?.focus(); }}>
+            <span className="pub-menu__close-text">Fermer</span>
+            <span className="pub-menu__close-x" aria-hidden="true"><Icon name="close" size={20} /></span>
+          </button>
+        </div>
+        <nav className="pub-nav" aria-label="Navigation principale">
+          <NavLink href="/#parcours" current={hash("parcours")} onNavigate={close}>Comment ça marche</NavLink>
+          <NavLink href="/#profils" current={hash("profils")} onNavigate={close}>Pour qui</NavLink>
+          <NavLink href="/#questions" current={hash("questions")} onNavigate={close}>Questions</NavLink>
+          <NavLink href="/a-propos" current={page("/a-propos")} onNavigate={close}>À propos</NavLink>
+          <NavLink href="/#contact" current={hash("contact")} onNavigate={close}>Contact</NavLink>
+          <NavLink href="/connexion" current={page("/connexion")} onNavigate={close}>Se connecter</NavLink>
+        </nav>
+        <div className="pub-menu__bottom">
+          <nav className="pub-menu__social" aria-label="Nous joindre">
+            {socialLinks().map((link) => {
+              const icon = link.id === "email" ? <Icon name="mail" size={22} /> : <SocialIcon name={link.id} />;
+              if (!link.href) return <span key={link.id} className="pub-menu__social-item is-soon" role="img" aria-label={`${link.label} : bientôt disponible`} title="Bientôt">{icon}</span>;
+              return link.external
+                ? <a key={link.id} className="pub-menu__social-item" href={link.href} target="_blank" rel="noopener noreferrer" aria-label={link.label}>{icon}</a>
+                : <Link key={link.id} className="pub-menu__social-item" href={link.href} aria-label={link.label} onClick={close}>{icon}</Link>;
+            })}
+          </nav>
+          <p className="pub-menu__copy">© 2026 <span className="notranslate" translate="no">Mon E‑Carnet</span></p>
+        </div>
+      </div>
+    </>
   );
 }

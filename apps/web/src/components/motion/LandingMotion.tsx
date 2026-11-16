@@ -7,7 +7,7 @@ import { stickyHeaderHeight, useSmoothScroll } from "./useSmoothScroll";
 /* Mouvement de la landing, ajouté par-dessus du HTML rendu côté serveur (le contenu reste lisible sans JavaScript).
 
    Séquence signature : l'image du hero démarre en petit carré arrondi DANS le titre (entre « votre » et « contrôle », l'emplacement
-   [data-hero-slot="media"] de HeroTitle), puis grossit jusqu'à occuper tout l'écran à mesure qu'on défile, et rétrécit en carte à la
+   [data-hero-slot="media"] de HeroTiles), puis grossit jusqu'à occuper tout l'écran à mesure qu'on défile, et rétrécit en carte à la
    fin — dans les deux sens, car elle est liée au défilement (scrub). Le reste : titres qui se lèvent, parcours qui s'allume,
    démonstration du consentement.
 
@@ -54,11 +54,10 @@ export function LandingMotion({ children }: { children: ReactNode }) {
       /* --- Ouverture : le titre est masqué par CSS (data-motion="pending") jusqu'à ce que tout soit prêt --- */
       const title = q("#hero-title")[0];
       const titleWords = q("#hero-title [data-hero-word]");
-      const titleSlots = q("#hero-title [data-hero-slot]");
-      const heroTrace = q(".lp-hero .pulse__trace")[0];
+      const titleSlots = q("[data-hero-slot]"); // les quatre carrés-diaporama et l'emplacement de la grande image (dans HeroTiles)
+      const heroMark = q("[data-hero-mark]"); // le grand « MON E‑CARNET » en filigrane
       gsap.set(title, { visibility: "hidden" });
       gsap.set(q("[data-hero-item]"), { autoAlpha: 0, y: 18 });
-      gsap.set(q(".lp-hero .pulse__trace"), { strokeDashoffset: 1, strokeDasharray: 1 });
       gsap.set(q("[data-hero-media]"), { autoAlpha: 0 });
       el.dataset.motion = "ready";
 
@@ -66,23 +65,19 @@ export function LandingMotion({ children }: { children: ReactNode }) {
       // il réécrirait le DOM du titre, or les deux diaporamas sont des composants React qui doivent garder leurs éléments.
       gsap.set(titleWords, { yPercent: 125 });
       gsap.set(titleSlots, { autoAlpha: 0, scale: 0.55 });
+      gsap.set(heroMark, { autoAlpha: 0 });
       gsap.set(title, { visibility: "visible" });
       gsap.to(titleWords, { yPercent: 0, duration: 0.95, ease: "power4.out", stagger: 0.07, delay: 0.1 });
+      gsap.to(heroMark, { autoAlpha: 1, duration: 1.3, ease: "power2.out", delay: 0.1 });
       gsap.to(titleSlots, { autoAlpha: 1, scale: 1, duration: 0.8, ease: "back.out(1.7)", stagger: 0.12, delay: 0.55 });
       gsap.delayedCall(2.5, () => { gsap.set(title, { visibility: "visible" }); }); // filet de sécurité si les polices tardent
-      const tracePulse = heroTrace ? gsap.fromTo(heroTrace, { strokeDashoffset: 1, opacity: 0.28 }, { strokeDashoffset: 0, opacity: 1, duration: 1.35, repeat: -1, repeatDelay: 1.15, ease: "power2.inOut", paused: true, immediateRender: false }) : null;
-      if (tracePulse) loops.push(tracePulse);
-
       const intro = gsap.timeline({ defaults: { ease: "power3.out" } });
       intro
-        .to(q(".lp-hero .pulse__trace"), { strokeDashoffset: 0, duration: 2.2, ease: "power2.inOut" }, 0)
         .to(q("[data-hero-item]"), { autoAlpha: 1, y: 0, duration: 0.7, stagger: 0.1 }, 0.4)
-        .to(q("[data-hero-media]"), { autoAlpha: 1, duration: 0.9, ease: "power2.out" }, 0.55)
-        .call(() => tracePulse?.play());
+        .to(q("[data-hero-media]"), { autoAlpha: 1, duration: 0.9, ease: "power2.out" }, 0.55);
 
       /* --- Respiration du hero : boucles lentes, mises en pause dès qu'il sort de l'écran --- */
       loops.push(gsap.to(q(".lp-hero__glow"), { scale: 1.14, duration: 4.6, yoyo: true, repeat: -1, ease: "sine.inOut", stagger: 1.2 }));
-      loops.push(gsap.fromTo(q(".lp-hero .pulse__spark"), { strokeDashoffset: 0, opacity: 1 }, { strokeDashoffset: -1, duration: 5.5, repeat: -1, ease: "none", delay: 2 }));
 
       /* --- Image qui grossit : petit carré dans le titre → plein écran → carte arrondie, liée au défilement (réversible) ---
          Le hero est épinglé juste sous l'en-tête ; on n'anime que ses enfants (consigne ScrollTrigger). Mobile : trajet plus court. */

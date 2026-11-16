@@ -6,11 +6,12 @@ import test from "node:test";
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
-test("mobile : « Commencer » à gauche et « Je suis professionnel » à droite, sur la même ligne et de même largeur", () => {
-  const css = read("src/app/landing-showcase.css");
-  const mobile = css.slice(css.indexOf("@media (max-width: 759px)"));
-  assert.match(mobile, /\.lp-hero \.actions \{[^}]*display: grid;[^}]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
-  assert.match(mobile, /\.lp-hero \.actions \.button \{[^}]*width: 100%/);
+test("héro : un seul bouton d'action, « Commencer », centré sous le slogan", () => {
+  const page = read("src/app/page.tsx");
+  const hero = page.slice(page.indexOf('<section className="lp-hero"'), page.indexOf("</section>", page.indexOf('<section className="lp-hero"')));
+  assert.equal((hero.match(/className="button/g) ?? []).length, 1);
+  assert.match(hero, /HERO\.primary\.label/);
+  assert.ok(!hero.includes("HERO.secondary"), "plus de bouton « Je suis professionnel » dans le héro");
 });
 
 test("mobile : l'image grossie reste pleine, seul l'ordinateur la rétrécit en carte à la fin", () => {

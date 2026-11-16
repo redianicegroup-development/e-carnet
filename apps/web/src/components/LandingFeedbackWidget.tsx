@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Icon } from "./ui/Icon";
 import { ModalIllustration } from "./modal/ModalIllustration";
 import { GooLayer } from "./ui/GooLayer";
+import { StarRatingInput } from "./ui/StarRatingInput";
 
 type FeedbackCategory = "bug" | "idea" | "question" | "other";
 
@@ -17,6 +18,7 @@ export function LandingFeedbackWidget({ inline = false }: { inline?: boolean }) 
   const [open, setOpen] = useState(false);
   const [category, setCategory] = useState<FeedbackCategory>("idea");
   const [message, setMessage] = useState("");
+  const [rating, setRating] = useState(0);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [sent, setSent] = useState(false);
@@ -61,12 +63,12 @@ export function LandingFeedbackWidget({ inline = false }: { inline?: boolean }) 
         credentials: "include",
         cache: "no-store",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ category, message, path: window.location.pathname }),
+        body: JSON.stringify({ category, message, ...(rating ? { rating } : {}), path: window.location.pathname }),
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.message ?? payload.detail ?? "Envoi impossible. Réessayez plus tard.");
       setSent(true); setNotice("Merci, votre retour a bien été transmis à l’équipe Mon E‑Carnet.");
-      setMessage("");
+      setMessage(""); setRating(0);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Envoi impossible. Réessayez plus tard.");
       setFailed(true);
@@ -74,7 +76,7 @@ export function LandingFeedbackWidget({ inline = false }: { inline?: boolean }) 
   }
 
   return <>
-    {(inline || (!inWorkspace && !onAuthPage)) && <button ref={opener} type="button" className={inline ? "button primary feedback-inline-trigger" : "button feedback-fab"} aria-label="Noter l’application" aria-haspopup="dialog" aria-expanded={open} data-track="feedback_open" onClick={() => { setOpen(true); setCategory("idea"); setSent(false); setNotice(""); }}>
+    {(inline || (!inWorkspace && !onAuthPage)) && <button ref={opener} type="button" className={inline ? "button primary feedback-inline-trigger" : "button feedback-fab"} aria-label="Noter l’application" aria-haspopup="dialog" aria-expanded={open} data-track="feedback_open" onClick={() => { setOpen(true); setCategory("idea"); setRating(0); setSent(false); setNotice(""); }}>
       <Icon name="pencil" size={18} /><span>Noter l’application</span>
     </button>}
     {open && <div className="feedback-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) close(); }}>
@@ -82,10 +84,11 @@ export function LandingFeedbackWidget({ inline = false }: { inline?: boolean }) 
         <header className="feedback-dialog__header"><ModalIllustration mood={category === "question" ? "question" : failed ? "oops" : "listening"} size="sm" /><div><span className="eyebrow">Mon E‑Carnet</span><h2 id="feedback-title">Noter l’application</h2></div><button className="feedback-dialog__close" type="button" aria-label="Fermer le formulaire" disabled={busy} onClick={close}>×</button></header>
         {category === "question" && !sent ? <div className="feedback-success"><p>Retrouvez les réponses et guides dans le centre d’aide.</p><div className="actions"><Link className="button primary" href="/aide" onClick={close}>Ouvrir le centre d’aide</Link><button className="button" type="button" onClick={close}>Fermer</button></div></div> : sent ? <div className="feedback-success"><ModalIllustration mood="success" size="md" /><p className="notice" role="status">{notice}</p><button className="button primary" type="button" onClick={close}>Fermer</button></div> : <form className="feedback-form" onSubmit={submit}>
           <label className="field"><span>Type de retour</span><select value={category} onChange={(event) => setCategory(event.target.value as FeedbackCategory)}><option value="idea">Suggestion</option><option value="bug">Signaler un problème</option><option value="question">Question</option><option value="other">Autre</option></select></label>
-          <label className="field"><span>Votre message</span><textarea ref={textarea} required minLength={5} maxLength={2000} rows={5} value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Décrivez le problème ou votre idée…" /></label>
+          <label className="field"><span>Votre message</span><textarea ref={textarea} required={rating === 0} minLength={5} maxLength={2000} rows={5} value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Décrivez le problème ou votre idée…" /></label>
+          <StarRatingInput value={rating} onChange={setRating} disabled={busy} />
           <p id="feedback-privacy" className="feedback-privacy">Retour anonyme. N’indiquez aucun nom, identifiant ou renseignement médical.</p>
           {notice && <p className="notice" role="alert">{notice}</p>}
-          <div className="feedback-form__footer"><small>{message.length}/2 000 caractères</small><button className="button primary" type="submit" disabled={busy || message.trim().length < 5}>{busy ? "Envoi…" : "Envoyer le retour"}</button></div>
+          <div className="feedback-form__footer"><small>{message.length}/2 000 caractères</small><button className="button primary" type="submit" disabled={busy || (message.trim().length < 5 && !(rating > 0 && !message.trim()))}>{busy ? "Envoi…" : "Envoyer le retour"}</button></div>
         </form>}
       </section>
       <GooLayer target={dialog} />

@@ -1,0 +1,8 @@
+Mon E-Carnet — livraison du 16/11/2026
+Contenu : votre lot du 15/11 (révocation avec motif, étoiles, retrait de l'économie de données) FUSIONNÉ avec
+le guide « Comment ça marche ? », les textes simplifiés, et le nouveau menu / hero / pied de page publics.
+Copier les fichiers par-dessus le projet (mêmes chemins). Fichiers à SUPPRIMER (retirés avec l'économie de données) :
+  apps/web/src/components/data-saver/   (dossier)
+  apps/web/src/lib/data-saver.ts
+Nouvelles photos : apps/web/public/landing/hero-slide-6.webp … hero-slide-10.webp (les cinq premières existent déjà chez vous).
+Réglages : NEXT_PUBLIC_WHATSAPP_NUMBER et NEXT_PUBLIC_FACEBOOK_URL (voir .env.example). Facebook vide = icône affichée mais inactive.

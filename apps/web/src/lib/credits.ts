@@ -1,7 +1,7 @@
 /** Crédits et remerciements — faits confirmés par le porteur du projet. */
 import type { IconName } from "../components/ui/Icon";
 
-export const CREDITS_UPDATED = "2026-10-16";
+export const CREDITS_UPDATED = "2026-11-15";
 
 /** Site d'AKATech Studio : lien du pied de page (survol avec le logo) et de la page Crédits. */
 export const AKATECH_URL = "https://akatech.vercel.app/";
@@ -9,7 +9,7 @@ export const AKATECH_URL = "https://akatech.vercel.app/";
 /** Site de Redianice : lien du pied de page (survol avec le logo), de la page Crédits et de la page À propos. */
 export const REDIANICE_URL = "https://redianice.vercel.app/";
 
-/** Les deux structures. Redianice porte le projet ; le développeur de l'équipe en est aussi le fondateur d'AKATech Studio. */
+/** Les deux structures. Redianice porte le projet ; le développeur de l'équipe en est aussi le fondateur d'AKATech Studio, et le fondateur de Redianice est le juriste de l'équipe. */
 export const CREDITS_ORIGINS: { id: string; name: string; role: string; icon: IconName; text: string; href?: string }[] = [
   {
     id: "redianice",
@@ -29,35 +29,40 @@ export const CREDITS_ORIGINS: { id: string; name: string; role: string; icon: Ic
   },
 ];
 
-/** L'équipe, par rôle. Pas de noms : seuls les rôles ont été confirmés. */
-export const CREDITS_TEAM: { id: string; role: string; org: string; icon: IconName; text: string }[] = [
+/** L'équipe : quatre personnes, avec le statut et le rôle que leur donne le site de Redianice (équipe Redianice). Pas de noms dans les crédits. */
+/** `figureTitle` et `figureSub` : version courte pour les nœuds du schéma, où le titre complet ne tiendrait pas. */
+export const CREDITS_TEAM: { id: string; role: string; org: string; icon: IconName; text: string; figureTitle: string; figureSub: string }[] = [
   {
-    id: "chef-de-projet",
-    role: "Chef de projet",
-    org: "Redianice",
-    icon: "users",
-    text: "Pilote le projet, fixe les priorités et fait le lien entre l’équipe, les patients et les professionnels.",
+    id: "fondateur-juridique",
+    role: "Founder of Redianice & Legal Officer",
+    org: "Fondateur de Redianice · Droit",
+    icon: "document",
+    text: "Fondateur de Redianice et juriste de l’équipe. Il apporte un regard juridique au projet et aide l’équipe à repérer les points de vigilance : mentions légales, confidentialité, conditions d’utilisation.",
+    figureTitle: "Fondateur et juriste", figureSub: "Redianice · Droit",
   },
   {
     id: "developpement",
-    role: "Développement",
-    org: "Fondateur d’AKATech Studio",
+    role: "Chief Technology Officer (CTO)",
+    org: "Développeur · Fondateur d’AKATech Studio",
     icon: "phone",
-    text: "Conçoit et développe l’application : interface, API et base de données.",
+    text: "Développeur web freelance à AKATech Studio. Il conçoit et développe l’application : interface, API et base de données.",
+    figureTitle: "CTO · Développeur", figureSub: "Fondateur d’AKATech Studio",
   },
   {
-    id: "juridique",
-    role: "Juridique",
-    org: "Juriste de l’équipe",
-    icon: "document",
-    text: "Prend en charge tout ce qui est légal et juridique : mentions légales, confidentialité, conditions d’utilisation.",
-  },
-  {
-    id: "identite-visuelle",
-    role: "Branding et identité visuelle",
-    org: "Deux graphistes",
+    id: "design",
+    role: "Lead Brand Designer",
+    org: "Design · Collaboratrice de Redianice",
     icon: "pencil",
-    text: "Ont dessiné le logo, le branding et l’identité visuelle de Mon E‑Carnet.",
+    text: "Elle contribue à l’identité visuelle de Redianice et de ses produits, dont le logo et le branding de Mon E‑Carnet, en binôme avec l’autre graphiste.",
+    figureTitle: "Lead Brand Designer", figureSub: "Design",
+  },
+  {
+    id: "communication",
+    role: "Community Manager & Infographiste",
+    org: "Communication · Freelance",
+    icon: "users",
+    text: "Il donne de la visibilité au projet à travers les réseaux sociaux et crée des visuels qui attirent l’attention : communication digitale, affiches et contenus.",
+    figureTitle: "Community Manager", figureSub: "Communication · Infographie",
   },
 ];
 

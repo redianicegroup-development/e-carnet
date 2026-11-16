@@ -1,10 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { ApiError } from "../infrastructure/api/client";
-import { createLaboratory, isLabFeatureOff, listLaboratories, type CreatedLab, type EstablishmentLab } from "../application/lab-results";
+import { createLaboratory, isLabFeatureOff, listLaboratories, revokeLaboratoryAdministrator, type CreatedLab, type EstablishmentLab, type LabAdministrator } from "../application/lab-results";
 import { accessMessage, loginUrlFor } from "../lib/share";
 import { ShareCodeButton } from "./ShareCodeButton";
+import { GooLayer } from "./ui/GooLayer";
+import { useDialogBehavior } from "./modal/useDialogBehavior";
+import { RevocationReasonDialog } from "./modal/RevocationReasonDialog";
 import "./lab-results.css";
 
 /* PRO-21 — le laboratoire interne de l'établissement. L'administrateur de l'établissement ne saisit AUCUN nom de laboratoire : c'est son
@@ -13,6 +17,37 @@ import "./lab-results.css";
    l'espace laboratoire : il ne voit aucun dossier médical. */
 
 const ACCESS_LABEL: Record<string, string> = { temporary_password: "Mot de passe temporaire : pas encore connecté", expired: "Mot de passe temporaire expiré", activated: "Compte activé", revoked: "Accès retiré" };
+
+type ProfileTarget = { lab: EstablishmentLab; admin: LabAdministrator };
+
+/* Fiche « Profil » d'un administrateur du laboratoire : prénom, nom, e-mail, état de l'accès. L'établissement peut y révoquer l'accès (avec motif). */
+function AdministratorProfile({ admin, onClose, onRevoke }: { admin: LabAdministrator; onClose: () => void; onRevoke: () => void }) {
+  const dialog = useRef<HTMLElement>(null);
+  const closeButton = useRef<HTMLButtonElement>(null);
+  const titleId = useId();
+  useDialogBehavior({ open: true, container: dialog, initialFocus: closeButton, onEscape: onClose });
+  const rows: [string, string][] = [
+    ["Prénom", admin.first_name || "Non renseigné"],
+    ["Nom", admin.last_name || "Non renseigné"],
+    ["E-mail (identifiant de connexion)", admin.email],
+    ["Accès", admin.access ? ACCESS_LABEL[admin.access.state] ?? admin.access.state : "Compte activé"],
+  ];
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <div className="modal-backdrop modal-backdrop--confirm" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <section ref={dialog} className="modal-dialog team-detail" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+        <h2 id={titleId}>Profil de l’administrateur</h2>
+        <dl className="team-detail__list">{rows.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
+        <div className="modal-actions">
+          <button ref={closeButton} type="button" className="button" onClick={onClose}>Fermer</button>
+          <button type="button" className="button primary danger" onClick={onRevoke}>Révoquer</button>
+        </div>
+      </section>
+      <GooLayer target={dialog} />
+    </div>,
+    document.body,
+  );
+}
 
 export function EstablishmentLaboratories({ establishmentId }: { establishmentId: string }) {
   const [labs, setLabs] = useState<EstablishmentLab[] | null>(null);
@@ -23,6 +58,9 @@ export function EstablishmentLaboratories({ establishmentId }: { establishmentId
   const [lastName, setLastName] = useState("");
   const [busy, setBusy] = useState(false);
   const [created, setCreated] = useState<CreatedLab | null>(null);
+  const [profile, setProfile] = useState<ProfileTarget | null>(null);
+  const [revokeTarget, setRevokeTarget] = useState<ProfileTarget | null>(null);
+  const [revokedNotice, setRevokedNotice] = useState("");
 
   const failed = useCallback((reason: unknown) => {
     if (isLabFeatureOff(reason)) setOff(true); else setError(reason instanceof Error ? reason.message : "Laboratoire indisponible.");
@@ -66,7 +104,7 @@ export function EstablishmentLaboratories({ establishmentId }: { establishmentId
       {labs.map((lab) => <li key={lab.id}><strong>{lab.name}</strong>
         {lab.administrators.length === 0
           ? <p className="muted">Aucun administrateur</p>
-          : <ul className="stack lab-admins">{lab.administrators.map((admin) => <li key={admin.email}><span>{admin.name || "Administrateur"}</span><br /><span className="muted">{admin.email}{admin.access ? ` · ${ACCESS_LABEL[admin.access.state] ?? admin.access.state}` : ""}</span></li>)}</ul>}
+          : <ul className="stack lab-admins">{lab.administrators.map((admin) => <li key={admin.id} className="lab-admin-row"><span>{admin.name || "Administrateur"}</span><button type="button" className="button small" onClick={() => setProfile({ lab, admin })}>Profil</button></li>)}</ul>}
       </li>)}
     </ul>}
     {canAdd
@@ -81,6 +119,21 @@ export function EstablishmentLaboratories({ establishmentId }: { establishmentId
       </form>
       : <p className="notice" role="status">Le laboratoire a atteint le nombre maximum d’administrateurs.</p>}
     {error && <p className="status" role="alert">{error}</p>}
+    {revokedNotice && <p className="notice" role="status">{revokedNotice}</p>}
+    {profile && !revokeTarget && <AdministratorProfile admin={profile.admin} onClose={() => setProfile(null)} onRevoke={() => { setRevokeTarget(profile); setProfile(null); }} />}
+    {revokeTarget && <RevocationReasonDialog
+      title="Révoquer cet administrateur ?"
+      message={`${revokeTarget.admin.name || "Cet administrateur"} ne pourra plus utiliser l’espace du ${revokeTarget.lab.name}.`}
+      note="L’historique des résultats déposés est conservé."
+      onCancel={() => setRevokeTarget(null)}
+      onSubmit={async (reason) => {
+        await revokeLaboratoryAdministrator(establishmentId, revokeTarget.lab.id, revokeTarget.admin.id, reason);
+        setRevokeTarget(null);
+        setRevokedNotice("Accès retiré. L’administrateur verra le motif à sa prochaine connexion.");
+        setCreated(null);
+        await reload();
+      }}
+    />}
     {created && <div className="notice stack" role="status">
       <strong>Accès créé pour {created.email}.</strong>
       {created.temporary_password

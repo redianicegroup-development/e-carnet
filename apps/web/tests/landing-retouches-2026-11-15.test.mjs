@@ -11,11 +11,13 @@ test("le héro n'a plus la pastille « Carnet de santé numérique » (page et c
   assert.doesNotMatch(read("src/lib/landing-content.ts"), /Carnet de santé numérique/);
 });
 
-test("les carrés du titre sont plus grands : 1,3 em sur ordinateur, 1,5 em sur mobile (les trois, donc aussi le départ de la grande image)", () => {
+test("les carrés de photos : chacun sa taille (--t), plus petits sur mobile, tous rendus par la même règle", () => {
   const css = read("src/app/landing-showcase.css");
-  assert.match(css, /\.lp-hero__slot \{[^}]*width: 1\.3em; height: 1\.3em;/);
+  assert.match(css, /\.lp-hero__slot \{ --t: 110px; position: absolute;[^}]*width: var\(--t\); height: var\(--t\);/);
+  for (const slot of ["a", "b", "c", "d", "media"]) assert.match(css, new RegExp(`\\.lp-hero__slot--${slot} \\{ --t:`));
   const mobile = css.slice(css.indexOf("@media (max-width: 759px)"));
-  assert.match(mobile, /\.lp-hero__slot \{ width: 1\.5em; height: 1\.5em;/);
+  assert.match(mobile, /\.lp-hero__slot--a \{ --t: 24vw;/);
+  assert.match(mobile, /\.lp-hero__mark \{[^}]*font-size: clamp\(2\.8rem, 17\.5vw, 5\.6rem\)/);
 });
 
 test("« Partager en QR » : fenêtre de 680 px sur ordinateur (QR à gauche, détails à droite), empilée dessous de 720 px, jamais coupée", () => {
@@ -34,9 +36,33 @@ test("section Solution : l'image main + téléphone est plafonnée à 440 px et 
   assert.match(css, /\.lp2-flow-phone \.lp2-hand-stack \{[^}]*width:min\(100%,420px\)/, "les trois étapes gardent leur taille");
 });
 
-test("en-tête public : à partir de 1200 px, marque à gauche, liens centrés sur la page, actions à droite", () => {
+test("en-tête public : le logo seul, sans fond ni nom, et un bouton à trois traits fixé en bas sur tous les écrans", () => {
   const css = read("src/app/site-pages.css");
-  assert.match(css, /\.pub-header:not\(\.pub-header--connected\) \{ display: grid; grid-template-columns: minmax\(0, 1fr\) auto minmax\(0, 1fr\); \}/);
-  assert.match(css, /\.pub-header:not\(\.pub-header--connected\) \.pub-actions \{ justify-self: end; margin-left: 0; \}/);
-  assert.match(css, /\.pub-menu \{ position: static; display: flex; align-items: center; justify-content: center;/);
+  const header = read("src/components/public/PublicHeader.tsx");
+  assert.match(css, /\.pub-header \{ position: relative; z-index: 20; height: 0; \}/, "pas de barre : le logo flotte sans arrière-plan");
+  assert.match(css, /\.pub-header:not\(\.pub-header--connected\) \.brand \{ position: absolute;/);
+  assert.doesNotMatch(css, /\.pub-header:not\(\.pub-header--connected\) \{ display: grid; grid-template-columns/);
+  assert.match(css, /\.pub-burger \{ position: fixed; z-index: 840; left: 50%; bottom: calc\(18px \+ env\(safe-area-inset-bottom\)\);/);
+  const brand = header.slice(header.indexOf('className="pub-header"'), header.indexOf("</header>"));
+  assert.doesNotMatch(brand, /Mon E[‑-]Carnet<\/span>/, "le logo de l'en-tête n'a pas de nom écrit à côté");
+});
+
+test("menu public : liens sans Sécurité, langues Google Translate, e-mail / WhatsApp / Facebook et © 2026", () => {
+  const header = read("src/components/public/PublicHeader.tsx");
+  for (const href of ["/#parcours", "/#profils", "/#questions", "/a-propos", "/#contact", "/connexion"]) assert.ok(header.includes(`href="${href}"`), href);
+  assert.ok(!header.includes('href="/securite"'), "Sécurité ne figure pas dans le menu");
+  assert.match(header, /useLanguageChooser\(\)/);
+  assert.match(header, /LANGUAGES\.map/);
+  assert.match(header, /socialLinks\(\)/);
+  assert.match(header, /© 2026/);
+  const social = read("src/lib/social.ts");
+  for (const id of ['"email"', '"whatsapp"', '"facebook"']) assert.ok(social.includes(id), id);
+  assert.match(social, /NEXT_PUBLIC_FACEBOOK_URL/);
+});
+
+test("pied de page : e-mail, WhatsApp et Facebook à la place de l'aide et de la sécurité", () => {
+  const shell = read("src/components/public/PublicShell.tsx");
+  const icons = shell.slice(shell.indexOf('className="pub-footer__icons"'), shell.indexOf("</nav>", shell.indexOf('className="pub-footer__icons"')));
+  assert.match(icons, /socialLinks\(\)/);
+  assert.doesNotMatch(icons, /name="help"|name="shield"/);
 });

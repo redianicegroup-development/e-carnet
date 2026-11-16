@@ -4,8 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { apiDelete, apiGet, apiPost, apiUpload } from "../infrastructure/api/client";
 import { compressMedicalImage } from "./MedicalDocuments";
 import type { MedicalDocument } from "./MedicalDocuments";
-import { IMAGE_PROFILE_SAVER } from "../lib/data-saver";
-import { useDataSaver } from "./data-saver/useDataSaver";
 
 type Vaccination = {
   id: string; vaccine_name: string; dose_number: number | null; administered_on: string | null;
@@ -23,7 +21,6 @@ const MAX_SIZE = 10 * 1024 * 1024;
 const date = (value: string | null) => value ? new Date(`${value}T00:00:00`).toLocaleDateString("fr-FR") : "Non renseignée";
 
 export function Vaccinations() {
-  const saver = useDataSaver();
   const [items, setItems] = useState<Vaccination[] | null>(null);
   const [documents, setDocuments] = useState<MedicalDocument[]>([]);
   const [form, setForm] = useState<Form>(EMPTY);
@@ -59,7 +56,7 @@ export function Vaccinations() {
     try {
       let documentId = form.document_id;
       if (file) {
-        const compressed = await compressMedicalImage(file, saver.active ? IMAGE_PROFILE_SAVER : undefined);
+        const compressed = await compressMedicalImage(file);
         if (!/^(application\/pdf|image\/(png|jpeg|webp))$/.test(compressed.type) || !/\.(pdf|png|jpe?g|webp)$/i.test(compressed.name)) {
           throw new Error("Format refusé : utilisez uniquement PDF, PNG, JPG/JPEG ou WebP.");
         }

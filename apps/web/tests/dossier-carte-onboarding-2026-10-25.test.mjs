@@ -96,8 +96,8 @@ test("équipe de l'établissement : une photo par médecin, fiche au clic avec r
   assert.match(consoleSrc, /className="team-photo"/);
   assert.match(consoleSrc, /function MemberDetail/);
   for (const label of ["Nom", "Prénoms", "Métier", "Âge"]) assert.match(consoleSrc, new RegExp(`\\["${label}", `));
-  assert.match(consoleSrc, /memberships\/\$\{member\.id\}\/terminate\//);
-  assert.match(consoleSrc, /tone: "danger"/, "confirmation avant de révoquer");
+  assert.match(consoleSrc, /memberships\/\$\{revokeTarget\.id\}\/terminate\/`, \{ reason \}/, "la révocation envoie le motif");
+  assert.match(consoleSrc, /<RevocationReasonDialog/, "fenêtre de confirmation avec motif obligatoire (15/11/2026)");
   assert.doesNotMatch(consoleSrc, /\{item\.professional_email \?\? ""\}<\/p><\/div><span className="badge active">/, "plus de ligne e-mail + badge dans la liste de l’équipe");
   const api = readFileSync(new URL("../../api/apps/establishments/views.py", import.meta.url), "utf8");
   assert.match(api, /professional_age/);

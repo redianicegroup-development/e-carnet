@@ -1,5 +1,5 @@
 // Classe A du plan : PAT-19 (récapitulatif d'accès), PRO-15 (patients récents), PAT-09 (export par période/rubrique),
-// PRO-16 (recherche et filtres dans les listes autorisées), PAT-20 (économie de données + pictogrammes).
+// PRO-16 (recherche et filtres dans les listes autorisées), PAT-20 (pictogrammes ; l'économie de données a été retirée le 15/11/2026).
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import test from "node:test";
@@ -10,7 +10,6 @@ const summary = await import("../src/lib/access-summary.ts");
 const recent = await import("../src/lib/recent-patients.ts");
 const exporter = await import("../src/lib/carnet-export.ts");
 const filter = await import("../src/lib/list-filter.ts");
-const saver = await import("../src/lib/data-saver.ts");
 const pictograms = await import("../src/lib/pictograms.ts");
 
 // ---------------------------------------------------------------------------------------------------------------- PAT-19
@@ -190,83 +189,18 @@ test("PRO-16 : la barre de recherche est appliquée aux listes autorisées, sans
 
 // ---------------------------------------------------------------------------------------------------------------- PAT-20
 
-test("PAT-20 : automatique = Save-Data ou réseau 3G et moins ; « toujours » et « jamais » l'emportent", () => {
-  assert.equal(saver.isDataSaverActive("auto", { saveData: true }), true);
-  assert.equal(saver.isDataSaverActive("auto", { effectiveType: "2g" }), true);
-  assert.equal(saver.isDataSaverActive("auto", { effectiveType: "slow-2g" }), true);
-  assert.equal(saver.isDataSaverActive("auto", { effectiveType: "3g" }), true);
-  assert.equal(saver.isDataSaverActive("auto", { effectiveType: "4g" }), false);
-  assert.equal(saver.isDataSaverActive("auto", {}), false);
-  assert.equal(saver.isDataSaverActive("auto", undefined), false, "navigateur sans information de connexion (Safari, Firefox)");
-  assert.equal(saver.isDataSaverActive("always", { effectiveType: "4g" }), true);
-  assert.equal(saver.isDataSaverActive("never", { saveData: true, effectiveType: "2g" }), false);
-});
-
-test("PAT-20 : le réglage est relu avec prudence et la raison du mode est dite en une phrase", () => {
-  assert.equal(saver.parseDataSaverSetting("always"), "always");
-  assert.equal(saver.parseDataSaverSetting("n'importe quoi"), "auto");
-  assert.equal(saver.parseDataSaverSetting(null), "auto");
-  assert.deepEqual(saver.DATA_SAVER_CHOICES.map((choice) => choice.value), ["auto", "always", "never"]);
-  assert.equal(saver.dataSaverReason("never", { saveData: true }), "");
-  assert.equal(saver.dataSaverReason("always", {}), "Vous l’avez activé.");
-  assert.equal(saver.dataSaverReason("auto", { saveData: true }), "Votre téléphone demande d’économiser les données.");
-  assert.equal(saver.dataSaverReason("auto", { effectiveType: "2g" }), "Votre réseau est lent.");
-  const { setting, info } = saver.decodeSnapshot(saver.encodeSnapshot("always", { saveData: true, effectiveType: "3g" }));
-  assert.equal(setting, "always");
-  assert.deepEqual(info, { saveData: true, effectiveType: "3g" });
-  assert.equal(saver.decodeSnapshot(saver.SERVER_SNAPSHOT).setting, "auto", "rendu serveur : jamais actif");
-});
-
-test("PAT-20 : photos plus légères en économie de données, mode normal strictement inchangé", () => {
-  assert.deepEqual(saver.imageProfile(false), { maxSide: 1600, quality: 0.82 });
-  assert.deepEqual(saver.imageProfile(true), { maxSide: 1024, quality: 0.7 });
-  assert.ok(saver.IMAGE_PROFILE_SAVER.maxSide < saver.IMAGE_PROFILE_NORMAL.maxSide);
-  assert.ok(saver.IMAGE_PROFILE_SAVER.quality < saver.IMAGE_PROFILE_NORMAL.quality);
-  const documents = read("src/components/MedicalDocuments.tsx");
-  assert.match(documents, /profile: ImageProfile = \{ maxSide: 1800, quality: 0\.8 \}/, "profil d'origine conservé par défaut");
-  assert.match(documents, /saver\.active \? IMAGE_PROFILE_SAVER : undefined/);
-  assert.match(read("src/components/Vaccinations.tsx"), /saver\.active \? IMAGE_PROFILE_SAVER : undefined/);
-});
-
-test("PAT-20 : courbes à la demande, bandeau explicite, réglage dans les paramètres du patient", () => {
-  const measurements = read("src/components/HealthMeasurements.tsx");
-  assert.match(measurements, /dynamic\(\(\) => import\("\.\/MeasurementTrends"\)/);
-  assert.match(measurements, /saver\.active && !trendsRequested/);
-  assert.match(measurements, /Afficher les courbes/);
-  assert.equal(saver.DATA_SAVER_SLOW_TITLE, "Mauvaise connexion, mode économie activé");
-  assert.equal(saver.dataSaverBannerTitle("auto", { effectiveType: "2g" }), saver.DATA_SAVER_SLOW_TITLE, "réseau lent : message « Mauvaise connexion »");
-  assert.equal(saver.dataSaverBannerTitle("auto", { effectiveType: "4g" }), "", "bonne connexion : le mode se désactive tout seul, pas de bandeau");
-  assert.equal(saver.dataSaverBannerTitle("always", { effectiveType: "4g" }), saver.DATA_SAVER_ON_TITLE);
-  assert.equal(saver.dataSaverBannerTitle("auto", { saveData: true }), saver.DATA_SAVER_ON_TITLE);
-  assert.equal(saver.dataSaverBannerTitle("never", { effectiveType: "2g" }), "");
-  const banner = read("src/components/data-saver/DataSaverBanner.tsx");
-  assert.match(banner, /data-data-saver/);
-  assert.match(banner, /name=\{slow \? "signal" : "sliders"\}/, "icône de réseau faible dans le bandeau");
-  // Le bandeau et le mode vivent dans la coque commune (patient, professionnel, établissement, laboratoire) et dans l'administration.
-  assert.match(read("src/components/shell/SpaceShell.tsx"), /<DataSaverBanner visible=\{!bare\} \/>/);
-  assert.match(read("src/app/admin/page.tsx"), /<DataSaverBanner \/>/);
+test("Économie de données retirée (15/11/2026) : plus de réglage, de bandeau ni de compression allégée", () => {
   for (const file of ["AccountSettingsClient", "ProfessionalSettingsClient", "EstablishmentSettingsClient", "AdminSettingsClient"]) {
     const settings = read(`src/components/${file}.tsx`);
-    assert.match(settings, /id: "economie-donnees", title: "Économie de données"/, `${file} : réglage Économie de données`);
-    assert.match(settings, /<DataSaverSettings \/>/, `${file} : fenêtre du réglage`);
+    assert.doesNotMatch(settings, /economie-donnees|Économie de données|DataSaver/, `${file} : plus de réglage Économie de données`);
   }
-});
-
-test("PAT-20 : l'économie de données ne touche à aucune fonction de sécurité", () => {
-  // Ni la logique, ni le hook, ni le bandeau n'importent de module d'authentification, de consentement, de QR ou d'audit.
-  for (const file of ["src/lib/data-saver.ts", "src/components/data-saver/useDataSaver.ts", "src/components/data-saver/DataSaverBanner.tsx", "src/components/data-saver/DataSaverSettings.tsx"]) {
-    const source = read(file);
-    assert.doesNotMatch(source, /from "[^"]*(auth|session|logout|qr-scan|push|join-codes|access|consent)[^"]*"/i, `${file} ne dépend d'aucune fonction de sécurité`);
-    assert.doesNotMatch(source, /apiGet|apiPost|apiPatch|fetch\(/, `${file} n'envoie rien au serveur`);
+  for (const file of ["src/components/shell/SpaceShell.tsx", "src/app/admin/page.tsx", "src/components/HealthMeasurements.tsx", "src/components/MedicalDocuments.tsx", "src/components/Vaccinations.tsx"]) {
+    assert.doesNotMatch(read(file), /DataSaver|data-saver|useDataSaver|IMAGE_PROFILE_SAVER|saver\.active/, `${file} ne lit plus le mode économie`);
   }
-  // Le CSS n'enlève que polices et animations : il ne cache aucun élément.
-  const css = read("src/components/data-saver/data-saver.css");
-  assert.doesNotMatch(css, /display:\s*none|visibility:\s*hidden|pointer-events/);
-  assert.match(css, /animation: none !important/);
-  // Aucune page de sécurité ne lit le mode.
-  for (const file of ["src/components/AccessQrPanel.tsx", "src/components/PatientAccessGrants.tsx"]) {
-    try { assert.doesNotMatch(readFileSync(new URL(file, root), "utf8"), /useDataSaver|data-saver/); } catch (error) { if (error.code !== "ENOENT") throw error; }
-  }
+  assert.throws(() => readFileSync(new URL("src/lib/data-saver.ts", root)), /ENOENT/, "le module du mode économie est supprimé");
+  assert.throws(() => readdirSync(new URL("src/components/data-saver", root)), /ENOENT/, "le dossier du mode économie est supprimé");
+  assert.match(read("src/components/MedicalDocuments.tsx"), /profile: ImageProfile = \{ maxSide: 1800, quality: 0\.8 \}/, "la compression normale des photos est inchangée");
+  assert.match(read("src/components/HealthMeasurements.tsx"), /dynamic\(\(\) => import\("\.\/MeasurementTrends"\)/, "les courbes restent chargées à la demande du navigateur, sans réglage");
 });
 
 test("PAT-20 : treize pictogrammes en SVG intégré, chacun avec un texte alternatif ; ils accompagnent le texte sans le remplacer", () => {
@@ -282,13 +216,6 @@ test("PAT-20 : treize pictogrammes en SVG intégré, chacun avec un texte altern
   assert.match(component, /role=\{decorative \? undefined : "img"\}/);
   assert.match(component, /aria-hidden=\{decorative \? true : undefined\}/);
   assert.doesNotMatch(component, /<img|url\(|https?:/, "aucun fichier image à télécharger");
-});
-
-test("PAT-20 : le choix du mode reste dans le navigateur, déclaré dans la politique de confidentialité", () => {
-  const hook = read("src/components/data-saver/useDataSaver.ts");
-  assert.match(hook, /localStorage\.setItem\(DATA_SAVER_KEY, next\)/);
-  assert.match(hook, /catch/, "stockage refusé : aucune erreur affichée");
-  assert.match(read("src/app/confidentialite/page.tsx"), /Économie de données \(localStorage\)/);
 });
 
 test("retouches du 13/11/2026 : logo non traduit, onglet Médecins en évidence, tuile Labo dans Demandes, logo de la structure en avatar", () => {

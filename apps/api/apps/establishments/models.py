@@ -103,6 +103,11 @@ class EstablishmentAdministrator(models.Model):
     assigned_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="assigned_establishment_administrators")
     started_at = models.DateTimeField(default=timezone.now)
     ended_at = models.DateTimeField(null=True, blank=True)
+    # Révocation par l'administrateur de l'établissement parent (administrateur de laboratoire) : le motif est montré à la personne
+    # à sa prochaine connexion (et signalé par notification push) ; `end_notice_seen_at` se remplit quand elle l'a lu.
+    end_reason = models.CharField(max_length=500, blank=True, default="")
+    ended_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="ended_establishment_administrators")
+    end_notice_seen_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -198,6 +203,11 @@ class EstablishmentMembership(models.Model):
     agreement_version = models.CharField(max_length=40, blank=True)
     agreement_accepted_at = models.DateTimeField(null=True, blank=True)
     agreement_accepted_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="accepted_establishment_membership_agreements")
+    # Révocation décidée par l'établissement : motif obligatoire, montré au professionnel à sa prochaine connexion (et signalé par push).
+    # Une sortie à l'initiative du professionnel ne remplit rien de ceci.
+    terminated_by_establishment = models.BooleanField(default=False)
+    termination_reason = models.CharField(max_length=500, blank=True, default="")
+    termination_notice_seen_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ("-requested_at",)

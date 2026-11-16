@@ -13,7 +13,6 @@ import { AdminSettingsClient } from "../../components/AdminSettingsClient";
 import { AdminOperationsClient } from "../../components/AdminOperationsClient";
 import { AdminAuditJournal } from "../../components/AdminAuditJournal";
 import { useConfirm } from "../../components/modal/ConfirmProvider";
-import { DataSaverBanner } from "../../components/data-saver/DataSaverBanner";
 import { BrandMark } from "../../components/ui/BrandMark";
 import { Icon, type IconName } from "../../components/ui/Icon";
 import { AppSidebar, type SidebarItem, type SidebarMenuItem } from "../../components/shell/AppSidebar";
@@ -28,7 +27,7 @@ type Visitor = {
   public_page_view_count: number; survey_prompted_at: string | null; survey_completed_at: string | null;
 };
 type Feedback = {
-  id: string; category: string; message: string; page_category: string;
+  id: string; category: string; message: string; rating: number | null; page_category: string;
   status: "new" | "in_progress" | "resolved"; submitted_at: string; updated_at: string;
 };
 type SurveyResponse = { id: string; rating: number; appreciated: string[]; pain_points: string[]; improvement_suggestion: string; submitted_at: string };
@@ -36,7 +35,7 @@ type VisitorSurveyResponse = { id: string; persona: string; found_what: string; 
 type Dashboard = {
   generated_at: string; visitors_total: number; visitors_active_24h: number;
   page_views_total: number; clicks_total: number; auth_successes_total: number;
-  login_failures_total: number; feedback_total: number; feedback_new_total: number;
+  login_failures_total: number; feedback_total: number; feedback_new_total: number; feedback_rated_total: number; feedback_average_rating: number | null;
   survey_prompted_total: number; survey_responses_total: number; survey_completion_rate: number;
   survey_average_rating: number | null; survey_distribution: Record<string, number>;
   visitor_survey_prompted_total: number; visitor_survey_responses_total: number; visitor_survey_completion_rate: number;
@@ -256,7 +255,6 @@ export default function AdminPage() {
           <span><strong className="notranslate" translate="no">Mon E‑Carnet</strong><small>Administration</small></span>
         </Link>
       </header>
-      <DataSaverBanner />
       <header className="admin-page-heading"><div><span className="eyebrow">Console privée</span><h1>Administration Mon E‑Carnet</h1><p className="muted">Actualisé {formatDate(dashboard.generated_at)} · synchronisation automatique toutes les 2 min</p></div><button type="button" className={`admin-refresh-icon${manualRefreshing ? " is-refreshing" : ""}`} aria-label="Actualiser les données" title="Actualiser les données" aria-busy={manualRefreshing} disabled={manualRefreshing} onClick={() => void loadDashboard(true, true)}><Icon name="refresh" size={20} /></button></header>
       {refreshMessage && <p className="admin-refresh-note" role="status">{refreshMessage}</p>}
       <div className="admin-workspace__content">
@@ -288,10 +286,10 @@ export default function AdminPage() {
     </section>}
 
     {activeTab === "feedback" && <section id="admin-panel-feedback" role="tabpanel" aria-labelledby="admin-tab-feedback" className="stack-lg">
-      <div className="admin-metrics admin-metrics--compact"><article className="card admin-metric"><span className="muted">Retours reçus</span><strong>{dashboard.feedback_total}</strong></article><article className="card admin-metric"><span className="muted">À traiter</span><strong>{dashboard.feedback_new_total}</strong></article></div>
+      <div className="admin-metrics admin-metrics--compact"><article className="card admin-metric"><span className="muted">Retours reçus</span><strong>{dashboard.feedback_total}</strong></article><article className="card admin-metric"><span className="muted">À traiter</span><strong>{dashboard.feedback_new_total}</strong></article><article className="card admin-metric"><span className="muted">Note moyenne de l’application</span>{dashboard.feedback_average_rating !== null ? <><StarRating value={dashboard.feedback_average_rating} label={`Note moyenne : ${dashboard.feedback_average_rating} sur 5`} /><strong>{dashboard.feedback_average_rating.toLocaleString("fr-FR")} / 5</strong><small>{dashboard.feedback_rated_total} note{dashboard.feedback_rated_total > 1 ? "s" : ""}</small></> : <><strong>—</strong><small>Aucune note pour le moment</small></>}</article></div>
       <section className="card admin-table-card"><div className="admin-table-title"><div><span className="eyebrow">Retours du site</span><h2>Feedback des visiteurs</h2></div><span className="muted">{filteredFeedback.length} résultat(s) · maximum 200 chargés</span></div>
         <label className="field admin-search"><span>Rechercher dans les retours</span><input type="search" value={feedbackSearch} onChange={(event) => setFeedbackSearch(event.target.value)} placeholder="Mot, catégorie, statut…" /></label>
-        {filteredFeedback.length === 0 ? <p className="empty">Aucun retour ne correspond à cette recherche.</p> : <div className="admin-feedback-list">{filteredFeedback.map((item) => <article className="admin-feedback-item" key={item.id}><div className="admin-feedback-head"><div><span className="badge">{feedbackLabel[item.category] ?? item.category}</span><span className={`badge admin-feedback-status admin-feedback-status--${item.status}`}>{feedbackStatusLabel[item.status]}</span></div><small>{categoryLabel[item.page_category] ?? "Autre"} · {formatDate(item.submitted_at)}</small></div><p className="admin-feedback-message">{item.message}</p><label className="field admin-feedback-select"><span>Statut</span><select value={item.status} disabled={busyFeedbackId === item.id} onChange={(event) => void updateFeedback(item.id, event.target.value as Feedback["status"])}><option value="new">Nouveau</option><option value="in_progress">En cours</option><option value="resolved">Traité</option></select></label></article>)}</div>}
+        {filteredFeedback.length === 0 ? <p className="empty">Aucun retour ne correspond à cette recherche.</p> : <div className="admin-feedback-list">{filteredFeedback.map((item) => <article className="admin-feedback-item" key={item.id}><div className="admin-feedback-head"><div><span className="badge">{feedbackLabel[item.category] ?? item.category}</span><span className={`badge admin-feedback-status admin-feedback-status--${item.status}`}>{feedbackStatusLabel[item.status]}</span></div><small>{categoryLabel[item.page_category] ?? "Autre"} · {formatDate(item.submitted_at)}</small></div>{item.rating ? <p className="admin-feedback-rating"><StarRating value={item.rating} label={`Note : ${item.rating} sur 5`} /> <strong>{item.rating}/5</strong></p> : null}{item.message ? <p className="admin-feedback-message">{item.message}</p> : <p className="admin-feedback-message muted">Note seule, sans message.</p>}<label className="field admin-feedback-select"><span>Statut</span><select value={item.status} disabled={busyFeedbackId === item.id} onChange={(event) => void updateFeedback(item.id, event.target.value as Feedback["status"])}><option value="new">Nouveau</option><option value="in_progress">En cours</option><option value="resolved">Traité</option></select></label></article>)}</div>}
         <p className="admin-privacy-note">Les retours sont anonymes; le formulaire ne demande pas d’adresse email. Il demande aux visiteurs de ne pas inclure de données de santé ou d’identifiants.</p>
       </section>
     </section>}

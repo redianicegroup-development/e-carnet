@@ -20,11 +20,15 @@ function webpSize(buffer) {
 }
 const sizeOf = (path) => webpSize(readFileSync(publicFile(path)));
 
-test("le titre découpé se lit « Votre carnet de santé, sous votre contrôle. » et porte trois carrés, aux bons endroits", () => {
-  const flat = landing.HERO_TITLE_GROUPS.flat();
-  assert.equal(flat.filter((token) => typeof token === "string").join(" "), landing.HERO.title);
-  const around = flat.flatMap((token, index) => (typeof token === "string" ? [] : [[token.slot, flat[index - 1], flat[index + 1]]]));
-  assert.deepEqual(around, [["a", "de", "santé,"], ["b", "sous", "votre"], ["media", "votre", "contrôle."]]);
+test("le titre du héro est le slogan « Gardez le fil avec Mon E‑Carnet. », et quatre carrés-diaporama entourent le filigrane", async () => {
+  const { APP_SLOGAN } = await import("../src/lib/brand.ts");
+  assert.equal(landing.HERO_TITLE_GROUPS.flat().join(" "), landing.HERO.title);
+  assert.equal(landing.HERO.title, APP_SLOGAN);
+  assert.deepEqual([...landing.HERO_SLOTS], ["a", "b", "c", "d"]);
+  assert.ok(landing.HERO_SLIDES.length >= 10, "dix photos au moins pour les diaporamas");
+  const tiles = read("src/components/landing/HeroTiles.tsx");
+  assert.match(tiles, /data-hero-slot="media"/);
+  assert.match(tiles, /MON <\/span>|<span>MON<\/span>/);
 });
 
 test("deux diaporamas de 4 s, décalés, au hasard, jamais la même photo dans les deux carrés, immobiles si on réduit les animations", () => {
@@ -49,15 +53,16 @@ test("les photos des carrés sont des carrés de 480 × 480", () => {
   for (const src of landing.HERO_SLIDES) assert.deepEqual(sizeOf(src), [480, 480], src);
 });
 
-test("le texte du héro est centré, et le repli sans animation garde l'image dans son coin", () => {
+test("le héro : filigrane au centre, slogan et bouton en bas, et la grande image sans animation n'apparaît pas", () => {
   const css = read("src/app/landing-showcase.css");
-  assert.match(css, /\.lp-hero__copy \{[^}]*justify-items: center;[^}]*text-align: center/);
-  assert.match(css, /\.lp-hero__inner \{[^}]*justify-content: center/);
+  assert.match(css, /\.lp-hero__copy \{ position: absolute; inset: 0; z-index: 2; \}/);
+  assert.match(css, /\.lp-hero__foot \{ position: absolute;[^}]*justify-items: center;[^}]*text-align: center/);
+  assert.match(css, /\.lp-hero__mark \{[^}]*font-weight: 850; letter-spacing: -\.07em;/, "même style que le filigrane du pied de page");
   assert.match(css, /\.lp-hero \.actions \{ justify-content: center; \}/);
   assert.match(css, /\.lp-hero__tg \{ white-space: nowrap; \}/);
   assert.match(css, /\.lp-hero__slot--media \{ display: none;/);
-  assert.match(css, /\.lp-root\[data-motion="ready"\] \.lp-hero__slot--media \{ display: inline-block; \}/);
-  assert.match(css, /\.lp-root:not\(\[data-motion="ready"\]\) \.lp-hero__inner \{ align-items: flex-start;/);
+  assert.match(css, /\.lp-root\[data-motion="ready"\] \.lp-hero__slot--media \{ display: block; \}/);
+  assert.match(css, /\.lp-root:not\(\[data-motion="ready"\]\) \.lp-hero__media \{ display: none; \}/);
   assert.match(css, /@media \(prefers-reduced-motion: no-preference\) \{\s*\.lp-hero__slide\[data-pos="in"\], \.lp-hero__slide\[data-pos="out"\] \{ transition: transform/);
 });
 

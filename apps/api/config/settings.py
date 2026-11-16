@@ -94,12 +94,14 @@ REST_FRAMEWORK = {
 }
 WEB_ORIGIN = os.environ.get("WEB_ORIGIN", "http://localhost:3000")
 ECARNET_QR_TTL_SECONDS = int(os.environ.get("ECARNET_QR_TTL_SECONDS", "300"))
-ECARNET_REPRESENTATION_LEGAL_AGE = (
-    int(os.environ["ECARNET_REPRESENTATION_LEGAL_AGE"])
-    if os.environ.get("ECARNET_REPRESENTATION_LEGAL_AGE", "").isdigit()
-    else None
-)
-ECARNET_TRUSTED_CONTACTS_ENABLED = os.environ.get("ECARNET_TRUSTED_CONTACTS_ENABLED", "false").lower() == "true"
+# Âge de la majorité civile pour les profils représentés (enfants) : 18 ans en Côte d'Ivoire (loi n° 2019-572 du 26 juin 2019, art. 1 :
+# est mineure la personne qui n'a pas atteint 18 ans accomplis). Modifiable par variable d'environnement ; une valeur vide ou non numérique
+# remet la création de profils représentés à l'arrêt (le serveur répond alors 503).
+_legal_age = os.environ.get("ECARNET_REPRESENTATION_LEGAL_AGE", "18")
+ECARNET_REPRESENTATION_LEGAL_AGE = int(_legal_age) if _legal_age.isdigit() else None
+# Proches de confiance (délégation limitée à la fiche d'urgence, révocable, journalisée) : activés par défaut depuis le 15/11/2026.
+# `ECARNET_TRUSTED_CONTACTS_ENABLED=false` les éteint sans toucher au code.
+ECARNET_TRUSTED_CONTACTS_ENABLED = os.environ.get("ECARNET_TRUSTED_CONTACTS_ENABLED", "true").lower() == "true"
 ECARNET_REFERRALS_ENABLED = os.environ.get("ECARNET_REFERRALS_ENABLED", "false").lower() == "true"
 # ACS-13 — accès d'urgence « bris de glace » : lecture de la seule fiche d'urgence, sans consentement préalable, motivée, tracée,
 # revue sous 72 h. DÉSACTIVÉ par défaut : aucune activation en production sans les trois décisions écrites (avis juridique,

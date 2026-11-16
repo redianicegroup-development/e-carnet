@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { apiDelete, apiGet, apiPatch, apiPost } from "../infrastructure/api/client";
+import { errorReason } from "../lib/access-outcome";
+import { useConfirm } from "./modal/ConfirmProvider";
+import { OutcomeDialog, type OutcomeDialogProps } from "./modal/OutcomeDialog";
 
 type Representation = {
   id: string;
@@ -16,7 +19,11 @@ type Representation = {
   is_active: boolean;
 };
 
+const CREATE_ERROR_FALLBACK = "Le profil n’a pas pu être créé. Vérifiez les informations saisies et réessayez.";
+
 export function PatientRepresentationsSettingsClient() {
+  const confirm = useConfirm();
+  const [outcome, setOutcome] = useState<Omit<OutcomeDialogProps, "onClose"> | null>(null);
   const [items, setItems] = useState<Representation[]>([]);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -45,6 +52,7 @@ export function PatientRepresentationsSettingsClient() {
     event.preventDefault();
     setBusy(true);
     setMessage("Création du profil séparé…");
+    const created = { first: firstName.trim(), last: lastName.trim() };
     try {
       await apiPost("/api/v1/patient/representations/", {
         first_name: firstName.trim(),
@@ -59,8 +67,11 @@ export function PatientRepresentationsSettingsClient() {
       setLegalRepresentativeConfirmed(false);
       await load();
       setMessage("Profil créé. Son dossier est distinct et les accès du représentant sont journalisés.");
+      setOutcome({ tone: "success", title: "Profil créé", message: `Le profil de ${created.first} ${created.last} a été créé. Son dossier est distinct du vôtre.`, note: "Vous pouvez l’ouvrir depuis « Profils représentés ». Chacun de vos accès à ce dossier est journalisé." });
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Impossible de créer ce profil.");
+      const reason = errorReason(error, CREATE_ERROR_FALLBACK);
+      setMessage(reason);
+      setOutcome({ tone: "error", title: "Profil non créé", message: reason });
     } finally {
       setBusy(false);
     }
@@ -82,7 +93,8 @@ export function PatientRepresentationsSettingsClient() {
   }
 
   async function revoke(item: Representation) {
-    if (!window.confirm(`Révoquer le lien de représentation pour ${item.first_name} ${item.last_name} ? Son dossier et son historique seront conservés.`)) return;
+    const accepted = await confirm({ title: "Révoquer ce lien ?", message: `Le lien de représentation pour ${item.first_name} ${item.last_name} sera révoqué.`, note: "Son dossier et son historique sont conservés. Vous pourrez réactiver le lien.", confirmLabel: "Révoquer le lien", cancelLabel: "Garder", tone: "danger" });
+    if (!accepted) return;
     setBusy(true);
     try {
       await apiDelete(`/api/v1/patient/representations/${item.id}/`);
@@ -119,7 +131,7 @@ export function PatientRepresentationsSettingsClient() {
 
   return (
     <section className="settings-form">
-      <p className="muted">Créez un dossier distinct pour un enfant mineur sans compte. Un adulte doit autoriser lui-même une délégation; ce parcours n’est pas encore activé. <Link href="/proches-et-enfants">Comment ça marche ?</Link> Le lien ne crée pas un compte de connexion et n’accorde pas d’accès clinique à un professionnel.</p>
+      <p className="muted">Créez un dossier distinct pour un enfant mineur sans compte. Pour donner accès à un adulte, utilisez « Proches de confiance » : un adulte autorise lui-même la délégation. <Link href="/proches-et-enfants">Comment ça marche ?</Link> Le lien ne crée pas un compte de connexion et n’accorde pas d’accès clinique à un professionnel.</p>
       <form className="settings-form" onSubmit={(event) => void create(event)}>
         <div className="auth-name-grid">
           <label className="field"><span>Prénom</span><input required maxLength={80} value={firstName} onChange={(event) => setFirstName(event.target.value)} disabled={busy} /></label>
@@ -129,7 +141,7 @@ export function PatientRepresentationsSettingsClient() {
           <label className="field"><span>Date de naissance</span><input required type="date" max={new Date().toISOString().slice(0, 10)} value={birthDate} onChange={(event) => setBirthDate(event.target.value)} disabled={busy} /></label>
           <label className="field"><span>Lien avec vous</span><select value={relationship} onChange={(event) => setRelationship(event.target.value)} disabled={busy}><option value="child">Enfant</option></select></label>
         </div>
-        <label className="field"><span><input required type="checkbox" checked={legalRepresentativeConfirmed} onChange={(event) => setLegalRepresentativeConfirmed(event.target.checked)} disabled={busy} /> Je confirme être autorisé(e) à représenter légalement cet enfant.</span></label>
+        <label className="check"><input required type="checkbox" checked={legalRepresentativeConfirmed} onChange={(event) => setLegalRepresentativeConfirmed(event.target.checked)} disabled={busy} /> <span>Je confirme être autorisé(e) à représenter légalement cet enfant.</span></label>
         <button className="button primary" type="submit" disabled={busy || loading}>{busy ? "Enregistrement…" : "Créer un profil séparé"}</button>
       </form>
       <div className="stack">
@@ -155,8 +167,9 @@ export function PatientRepresentationsSettingsClient() {
         ))}
         <button type="button" className="button" disabled={busy} onClick={() => void selectProfile(null)}>Revenir à mon dossier</button>
       </div>
-      <p className="muted">La personne devenue adulte doit créer ou ouvrir son propre compte, puis faire elle-même la <Link href="/patient/transfert">demande de transfert</Link> avant de créer un autre dossier patient. Le seuil légal devra être validé et la demande sera examinée manuellement. Aucun dossier n’est fusionné.</p>
+      <p className="muted">La personne devenue adulte doit créer ou ouvrir son propre compte, puis faire elle-même la <Link href="/patient/transfert">demande de transfert</Link> avant de créer un autre dossier patient. La demande sera examinée manuellement. Aucun dossier n’est fusionné.</p>
       <p className="status" role="status" aria-live="polite">{message}</p>
+      {outcome && <OutcomeDialog {...outcome} onClose={() => setOutcome(null)} />}
     </section>
   );
 }

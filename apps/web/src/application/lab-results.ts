@@ -78,7 +78,7 @@ export function listLabHistory(options: { status?: LabDepositStatus; from?: stri
 
 /* ---------- établissement : son laboratoire interne et ses administrateurs ---------- */
 export type LabAccess = { email: string; state: "temporary_password" | "expired" | "activated" | "revoked"; expires_at: string | null } | null;
-export type LabAdministrator = { name: string; email: string; access: LabAccess };
+export type LabAdministrator = { id: string; first_name: string; last_name: string; name: string; email: string; started_at: string | null; access: LabAccess };
 export type EstablishmentLab = {
   id: string; name: string; status: string; created_at: string;
   administrators: LabAdministrator[]; can_add_administrator: boolean;
@@ -92,3 +92,6 @@ export type CreatedLab = {
 /** Aucun nom de laboratoire : c'est le laboratoire interne de l'établissement. On ne saisit que l'administrateur. */
 export const createLaboratory = (establishmentId: string, input: { admin_email: string; admin_first_name: string; admin_last_name: string }) =>
   apiPost<CreatedLab>(`/api/v1/establishments/${establishmentId}/laboratories/`, input);
+/** Retire l'accès d'un administrateur du laboratoire. Le motif est obligatoire : la personne le lit à sa prochaine connexion. */
+export const revokeLaboratoryAdministrator = (establishmentId: string, laboratoryId: string, administratorId: string, reason: string) =>
+  apiPost<{ id: string; revoked: number }>(`/api/v1/establishments/${establishmentId}/laboratories/${laboratoryId}/administrators/${administratorId}/revoke/`, { reason });

@@ -21,13 +21,13 @@ import { AppSidebar, type SidebarItem, type SidebarMenuItem } from "./AppSidebar
 import { TrustedDelegationBanner } from "../TrustedDelegationBanner";
 import { OfflineCacheKeeper } from "../OfflineCacheKeeper";
 import { PushAutoEnable } from "../PushAutoEnable";
-import { DataSaverBanner } from "../data-saver/DataSaverBanner";
 import { ScrollToTopOnNavigate } from "../ScrollToTopOnNavigate";
 import { cleanUpBeforeLogout } from "../../lib/logout";
 import { purgeOfflineSnapshot } from "../../lib/offline-snapshot";
 import { purgeOfflineCache } from "../../lib/offline-cache";
 import { NETWORK_RESTORED_EVENT, OFFLINE_NO_COPY_MESSAGE } from "../../lib/network-status";
 import { useNetwork } from "../network/NetworkProvider";
+import { RevocationNotices, type RevocationNotice } from "../RevocationNotices";
 
 export type SpaceAccount = {
   id: string;
@@ -40,6 +40,8 @@ export type SpaceAccount = {
   must_change_password?: boolean;
   contexts: { role: string; is_active: boolean; onboarding_completed: boolean; is_laboratory?: boolean }[];
   patient_profile: { completed: boolean; id: string | null };
+  /** Motifs de révocation pas encore lus (rattachement ou accès de laboratoire retiré par un établissement). */
+  revocation_notices?: RevocationNotice[];
 };
 
 const AccountContext = createContext<SpaceAccount | null>(null);
@@ -348,7 +350,6 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
             </div>
           </header>
         )}
-        <DataSaverBanner visible={!bare} />
         {state.status === "loading" && <ScreenLoader label={state.label} />}
         {state.status === "anonymous" && !bare && <div className="skeleton" role="status" aria-live="polite"><span className="sr-only">Redirection vers la connexion…</span><i /><i /><i /></div>}
         {state.status === "error" && !bare && (
@@ -368,7 +369,8 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
         )}
         {!bare && <p className="space-footer" data-scroll-top="true"><Link href="/aide">Aide</Link></p>}
       </main>
-      {state.status === "ready" && !bare && !spaceRedirect && <GreetingModal account={state.account} space={space} />}
+      {state.status === "ready" && !bare && !spaceRedirect && !passwordChangePending && (state.account.revocation_notices?.length ?? 0) > 0 && <RevocationNotices notices={state.account.revocation_notices ?? []} />}
+      {state.status === "ready" && !bare && !spaceRedirect && !((state.account.revocation_notices?.length ?? 0) > 0) && <GreetingModal account={state.account} space={space} />}
       {state.status === "ready" && !spaceRedirect && !bare && !passwordChangePending && !profilePending && <ProductTour space={space} accountId={state.account.id} />}
       {state.status === "ready" && !spaceRedirect && !bare && !passwordChangePending && !profilePending && <HowToTour space={space} accountId={state.account.id} clinical={space === "professional" ? clinicalReady : true} />}
     </div>

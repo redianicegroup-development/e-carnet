@@ -15,8 +15,8 @@ export function useStoredLanguage(): AppLanguage {
   return useSyncExternalStore(subscribeToStorage, () => readStoredLanguage(), (): AppLanguage => "fr");
 }
 
-/** Paramètres › Langue : français par défaut, anglais et arabe traduits par Google Translate. */
-export function LanguageSettings() {
+/** Choix de la langue (Google Translate) : demande l'accord une fois pour l'anglais et l'arabe, garde le choix, puis recharge la page. Partagé par Paramètres › Langue et le menu public. */
+export function useLanguageChooser() {
   const confirm = useConfirm();
   const current = useStoredLanguage();
   const [busy, setBusy] = useState(false);
@@ -40,6 +40,13 @@ export function LanguageSettings() {
     writeTranslateCookie(code);
     window.location.reload(); // revenir au texte d'origine ou traduire proprement : on repart d'une page neuve
   }
+
+  return { current, busy, choose };
+}
+
+/** Paramètres › Langue : français par défaut, anglais et arabe traduits par Google Translate. */
+export function LanguageSettings() {
+  const { current, busy, choose } = useLanguageChooser();
 
   return (
     <div className="settings-modal-section">

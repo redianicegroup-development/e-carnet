@@ -1,3 +1,4 @@
+import { APP_SLOGAN } from "../../lib/brand";
 import Link from "next/link";
 import { AuthForms } from "../../components/AuthForms";
 import { AuthUiProvider } from "../../components/auth/AuthUiContext";
@@ -22,7 +23,7 @@ export default function LoginPage() {
       <AuthWelcome />
       <div className="ax-stage__copy">
         <p className="ax-stage__eyebrow" data-auth-item>Votre carnet, simplement</p>
-        <h1 id="auth-title">Votre santé, votre carnet, votre décision.</h1>
+        <h1 id="auth-title">{APP_SLOGAN}</h1>
         <p className="ax-stage__lead" data-auth-item><span className="ax-lead-long">Un seul accès pour retrouver votre espace ou créer votre carnet. Vous gardez la maîtrise de vos données et de vos accès médicaux.</span><span className="ax-lead-short">Un seul accès à votre carnet. Vous gardez la main sur vos données.</span></p>
       </div>
     </section>

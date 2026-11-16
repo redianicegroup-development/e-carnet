@@ -77,12 +77,16 @@ class AdminDashboardView(APIView):
             oauth_successes=Sum("oauth_success_count"), login_failures=Sum("login_failure_count"),
         )
         feedback_items = list(SiteFeedback.objects.order_by("-submitted_at").values(
-            "id", "category", "message", "page_category", "status", "submitted_at", "updated_at",
+            "id", "category", "message", "rating", "page_category", "status", "submitted_at", "updated_at",
         )[:200])
         for item in feedback_items:
             item["id"] = str(item["id"])
             item["submitted_at"] = item["submitted_at"].isoformat()
             item["updated_at"] = item["updated_at"].isoformat()
+
+        # Moyenne des notes « Noter l'application » (étoiles), sur tous les retours notés ; None tant qu'aucune note n'a été donnée.
+        average = SiteFeedback.objects.filter(rating__isnull=False).aggregate(value=Avg("rating"))["value"]
+        feedback_average_rating = round(average, 1) if average is not None else None
 
         visitor_survey_queryset = VisitorDiscoverySurveyResponse.objects.all()
         visitor_survey_prompted = queryset.filter(visitor_survey_prompted_at__isnull=False).count()
@@ -169,6 +173,8 @@ class AdminDashboardView(APIView):
             "login_failures_total": totals["login_failures"] or 0,
             "feedback_total": SiteFeedback.objects.count(),
             "feedback_new_total": SiteFeedback.objects.filter(status="new").count(),
+            "feedback_rated_total": SiteFeedback.objects.filter(rating__isnull=False).count(),
+            "feedback_average_rating": feedback_average_rating,
             "visitor_survey_prompted_total": visitor_survey_prompted,
             "visitor_survey_responses_total": visitor_survey_queryset.count(),
             "visitor_survey_completion_rate": round(visitor_survey_queryset.count() * 100 / visitor_survey_prompted, 1) if visitor_survey_prompted else 0,

@@ -53,7 +53,7 @@ class MemberDetailTests(TestCase):
         EstablishmentMembership.objects.create(establishment=self.establishment, professional=self.profile, status="active")
         membership = EstablishmentMembership.objects.get(professional=self.profile)
         self.client.force_authenticate(self.admin)
-        response = self.client.post(f"/api/v1/establishments/{self.establishment.id}/memberships/{membership.id}/terminate/", {}, format="json")
+        response = self.client.post(f"/api/v1/establishments/{self.establishment.id}/memberships/{membership.id}/terminate/", {"reason": "Fin de collaboration avec la structure"}, format="json")
         self.assertEqual(response.status_code, 200)
         membership.refresh_from_db()
         self.assertNotEqual(membership.status, "active")

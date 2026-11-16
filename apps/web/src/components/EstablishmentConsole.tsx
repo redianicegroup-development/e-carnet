@@ -8,6 +8,7 @@ import { EstablishmentLogo } from "./EstablishmentLogo";
 import "./establishment-logo.css";
 import { useConfirm } from "./modal/ConfirmProvider";
 import { useDialogBehavior } from "./modal/useDialogBehavior";
+import { RevocationReasonDialog } from "./modal/RevocationReasonDialog";
 import { Icon } from "./ui/Icon";
 import "./join-codes.css";
 import { PageHeader } from "./ui/PageHeader";
@@ -109,6 +110,7 @@ export function EstablishmentConsole({ view }: { view: "home" | "requests" | "do
   const [busy, setBusy] = useState(false);
   const confirm = useConfirm();
   const [openMemberId, setOpenMemberId] = useState<string | null>(null);
+  const [revokeTarget, setRevokeTarget] = useState<Membership | null>(null);
 
   if (error) return <p className="notice" role="alert">{error}</p>;
   if (!data) return <div className="skeleton" role="status"><span className="sr-only">Chargement…</span><i /><i /></div>;
@@ -139,11 +141,14 @@ export function EstablishmentConsole({ view }: { view: "home" | "requests" | "do
     await run(async () => { await apiPost(`/api/v1/establishments/${establishment.id}/memberships/${id}/decision/`, { decision }); }, approve ? "Rattachement confirmé : le médecin peut travailler." : "Demande refusée.");
   };
 
-  const revoke = async (member: Membership) => {
-    setOpenMemberId(null);
-    const ok = await confirm({ title: "Révoquer ce médecin ?", message: `${member.professional_name || "Ce médecin"} ne pourra plus travailler au nom de ${establishment.name}.`, note: "Les dossiers et les traces existants sont conservés.", confirmLabel: "Révoquer", cancelLabel: "Garder", tone: "danger", mood: "farewell" });
-    if (!ok) return;
-    await run(async () => { await apiPost(`/api/v1/establishments/${establishment.id}/memberships/${member.id}/terminate/`, {}); }, "Rattachement révoqué.");
+  // Révocation avec motif obligatoire : le professionnel le lira à sa prochaine connexion (un push l'avertit sans le révéler).
+  const revoke = (member: Membership) => { setOpenMemberId(null); setRevokeTarget(member); };
+  const submitRevoke = async (reason: string) => {
+    if (!revokeTarget) return;
+    await apiPost(`/api/v1/establishments/${establishment.id}/memberships/${revokeTarget.id}/terminate/`, { reason });
+    setRevokeTarget(null);
+    setMessage("Rattachement révoqué. Le professionnel verra le motif à sa prochaine connexion.");
+    await reload();
   };
   const openMember = doctors.find((item) => item.id === openMemberId) ?? null;
 
@@ -174,7 +179,8 @@ export function EstablishmentConsole({ view }: { view: "home" | "requests" | "do
           {doctors.map((item) => <li key={item.id}><button type="button" className="team-photo" aria-label={`Voir la fiche de ${item.professional_name || "ce médecin"}`} title={item.professional_name || "Médecin"} onClick={() => setOpenMemberId(item.id)}><MemberAvatar member={item} size={64} /></button></li>)}
         </ul>
       )}
-      {openMember && <MemberDetail member={openMember} busy={busy} onClose={() => setOpenMemberId(null)} onRevoke={() => void revoke(openMember)} />}
+      {openMember && <MemberDetail member={openMember} busy={busy} onClose={() => setOpenMemberId(null)} onRevoke={() => revoke(openMember)} />}
+      {revokeTarget && <RevocationReasonDialog title="Révoquer ce médecin ?" message={`${revokeTarget.professional_name || "Ce médecin"} ne pourra plus travailler au nom de ${establishment.name}.`} note="Les dossiers et les traces existants sont conservés." confirmLabel="Révoquer" onSubmit={submitRevoke} onCancel={() => setRevokeTarget(null)} />}
     </section>
   );
 

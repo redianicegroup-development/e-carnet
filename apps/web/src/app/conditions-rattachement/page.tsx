@@ -55,6 +55,7 @@ export default function ConditionsRattachementPage() {
                 ]}
               />
               <p>Le serveur enregistre le médecin, l’établissement, la version acceptée et l’horodatage UTC lorsque le code est soumis. Sans acceptation explicite, le code n’est pas consommé. L’acceptation ne donne pas, à elle seule, accès aux dossiers patients : la demande doit être approuvée et les contrôles de consentement et d’autorisation clinique restent applicables.</p>
+              <p><strong>Si l’établissement met fin au rattachement.</strong> Il doit en indiquer le motif. Vous le lisez à votre prochaine connexion, et dans « Mes rattachements » ; une notification vous prévient aussitôt, sans afficher le motif sur un écran verrouillé. Vos nouveaux accès cliniques dépendant de cet établissement s’arrêtent immédiatement. Cette information ne modifie pas les engagements ci-dessus.</p>
               <p className="muted">L’identité des parties, les responsabilités, la durée, les exceptions de confidentialité, les règles de conservation, la signature électronique et les exigences locales doivent être validées par un juriste avant production.</p>
               <p><Link href="/professionnel/acces">Revenir et accepter les conditions</Link></p>
             </section>

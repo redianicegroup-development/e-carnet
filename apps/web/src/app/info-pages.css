@@ -205,3 +205,6 @@
 .legal__commitments { counter-reset: commit; display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
 .legal__commitments li { position: relative; padding-left: 44px; line-height: 1.6; counter-increment: commit; }
 .legal__commitments li::before { content: counter(commit); position: absolute; left: 0; top: -1px; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 10px; background: var(--primary-tint); color: var(--primary-text); font-size: .85rem; font-weight: 800; }
+
+/* Slogan de l'application sous le titre d'une page d'information. */
+.app-slogan { margin: 0; color: var(--primary, currentColor); font-weight: 700; font-size: 1rem; letter-spacing: .01em; }

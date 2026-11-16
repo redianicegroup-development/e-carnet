@@ -30,6 +30,7 @@ from apps.identity.models import AccountContext
 from apps.identity.temporary_password import disable_temporary_password, has_pending_temporary_password, issue_temporary_password, temporary_password_expired
 from .provisioning import AccountConflict, ProvisionedAccess, login_url, provision_administrator
 from .join_code_crypto import purge_dead_codes, seal_code, unseal_code
+from .revocations import clean_reason, notify_revoked
 from .models import PROFILE_FIELDS, Establishment, EstablishmentAdminInvitation, EstablishmentAdministrator, EstablishmentJoinCode, EstablishmentMembership, EstablishmentNotification, PrescriptionTemplate, generate_internal_code
 from .serializers import EstablishmentProfileSerializer, EstablishmentSerializer, MembershipSerializer, PrescriptionTemplateSerializer, logo_for
 
@@ -915,16 +916,25 @@ class MembershipTerminateByEstablishmentView(APIView):
         ).select_related("professional__user").first() if admin else None
         if not membership:
             return Response({"success": False, "message": "Rattachement actif introuvable ou action non autorisée."}, status=404)
+        # Le motif est obligatoire : le professionnel le lira à sa prochaine connexion (un push l'avertit sans le révéler).
+        reason, reason_error = clean_reason(request.data.get("reason"))
+        if reason_error:
+            return Response({"success": False, "message": reason_error}, status=400)
+        now = timezone.now()
         membership.status = "terminated"
         membership.is_medical_referent = False
-        membership.left_at = timezone.now()
-        membership.reviewed_at = timezone.now()
-        membership.save(update_fields=("status", "is_medical_referent", "left_at", "reviewed_at"))
+        membership.left_at = now
+        membership.reviewed_at = now
+        membership.terminated_by_establishment = True
+        membership.termination_reason = reason
+        membership.termination_notice_seen_at = None
+        membership.save(update_fields=("status", "is_medical_referent", "left_at", "reviewed_at", "terminated_by_establishment", "termination_reason", "termination_notice_seen_at"))
         profile = membership.professional
         if profile.active_establishment_id == membership.establishment_id:
             profile.active_establishment = None
             profile.save(update_fields=("active_establishment", "updated_at"))
         record_event(event_type="membership.terminated_by_establishment", actor=request.user, actor_role="establishment_administrator", establishment=membership.establishment, metadata={"action": "terminated", "membership_id": str(membership.id), "reason": "establishment_initiated"})
+        notify_revoked(profile.user_id, "membership.revoked", url="/professionnel")
         return Response({"success": True, "data": MembershipSerializer(membership).data})
 
 

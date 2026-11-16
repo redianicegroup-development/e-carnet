@@ -9,7 +9,6 @@ import { SettingsDirectory, type SettingsNavItem } from "./SettingsDirectory";
 import { SettingsModal } from "./SettingsModal";
 import { SettingsMoreSection } from "./SettingsMoreSection";
 import { OfflineDataToggle } from "./OfflineDataToggle";
-import { DataSaverSettings } from "./data-saver/DataSaverSettings";
 import { LandingFeedbackWidget } from "./LandingFeedbackWidget";
 import { ThemeSettingsClient } from "./ThemeSettingsClient";
 import { AccountActionRequestsSettingsClient } from "./AccountActionRequestsSettingsClient";
@@ -95,7 +94,6 @@ export function EstablishmentSettingsClient({ laboratory = false }: { laboratory
     { id: "ordonnance", title: "Modèle d’ordonnance", description: "En-tête et pied de page imprimables.", icon: "document" },
     { id: "compte", title: "Personnalisation de mon compte", description: "Personnaliser l’apparence de l’application.", icon: "sparkle" },
     { id: "securite", title: "Sécurité et connexion", description: "Fournisseurs de connexion et appareils connectés.", icon: "lock" },
-    { id: "economie-donnees", title: "Économie de données", description: "Alléger les pages et les photos quand le réseau est lent.", icon: "download" },
     { id: "hors-connexion", title: "Hors connexion", description: "Naviguer sans réseau avec une copie chiffrée, en lecture seule.", icon: "download" },
     { id: "en-savoir-plus", title: "En savoir plus", description: "Aide, informations et documents Mon E‑Carnet.", icon: "help" },
     { id: "avis", title: "Noter l’application", description: "Partager une suggestion ou signaler un problème.", icon: "pencil" },
@@ -143,7 +141,6 @@ export function EstablishmentSettingsClient({ laboratory = false }: { laboratory
       {activeSection === "securite" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Accès au compte</span><p className="muted">Les actions établissement sont contrôlées côté API selon votre compte et votre rôle. Gérez ci-dessous vos méthodes de connexion.</p><LinkedProvidersSettingsClient nextPath="/etablissement/parametres" /><LogoutAllSetting disabled={signingOut || loading} /><AccountActionRequestsSettingsClient isPrivileged={account?.is_privileged ?? true} /><ul className="info-list"><li>La session est gérée par le serveur et protégée contre les requêtes intersites.</li></ul>
       </div></SettingsModal>}
 
-      {activeSection === "economie-donnees" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><DataSaverSettings /></SettingsModal>}
 
       {activeSection === "hors-connexion" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><OfflineDataToggle audience="third-party" /></SettingsModal>}
       {activeSection === "en-savoir-plus" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><SettingsMoreSection /></SettingsModal>}

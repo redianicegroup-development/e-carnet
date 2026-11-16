@@ -1,3 +1,4 @@
+import { AppSlogan } from "../../components/ui/AppSlogan";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { InfoPageMotion } from "../../components/motion/InfoPageMotion";
@@ -31,6 +32,7 @@ export default function SecurityPage() {
               <span className="eyebrow">Sécurité et confidentialité</span>
               <h1>Le patient garde la maîtrise des accès.</h1>
               <p className="lead">Mon E‑Carnet organise les autorisations autour d’une règle simple : chacun ne voit que ce qui lui est destiné, pour le temps nécessaire.</p>
+            <AppSlogan />
             </div>
             <DocHero icon="lock" />
           </header>

@@ -15,9 +15,9 @@ export const metadata: Metadata = {
 type Step = { icon: IconName; title: string; text: string };
 
 const TRUSTED_STEPS: Step[] = [
-  { icon: "users", title: "Vous générez un mot de rattachement", text: "Dans Moi → Proches de confiance. Il est temporaire (72 heures) et ne sert qu’une seule fois." },
+  { icon: "users", title: "Vous générez un mot de rattachement", text: "Dans Moi → Proches de confiance → « Donner accès ». Il est temporaire (72 heures) et ne sert qu’une seule fois." },
   { icon: "share", title: "Vous le remettez à votre proche", text: "En main propre ou par un moyen que vous maîtrisez. Ce mot n’est pas votre mot de passe et ne donne aucun accès à votre compte." },
-  { icon: "user", title: "Il le saisit dans son propre compte", text: "Votre proche doit avoir son propre compte Mon E‑Carnet. Le lien est créé quand il saisit le mot." },
+  { icon: "user", title: "Il le saisit dans son propre compte", text: "Votre proche doit avoir son propre compte Mon E‑Carnet. Dans « Reçu accès », il saisit le mot : le lien est créé et un message lui confirme le résultat."},
   { icon: "eye", title: "Il lit votre fiche d’urgence, rien de plus", text: "Lecture seule, dans le périmètre prévu pour l’urgence. Il ne peut ni modifier votre carnet, ni générer votre QR, ni changer vos réglages." },
 ];
 
@@ -57,7 +57,7 @@ export default function TrustedContactsAndChildrenPage() {
             <div className="info-page__section-intro">
               <span className="eyebrow">Proche de confiance</span>
               <h2 id="proche-titre">Une personne de votre entourage, pour l’urgence.</h2>
-              <p className="muted">Pour un adulte qui a son propre compte et à qui vous voulez permettre de lire votre fiche d’urgence. Si « Proches de confiance » n’apparaît pas dans vos paramètres, la fonction n’est pas encore activée pour votre espace.</p>
+              <p className="muted">Pour un adulte qui a son propre compte et à qui vous voulez permettre de lire votre fiche d’urgence. Dans vos paramètres, « Proches de confiance » propose deux tuiles : « Donner accès » pour générer un mot, « Reçu accès » pour saisir celui qu’on vous a remis.</p>
             </div>
             <StepList steps={TRUSTED_STEPS} />
             <p className="muted">Vous retirez le lien à tout moment depuis Moi → Proches de confiance. Chaque accès est journalisé.</p>

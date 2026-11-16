@@ -67,6 +67,6 @@ class TrustedContactDelegationTests(TestCase):
         self.assertEqual(self.owner_client.get("/api/v1/patient/delegations/").status_code, 200)
 
     @override_settings(ECARNET_TRUSTED_CONTACTS_ENABLED=False)
-    def test_feature_flag_is_closed_by_default(self):
+    def test_feature_flag_can_be_turned_off(self):
         self.assertEqual(self.owner_client.get("/api/v1/patient/delegations/").status_code, 404)
         self.assertEqual(self.delegate_client.post("/api/v1/patient/delegations/redeem/", {"code": "ECM-PROCHE-NOPE"}, format="json").status_code, 404)

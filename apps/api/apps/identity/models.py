@@ -1,6 +1,7 @@
 import uuid
 
 from django.conf import settings
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from .theme import default_theme
 
@@ -129,7 +130,10 @@ class SiteFeedback(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default="idea")
-    message = models.TextField(max_length=2000)
+    # Le message peut rester vide quand la personne n'a donné qu'une note (voir `rating`).
+    message = models.TextField(max_length=2000, blank=True, default="")
+    # Note de l'application, de 1 à 5 étoiles (« Noter l'application ») ; vide pour un retour sans note.
+    rating = models.PositiveSmallIntegerField(null=True, blank=True, validators=[MinValueValidator(1), MaxValueValidator(5)])
     page_category = models.CharField(max_length=24, choices=AnonymousVisitor.PAGE_CATEGORIES, default="landing")
     status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="new", db_index=True)
     submitted_at = models.DateTimeField(auto_now_add=True, db_index=True)

@@ -1,3 +1,4 @@
+import { AppSlogan } from "../../components/ui/AppSlogan";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { InfoPageMotion } from "../../components/motion/InfoPageMotion";
@@ -41,6 +42,7 @@ export default function AboutPage() {
             <span className="eyebrow">À propos</span>
             <h1>Un carnet qui suit votre santé dans la durée.</h1>
             <p className="lead">Mon E‑Carnet est un carnet de santé numérique porté par la startup <RedianiceLink />. Il garde vos informations au même endroit, et c’est vous qui décidez qui peut les consulter.</p>
+            <AppSlogan />
             <div className="about__pulse" aria-hidden="true"><PulseLine /></div>
           </div>
           <DocHero icon="heart" />

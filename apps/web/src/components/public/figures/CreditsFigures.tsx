@@ -10,10 +10,10 @@ import { PROJECT_LOGO_WEBP } from "../../../lib/brand";
 export function CreditsTeamFigure() {
   const redianice = CREDITS_ORIGINS.find((entry) => entry.id === "redianice");
   const akatech = CREDITS_ORIGINS.find((entry) => entry.id === "akatech");
-  const slot = { "chef-de-projet": [0, 92], juridique: [188, 92], "identite-visuelle": [0, 196], developpement: [188, 196] } as const;
+  const slot = { "fondateur-juridique": [0, 92], developpement: [188, 92], design: [0, 196], communication: [188, 196] } as const;
   return (
     <Figure
-      label="Schéma : Redianice porte le projet. L’équipe réunit un chef de projet, un juriste, deux graphistes pour l’identité visuelle et le développeur, qui est le fondateur d’AKATech Studio."
+      label="Schéma : Redianice porte le projet. L’équipe réunit quatre personnes : le fondateur de Redianice, qui est le juriste, le développeur, qui est le fondateur d’AKATech Studio, une designer pour l’identité visuelle et un community manager."
     >
       <Svg viewBox="0 0 360 368">
         <Line d="M180 52 V72" />
@@ -32,7 +32,7 @@ export function CreditsTeamFigure() {
         )}
         {CREDITS_TEAM.map((member) => {
           const [x, y] = slot[member.id as keyof typeof slot] ?? [0, 92];
-          return <Node key={member.id} x={x} y={y} w={172} h={84} pad={46} icon={member.icon} title={wrapText(member.role, 14)} sub={wrapText(member.org, 18)} tone={member.id === "developpement" ? "soft" : "plain"} />;
+          return <Node key={member.id} x={x} y={y} w={172} h={84} pad={46} icon={member.icon} title={wrapText(member.figureTitle, 16)} sub={wrapText(member.figureSub, 20)} tone={member.id === "developpement" ? "soft" : "plain"} />;
         })}
         {akatech && <Node x={188} y={304} w={172} h={56} title={akatech.name} sub={akatech.role} tone="ghost" />}
       </Svg>

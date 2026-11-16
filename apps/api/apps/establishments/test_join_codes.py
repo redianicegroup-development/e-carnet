@@ -80,7 +80,7 @@ class EstablishmentJoinCodeTests(TestCase):
         self.profile.active_establishment = self.establishment
         self.profile.save(update_fields=("active_establishment", "updated_at"))
         self.client.force_authenticate(self.admin)
-        response = self.client.post(f"/api/v1/establishments/{self.establishment.id}/memberships/{membership.id}/terminate/", format="json")
+        response = self.client.post(f"/api/v1/establishments/{self.establishment.id}/memberships/{membership.id}/terminate/", {"reason": "Fin de collaboration avec la structure"}, format="json")
         self.assertEqual(response.status_code, 200)
         membership.refresh_from_db()
         self.profile.refresh_from_db()

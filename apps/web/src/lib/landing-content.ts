@@ -1,5 +1,6 @@
 import type { IconName } from "../components/ui/Icon";
 import { DATA_POLICY } from "./data-policy";
+import { APP_SLOGAN } from "./brand";
 
 /* Contenu de la landing. Règle : chaque phrase décrit ce que le produit fait réellement et reprend les réserves de la
    revue juridique (pas de « à tout moment », pas de « vérifié », pas de promesse de sécurité absolue).
@@ -14,29 +15,34 @@ export const HERO_IMAGE = {
   alt: "Une femme souriante montre son téléphone : l’écran affiche Mon E‑Carnet",
 } as const;
 
-/** Titre du héro découpé pour les trois petits carrés : chaque groupe reste sur une seule ligne (« de [photos] santé », « sous [photos] votre »…).
-    Le texte lu reste « Votre carnet de santé, sous votre contrôle. » (les carrés sont décoratifs) ; HERO.title en est la version à plat. */
-export type HeroTitleToken = string | { slot: "a" | "b" | "media" };
-export const HERO_TITLE_GROUPS: readonly (readonly HeroTitleToken[])[] = [
-  ["Votre", "carnet"],
-  ["de", { slot: "a" }, "santé,"],
-  ["sous", { slot: "b" }, "votre"],
-  [{ slot: "media" }, "contrôle."],
+/** Slogan du héro (le titre de la page), découpé en groupes : un groupe ne se coupe pas en fin de ligne. Mis bout à bout, il se lit comme APP_SLOGAN. */
+export const HERO_TITLE_GROUPS: readonly (readonly string[])[] = [
+  ["Gardez", "le", "fil"],
+  ["avec", "Mon E‑Carnet."],
 ];
 
-/** Petits carrés du titre : deux diaporamas (« a » et « b ») changent d’image toutes les 4 s, décalés de 2 s, jamais la même image en même temps.
-    Le carré « media » est l’emplacement de départ de la grande image du héro (voir LandingMotion). Photos recadrées en 480 × 480. */
+/** Petits carrés posés autour du grand « MON E‑CARNET » du héro : quatre diaporamas (a, b, c, d) et, en plus, l'emplacement « media » d'où part la grande image. */
+export type HeroSlot = "a" | "b" | "c" | "d";
+export const HERO_SLOTS: readonly HeroSlot[] = ["a", "b", "c", "d"];
+
+/** Photos des carrés : chaque carré change d’image toutes les 4 s, décalé d’1 s du carré précédent, jamais la même image dans deux carrés en même temps.
+    Photos recadrées en 480 × 480. Pour en ajouter : déposer le fichier dans public/landing/ et l'ajouter ici. */
 export const HERO_SLIDES = [
   "/landing/hero-slide-1.webp",
   "/landing/hero-slide-2.webp",
   "/landing/hero-slide-3.webp",
   "/landing/hero-slide-4.webp",
   "/landing/hero-slide-5.webp",
+  "/landing/hero-slide-6.webp",
+  "/landing/hero-slide-7.webp",
+  "/landing/hero-slide-8.webp",
+  "/landing/hero-slide-9.webp",
+  "/landing/hero-slide-10.webp",
 ] as const;
 export const HERO_SLIDE_INTERVAL_MS = 4000;
 
 export const HERO = {
-  title: "Votre carnet de santé, sous votre contrôle.",
+  title: APP_SLOGAN,
   lead: "Réunissez vos informations de santé, remettez votre carnet au médecin et choisissez qui peut le consulter.",
   primary: { href: "/connexion", label: "Commencer" },
   secondary: { href: "/connexion?mode=register&profil=professionnel", label: "Je suis professionnel" },

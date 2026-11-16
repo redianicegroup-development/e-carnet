@@ -89,6 +89,7 @@ export function ProfessionalAccess() {
                     <div>
                       <strong>{membership.establishment_name}</strong>
                       <p className="muted">{membership.city}</p>
+                      {membership.status === "terminated" && membership.terminated_by_establishment && membership.termination_reason && <p className="muted">Rattachement retiré par l’établissement. Motif : {membership.termination_reason}</p>}
                       {membership.status === "active" && !isActive && profile.memberships.filter((entry) => entry.status === "active").length > 1 && <p className="muted">Un seul établissement est actif à la fois pour les consultations.</p>}
                       <div className="actions">
                         {membership.status === "active" && !isActive && <button type="button" className="button small primary" disabled={busy} onClick={() => void run(() => apiPost("/api/v1/establishments/active/", { establishment_id: membership.establishment_id }), `${membership.establishment_name} est maintenant votre établissement actif pour les consultations.`)}>Définir comme établissement actif</button>}

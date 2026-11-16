@@ -66,7 +66,9 @@ test("hero : le texte révélé est vert (il se confondait avec la photo claire)
 test("pied de page : bandeau « Prêt à commencer ? » retiré, slogan du projet partout où le pied de page existe", () => {
   const shell = read("src/components/public/PublicShell.tsx");
   assert.doesNotMatch(shell, /Prêt à commencer|La santé avance vite|pub-footer__cta/);
-  assert.match(shell, /<p className="pub-footer__slogan">Gardez le fil avec Mon E‑Carnet\.<\/p>/);
+  assert.match(shell, /<p className="pub-footer__slogan">\{APP_SLOGAN\}<\/p>/);
+  assert.match(read("src/lib/brand.ts"), /APP_SLOGAN = "Gardez le fil avec Mon E‑Carnet\."/, "le slogan est défini une seule fois (15/11/2026)");
+  assert.doesNotMatch(shell, /pub-footer__tagline|organisé selon vos choix/, "ligne retirée du pied de page le 15/11/2026");
   // pages publiques ET légales passent par ce pied de page
   assert.match(read("src/components/public/LegalDocument.tsx"), /PublicShell|PublicFooter/);
   for (const page of ["a-propos", "aide", "securite", "credits", "conditions-rattachement"]) assert.match(read(`src/app/${page}/page.tsx`), /PublicShell/);

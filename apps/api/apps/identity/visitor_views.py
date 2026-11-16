@@ -128,13 +128,19 @@ class PublicFeedbackView(APIView):
         if not isinstance(message, str):
             return Response({"success": False, "message": "Le message doit être du texte."}, status=400)
         message = message.strip()
-        if len(message) < 5 or len(message) > 2000:
+        # Note facultative de 1 à 5 étoiles (« Noter l'application »). Un booléen n'est pas une note (True == 1 en Python).
+        rating = request.data.get("rating")
+        if rating is not None and (isinstance(rating, bool) or not isinstance(rating, int) or not 1 <= rating <= 5):
+            return Response({"success": False, "message": "La note doit être comprise entre 1 et 5 étoiles."}, status=400)
+        # Avec une note, le message est facultatif ; sans note, il reste obligatoire.
+        if len(message) > 2000 or (len(message) < 5 and not (rating is not None and not message)):
             return Response({"success": False, "message": "Le message doit contenir entre 5 et 2 000 caractères."}, status=400)
         if not isinstance(raw_path, str) or len(raw_path) > 512:
             return Response({"success": False, "message": "Page invalide."}, status=400)
         feedback = SiteFeedback.objects.create(
             category=category,
             message=message,
+            rating=rating,
             page_category=normalize_page_category(raw_path),
         )
         visitor_id, set_cookie = _visitor_identity(request)

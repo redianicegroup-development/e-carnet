@@ -19,3 +19,10 @@
 .team-detail__list dt { color: var(--text-muted); font-size: .76rem; font-weight: 700; letter-spacing: .02em; }
 .team-detail__list dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
 @media (prefers-reduced-motion: reduce) { .team-photo { transition: none; } .team-photo:hover { transform: none; } }
+
+/* Révocation avec motif : champ de saisie dans la fenêtre de confirmation, fiche « Profil » d'un administrateur de laboratoire. */
+.revocation-dialog { gap: 14px; }
+.revocation-dialog__field { width: 100%; text-align: left; }
+.revocation-dialog__field textarea { min-height: 96px; resize: vertical; }
+.lab-admin-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 12px; background: var(--surface-tint); }
+.lab-admin-row > span { min-width: 0; overflow-wrap: anywhere; }

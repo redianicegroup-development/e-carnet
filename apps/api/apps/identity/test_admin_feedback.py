@@ -78,6 +78,24 @@ class AnonymousClickAndFeedbackTests(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(SiteFeedback.objects.count(), 0)
 
+    def test_feedback_stores_a_star_rating_with_or_without_a_message(self):
+        with_message = self.client.post("/api/v1/identity/feedback/", {"category": "idea", "message": "Très pratique au quotidien.", "rating": 5, "path": "/"}, format="json")
+        rating_only = self.client.post("/api/v1/identity/feedback/", {"category": "idea", "message": "", "rating": 3, "path": "/"}, format="json")
+        self.assertEqual((with_message.status_code, rating_only.status_code), (201, 201))
+        self.assertEqual(sorted(SiteFeedback.objects.values_list("rating", flat=True)), [3, 5])
+        self.assertTrue(SiteFeedback.objects.filter(rating=3, message="").exists())
+
+    def test_feedback_without_rating_still_requires_a_message(self):
+        response = self.client.post("/api/v1/identity/feedback/", {"category": "idea", "message": "", "path": "/"}, format="json")
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(SiteFeedback.objects.count(), 0)
+
+    def test_feedback_rejects_an_invalid_rating(self):
+        for rating in (0, 6, -1, 2.5, "4", True, []):
+            response = self.client.post("/api/v1/identity/feedback/", {"category": "idea", "message": "Texte assez long", "rating": rating, "path": "/"}, format="json")
+            self.assertEqual(response.status_code, 400, rating)
+        self.assertEqual(SiteFeedback.objects.count(), 0)
+
 
 class AdminFeedbackDashboardTests(TestCase):
     dashboard_url = "/api/v1/identity/admin/dashboard/"
@@ -103,6 +121,15 @@ class AdminFeedbackDashboardTests(TestCase):
         self.assertEqual(data["feedback_new_total"], 1)
         self.assertEqual(data["visitors"][0]["last_click_category"], "signup")
         self.assertEqual(data["feedback"][0]["message"], "Le bouton de connexion ne répond pas.")
+
+    def test_dashboard_exposes_the_ratings_and_their_average(self):
+        self.assertIsNone(self.client.get(self.dashboard_url).data["data"]["feedback_average_rating"])
+        SiteFeedback.objects.create(category="idea", message="Super.", rating=5)
+        SiteFeedback.objects.create(category="idea", message="", rating=4)
+        SiteFeedback.objects.create(category="bug", message="Un bug sans note.")
+        data = self.client.get(self.dashboard_url).data["data"]
+        self.assertEqual((data["feedback_rated_total"], data["feedback_average_rating"]), (2, 4.5))
+        self.assertEqual(sorted(item["rating"] for item in data["feedback"] if item["rating"]), [4, 5])
 
     def test_superadmin_can_update_feedback_status(self):
         feedback = SiteFeedback.objects.create(category="idea", message="Ajouter une recherche globale.")

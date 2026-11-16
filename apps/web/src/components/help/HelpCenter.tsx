@@ -1,3 +1,4 @@
+import { AppSlogan } from "../ui/AppSlogan";
 import Link from "next/link";
 import { ContactLine } from "../public/ContactLine";
 import { HelpBrowser } from "./HelpBrowser";
@@ -30,6 +31,7 @@ export function HelpCenter() {
       <header className="help__head">
         <h1>Centre d’aide</h1>
         <p className="lead">Des guides pas à pas, des réponses sans jargon et de quoi dépanner. Cherchez un mot ou choisissez votre profil.</p>
+        <AppSlogan />
       </header>
       <HelpNotices />
       <HelpBrowser />

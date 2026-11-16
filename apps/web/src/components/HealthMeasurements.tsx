@@ -7,7 +7,6 @@ import { describeVitals, VITAL_SOURCE_LABELS, type ConsultationVitals } from "..
 import { PATIENT_MEASUREMENT_TYPES, type HealthMeasurementRecord, type PatientMeasurementKind } from "../lib/measurement-types";
 import { Pictogram } from "./ui/Pictogram";
 import { MEASUREMENT_PICTOGRAMS, pictogramFor, type PictogramName } from "../lib/pictograms";
-import { useDataSaver } from "./data-saver/useDataSaver";
 
 // Les courbes (bibliothèque de graphiques) ne sont téléchargées qu'au moment de les afficher.
 const MeasurementTrends = dynamic(() => import("./MeasurementTrends").then((module) => module.MeasurementTrends), { ssr: false, loading: () => <p className="muted" role="status">Chargement des courbes…</p> });
@@ -39,8 +38,6 @@ function fromConsultation(item: Consultation): HistoryItem[] {
 
 export function HealthMeasurements() {
   const [items, setItems] = useState<HistoryItem[] | null>(null);
-  const saver = useDataSaver();
-  const [trendsRequested, setTrendsRequested] = useState(false);
   const [kind, setKind] = useState<PatientMeasurementKind>("temperature");
   const [value, setValue] = useState("");
   const [source, setSource] = useState<"measured" | "declared">("measured");
@@ -90,7 +87,7 @@ export function HealthMeasurements() {
       <button className="button primary" disabled={busy}>{busy ? "Enregistrement…" : "Ajouter la mesure"}</button>
     </form>
     <p className="status" role="status" aria-live="polite">{message}</p>
-    {saver.active && !trendsRequested ? <div className="notice" role="status"><p>Courbes masquées pour économiser vos données.</p><button className="button small" type="button" onClick={() => setTrendsRequested(true)}>Afficher les courbes</button></div> : <MeasurementTrends records={trendRecords} loading={items === null} error={items !== null && items.length === 0 && message && /indisponible/i.test(message) ? message : null} />}
+    <MeasurementTrends records={trendRecords} loading={items === null} error={items !== null && items.length === 0 && message && /indisponible/i.test(message) ? message : null} />
     <div className="stack" aria-live="polite" aria-label="Historique unifié des constantes">
       {items === null ? <div className="skeleton" role="status"><span className="sr-only">Chargement…</span><i /></div> : history.length === 0 ? <p className="empty">Aucune constante renseignée pour le moment.</p> : history.map((item) => <article className="record" key={item.id}><div><strong>{item.kind_label}</strong><p className="muted">{item.value}{item.unit ? ` ${item.unit}` : ""} · {formatDate(item.measured_at)}</p><small className="muted">{item.source_label}{item.note ? ` · ${item.note}` : ""}</small></div></article>)}
     </div>

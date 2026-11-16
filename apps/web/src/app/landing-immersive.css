@@ -8,12 +8,13 @@
 @media (prefers-reduced-motion: no-preference) {
   .lp-root[data-motion="pending"] #hero-title,
   .lp-root[data-motion="pending"] [data-hero-item],
+  .lp-root[data-motion="pending"] .lp-hero__stage,
   .lp-root[data-motion="pending"] .lp-hero__media { opacity: 0; animation: lp-failsafe .01s 3s forwards; }
 }
 @keyframes lp-failsafe { to { opacity: 1; } }
 
 .pub-header { transition: box-shadow .3s ease, background-color .3s ease; }
-.pub-header.is-scrolled { box-shadow: 0 10px 30px -22px color-mix(in srgb, var(--text) 60%, transparent); }
+.pub-header--connected.is-scrolled { box-shadow: 0 10px 30px -22px color-mix(in srgb, var(--text) 60%, transparent); }
 
 /* ---------- Parcours : un fil vertical qui s'allume étape par étape ---------- */
 .lp-flow { gap: 30px; }

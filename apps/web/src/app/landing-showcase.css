@@ -12,21 +12,31 @@
 .lp-hero__glow { position: absolute; z-index: 0; border-radius: 50%; pointer-events: none; will-change: transform; width: min(72vw, 640px); aspect-ratio: 1; }
 .lp-hero__glow--a { right: -14%; top: -24%; opacity: .8; background: radial-gradient(closest-side, color-mix(in srgb, var(--brand-3) 62%, transparent), transparent); }
 .lp-hero__glow--b { left: -16%; bottom: -34%; opacity: .55; background: radial-gradient(closest-side, color-mix(in srgb, var(--primary) 36%, transparent), transparent); }
-.lp-hero__pulse { position: absolute; z-index: 0; left: 0; right: 0; bottom: -22px; height: clamp(110px, 20vw, 160px); opacity: .5; pointer-events: none; }
-.lp-hero__inner { position: relative; z-index: 2; height: 100%; display: flex; align-items: center; justify-content: center; padding-bottom: clamp(0px, 3vh, 24px); }
-.lp-hero__copy { position: relative; display: grid; gap: 18px; align-content: start; justify-items: center; text-align: center; width: 100%; max-width: min(100%, 880px); padding-block: 24px; }
-.lp-hero h1 { font-size: clamp(2rem, 5.4vw, 4rem); line-height: 1.04; letter-spacing: -.04em; font-weight: 800; text-wrap: balance; }
+.lp-hero__copy { position: absolute; inset: 0; z-index: 2; }
+/* Décor : « MON E‑CARNET » en filigrane (même style que celui du pied de page) au centre, quatre carrés-diaporama et l'emplacement de la grande image autour. */
+.lp-hero__stage { position: absolute; inset: 0; pointer-events: none; }
+.lp-hero__mark { position: absolute; inset: 0 0 auto; top: 40%; margin: 0; transform: translateY(-50%); color: color-mix(in srgb, var(--text-muted) 30%, transparent); font-size: clamp(3rem, 11.4vw, 11rem); font-weight: 850; letter-spacing: -.07em; line-height: .86; text-align: center; white-space: nowrap; user-select: none; }
+.lp-hero__mark span { display: inline; }
+/* Slogan et bouton, en bas de l'écran, au-dessus du bouton de menu fixé en bas (PublicHeader). */
+.lp-hero__foot { position: absolute; left: 0; right: 0; bottom: calc(104px + env(safe-area-inset-bottom)); z-index: 3; display: grid; gap: 18px; justify-items: center; padding-inline: clamp(16px, 4vw, 40px); text-align: center; }
+.lp-hero h1 { margin: 0; font-size: clamp(1.7rem, 4.4vw, 3rem); line-height: 1.08; letter-spacing: -.04em; font-weight: 800; text-wrap: balance; }
 
 /* Titre : chaque groupe reste sur une ligne ; chaque mot est masqué par un cadre découpé (il monte à l'ouverture, sans toucher au DOM). */
 .lp-hero__tg { white-space: nowrap; }
 .lp-hero__w { display: inline-block; clip-path: inset(-.14em -.06em -.14em -.06em); }
 .lp-hero__wi { display: inline-block; will-change: transform; }
-/* Trois petits carrés dans le titre : deux diaporamas et l'emplacement de départ de la grande image. Ils ne comptent pas dans la lecture du titre. */
-.lp-hero__slot { position: relative; display: inline-block; width: 1.3em; height: 1.3em; border-radius: .26em; overflow: hidden; vertical-align: -.3em; background: var(--surface-tint);
-  box-shadow: 0 0 0 .05em color-mix(in srgb, var(--bg) 80%, transparent), 0 .2em .55em -.2em color-mix(in srgb, var(--text) 55%, transparent); }
-/* L'emplacement vide n'existe que quand l'animation tourne : sans elle (mouvement réduit, JavaScript coupé), la grande image reste en carte dans le coin. */
-.lp-hero__slot--media { display: none; background: transparent; overflow: visible; }
-.lp-root[data-motion="ready"] .lp-hero__slot--media { display: inline-block; }
+/* Carrés de photos autour du filigrane : une seule boîte par carré (taille --t, rayon proportionnel), légèrement inclinée avec la propriété « rotate » (indépendante de l'échelle animée par GSAP). */
+.lp-hero__slot { --t: 110px; position: absolute; display: block; width: var(--t); height: var(--t); border-radius: calc(var(--t) * .22); overflow: hidden; background: var(--surface-tint); pointer-events: none;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--bg) 80%, transparent), 0 14px 30px -14px color-mix(in srgb, var(--text) 55%, transparent); }
+.lp-hero__slot--a { --t: clamp(96px, 11.5vw, 176px); left: 7%; top: 13%; rotate: -6deg; }
+.lp-hero__slot--b { --t: clamp(88px, 10vw, 156px); right: 9%; top: 9%; rotate: 5deg; }
+.lp-hero__slot--c { --t: clamp(84px, 9vw, 140px); left: 15%; top: 46%; rotate: 4deg; }
+.lp-hero__slot--d { --t: clamp(72px, 8vw, 124px); left: 42%; top: 6%; rotate: -3deg; }
+.lp-hero__slot--media { --t: clamp(110px, 13vw, 200px); right: 6%; top: 38%; }
+/* L'emplacement vide n'existe que quand l'animation tourne : sans elle (mouvement réduit, JavaScript coupé), pas de grande image. */
+.lp-hero__slot--media { display: none; background: transparent; overflow: visible; box-shadow: none; }
+.lp-root[data-motion="ready"] .lp-hero__slot--media { display: block; }
+.lp-root:not([data-motion="ready"]) .lp-hero__media { display: none; }
 /* Diaporama : la nouvelle photo entre par la droite, l'ancienne sort par la gauche, puis retourne en attente (sans animation) hors du cadre. */
 .lp-hero__slide { object-fit: cover; transform: translateX(101%); }
 .lp-hero__slide[data-pos="in"] { transform: none; }
@@ -34,9 +44,7 @@
 @media (prefers-reduced-motion: no-preference) {
   .lp-hero__slide[data-pos="in"], .lp-hero__slide[data-pos="out"] { transition: transform .85s cubic-bezier(.22, .9, .3, 1); }
 }
-.lp-hero .lead { font-size: clamp(1rem, 2.2vw, 1.15rem); max-width: 54ch; text-wrap: pretty; }
 .lp-hero .actions { justify-content: center; }
-.lp-hero__note { display: inline-flex; gap: 8px; align-items: center; margin: 0; color: var(--text-muted); font-size: .875rem; }
 
 /* L'image occupe tout le hero. Avec l'animation (LandingMotion), elle démarre dans le petit carré du titre, entre « votre » et « contrôle » :
    l'état de départ est alors posé par GSAP (échelle, position et clip-path mesurés sur ce carré). Les variables ci-dessous ne servent plus qu'au repli
@@ -54,14 +62,15 @@
 [data-reveal-line] { opacity: 0; }
 @media (max-width: 759px) {
   .lp-hero__media { --s0: .37; --mx: 14px; --my: 84px; --r: 20px; }
-  .lp-hero__copy { gap: 14px; }
-  .lp-hero__slot { width: 1.5em; height: 1.5em; vertical-align: -.36em; }
-  /* Sans animation (mouvement réduit, JavaScript coupé), la carte-image reste dans le coin bas : le texte monte pour ne pas la recouvrir. */
-  .lp-root:not([data-motion="ready"]) .lp-hero__inner { align-items: flex-start; padding-top: 6px; }
-  .lp-hero__note { display: none; }
-  /* Les deux boutons du héro sur la même ligne : « Commencer » à gauche, « Je suis professionnel » à droite, de même largeur (15/11/2026). */
-  .lp-hero .actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; width: 100%; max-width: 380px; justify-self: center; }
-  .lp-hero .actions .button { width: 100%; min-width: 0; padding-inline: 10px; font-size: .9rem; line-height: 1.15; text-wrap: balance; }
+  /* Mobile : le filigrane tient sur deux lignes (MON / E‑CARNET), les carrés sont plus petits et resserrés autour. */
+  .lp-hero__mark { top: 35%; font-size: clamp(2.8rem, 17.5vw, 5.6rem); line-height: .9; }
+  .lp-hero__mark span { display: block; }
+  .lp-hero__slot--a { --t: 24vw; left: 6%; top: 10%; }
+  .lp-hero__slot--b { --t: 20vw; right: 7%; top: 8%; }
+  .lp-hero__slot--c { --t: 21vw; left: 9%; top: 52%; }
+  .lp-hero__slot--d { --t: 16vw; left: 41%; top: 19%; }
+  .lp-hero__slot--media { --t: 27vw; right: 7%; top: 47%; }
+  .lp-hero__foot { gap: 16px; bottom: calc(100px + env(safe-area-inset-bottom)); }
   .lp-hero__reveal { align-items: flex-start; padding-top: 34px; }
   .lp-hero__reveal-title { max-width: 14ch; }
 }

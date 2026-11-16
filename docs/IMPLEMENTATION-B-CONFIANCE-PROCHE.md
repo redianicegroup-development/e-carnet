@@ -4,7 +4,7 @@
 
 ## Livraison de cette itération
 
-Le flux est implémenté derrière `ECARNET_TRUSTED_CONTACTS_ENABLED` (désactivé par défaut). Le patient saisit l’e-mail du proche comme repère, génère un mot de rattachement temporaire et le remet directement au proche. Le proche utilise son propre compte et son propre profil patient, saisit ce mot, puis le lien est créé. Aucun SMS, e-mail OTP ou service externe n’est requis.
+Le flux est implémenté derrière `ECARNET_TRUSTED_CONTACTS_ENABLED` (**activé par défaut depuis le 15/11/2026** ; `false` l’éteint). Le patient saisit l’e-mail du proche comme repère, génère un mot de rattachement temporaire et le remet directement au proche. Le proche utilise son propre compte et son propre profil patient, saisit ce mot, puis le lien est créé. Aucun SMS, e-mail OTP ou service externe n’est requis.
 
 Le mot est conservé uniquement sous forme d’empreinte SHA-256, expire après 72 heures et est consommable une seule fois. La réponse de génération l’affiche une seule fois au patient ; elle n’est ni envoyée ni recopiée dans l’audit. Le modèle `TrustedContactDelegation` reste séparé de `PatientRepresentation`.
 
@@ -29,4 +29,4 @@ La sélection ne change pas globalement les droits du compte. `profile_for` reco
 
 ## Activation
 
-Conserver `ECARNET_TRUSTED_CONTACTS_ENABLED=false` jusqu’à validation juridique du consentement, du périmètre fiche d’urgence et du parcours de secours en cas de perte de téléphone ou d’accident. Utiliser uniquement des comptes et mots fictifs pendant la recette.
+Le drapeau est passé à `true` par défaut le 15/11/2026 sur décision du porteur du projet ; la validation juridique du consentement, du périmètre fiche d’urgence et du parcours reste à documenter par la personne en charge du juridique. En cas de doute, `ECARNET_TRUSTED_CONTACTS_ENABLED=false` éteint la fonction sans toucher au code.

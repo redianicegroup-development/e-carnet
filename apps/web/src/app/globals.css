@@ -706,3 +706,27 @@ a.setting-item:hover, button.setting-item:hover { border-color: var(--primary); 
 .auth-secret-field__toggle { position: absolute; top: 50%; right: 6px; display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 10px; background: transparent; color: var(--text-muted); cursor: pointer; transform: translateY(-50%); }
 .auth-secret-field__toggle:hover { background: var(--surface-tint); color: var(--text); }
 .auth-secret-field__toggle:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+/* Note en étoiles du modal « Noter l'application » : aperçu dynamique au survol/toucher, étoiles pleines jusqu'à la note. */
+.star-input { display: grid; gap: 6px; }
+.star-input__label { font-weight: 600; color: var(--text-muted); }
+.star-input__row { display: flex; gap: 4px; }
+.star-input__star { appearance: none; border: 0; background: transparent; padding: 2px 4px; min-width: 44px; min-height: 44px; border-radius: 12px; font-size: 2rem; line-height: 1; color: var(--border-strong, #b9b4a4); cursor: pointer; transition: transform .15s ease, color .15s ease; }
+.star-input__star.is-filled { color: var(--accent-strong, #f2b01e); }
+.star-input__star:hover:not(:disabled) { transform: scale(1.12); }
+.star-input__star:focus-visible { outline: 3px solid var(--focus-ring, #3b8f6f); outline-offset: 2px; }
+.star-input__star:disabled { cursor: not-allowed; opacity: .6; }
+.star-input__caption { min-height: 1.4em; color: var(--text-muted); font-size: .9rem; }
+@media (prefers-reduced-motion: reduce) { .star-input__star { transition: none; } .star-input__star:hover:not(:disabled) { transform: none; } }
+
+/* Proches de confiance : deux tuiles (« Donner accès » / « Reçu accès ») qui ouvrent chacune leur fenêtre. */
+.trusted-tiles { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); }
+.trusted-tile { display: grid; gap: 6px; justify-items: start; text-align: left; padding: 16px; border-radius: 18px; border: 1px solid var(--border, #e6dfc9); background: var(--surface-tint, #fff8e8); color: inherit; font: inherit; cursor: pointer; transition: transform .15s ease, box-shadow .15s ease; }
+.trusted-tile:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 0, 0, .08); }
+.trusted-tile:focus-visible { outline: 3px solid var(--focus-ring, #3b8f6f); outline-offset: 2px; }
+.trusted-tile__icon { display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; background: var(--accent-soft, #ffe3b3); }
+.trusted-panel { display: grid; gap: 14px; width: min(100%, 460px); max-height: calc(100dvh - 32px); overflow: auto; text-align: left; }
+.trusted-panel__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.trusted-panel__head h2 { margin: 0; font-size: 1.3rem; }
+.trusted-success { display: grid; gap: 10px; }
+@media (prefers-reduced-motion: reduce) { .trusted-tile { transition: none; } .trusted-tile:hover { transform: none; } }

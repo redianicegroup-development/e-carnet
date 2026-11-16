@@ -97,7 +97,7 @@ class MembershipSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = EstablishmentMembership
-        fields = ("id", "establishment", "professional", "status", "is_medical_referent", "requested_at", "reviewed_at", "left_at", "agreement_version", "agreement_accepted_at")
+        fields = ("id", "establishment", "professional", "status", "is_medical_referent", "requested_at", "reviewed_at", "left_at", "agreement_version", "agreement_accepted_at", "terminated_by_establishment", "termination_reason")
         read_only_fields = fields
 
 

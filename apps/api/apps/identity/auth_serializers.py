@@ -50,6 +50,7 @@ class AccountSerializer(serializers.Serializer):
     auth_identities = serializers.SerializerMethodField()
     contexts = serializers.SerializerMethodField()
     patient_profile = serializers.SerializerMethodField()
+    revocation_notices = serializers.SerializerMethodField()
     def get_id(self, obj):
         profile, _ = AccountProfile.objects.get_or_create(user=obj)
         return str(profile.public_id)
@@ -89,6 +90,11 @@ class AccountSerializer(serializers.Serializer):
         if establishment.is_laboratory:
             return {"kind": "laboratory", "establishment_name": establishment.name, "parent_name": establishment.parent.name if establishment.parent_id else ""}
         return {"kind": "establishment", "establishment_name": establishment.name, "parent_name": ""}
+
+    def get_revocation_notices(self, obj):
+        """Motifs de révocation pas encore lus (rattachement retiré par un établissement, accès de laboratoire retiré) : montrés à la prochaine connexion."""
+        from apps.establishments.revocations import pending_revocation_notices
+        return pending_revocation_notices(obj)
 
     def get_auth_identities(self, obj):
         return [{"provider": identity.provider, "display_name": identity.display_name, "avatar_url": identity.avatar_url} for identity in obj.auth_identities.all()]

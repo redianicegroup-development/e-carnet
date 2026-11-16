@@ -10,7 +10,8 @@ from .clinical_views import (
     EstablishmentRecordOpeningsView,
     EstablishmentRecordOpeningCloseView,
 )
-from .laboratories import EstablishmentLaboratoriesView
+from .laboratories import EstablishmentLaboratoriesView, LaboratoryAdministratorRevokeView
+from .revocations import RevocationNoticeAckView
 from .views import (
     EstablishmentActiveJoinCodesView,
     EstablishmentActiveJoinCodeCountView,
@@ -49,6 +50,7 @@ urlpatterns = [
     path("invitations/accept/", EstablishmentInvitationAcceptView.as_view()),
     path("invitations/preview/", EstablishmentInvitationPreviewView.as_view()),
     path("notifications/", EstablishmentNotificationListView.as_view()),
+    path("revocation-notices/ack/", RevocationNoticeAckView.as_view()),
     path("join-codes/redeem/", EstablishmentJoinCodeRedeemView.as_view()),
     path("startup/queue/", StartupEstablishmentQueueView.as_view()),
     path("startup/establishments/", StaffEstablishmentCreateView.as_view()),
@@ -58,6 +60,7 @@ urlpatterns = [
     path("startup/<uuid:establishment_id>/status/", StaffEstablishmentStatusView.as_view()),
     path("startup/<uuid:establishment_id>/audit/", StaffEstablishmentAuditView.as_view()),
     path("<uuid:establishment_id>/laboratories/", EstablishmentLaboratoriesView.as_view()),
+    path("<uuid:establishment_id>/laboratories/<uuid:laboratory_id>/administrators/<uuid:administrator_id>/revoke/", LaboratoryAdministratorRevokeView.as_view()),
     path("<uuid:establishment_id>/join-codes/", EstablishmentJoinCodeCreateView.as_view()),
     path("<uuid:establishment_id>/join-codes/active/", EstablishmentActiveJoinCodesView.as_view()),
     path("<uuid:establishment_id>/join-codes/active-count/", EstablishmentActiveJoinCodeCountView.as_view()),

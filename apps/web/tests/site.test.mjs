@@ -129,7 +129,7 @@ test("crédits : Redianice porte le projet, AKATech Studio le développe, l'équ
   assert.deepEqual(credits.CREDITS_ORIGINS.map((c) => c.name), ["Redianice", "AKATech Studio"]);
   assert.match(credits.CREDITS_UPDATED, /^\d{4}-\d{2}-\d{2}$/);
   assert.equal(credits.AKATECH_URL, "https://akatech.vercel.app/");
-  assert.deepEqual(credits.CREDITS_TEAM.map((m) => m.id), ["chef-de-projet", "developpement", "juridique", "identite-visuelle"]);
+  assert.deepEqual(credits.CREDITS_TEAM.map((m) => m.id), ["fondateur-juridique", "developpement", "design", "communication"]);
   const page = read("src/app/credits/page.tsx");
   assert.match(page, /porté par Redianice/);
   assert.match(page, /CREDITS_TEAM\.map/);
@@ -173,7 +173,8 @@ test("pied de page : deux cartes (marque, liens), filigrane, mise en page adapt�
   assert.match(footer, /className="pub-footer__watermark"/);
   // 20/10 : le bandeau « Prêt à commencer ? » est retiré du pied de page à la demande du produit ; le slogan du projet le remplace.
   assert.doesNotMatch(footer, /href="\/connexion\?mode=register"/, "plus de bandeau d'appel à l'action dans le pied de page");
-  assert.match(footer, /Gardez le fil avec Mon E‑Carnet\./, "le slogan du projet");
+  assert.match(footer, /APP_SLOGAN/, "le slogan du projet");
+  assert.match(read("src/lib/brand.ts"), /Gardez le fil avec Mon E‑Carnet\./, "le slogan du projet");
   assert.doesNotMatch(footer, /<form|type="email"/i, "aucun faux formulaire d'abonnement : il n'y a pas de lettre d'information");
   const styles = read("src/app/site-pages.css");
   assert.match(styles, /@media \(min-width: 1000px\) \{\s*\.pub-footer__cards \{ grid-template-columns/);
@@ -182,17 +183,18 @@ test("pied de page : deux cartes (marque, liens), filigrane, mise en page adapt�
   assert.match(read("src/app/layout.tsx"), /variable: "--font-script"/);
 });
 
-test("en-tête public : menu mobile accessible, lien À propos et section courante signalée", () => {
+test("en-tête public : menu plein écran accessible, lien À propos et section courante signalée", () => {
   const header = read("src/components/public/PublicHeader.tsx");
   assert.match(header, /aria-expanded=\{menuOpen\}/);
   assert.match(header, /aria-controls="pub-menu"/);
   assert.match(header, /Escape/);
+  assert.match(header, /role="dialog" aria-modal="true"/);
   assert.match(header, /href="\/a-propos"/);
   assert.match(header, /aria-current/);
   const styles = read("src/app/site-pages.css");
-  assert.match(styles, /\.pub-burger \{/);
+  assert.match(styles, /\.pub-burger \{ position: fixed;/);
   assert.match(styles, /\.pub-menu\[data-open="true"\]/);
-  assert.match(styles, /@media \(min-width: 1200px\)/);
+  assert.doesNotMatch(styles, /\.pub-burger \{ display: none; \}/, "le bouton à trois traits reste affiché sur ordinateur aussi");
 });
 
 test("marque : l'ancienne tuile « + » n'est plus dessinée, le logo est le composant BrandMark", () => {
@@ -315,11 +317,9 @@ test("landing : FAQ visible et structurée, métadonnées indexables et liens ca
   assert.doesNotMatch(llms, /localhost/);
 });
 
-test("landing animée : le pouls respire et respecte le mouvement réduit", () => {
+test("landing animée : l'animation respecte le mouvement réduit", () => {
   const motion = read("src/components/motion/LandingMotion.tsx");
   const styles = read("src/app/landing-immersive.css");
-  assert.match(motion, /repeat: -1, repeatDelay: 1\.15/);
-  assert.match(motion, /loops\.push\(tracePulse\)/);
   assert.match(motion, /prefers-reduced-motion: no-preference/);
   assert.match(styles, /@media \(prefers-reduced-motion: no-preference\)/);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
