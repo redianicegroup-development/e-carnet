@@ -22,10 +22,10 @@ const TRUSTED_STEPS: Step[] = [
 ];
 
 const CHILD_STEPS: Step[] = [
-  { icon: "pencil", title: "Vous créez le profil de l’enfant", text: "Dans Moi → Proches et personnes représentées : prénom, nom, date de naissance et lien avec vous. L’enfant n’a pas besoin de compte." },
+  { icon: "pencil", title: "Vous créez le profil de l’enfant", text: "Dans Moi → Profils : prénom, nom, date de naissance et lien avec vous. L’enfant n’a pas besoin de compte. Vous complétez ensuite son carnet (étape 2), quand vous voulez." },
   { icon: "check", title: "Vous confirmez être son représentant légal", text: "Une case à cocher l’atteste. L’information est déclarée par vous : Mon E‑Carnet ne la certifie pas." },
   { icon: "idcard", title: "Son dossier est distinct du vôtre", text: "L’enfant a son propre carnet, avec ses déclarations et son historique. Rien n’est mélangé avec le vôtre." },
-  { icon: "shield", title: "Vous choisissez quel dossier vous ouvrez", text: "Le vôtre ou celui de l’enfant. Quand vous agissez au nom de l’enfant, vos actions sont journalisées." },
+  { icon: "shield", title: "Vous choisissez quel profil vous ouvrez", text: "Le vôtre ou celui de l’enfant, avec la flèche de la carte « Compte patient » dans Moi, ou au début d’une consultation. Le compte affiché devient « Compte enfant », et vos actions sont journalisées." },
   { icon: "lock", title: "Vous pouvez retirer le lien", text: "Le dossier et son historique sont conservés ; seul le lien de représentation est révoqué." },
 ];
 

@@ -66,7 +66,7 @@ test("les réglages portent la carte virtuelle (sans QR) et la carte professionn
   assert.match(image, /type: ?"image\/png"|"image\/png"/);
   assert.doesNotMatch(image, /fetch\(/);
   assert.match(visual, /ecard__photo/);
-  assert.match(account, /<PatientEmergencyCardSettingsClient \/>/);
+  assert.match(account, /<PatientEmergencyCardSettingsClient\b(?! variant)[^>]*\/>/);
 });
 
 test("la page publique du scan réutilise la même carte et propose d’appeler le contact", () => {

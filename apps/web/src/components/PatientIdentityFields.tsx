@@ -78,6 +78,20 @@ export async function savePatientIdentity(form: PatientForm) {
   });
 }
 
+/** Enregistre le carnet d'un enfant représenté : le profil enfant doit être le profil actif de la session (voir runAsProfile).
+    La date de naissance est celle donnée à la création du profil : elle n'est pas renvoyée ici. Pas de profession pour un enfant. */
+export async function saveChildIdentity(form: PatientForm) {
+  await apiPost("/api/v1/patient/declarations/", { kind: "city", label: form.city.trim() });
+  await apiPatch("/api/v1/patient/profile/", {
+    phone: form.phone.trim(),
+    gender: form.gender,
+    address: form.address.trim(),
+    coverage_provider: form.coverage_provider.trim(),
+    coverage_number: form.coverage_number.trim(),
+    coverage_expiry: form.coverage_expiry || null,
+  });
+}
+
 /** Message d'erreur lisible après un enregistrement raté : session expirée, service injoignable ou message de l'API. */
 export function onboardingErrorMessage(error: unknown): string {
   if (error instanceof ApiError && (error.status === 401 || error.status === 403)) return "Connectez-vous à nouveau pour terminer votre onboarding.";
@@ -85,8 +99,9 @@ export function onboardingErrorMessage(error: unknown): string {
 }
 
 /** Les champs du carnet patient (couverture du carnet papier, identité, âge et genre, couverture santé). À mettre dans un <form>. */
-/** `showProfession` : faux pour un professionnel, dont la profession est déjà dans son bloc « espace professionnel ». */
-export function PatientIdentityFields({ form, update, issuedAt, showProfession = true }: { form: PatientForm; update: (field: keyof PatientForm, value: string) => void; issuedAt: Date; showProfession?: boolean }) {
+/** `showProfession` : faux pour un professionnel, dont la profession est déjà dans son bloc « espace professionnel », et pour un enfant.
+    `showBirthDate` : faux pour un enfant, dont la date de naissance est donnée à la création de son profil. */
+export function PatientIdentityFields({ form, update, issuedAt, showProfession = true, showBirthDate = true }: { form: PatientForm; update: (field: keyof PatientForm, value: string) => void; issuedAt: Date; showProfession?: boolean; showBirthDate?: boolean }) {
   return <>
     <div className="titulaire-cover" aria-label="Couverture du carnet">
       <strong>Carnet individuel de santé</strong>
@@ -97,9 +112,11 @@ export function PatientIdentityFields({ form, update, issuedAt, showProfession =
     {showProfession && <label className="field"><span>Profession (facultatif)</span><input maxLength={120} value={form.profession} onChange={event => update("profession", event.target.value)} /></label>}
     <label className="field"><span>Téléphone (facultatif)</span><input autoComplete="tel" value={form.phone} onChange={event => update("phone", event.target.value)} /></label>
     <fieldset className="onboarding-age-gender">
-      <legend>Âge et genre (facultatifs)</legend>
-      <label className="field"><span>Date de naissance</span><input type="date" max={new Date().toISOString().slice(0, 10)} value={form.birth_date} onChange={event => update("birth_date", event.target.value)} /></label>
-      <p className="onboarding-age-gender__age" role="status" aria-live="polite"><span>Âge</span><strong>{ageLabel(form.birth_date) || "calculé à partir de la date de naissance"}</strong></p>
+      {showBirthDate ? <legend>Âge et genre (facultatifs)</legend> : <legend>Genre (facultatif)</legend>}
+      {showBirthDate && <>
+        <label className="field"><span>Date de naissance</span><input type="date" max={new Date().toISOString().slice(0, 10)} value={form.birth_date} onChange={event => update("birth_date", event.target.value)} /></label>
+        <p className="onboarding-age-gender__age" role="status" aria-live="polite"><span>Âge</span><strong>{ageLabel(form.birth_date) || "calculé à partir de la date de naissance"}</strong></p>
+      </>}
       <label className="field"><span>Genre</span><select value={form.gender} onChange={event => update("gender", event.target.value)}><option value="">Non précisé</option>{GENDER_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
     </fieldset>
     <h2>Couverture (facultative)</h2>

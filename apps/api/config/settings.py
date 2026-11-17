@@ -19,7 +19,7 @@ INSTALLED_APPS = [
     "django.contrib.admin", "django.contrib.auth", "django.contrib.contenttypes",
     "django.contrib.sessions", "django.contrib.messages", "django.contrib.staticfiles",
     "corsheaders", "rest_framework", "apps.identity", "apps.patients", "apps.care",
-    "apps.establishments", "apps.professionals", "apps.audit", "apps.referrals",
+    "apps.establishments", "apps.professionals", "apps.audit", "apps.referrals", "apps.advertising", "apps.billing",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware", "whitenoise.middleware.WhiteNoiseMiddleware", "apps.identity.middleware.AdminLoginThrottleMiddleware", "corsheaders.middleware.CorsMiddleware",

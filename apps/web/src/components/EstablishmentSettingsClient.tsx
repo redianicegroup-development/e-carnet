@@ -14,6 +14,7 @@ import { ThemeSettingsClient } from "./ThemeSettingsClient";
 import { AccountActionRequestsSettingsClient } from "./AccountActionRequestsSettingsClient";
 import { Icon } from "./ui/Icon";
 import { PrescriptionTemplateSettings } from "./PrescriptionTemplateSettings";
+import { EstablishmentBilling } from "./EstablishmentBilling";
 import { EstablishmentProfileEditor, establishmentInitials, type EstablishmentProfile } from "./EstablishmentProfileEditor";
 import "./establishment-settings.css";
 import { primeCsrf, readCsrfToken } from "../infrastructure/api/client";
@@ -35,6 +36,7 @@ async function get<T>(path: string): Promise<T> {
 function statusLabel(status: Establishment["status"]): string {
   if (status === "active") return "Actif";
   if (status === "rejected") return "Refusé";
+  if (status === "suspended") return "Suspendu";
   return "En attente de validation";
 }
 
@@ -92,6 +94,7 @@ export function EstablishmentSettingsClient({ laboratory = false }: { laboratory
     { id: "administratif", title: "Informations administratives", description: "Identité et statut de la structure.", icon: "building" },
     { id: "coordonnees", title: "Coordonnées", description: "Adresse, contacts et responsable.", icon: "pin" },
     { id: "ordonnance", title: "Modèle d’ordonnance", description: "En-tête et pied de page imprimables.", icon: "document" },
+    { id: "facturation", title: "Facturation", description: "Offres, abonnement, factures et paiements.", icon: "document" },
     { id: "compte", title: "Personnalisation de mon compte", description: "Personnaliser l’apparence de l’application.", icon: "sparkle" },
     { id: "securite", title: "Sécurité et connexion", description: "Fournisseurs de connexion et appareils connectés.", icon: "lock" },
     { id: "hors-connexion", title: "Hors connexion", description: "Naviguer sans réseau avec une copie chiffrée, en lecture seule.", icon: "download" },
@@ -99,7 +102,7 @@ export function EstablishmentSettingsClient({ laboratory = false }: { laboratory
     { id: "avis", title: "Noter l’application", description: "Partager une suggestion ou signaler un problème.", icon: "pencil" },
   ];
   const titleFor = (id: string) => navItems.find((item) => item.id === id)?.title ?? "Paramètres";
-  const shownItems = laboratory ? navItems.filter((item) => item.id !== "ordonnance" && item.id !== "hors-connexion") : navItems;
+  const shownItems = laboratory ? navItems.filter((item) => item.id !== "ordonnance" && item.id !== "hors-connexion" && item.id !== "facturation") : navItems;
 
   return (
     <div className="establishment-settings settings-page">
@@ -133,6 +136,8 @@ export function EstablishmentSettingsClient({ laboratory = false }: { laboratory
       </div></SettingsModal>}
 
       {activeSection === "ordonnance" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}>{selected?.status === "active" ? <PrescriptionTemplateSettings establishmentId={selected.id} /> : <p className="muted">Le modèle sera disponible lorsque l’établissement sera actif.</p>}</SettingsModal>}
+
+      {activeSection === "facturation" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}>{selected ? <EstablishmentBilling key={selected.id} establishmentId={selected.id} /> : <p className="empty">{loading ? "Chargement…" : "Aucune fiche établissement n’est liée à cette session."}</p>}</SettingsModal>}
 
       {activeSection === "compte" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Préférences personnelles</span>
         <dl className="settings-details"><div><dt>Responsable du compte</dt><dd>{accountName}</dd></div><div><dt>Email de connexion</dt><dd>{account?.email ?? (loading ? "Chargement…" : "Non disponible")}</dd></div><div><dt>Contexte établissement</dt><dd>{account?.contexts.find((context) => context.role === "establishment")?.is_active ? "Actif" : "Associé au compte"}</dd></div></dl><ThemeSettingsClient compact space="establishment" />

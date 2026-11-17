@@ -27,9 +27,9 @@ const LANDING_SECTIONS = ["parcours", "profils", "questions", "contact"];
 
 type Current = "page" | "location" | undefined;
 
-/** Une ligne du menu : grand lien, petit losange à droite quand c'est la page ou la section en cours. */
+/** Une ligne du menu : grand lien (centré sur ordinateur), petit losange juste après le mot quand c'est la page ou la section en cours. */
 function NavLink({ href, current, onNavigate, children }: { href: string; current: Current; onNavigate: () => void; children: ReactNode }) {
-  return <Link className="pub-nav__link" href={href} aria-current={current} onClick={onNavigate}><span className="pub-nav__text">{children}</span><span className="pub-nav__dot" aria-hidden="true" /></Link>;
+  return <Link className="pub-nav__link" href={href} aria-current={current} onClick={onNavigate}><span className="pub-nav__text">{children}<span className="pub-nav__dot" aria-hidden="true" /></span></Link>;
 }
 
 function workspaceFor(account: PublicAccount): string {
@@ -123,6 +123,9 @@ export function PublicHeader() {
           <span aria-hidden="true">←</span>
           Retour à mon espace
         </Link>
+        <Link className="brand" href="/" aria-label="Mon E-Carnet, accueil">
+          <BrandMark variant="duo" />
+        </Link>
       </header>
     );
   }
@@ -137,7 +140,7 @@ export function PublicHeader() {
 
   return (
     <>
-      {/* En-tête public : le logo seul, sans fond ni nom, qui défile avec la page. La navigation est dans le menu (bouton à trois traits, fixé en bas). */}
+      {/* En-tête public : le logo seul, centré en haut, sans fond ni nom, qui défile avec la page. La navigation est dans le menu (bouton à trois traits, fixé en bas). */}
       <header className="pub-header">
         <Link className="brand" href="/" aria-label="Mon E-Carnet, accueil" onClick={close}>
           <BrandMark variant="duo" />

@@ -1,0 +1,163 @@
+/* Hero de la landing — fond miel (--bg, la couleur du tableau de bord), titre centré avec des petits carrés posés entre les mots (deux diaporamas
+   et l'emplacement d'où part la grande image), deux boutons, puis l'aperçu du tableau de bord qui dépasse du bas de l'écran. Au défilement, la grande
+   image grossit depuis son carré du titre jusqu'à occuper tout l'écran (LandingMotion), puis rétrécit en carte sur ordinateur.
+   Tout est scopé (classes lp-hero*, hp*) et n'utilise que les variables du thème : le hero suit la palette choisie. */
+
+.lp-hero { --hp-h: clamp(190px, 37svh, 440px); position: relative; isolation: isolate; overflow: hidden; height: calc(100svh - var(--pub-header-h, 0px)); min-height: 560px; background: var(--bg); }
+
+/* Fond : un halo doré qui respire derrière le titre, un voile vert très léger, et des rais de lumière verticaux qui montent du bas, derrière l'aperçu. */
+.lp-hero__rays { position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    repeating-linear-gradient(90deg, color-mix(in srgb, var(--brand-3) 36%, transparent) 0 1.5px, transparent 1.5px 46px),
+    radial-gradient(70% 62% at 50% 100%, color-mix(in srgb, var(--brand-3) 46%, transparent), transparent 72%);
+  -webkit-mask-image: radial-gradient(90% 90% at 50% 100%, #000 14%, transparent 78%); mask-image: radial-gradient(90% 90% at 50% 100%, #000 14%, transparent 78%); }
+.lp-hero__glow { --g: min(72vw, 640px); position: absolute; z-index: 0; border-radius: 50%; pointer-events: none; will-change: transform; width: var(--g); aspect-ratio: 1; }
+.lp-hero__glow--a { left: 50%; top: -34%; margin-left: calc(var(--g) / -2); opacity: .7; background: radial-gradient(closest-side, color-mix(in srgb, var(--brand-3) 58%, transparent), transparent); }
+.lp-hero__glow--b { right: -16%; top: 12%; opacity: .3; background: radial-gradient(closest-side, color-mix(in srgb, var(--primary) 38%, transparent), transparent); }
+
+.lp-hero__copy { position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; align-items: center; }
+.lp-hero__head { position: relative; z-index: 3; width: min(100%, 1200px); display: grid; justify-items: center; gap: clamp(12px, 2.2svh, 22px); padding: calc(var(--net-banner-h, 0px) + clamp(88px, 13.5svh, 150px)) clamp(16px, 4vw, 40px) 0; text-align: center; }
+
+/* Étoiles à quatre branches : décor, elles flottent doucement (LandingMotion). */
+.lp-hero__stars { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.lp-hero__star { position: absolute; width: var(--s); height: var(--s); fill: currentColor; filter: drop-shadow(0 .3em .7em color-mix(in srgb, currentColor 42%, transparent)); will-change: transform; }
+.lp-hero__star--a { --s: clamp(30px, 4.6vw, 66px); left: 14%; top: 31%; color: var(--brand-3); }
+.lp-hero__star--b { --s: clamp(22px, 3.2vw, 46px); right: 13%; top: 43%; color: var(--primary); }
+.lp-hero__star--c { --s: clamp(14px, 1.8vw, 26px); right: 25%; top: 22%; color: var(--brand-3); }
+
+/* Titre : une ligne = un bloc qui ne se coupe pas. Chaque mot est masqué par un cadre découpé (il monte à l'ouverture, sans toucher au DOM). */
+.lp-hero h1 { margin: 0; font-size: clamp(2rem, min(8.4vw, 9.2svh), 6.6rem); line-height: 1.12; letter-spacing: -.045em; font-weight: 800; }
+.lp-hero__line { display: block; white-space: nowrap; }
+.lp-hero__w { display: inline-block; clip-path: inset(-.14em -.06em -.14em -.06em); }
+.lp-hero__wi { display: inline-block; will-change: transform; }
+
+/* Petits carrés posés entre les mots : une seule boîte par carré (côté --t, en « em » : il suit la taille du titre), légèrement inclinée avec la propriété
+   « rotate » (indépendante de l'échelle animée par GSAP). Le carré « media » est vide : la grande image part de lui. */
+.lp-hero__slot { --t: .98em; position: relative; display: inline-block; width: var(--t); height: var(--t); margin-inline: .04em; vertical-align: -.17em; border-radius: calc(var(--t) * .26); overflow: hidden; background: var(--surface-tint); pointer-events: none;
+  box-shadow: 0 0 0 .05em color-mix(in srgb, var(--surface) 92%, transparent), 0 .2em .5em -.16em color-mix(in srgb, var(--text) 52%, transparent); }
+.lp-hero__slot--a { rotate: -6deg; }
+.lp-hero__slot--b { rotate: 5deg; }
+/* L'emplacement vide n'existe que quand l'animation tourne : sans elle (mouvement réduit, JavaScript coupé), pas de grande image. */
+.lp-hero__slot--media { display: none; background: transparent; overflow: visible; box-shadow: none; }
+.lp-root[data-motion="ready"] .lp-hero__slot--media { display: inline-block; }
+.lp-root:not([data-motion="ready"]) .lp-hero__media { display: none; }
+/* Diaporama : la nouvelle photo entre par la droite, l'ancienne sort par la gauche, puis retourne en attente (sans animation) hors du cadre. */
+.lp-hero__slide { object-fit: cover; transform: translateX(101%); }
+.lp-hero__slide[data-pos="in"] { transform: none; }
+.lp-hero__slide[data-pos="out"] { transform: translateX(-101%); }
+@media (prefers-reduced-motion: no-preference) {
+  .lp-hero__slide[data-pos="in"], .lp-hero__slide[data-pos="out"] { transition: transform .85s cubic-bezier(.22, .9, .3, 1); }
+}
+
+.lp-hero__lead { margin: 0; max-width: 46ch; color: var(--text-muted); font-size: clamp(1rem, 1.55vw, 1.3rem); line-height: 1.5; text-wrap: balance; }
+.lp-hero .actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 4px; }
+.lp-hero .actions .button { min-height: 52px; padding-inline: 26px; border-radius: 999px; font-size: 1rem; font-weight: 700; }
+
+/* ---------- Aperçu du tableau de bord (HeroPreview) : un cadre doré, le produit dépasse du bas de l'écran ---------- */
+.hp { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; width: min(clamp(1120px, 62vw, 1320px), calc(100% - clamp(24px, 6vw, 96px))); height: var(--hp-h); margin-inline: auto; container-type: inline-size; pointer-events: none; }
+.hp__frame { height: 100%; padding: 10px 10px 0; border-radius: 30px 30px 0 0;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--brand-3) 92%, #fff) 0%, color-mix(in srgb, var(--brand-3) 52%, var(--bg)) 58%, color-mix(in srgb, var(--primary) 28%, var(--bg)) 100%);
+  box-shadow: 0 -24px 70px -8px color-mix(in srgb, var(--brand-3) 60%, transparent), inset 0 2px 0 color-mix(in srgb, #fff 70%, transparent); }
+.hp__win { height: 100%; display: grid; grid-template-columns: 4.7em max(calc(100cqw - 20px - 4.7em), 70em); overflow: hidden; border-radius: 22px 22px 0 0; background: color-mix(in srgb, var(--bg) 50%, #fff); color: var(--text); font-size: max(1.22cqw, 8px); line-height: 1.25; text-align: left; letter-spacing: -.01em; }
+.hp .icon { width: 1.3em; height: 1.3em; }
+.hp .brand-mark.brand-mark--duo { height: 2.5em; }
+.hp .brand-mark.brand-mark--logo { width: 100%; height: 100%; border-radius: inherit; }
+
+.hp__side { display: flex; flex-direction: column; align-items: center; gap: .65em; padding: 1.1em 0; border-right: 1px solid color-mix(in srgb, var(--text) 8%, transparent); background: color-mix(in srgb, var(--bg) 72%, #fff); }
+.hp__side-logo { display: block; line-height: 0; margin-bottom: .2em; }
+.hp__nav { display: grid; place-items: center; width: 2.7em; height: 2.7em; border-radius: .85em; color: color-mix(in srgb, var(--text) 78%, transparent); }
+.hp__nav.is-on { background: color-mix(in srgb, var(--text) 9%, transparent); color: var(--text); }
+.hp__nav--toggle { margin-bottom: .4em; }
+
+.hp__main { min-width: 0; padding: 1.7em 2.2em 0 2.3em; }
+.hp__who { display: flex; align-items: center; gap: .9em; }
+.hp__who-tile { display: block; flex: none; width: 3.2em; height: 3.2em; overflow: hidden; border-radius: .95em; background: var(--surface); box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 8%, transparent), 0 .35em .9em -.4em color-mix(in srgb, var(--text) 45%, transparent); }
+.hp__who-text { display: grid; gap: .1em; }
+.hp__who-text small { color: var(--text-muted); font-size: .88em; font-weight: 600; }
+.hp__who-text strong { font-size: 1.7em; font-weight: 750; letter-spacing: -.035em; line-height: 1.05; }
+
+.hp__head { display: flex; align-items: flex-end; justify-content: space-between; gap: 2em; margin-top: 1em; }
+.hp__title { display: grid; gap: .5em; }
+.hp__title b { font-size: 2.55em; font-weight: 750; letter-spacing: -.045em; line-height: 1.02; }
+.hp__title p { margin: 0; max-width: 38em; color: var(--text-muted); font-size: .98em; line-height: 1.5; }
+.hp__actions { display: flex; flex: none; gap: .7em; padding-bottom: .1em; }
+.hp__btn { display: inline-flex; align-items: center; gap: .5em; height: 2.95em; padding: 0 1.35em; border-radius: 999px; background: var(--surface); color: var(--text); font-size: .98em; font-weight: 700; white-space: nowrap; box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 10%, transparent), 0 .3em .8em -.4em color-mix(in srgb, var(--text) 35%, transparent); }
+.hp__btn--primary { background: color-mix(in srgb, var(--primary) 70%, #07241b); color: #fff; box-shadow: 0 .4em 1em -.5em color-mix(in srgb, var(--primary) 90%, #000); }
+.hp__btn .icon { width: 1.15em; height: 1.15em; }
+
+.hp__cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1em; margin-top: 1.5em; }
+.hp__card { display: grid; align-content: space-between; gap: .35em; min-height: 10em; padding: 1.1em 1.25em; border-radius: 1.5em; background: var(--surface); box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 6%, transparent), 0 .5em 1.2em -.8em color-mix(in srgb, var(--text) 40%, transparent); }
+.hp__card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: .6em; font-size: .98em; font-weight: 700; line-height: 1.2; }
+.hp__go { display: grid; flex: none; place-items: center; width: 2.4em; height: 2.4em; border-radius: 50%; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--text) 30%, transparent); }
+.hp__go .icon { width: 1.05em; height: 1.05em; transform: rotate(45deg); }
+.hp__num { font-size: 3.3em; font-weight: 700; line-height: 1; letter-spacing: -.05em; }
+.hp__note { display: flex; align-items: center; gap: .55em; margin: 0; color: var(--text-muted); font-size: .86em; font-weight: 600; line-height: 1.25; }
+.hp__note i { display: grid; flex: none; place-items: center; width: 2em; height: 2em; border-radius: .7em; background: color-mix(in srgb, var(--primary) 12%, transparent); color: var(--primary-text); }
+.hp__note .icon { width: 1.05em; height: 1.05em; }
+.hp__card--lead { color: #fff; background: linear-gradient(155deg, color-mix(in srgb, var(--primary) 66%, #06140f), color-mix(in srgb, var(--primary) 92%, #06140f)); box-shadow: 0 .8em 1.6em -.9em color-mix(in srgb, var(--primary) 90%, #000); }
+.hp__card--lead .hp__go { background: #fff; color: var(--text); box-shadow: none; }
+.hp__card--lead .hp__note { color: rgb(255 255 255 / .86); }
+.hp__card--lead .hp__note i { background: rgb(255 255 255 / .16); color: #fff; }
+
+.hp__row { display: grid; grid-template-columns: 1.55fr 1fr 1fr; gap: 1em; margin-top: 1em; }
+.hp__panel { display: grid; align-content: start; gap: .8em; min-height: 17em; padding: 1.2em 1.3em; border-radius: 1.5em; background: var(--surface); box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 6%, transparent); }
+.hp__panel-title { font-size: 1.2em; font-weight: 700; letter-spacing: -.02em; line-height: 1.15; }
+.hp__todo { font-size: 1.55em; font-weight: 700; letter-spacing: -.03em; line-height: 1.1; }
+.hp__bars { display: flex; align-items: flex-end; gap: .9em; height: 10em; padding-top: 1em; }
+.hp__bar { position: relative; flex: 1; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; }
+.hp__bar i { display: block; border-radius: 999px 999px .6em .6em; background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--primary) 55%, transparent) 0 1.5px, transparent 1.5px 5px); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--primary) 50%, transparent); }
+.hp__bar:nth-child(4) i { background: var(--primary); box-shadow: none; }
+.hp__bar em { position: absolute; left: 0; right: 0; bottom: -1.6em; color: var(--text-muted); font-size: .78em; font-style: normal; font-weight: 700; text-align: center; }
+.hp__list { display: grid; gap: .9em; margin: 0; padding: 0; list-style: none; }
+.hp__list li { display: flex; align-items: center; gap: .8em; margin: 0; }
+.hp__list i { display: grid; flex: none; place-items: center; width: 3em; height: 3em; border-radius: 50%; background: linear-gradient(145deg, var(--tone-honey-1, var(--brand-2)), var(--tone-honey-2, var(--brand-3))); color: var(--text); font-size: .85em; font-style: normal; font-weight: 800; }
+.hp__list span { display: grid; flex: 1; min-width: 0; }
+.hp__list b { font-size: 1.02em; font-weight: 700; }
+.hp__list small { color: var(--text-muted); font-size: .8em; font-weight: 600; }
+.hp__list em { padding: .35em .9em; border-radius: 999px; background: var(--status-verified-bg); color: var(--status-verified-fg); font-size: .78em; font-style: normal; font-weight: 800; }
+.hp__list em.is-off { background: transparent; color: var(--text-muted); }
+
+/* ---------- L'image qui grossit : elle occupe tout le hero ; avec l'animation (LandingMotion) elle démarre dans le carré « media » du titre ---------- */
+/* L'état de départ est alors posé par GSAP (échelle, position et clip-path mesurés sur ce carré). Les variables ci-dessous ne servent plus qu'au repli
+   sans animation (mouvement réduit, JavaScript coupé) : l'image reste en carte réduite vers le coin bas-droit. --s0 = échelle, --mx/--my = marges au bord
+   (--my laisse la place au bouton « Noter l’application », fixé en bas à droite), --r = rayon visible. */
+.lp-hero__media { --s0: .26; --mx: 40px; --my: 112px; --r: 28px; position: absolute; inset: 0; z-index: 1; overflow: hidden; container-type: size; background: var(--text); transform-origin: 100% 100%; transform: translate(calc(var(--mx) * -1), calc(var(--my) * -1)) scale(var(--s0)); border-radius: calc(var(--r) / var(--s0)); }
+.lp-hero__media--photo picture { position: absolute; inset: 0; display: block; }
+.lp-hero__media--photo img { object-fit: cover; }
+.lp-hero__reveal { position: absolute; inset: 0; z-index: 3; display: flex; align-items: center; color: var(--primary-text); pointer-events: none; }
+.lp-hero__reveal > .lp-wrap { display: grid; gap: 14px; align-content: center; }
+.lp-hero__reveal-title { margin: 0; max-width: 11ch; font-size: clamp(2.2rem, 5.6vw, 4.6rem); font-weight: 800; line-height: 1.02; letter-spacing: -.04em; }
+.lp-hero__reveal-text { margin: 0; max-width: 32ch; font-size: clamp(1rem, 1.7vw, 1.25rem); font-weight: 600; line-height: 1.45; }
+/* vert de la marque, avec un léger halo clair : lisible sur toute la photo, pas seulement sur le mur */
+.lp-hero__reveal-title, .lp-hero__reveal-text { text-shadow: 0 1px 16px color-mix(in srgb, var(--bg) 75%, transparent); }
+[data-reveal-line] { opacity: 0; }
+@media (min-width: 1500px) { .lp-hero__media { --s0: .22; --mx: 48px; } }
+
+/* ---------- Mobile ---------- */
+@media (max-width: 759px) {
+  .lp-hero { --hp-h: clamp(230px, 46svh, 400px); }
+  .lp-hero__head { gap: 16px; padding-top: calc(var(--net-banner-h, 0px) + clamp(92px, 15svh, 150px)); }
+  .lp-hero__star--a { left: 4%; top: 30%; --s: 26px; }
+  .lp-hero__star--b { right: 5%; top: 40%; --s: 20px; }
+  .lp-hero__star--c { display: none; }
+  .lp-hero .actions { gap: 10px; }
+  .lp-hero .actions .button { min-height: 48px; padding-inline: 16px; font-size: .92rem; }
+  .lp-hero__media { --s0: .37; --mx: 14px; --my: 84px; --r: 20px; }
+  .lp-hero__reveal { align-items: flex-start; padding-top: 34px; }
+  .lp-hero__reveal-title { max-width: 14ch; }
+  /* L'aperçu devient l'écran d'un téléphone : plus de barre latérale, quatre cartes sur deux colonnes. */
+  .hp { width: calc(100% - 24px); }
+  .hp__frame { padding: 6px 6px 0; border-radius: 22px 22px 0 0; }
+  .hp__win { grid-template-columns: minmax(0, 1fr); border-radius: 17px 17px 0 0; font-size: 3.05cqw; }
+  .hp__side, .hp__actions, .hp__title p { display: none; }
+  .hp__main { padding: 1.3em 1.2em 0; }
+  .hp__who-text strong { font-size: 1.5em; }
+  .hp__title b { font-size: 2.3em; }
+  .hp__cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8em; margin-top: 1.1em; }
+  .hp__card { min-height: 9.2em; }
+  .hp__row { display: none; }
+}
+@media (max-width: 380px) { .lp-hero .actions .button { padding-inline: 12px; font-size: .88rem; } }
+@media (max-height: 640px) and (min-width: 760px) {
+  .lp-hero__head { padding-top: calc(var(--net-banner-h, 0px) + 84px); }
+}

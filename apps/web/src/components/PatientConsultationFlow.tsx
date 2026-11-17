@@ -4,9 +4,10 @@ import { useState } from "react";
 import { Icon } from "./ui/Icon";
 import { PatientAccessGrants } from "./PatientAccessGrants";
 import { PatientPreconsultations } from "./PatientPreconsultations";
+import { PatientProfileChoice } from "./PatientProfileChoice";
 import "./consultation-flow.css";
 
-/* Consultations du patient, en deux étapes.
+/* Consultations du patient, en deux étapes, pour le profil choisi en tête (soi-même ou un enfant du compte : PatientProfileChoice).
    1. Pré-consultation : le motif, les symptômes, les constantes.
    2. Accès temporaire : le QR de 5 minutes à présenter au professionnel. Il n'apparaît qu'une fois la pré-consultation enregistrée,
       car le professionnel qui scanne ce QR vient lire cette pré-consultation. */
@@ -14,6 +15,7 @@ export function PatientConsultationFlow() {
   const [hasDraft, setHasDraft] = useState(false);
   return (
     <div className="stack-lg">
+      <PatientProfileChoice />
       <section className="stack" aria-labelledby="flow-step1">
         <span className="eyebrow">Étape 1</span>
         <h2 id="flow-step1" data-tour="howto-preconsult">Pré-consultation</h2>

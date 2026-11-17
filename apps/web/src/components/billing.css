@@ -1,0 +1,16 @@
+.billing h3, .billing h4 { margin: 0; }
+.billing__offers { display: grid; gap: 12px; }
+@media (min-width: 720px) { .billing__offers { grid-template-columns: repeat(3, 1fr); } }
+.billing__offer { display: grid; gap: 8px; align-content: start; }
+.billing__offer[data-current="true"] { border-color: var(--primary, #3B826C); border-width: 2px; }
+.billing__offer ul { margin: 0; padding-left: 18px; display: grid; gap: 2px; font-size: .9rem; }
+.billing__price { margin: 0; font-weight: 700; font-size: 1.1rem; }
+.billing__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.billing__list li { display: grid; gap: 4px; padding-bottom: 12px; border-bottom: 1px solid var(--border, #E3D9C2); }
+.billing__list li:last-child { border-bottom: 0; padding-bottom: 0; }
+.billing__list p { margin: 0; }
+.billing__line { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.billing__pay { padding: 12px; border-radius: 14px; background: var(--surface-muted, #FFF7E6); }
+.billing__notice--warning { background: #FFF3D6; color: #5C4000; border-color: #8A6100; }
+.billing__notice--danger { background: #FBEAE8; color: #7A1F1F; border-color: #A32D2D; }
+.billing .row { display: flex; gap: 8px; flex-wrap: wrap; }

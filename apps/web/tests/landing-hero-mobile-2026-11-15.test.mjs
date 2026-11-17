@@ -4,14 +4,18 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
+const landing = await import("../src/lib/landing-content.ts");
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
-test("héro : un seul bouton d'action, « Commencer », centré sous le slogan", () => {
+test("héro : « Commencer » et « Comment ça marche » côte à côte sous le slogan, sans le bouton « Je suis professionnel »", () => {
   const page = read("src/app/page.tsx");
   const hero = page.slice(page.indexOf('<section className="lp-hero"'), page.indexOf("</section>", page.indexOf('<section className="lp-hero"')));
-  assert.equal((hero.match(/className="button/g) ?? []).length, 1);
+  assert.equal((hero.match(/className="button/g) ?? []).length, 2);
   assert.match(hero, /HERO\.primary\.label/);
+  assert.match(hero, /HERO\.tour\.href/);
   assert.ok(!hero.includes("HERO.secondary"), "plus de bouton « Je suis professionnel » dans le héro");
+  assert.equal(landing.HERO.tour.href, "/#parcours");
+  assert.match(read("src/app/landing-hero.css"), /\.lp-hero \.actions \{ display: flex; flex-wrap: wrap; justify-content: center;/);
 });
 
 test("mobile : l'image grossie reste pleine, seul l'ordinateur la rétrécit en carte à la fin", () => {

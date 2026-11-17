@@ -10,6 +10,8 @@ import { CODE_ERROR_FALLBACK, errorReason, joinRequestSentCopy } from "../lib/ac
 import { PageHeader } from "./ui/PageHeader";
 import { CollapsibleSection } from "./ui/CollapsibleSection";
 import { EstablishmentLogo } from "./EstablishmentLogo";
+import { ProfessionalMembershipDetail } from "./ProfessionalMembershipDetail";
+import "./ui/profile-detail.css";
 import "./establishment-logo.css";
 
 const STATUS: Record<Membership["status"], { label: string; css: string }> = {
@@ -25,6 +27,7 @@ export function ProfessionalAccess() {
   const [code, setCode] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [detail, setDetail] = useState<Membership | null>(null);
   const [agreementAccepted, setAgreementAccepted] = useState(false);
   const [outcome, setOutcome] = useState<Omit<OutcomeDialogProps, "onClose"> | null>(null);
   const confirm = useConfirm();
@@ -85,7 +88,7 @@ export function ProfessionalAccess() {
               return (
                 <article className="record membership-row" key={membership.id}>
                   <div className="membership-row__who">
-                    <EstablishmentLogo logo={membership.establishment_logo} name={membership.establishment_name} />
+                    <button type="button" className="avatar-button" aria-label={`Voir la fiche de ${membership.establishment_name}`} onClick={() => setDetail(membership)}><EstablishmentLogo logo={membership.establishment_logo} name={membership.establishment_name} /></button>
                     <div>
                       <strong>{membership.establishment_name}</strong>
                       <p className="muted">{membership.city}</p>
@@ -108,6 +111,7 @@ export function ProfessionalAccess() {
         )}
       </CollapsibleSection>
       </div>
+      {detail && <ProfessionalMembershipDetail membership={detail} onClose={() => setDetail(null)} />}
     </div>
   );
 }

@@ -116,10 +116,10 @@ body .public-scroll-top { position: fixed; }
 .pub { min-height: 100dvh; display: grid; grid-template-rows: auto 1fr auto; }
 /* ---------- En-tête public : logo seul, sans fond ni nom ; menu plein écran ouvert par un bouton à trois traits fixé en bas (ordinateur et mobile) ---------- */
 .pub { --pub-header-h: 0px; }
-.pub:has(.pub-header--connected) { --pub-header-h: 60px; }
+/* En-tête : une barre de hauteur nulle, sans fond. Le logo flotte au centre, en haut, sur toutes les pages publiques ; pour un visiteur connecté, « Retour à mon espace » flotte à gauche. */
 .pub-header { position: relative; z-index: 20; height: 0; }
-.pub-header:not(.pub-header--connected) .brand { position: absolute; top: calc(var(--net-banner-h, 0px) + max(14px, env(safe-area-inset-top))); left: clamp(16px, 4vw, 40px); }
-.pub-header:not(.pub-header--connected) .brand-mark.brand-mark--duo { height: clamp(46px, 7vw, 58px); }
+.pub-header .brand { position: absolute; top: calc(var(--net-banner-h, 0px) + max(14px, env(safe-area-inset-top))); left: 50%; transform: translateX(-50%); }
+.pub-header .brand-mark.brand-mark--duo { height: clamp(46px, 7vw, 58px); }
 .pub-burger { position: fixed; z-index: 840; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom)); display: inline-grid; place-items: center; width: 76px; height: 52px; padding: 0; border: 0; border-radius: 999px; background: var(--primary); color: var(--on-primary); cursor: pointer; transform: translateX(-50%); box-shadow: 0 0 0 1.5px var(--bg), 0 10px 24px -8px color-mix(in srgb, var(--primary) 70%, #000); transition: opacity .25s ease, transform .35s cubic-bezier(.22, .9, .3, 1), visibility 0s; }
 .pub-burger:hover { transform: translateX(-50%) translateY(-2px); }
 .pub-burger:focus-visible { outline: 3px solid var(--primary); outline-offset: 5px; }
@@ -147,12 +147,13 @@ body .public-scroll-top { position: fixed; }
 .pub-menu__close:hover .pub-menu__close-text { background: color-mix(in srgb, var(--on-primary) 16%, transparent); }
 .pub-menu__close:hover .pub-menu__close-x { transform: rotate(90deg); }
 .pub-nav { flex: 1 0 auto; display: flex; flex-direction: column; justify-content: center; margin-block: clamp(4px, 1.4svh, 16px); }
-.pub-nav__link { --off: 0%; position: relative; display: flex; align-items: center; gap: .14em; overflow: hidden; padding-block: .06em; margin-left: var(--off); color: inherit; font-size: var(--fs); font-weight: 600; line-height: 1.12; letter-spacing: -.045em; text-decoration: none; transition: opacity .3s ease; }
+.pub-nav__link { position: relative; display: flex; align-items: center; overflow: hidden; padding-block: .06em; color: inherit; font-size: var(--fs); font-weight: 600; line-height: 1.12; letter-spacing: -.045em; text-decoration: none; transition: opacity .3s ease; }
 .pub-nav__link + .pub-nav__link { border-top: 1px solid color-mix(in srgb, var(--on-primary) 30%, transparent); }
-.pub-nav__text { display: inline-block; transform: translateY(105%); opacity: 0; transition: transform .45s cubic-bezier(.76, 0, .24, 1), opacity .25s ease; }
+.pub-nav__text { position: relative; display: inline-block; transform: translateY(105%); opacity: 0; transition: transform .45s cubic-bezier(.76, 0, .24, 1), opacity .25s ease; }
 .pub-menu[data-open="true"] .pub-nav__text { transform: none; opacity: 1; transition: transform .9s cubic-bezier(.16, 1, .3, 1) calc(var(--i, 0) * 80ms + .25s), opacity .5s ease calc(var(--i, 0) * 80ms + .25s); }
 .pub-nav__link:nth-child(2) { --i: 1; } .pub-nav__link:nth-child(3) { --i: 2; } .pub-nav__link:nth-child(4) { --i: 3; } .pub-nav__link:nth-child(5) { --i: 4; } .pub-nav__link:nth-child(6) { --i: 5; }
-.pub-nav__dot { flex: none; width: .2em; height: .2em; background: currentColor; transform: rotate(45deg) scale(0); transition: transform .45s cubic-bezier(.22, .9, .3, 1); }
+/* Le losange est posé juste après le mot, sans compter dans sa largeur : le mot reste exactement centré. */
+.pub-nav__dot { position: absolute; left: calc(100% + .16em); top: 50%; width: .2em; height: .2em; margin-top: -.1em; background: currentColor; transform: rotate(45deg) scale(0); transition: transform .45s cubic-bezier(.22, .9, .3, 1); }
 .pub-nav__link:hover .pub-nav__dot, .pub-nav__link:focus-visible .pub-nav__dot, .pub-nav__link[aria-current] .pub-nav__dot { transform: rotate(45deg) scale(1); }
 @media (hover: hover) { .pub-nav:has(.pub-nav__link:hover) .pub-nav__link:not(:hover) { opacity: .45; } }
 .pub-menu__bottom { flex: none; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 28px; padding-top: clamp(8px, 1.6svh, 18px); }
@@ -161,8 +162,9 @@ body .public-scroll-top { position: fixed; }
 a.pub-menu__social-item:hover { background: var(--on-primary); color: var(--primary); transform: translateY(-3px); }
 .pub-menu__social-item.is-soon { opacity: .5; cursor: default; }
 .pub-menu__copy { margin: 0; font-size: .85rem; opacity: .85; }
+/* Ordinateur : les liens sont centrés, les filets séparateurs restent pleine largeur. */
 @media (min-width: 900px) {
-  .pub-nav__link:nth-child(2) { --off: 5%; } .pub-nav__link:nth-child(3) { --off: 10%; } .pub-nav__link:nth-child(4) { --off: 15%; } .pub-nav__link:nth-child(5) { --off: 20%; } .pub-nav__link:nth-child(6) { --off: 25%; }
+  .pub-nav__link { justify-content: center; text-align: center; }
 }
 @media (max-width: 559px) {
   .pub-menu__top { grid-template-columns: 1fr auto; grid-template-areas: "langs close" "logo logo"; row-gap: 4px; }
@@ -177,12 +179,11 @@ a.pub-menu__social-item:hover { background: var(--on-primary); color: var(--prim
   .pub-nav__text { transform: none; opacity: 1; }
 }
 /* Barre d'un visiteur connecté sur une page publique : « Retour à mon espace », collée en haut. */
-.pub-header--connected { position: sticky; top: var(--net-banner-h, 0px); z-index: 30; display: flex; align-items: center; gap: 16px; height: auto; min-height: 60px; padding: max(10px, env(safe-area-inset-top)) clamp(16px, 4vw, 40px) 10px; background: color-mix(in srgb, var(--bg) 90%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
-.pub-return-link { display: inline-flex; align-items: center; gap: 9px; min-height: 42px; color: var(--primary-text); font-weight: 700; text-decoration: none; }
+/* Visiteur connecté sur une page publique : « Retour à mon espace », à gauche du logo, sans barre ni fond. */
+.pub-return-link { position: absolute; top: calc(var(--net-banner-h, 0px) + max(14px, env(safe-area-inset-top))); left: clamp(16px, 4vw, 40px); display: inline-flex; align-items: center; gap: 9px; min-height: 44px; color: var(--primary-text); font-weight: 700; text-decoration: none; }
 .pub-return-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 .pub-return-link span { font-size: 1.3rem; line-height: 1; }
 .pub-main { width: min(calc(100% - 32px), 1120px); margin-inline: auto; padding: clamp(76px, 11vw, 96px) 0 40px; display: grid; gap: clamp(40px, 8vw, 84px); align-content: start; }
-.pub:has(.pub-header--connected) .pub-main:not(.pub-main--bleed) { padding-top: 22px; }
 .pub-main > article, .pub-main > .shell { width: 100%; }
 /* ---------- Pied de page : deux cartes (marque, liens) et grand filigrane rogné ---------- */
 .pub-footer { position: relative; padding: 56px clamp(12px, 3vw, 32px) calc(60px + env(safe-area-inset-bottom)); overflow: hidden; } /* le bas laisse la place au bouton de menu fixé en bas */

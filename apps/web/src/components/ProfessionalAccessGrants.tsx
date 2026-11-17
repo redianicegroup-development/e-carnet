@@ -8,6 +8,8 @@ import { useConfirm } from "./modal/ConfirmProvider";
 import { formatClock, formatWhen, timeLeft } from "./access/access-history";
 import { QrScanner } from "./QrScanner";
 import { PersonAvatar } from "./ui/PersonAvatar";
+import { ProfessionalGrantDetail } from "./ProfessionalGrantDetail";
+import "./ui/profile-detail.css";
 import { EstablishmentLogo } from "./EstablishmentLogo";
 import "./establishment-logo.css";
 import "./consultation-flow.css";
@@ -38,6 +40,7 @@ export function ProfessionalAccessGrants() {
   const router = useRouter();
   const opening = useRef(false);
   const [formError, setFormError] = useState("");
+  const [detail, setDetail] = useState<ProfessionalGrant | null>(null);
 
   // Le bouton principal de la barre de navigation (« Scanner ») arrive ici avec #scanner : la caméra démarre et le formulaire passe au premier plan.
   useEffect(() => {
@@ -139,11 +142,12 @@ export function ProfessionalAccessGrants() {
         const scopes = item.scope.map((scope) => SCOPE_LABELS[scope] ?? scope).join(" · ");
         const line = stateLine(item);
         return <article className="record request-row" data-status={item.status} key={item.id}>
-          <div className="request-row__who"><span className="request-row__avatars"><PersonAvatar src={item.patient_avatar} name={item.patient_name || item.reference} size={46} /><EstablishmentLogo logo={item.establishment_logo} name={item.facility_label} size={22} /></span><div><strong title={who}>{who}</strong><span className="muted request-row__facility" title={item.facility_label}>{item.facility_label}</span></div></div>
+          <div className="request-row__who"><button type="button" className="avatar-button request-row__avatars" aria-label={`Voir le détail de la demande de ${item.patient_name || item.reference}`} onClick={() => setDetail(item)}><PersonAvatar src={item.patient_avatar} name={item.patient_name || item.reference} size={46} /><EstablishmentLogo logo={item.establishment_logo} name={item.facility_label} size={22} /></button><div><strong title={who}>{who}</strong><span className="muted request-row__facility" title={item.facility_label}>{item.facility_label}</span></div></div>
           <p className="muted request-row__scope" title={scopes}>{scopes}</p>
           <div className="request-row__foot"><div className="request-row__state"><span className={`badge ${item.status === "active" ? "verified" : "declared"}`}>{STATUS_LABELS[item.status] ?? item.status}</span>{line && <small className="muted">{line}</small>}</div>{item.status === "active" && <button type="button" className="button small danger" onClick={() => void endGrant(item)} disabled={endingId === item.id}>{endingId === item.id ? "Fin de l’accès…" : "Terminer l’accès"}</button>}</div>
         </article>;
       })}</div>}</section>
     </section>
+    {detail && <ProfessionalGrantDetail item={detail} onClose={() => setDetail(null)} />}
   </div>;
 }

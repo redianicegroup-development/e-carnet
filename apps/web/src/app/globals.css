@@ -720,13 +720,18 @@ a.setting-item:hover, button.setting-item:hover { border-color: var(--primary); 
 @media (prefers-reduced-motion: reduce) { .star-input__star { transition: none; } .star-input__star:hover:not(:disabled) { transform: none; } }
 
 /* Proches de confiance : deux tuiles (« Donner accès » / « Reçu accès ») qui ouvrent chacune leur fenêtre. */
-.trusted-tiles { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); }
-.trusted-tile { display: grid; gap: 6px; justify-items: start; text-align: left; padding: 16px; border-radius: 18px; border: 1px solid var(--border, #e6dfc9); background: var(--surface-tint, #fff8e8); color: inherit; font: inherit; cursor: pointer; transition: transform .15s ease, box-shadow .15s ease; }
-.trusted-tile:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 0, 0, .08); }
-.trusted-tile:focus-visible { outline: 3px solid var(--focus-ring, #3b8f6f); outline-offset: 2px; }
-.trusted-tile__icon { display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; background: var(--accent-soft, #ffe3b3); }
+/* « Donner accès » / « Reçu accès » : même tuile que les rubriques fermées de « Tout ce qui s'est passé » (fond clair, bordure fine d'encre, titre en haut,
+   icône dans un cercle de couleur au milieu, description en bas), sur deux colonnes. Couleurs tirées du thème actif. */
+.trusted-tiles { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.trusted-tile { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 10px; min-height: 196px; padding: 18px 12px 16px; border: 1.5px solid color-mix(in srgb, var(--text) 78%, transparent); border-radius: 28px; background: var(--surface, var(--bg)); box-shadow: none; color: inherit; font: inherit; text-align: center; cursor: pointer; transition: box-shadow .2s ease; }
+.trusted-tile:not(:active):hover { box-shadow: var(--raise-sm, 0 8px 20px rgba(0, 0, 0, .08)); }
+.trusted-tile:focus-visible { outline: 3px solid var(--focus, var(--focus-ring, #3b8f6f)); outline-offset: 3px; }
+.trusted-tile > strong { display: flex; align-items: center; justify-content: center; min-height: 2.4em; font-size: 1.02rem; font-weight: 800; line-height: 1.2; text-align: center; text-wrap: balance; }
+.trusted-tile__icon { display: grid; place-items: center; width: 68px; height: 68px; border-radius: 50%; background: color-mix(in srgb, var(--primary) 46%, var(--surface, var(--bg))); color: var(--text); }
+.trusted-tile__hint { max-width: 17ch; color: color-mix(in srgb, var(--text) 78%, transparent); font-size: .76rem; font-weight: 600; line-height: 1.3; text-align: center; text-wrap: balance; }
+@media (min-width: 820px) { .trusted-tile { min-height: 216px; } .trusted-tile__icon { width: 76px; height: 76px; } }
 .trusted-panel { display: grid; gap: 14px; width: min(100%, 460px); max-height: calc(100dvh - 32px); overflow: auto; text-align: left; }
 .trusted-panel__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .trusted-panel__head h2 { margin: 0; font-size: 1.3rem; }
 .trusted-success { display: grid; gap: 10px; }
-@media (prefers-reduced-motion: reduce) { .trusted-tile { transition: none; } .trusted-tile:hover { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .trusted-tile { transition: none; } }

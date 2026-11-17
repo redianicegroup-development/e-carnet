@@ -15,15 +15,19 @@ export const HERO_IMAGE = {
   alt: "Une femme souriante montre son téléphone : l’écran affiche Mon E‑Carnet",
 } as const;
 
-/** Slogan du héro (le titre de la page), découpé en groupes : un groupe ne se coupe pas en fin de ligne. Mis bout à bout, il se lit comme APP_SLOGAN. */
-export const HERO_TITLE_GROUPS: readonly (readonly string[])[] = [
-  ["Gardez", "le", "fil"],
-  ["avec", "Mon E‑Carnet."],
+/** Petits carrés posés dans le titre du héro, entre les mots : deux diaporamas (a, b) et, en plus, l'emplacement « media » d'où part la grande image. */
+export type HeroSlot = "a" | "b";
+export const HERO_SLOTS: readonly HeroSlot[] = ["a", "b"];
+
+/** Slogan du héro (le titre de la page), ligne par ligne, avec les carrés posés entre les mots. Une ligne ne se coupe pas : un carré ne se retrouve jamais seul en bout de ligne. */
+export type HeroTitleItem = string | { tile: HeroSlot | "media" };
+export const HERO_TITLE_LINES: readonly (readonly HeroTitleItem[])[] = [
+  ["Gardez", { tile: "a" }, "le", "fil", { tile: "media" }],
+  ["avec", { tile: "b" }, "Mon E‑Carnet."],
 ];
 
-/** Petits carrés posés autour du grand « MON E‑CARNET » du héro : quatre diaporamas (a, b, c, d) et, en plus, l'emplacement « media » d'où part la grande image. */
-export type HeroSlot = "a" | "b" | "c" | "d";
-export const HERO_SLOTS: readonly HeroSlot[] = ["a", "b", "c", "d"];
+/** Les mots seuls, sans les carrés. Mis bout à bout, ils se lisent comme APP_SLOGAN (HERO.title). */
+export const HERO_TITLE_GROUPS: readonly (readonly string[])[] = HERO_TITLE_LINES.map((line) => line.filter((item): item is string => typeof item === "string"));
 
 /** Photos des carrés : chaque carré change d’image toutes les 4 s, décalé d’1 s du carré précédent, jamais la même image dans deux carrés en même temps.
     Photos recadrées en 480 × 480. Pour en ajouter : déposer le fichier dans public/landing/ et l'ajouter ici. */
@@ -46,10 +50,14 @@ export const HERO = {
   lead: "Réunissez vos informations de santé, remettez votre carnet au médecin et choisissez qui peut le consulter.",
   primary: { href: "/connexion", label: "Commencer" },
   secondary: { href: "/connexion?mode=register&profil=professionnel", label: "Je suis professionnel" },
+  /** Second bouton du héro (à côté de « Commencer ») : mène au parcours en trois étapes, plus bas dans la page. */
+  tour: { href: "/#parcours", label: "Comment ça marche" },
   note: "Organisez vos informations de santé dans votre espace sécurisé.",
   /** Texte qui apparaît par-dessus l'image quand elle occupe tout l'écran. Décoratif : repris par la section « confiance ». */
   reveal: { title: "Aucun accès sans votre choix.", text: "Vous voyez qui demande, depuis quel établissement et pour quel contenu." },
   sceneLabel: "Aperçu illustré de l’espace patient : une demande d’accès à autoriser ou refuser, et un QR code temporaire",
+  /** Aperçu du tableau de bord sous le titre : une illustration (données d'exemple), pas une capture de comptes réels. */
+  previewLabel: "Aperçu illustré du tableau de bord d’un établissement : médecins actifs, demandes à traiter, rendez-vous à venir. Données d’exemple.",
 } as const;
 
 export type Feature = {

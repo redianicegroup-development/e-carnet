@@ -9,6 +9,7 @@ import { EmergencyCardVisual } from "./emergency-card/EmergencyCardVisual";
 import { useOwnProfession } from "./emergency-card/useEmergencyCard";
 import { downloadEmergencyCardPng } from "./emergency-card/emergency-card-image";
 import { initials, useSpaceAccount } from "./shell/SpaceShell";
+import { profileInitials, type PatientProfileEntry } from "../lib/patient-profiles";
 import { Icon } from "./ui/Icon";
 
 type EmergencyCard = {
@@ -31,8 +32,9 @@ const EMPTY: EmergencyCard = { first_name: "", last_name: "", city: "", blood_gr
 /* « Ma carte d’urgence » (patient) ou « Ma carte professionnelle » (professionnel) : section de carte virtuelle repliable et téléchargement.
    Rien ne se modifie ici : ville, contact d’urgence, groupe sanguin et allergies sont des déclarations du carnet.
    Le QR public de la carte n'est plus proposé (décision produit 13/11/2026) : seul un QR déjà actif peut encore être désactivé, jamais activé. */
-export function PatientEmergencyCardSettingsClient({ variant = "patient" }: { variant?: "patient" | "professional" }) {
+export function PatientEmergencyCardSettingsClient({ variant = "patient", profile = null }: { variant?: "patient" | "professional"; profile?: PatientProfileEntry | null }) {
   const professional = variant === "professional";
+  const child = profile; // profil d'enfant ouvert : la carte est la sienne, avec ses initiales (ni la photo ni la profession du titulaire)
   const account = useSpaceAccount();
   const [card, setCard] = useState<EmergencyCard>(EMPTY);
   const [loading, setLoading] = useState(true);
@@ -53,9 +55,10 @@ export function PatientEmergencyCardSettingsClient({ variant = "patient" }: { va
     return () => { active = false; };
   }, []);
 
-  const profession = useOwnProfession(account);
+  const ownProfession = useOwnProfession(account);
+  const profession = child ? null : ownProfession;
   const shown = { ...card, profession };
-  const photo = { url: account?.avatar_url || undefined, initials: account ? initials(account) : "?" };
+  const photo = child ? { url: undefined, initials: profileInitials(child) } : { url: account?.avatar_url || undefined, initials: account ? initials(account) : "?" };
 
   async function downloadPng() {
     setExporting(true);

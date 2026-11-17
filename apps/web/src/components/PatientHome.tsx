@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { apiGet } from "../infrastructure/api/client";
+import { PatientBanner } from "./PatientBanner";
 import { displayName, useSpaceAccount } from "./shell/SpaceShell";
 import { Icon, type IconName } from "./ui/Icon";
 import { PatientHomeIdentity } from "./PatientHomeIdentity";
@@ -108,6 +109,8 @@ export function PatientHome() {
         </section>
       )}
 
+
+      <PatientBanner />
 
       {account && <PatientHomeIdentity account={account} />}
 

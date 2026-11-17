@@ -7,6 +7,8 @@ import { cleanUpBeforeLogout } from "../../lib/logout";
 import { AdminActivityCharts, type DailyActivityPoint } from "../../components/AdminActivityCharts";
 import { AdminAccountActionRequestsClient } from "../../components/AdminAccountActionRequestsClient";
 import { AdminRepresentationTransfersClient } from "../../components/AdminRepresentationTransfersClient";
+import { AdminBannersClient } from "../../components/AdminBannersClient";
+import { AdminBillingClient } from "../../components/AdminBillingClient";
 import { AdminRecoveryClient } from "../../components/AdminRecoveryClient";
 import { AdminEstablishmentsClient } from "../../components/AdminEstablishmentsClient";
 import { AdminSettingsClient } from "../../components/AdminSettingsClient";
@@ -48,7 +50,7 @@ type Dashboard = {
   visitors: Visitor[]; feedback: Feedback[]; survey_responses: SurveyResponse[];
 };
 type AdminProfile = { email: string; first_name: string; last_name: string; avatar_url?: string };
-type AdminTab = "overview" | "operations" | "audit" | "activity" | "feedback" | "survey" | "establishments" | "account-requests" | "recovery" | "representation-transfers" | "settings";
+type AdminTab = "overview" | "operations" | "audit" | "activity" | "feedback" | "survey" | "establishments" | "account-requests" | "recovery" | "representation-transfers" | "banners" | "billing" | "settings";
 
 const tabs: { id: AdminTab; label: string; short: string; icon: IconName }[] = [
   { id: "overview", label: "Vue d’ensemble", short: "Accueil", icon: "home" },
@@ -61,6 +63,8 @@ const tabs: { id: AdminTab; label: string; short: string; icon: IconName }[] = [
   { id: "account-requests", label: "Gestion des comptes", short: "Comptes", icon: "users" },
   { id: "recovery", label: "Récupérations de compte", short: "Récup.", icon: "lock" },
   { id: "representation-transfers", label: "Transferts de dossiers", short: "Transferts", icon: "share" },
+  { id: "banners", label: "Bannières", short: "Bannières", icon: "folder" },
+  { id: "billing", label: "Facturation", short: "Facturation", icon: "document" },
   { id: "settings", label: "Paramètres", short: "Moi", icon: "user" },
 ];
 const categoryLabel: Record<string, string> = {
@@ -224,7 +228,7 @@ export default function AdminPage() {
   const adminName = [adminProfile?.first_name, adminProfile?.last_name].filter(Boolean).join(" ") || adminProfile?.email || "Administrateur";
   const adminInitials = `${adminProfile?.first_name?.[0] ?? ""}${adminProfile?.last_name?.[0] ?? ""}`.toUpperCase() || adminProfile?.email?.[0]?.toUpperCase() || "A";
 
-  const tabGroup: Partial<Record<AdminTab, string>> = { overview: "Pilotage", operations: "Pilotage", establishments: "Gestion", "representation-transfers": "Gestion", settings: "Compte" };
+  const tabGroup: Partial<Record<AdminTab, string>> = { overview: "Pilotage", operations: "Pilotage", establishments: "Gestion", "representation-transfers": "Gestion", banners: "Gestion", billing: "Gestion", settings: "Compte" };
   const sidebarItems: SidebarItem[] = tabs.map((tab) => ({
     id: tab.id, label: tab.short, long: tab.label, icon: tab.icon, active: activeTab === tab.id,
     onSelect: () => setActiveTab(tab.id), domId: `admin-tab-${tab.id}`, controls: `admin-panel-${tab.id}`, heading: tabGroup[tab.id],
@@ -322,6 +326,8 @@ export default function AdminPage() {
     {activeTab === "audit" && <section id="admin-panel-audit" role="tabpanel" aria-labelledby="admin-tab-audit"><AdminAuditJournal /></section>}
     {activeTab === "recovery" && <section id="admin-panel-recovery" role="tabpanel" aria-labelledby="admin-tab-recovery"><AdminRecoveryClient /></section>}
     {activeTab === "representation-transfers" && <section id="admin-panel-representation-transfers" role="tabpanel" aria-labelledby="admin-tab-representation-transfers"><AdminRepresentationTransfersClient /></section>}
+    {activeTab === "banners" && <section id="admin-panel-banners" role="tabpanel" aria-labelledby="admin-tab-banners"><AdminBannersClient /></section>}
+    {activeTab === "billing" && <section id="admin-panel-billing" role="tabpanel" aria-labelledby="admin-tab-billing"><AdminBillingClient /></section>}
     {activeTab === "settings" && <section id="admin-panel-settings" role="tabpanel" aria-labelledby="admin-tab-settings"><AdminSettingsClient onLogout={() => void askSignOut()} /></section>}
       </div>
     </main>

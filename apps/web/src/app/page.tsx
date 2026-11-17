@@ -11,7 +11,7 @@ import { SolutionSection } from "../components/landing2/SolutionSection";
 import { ToolTiles } from "../components/landing2/ToolTiles";
 import { FaqSection } from "../components/landing/FaqSection";
 import { HeroScene } from "../components/landing/HeroScene";
-import { HeroTiles } from "../components/landing/HeroTiles";
+import { HeroPreview } from "../components/landing/HeroPreview";
 import { HeroTitle } from "../components/landing/HeroTitle";
 import { LandingMotion } from "../components/motion/LandingMotion";
 import { PublicShell } from "../components/public/PublicShell";
@@ -23,6 +23,7 @@ import "./landing.css";
 import "./landing-immersive.css";
 import "./landing-showcase.css";
 import "./landing-v2.css";
+import "./landing-hero.css";
 
 const PAGE_TITLE = "Carnet de santé numérique | Mon E-Carnet";
 const PAGE_DESCRIPTION = "Rassemblez vos informations de santé dans un carnet, remettez-le au médecin à chaque consultation et gardez la maîtrise des accès. Votre espace sécurisé.";
@@ -58,20 +59,27 @@ export default function HomePage() {
   return <PublicShell bleed>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} />
     <LandingMotion>
-      {/* Hero : un grand « MON E‑CARNET » en filigrane (le même que celui du pied de page), des petits carrés de photos autour (quatre diaporamas),
-          puis, en bas, le slogan et un seul bouton. La grande image démarre dans l'un des carrés (« media ») et grossit au défilement (voir HeroTiles et LandingMotion).
-          Le titre lu est le slogan (HeroTitle) ; le filigrane et les carrés sont décoratifs. Le bouton de menu à trois traits est fixé en bas de l'écran (PublicHeader). */}
+      {/* Hero : fond miel, titre centré avec trois petits carrés posés entre les mots (deux diaporamas, et l'emplacement d'où part la grande image),
+          deux boutons, puis l'aperçu du tableau de bord qui dépasse du bas de l'écran (HeroPreview), comme la maquette d'un héro de SaaS.
+          La grande image démarre dans le carré « media » du titre et grossit au défilement jusqu'à occuper tout l'écran (voir HeroTitle et LandingMotion).
+          Le titre lu est le slogan (HeroTitle) ; les carrés, les étoiles et l'aperçu sont décoratifs. Le bouton de menu à trois traits est fixé en bas de l'écran (PublicHeader). */}
       <section className="lp-hero" aria-labelledby="hero-title" data-hero>
+        <span className="lp-hero__rays" aria-hidden="true" />
         <span className="lp-hero__glow lp-hero__glow--a" aria-hidden="true" />
         <span className="lp-hero__glow lp-hero__glow--b" aria-hidden="true" />
         <div className="lp-hero__copy" data-hero-copy>
-          <HeroTiles />
-          <div className="lp-hero__foot">
+          <div className="lp-hero__stars" aria-hidden="true">
+            {["a", "b", "c"].map((id) => <svg key={id} className={`lp-hero__star lp-hero__star--${id}`} viewBox="0 0 24 24"><path d="M12 0c.7 7.2 4.8 11.3 12 12-7.2.7-11.3 4.8-12 12-.7-7.2-4.8-11.3-12-12C7.2 11.3 11.3 7.2 12 0z" /></svg>)}
+          </div>
+          <div className="lp-hero__head">
             <HeroTitle />
+            <p className="lp-hero__lead" data-hero-item>{HERO.lead}</p>
             <div className="actions" data-hero-item>
               <Link className="button primary" href={HERO.primary.href} data-track="signup">{HERO.primary.label}<Icon name="chevron" size={18} /></Link>
+              <Link className="button" href={HERO.tour.href}>{HERO.tour.label}</Link>
             </div>
           </div>
+          <HeroPreview />
         </div>
         {HERO_IMAGE
           ? <div className="lp-hero__media lp-hero__media--photo" data-hero-media><picture><source media="(max-width: 759px)" srcSet={HERO_IMAGE.mobileSrc} /><Image src={HERO_IMAGE.desktopSrc} alt={HERO_IMAGE.alt} fill priority sizes="100vw" /></picture></div>

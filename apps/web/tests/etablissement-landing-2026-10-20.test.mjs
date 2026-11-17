@@ -58,7 +58,7 @@ test("console équipe : la carte du tableau ne fait plus déborder la page, et c
 });
 
 test("hero : le texte révélé est vert (il se confondait avec la photo claire)", () => {
-  const css = read("src/app/landing-showcase.css");
+  const css = read("src/app/landing-hero.css");
   assert.match(css, /\.lp-hero__reveal \{[^}]*color: var\(--primary-text\)/);
   assert.doesNotMatch(css, /\.lp-hero__reveal \{[^}]*color: var\(--bg\)/);
 });

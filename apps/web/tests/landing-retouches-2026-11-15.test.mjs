@@ -11,13 +11,12 @@ test("le héro n'a plus la pastille « Carnet de santé numérique » (page et c
   assert.doesNotMatch(read("src/lib/landing-content.ts"), /Carnet de santé numérique/);
 });
 
-test("les carrés de photos : chacun sa taille (--t), plus petits sur mobile, tous rendus par la même règle", () => {
-  const css = read("src/app/landing-showcase.css");
-  assert.match(css, /\.lp-hero__slot \{ --t: 110px; position: absolute;[^}]*width: var\(--t\); height: var\(--t\);/);
-  for (const slot of ["a", "b", "c", "d", "media"]) assert.match(css, new RegExp(`\\.lp-hero__slot--${slot} \\{ --t:`));
-  const mobile = css.slice(css.indexOf("@media (max-width: 759px)"));
-  assert.match(mobile, /\.lp-hero__slot--a \{ --t: 24vw;/);
-  assert.match(mobile, /\.lp-hero__mark \{[^}]*font-size: clamp\(2\.8rem, 17\.5vw, 5\.6rem\)/);
+test("les carrés du titre : même côté en « em » (ils suivent la taille du titre), deux diaporamas inclinés et un carré vide pour la grande image", () => {
+  const css = read("src/app/landing-hero.css");
+  assert.match(css, /\.lp-hero__slot \{ --t: \.98em; position: relative; display: inline-block;/);
+  assert.match(css, /\.lp-hero__slot--a \{ rotate: -6deg; \}/);
+  assert.match(css, /\.lp-hero__slot--b \{ rotate: 5deg; \}/);
+  assert.match(css, /\.lp-hero h1 \{[^}]*font-size: clamp\(2rem, min\(8\.4vw, 9\.2svh\), 6\.6rem\)/);
 });
 
 test("« Partager en QR » : fenêtre de 680 px sur ordinateur (QR à gauche, détails à droite), empilée dessous de 720 px, jamais coupée", () => {
@@ -36,15 +35,26 @@ test("section Solution : l'image main + téléphone est plafonnée à 440 px et 
   assert.match(css, /\.lp2-flow-phone \.lp2-hand-stack \{[^}]*width:min\(100%,420px\)/, "les trois étapes gardent leur taille");
 });
 
-test("en-tête public : le logo seul, sans fond ni nom, et un bouton à trois traits fixé en bas sur tous les écrans", () => {
+test("en-tête public : le logo seul, centré en haut, sans fond ni nom, et un bouton à trois traits fixé en bas sur tous les écrans", () => {
   const css = read("src/app/site-pages.css");
   const header = read("src/components/public/PublicHeader.tsx");
   assert.match(css, /\.pub-header \{ position: relative; z-index: 20; height: 0; \}/, "pas de barre : le logo flotte sans arrière-plan");
-  assert.match(css, /\.pub-header:not\(\.pub-header--connected\) \.brand \{ position: absolute;/);
-  assert.doesNotMatch(css, /\.pub-header:not\(\.pub-header--connected\) \{ display: grid; grid-template-columns/);
+  assert.match(css, /\.pub-header \.brand \{ position: absolute; top: [^}]*left: 50%; transform: translateX\(-50%\); \}/, "logo centré, sur toutes les pages publiques");
+  assert.doesNotMatch(css, /\.pub-header--connected \{[^}]*(background|backdrop-filter)/, "pas de fond non plus pour un visiteur connecté");
+  assert.match(css, /\.pub-return-link \{ position: absolute;/, "« Retour à mon espace » flotte à gauche du logo");
   assert.match(css, /\.pub-burger \{ position: fixed; z-index: 840; left: 50%; bottom: calc\(18px \+ env\(safe-area-inset-bottom\)\);/);
   const brand = header.slice(header.indexOf('className="pub-header"'), header.indexOf("</header>"));
   assert.doesNotMatch(brand, /Mon E[‑-]Carnet<\/span>/, "le logo de l'en-tête n'a pas de nom écrit à côté");
+  const connected = header.slice(header.indexOf('className="pub-header pub-header--connected"'), header.indexOf("</header>", header.indexOf('className="pub-header pub-header--connected"')));
+  assert.match(connected, /className="brand"/, "le visiteur connecté voit aussi le logo centré");
+});
+
+test("menu plein écran : sur ordinateur les liens sont centrés (plus d'escalier), le losange ne décale pas le mot", () => {
+  const css = read("src/app/site-pages.css");
+  assert.doesNotMatch(css, /--off/, "plus de décalage en escalier");
+  assert.match(css, /@media \(min-width: 900px\) \{\s*\.pub-nav__link \{ justify-content: center; text-align: center; \}/);
+  assert.match(css, /\.pub-nav__dot \{ position: absolute; left: calc\(100% \+ \.16em\);/);
+  assert.match(read("src/components/public/PublicHeader.tsx"), /<span className="pub-nav__text">\{children\}<span className="pub-nav__dot" aria-hidden="true" \/><\/span>/);
 });
 
 test("menu public : liens sans Sécurité, langues Google Translate, e-mail / WhatsApp / Facebook et © 2026", () => {

@@ -1,0 +1,19 @@
+.ad-banner { position: relative; margin: 4px 0; display: grid; gap: 6px; }
+.ad-banner__link, .ad-banner picture { display: block; }
+.ad-banner img { display: block; width: 100%; height: auto; aspect-ratio: 3 / 1; object-fit: cover; border-radius: 18px; background: #FFE3B3; }
+.ad-banner__link { border-radius: 18px; }
+.ad-banner__link:focus-visible { outline: 3px solid var(--primary, #3B826C); outline-offset: 3px; }
+.ad-banner__tag { position: absolute; top: 8px; left: 8px; z-index: 1; padding: 3px 10px; border-radius: 999px; background: #fff; color: #1E3A34; border: 1px solid #1E3A34; font-size: .75rem; font-weight: 600; }
+.ad-banner__note { margin: 0; font-size: .8rem; }
+.ad-frame { position: relative; overflow: hidden; border-radius: 12px; aspect-ratio: 3 / 1; background: #FFE3B3; border: 1px solid var(--border, #E3D9C2); }
+.ad-frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ad-previews { display: grid; gap: 12px; }
+.ad-previews figure { margin: 0; display: grid; gap: 4px; }
+.ad-previews figcaption { font-size: .85rem; }
+.ad-frame--mobile { max-width: 260px; }
+.ad-frame--thumb { max-width: 220px; }
+.ad-form { display: grid; gap: 14px; }
+.ad-form .field-pair { display: grid; gap: 12px; }
+@media (min-width: 640px) { .ad-form .field-pair { grid-template-columns: 1fr 1fr; } }
+.ad-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.ad-list li { display: grid; gap: 8px; }

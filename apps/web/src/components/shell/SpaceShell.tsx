@@ -19,6 +19,7 @@ import { HOWTO_RESTART_EVENT } from "../../lib/howto";
 import { GooeyAccountMenu } from "./GooeyAccountMenu";
 import { AppSidebar, type SidebarItem, type SidebarMenuItem } from "./AppSidebar";
 import { TrustedDelegationBanner } from "../TrustedDelegationBanner";
+import { RepresentedProfileBanner } from "../RepresentedProfileBanner";
 import { OfflineCacheKeeper } from "../OfflineCacheKeeper";
 import { PushAutoEnable } from "../PushAutoEnable";
 import { ScrollToTopOnNavigate } from "../ScrollToTopOnNavigate";
@@ -188,10 +189,12 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
     return () => window.removeEventListener("ecarnet:professional-updated", refresh);
   }, []);
 
+  // Changement de profil (titulaire ↔ enfant) : le QR d'accès est effacé et la page affichée se recharge pour montrer le contenu du nouveau profil.
+  const [profileTick, setProfileTick] = useState(0);
   useEffect(() => {
-    const clearQrForProfileChange = () => setPatientAccessQr(null);
-    window.addEventListener("ecarnet:patient-profile-changed", clearQrForProfileChange);
-    return () => window.removeEventListener("ecarnet:patient-profile-changed", clearQrForProfileChange);
+    const onProfileChange = () => { setPatientAccessQr(null); setProfileTick((value) => value + 1); };
+    window.addEventListener("ecarnet:patient-profile-changed", onProfileChange);
+    return () => window.removeEventListener("ecarnet:patient-profile-changed", onProfileChange);
   }, []);
 
   useEffect(() => {
@@ -361,9 +364,10 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
           <AccountContext.Provider value={state.status === "ready" ? state.account : null}>
             <PatientAccessQrContext.Provider value={{ qr: patientAccessQr, setQr: setPatientAccessQr }}>
               {space === "patient" && state.status === "ready" && !bare && <TrustedDelegationBanner />}
+              {space === "patient" && state.status === "ready" && !bare && <RepresentedProfileBanner />}
               {state.status === "ready" && !bare && <OfflineCacheKeeper space={space} />}
               {space === "patient" && state.status === "ready" && !bare && <PushAutoEnable />}
-              <Fragment key={refreshKey}>{children}</Fragment>
+              <Fragment key={profileTick}><Fragment key={refreshKey}>{children}</Fragment></Fragment>
             </PatientAccessQrContext.Provider>
           </AccountContext.Provider>
         )}

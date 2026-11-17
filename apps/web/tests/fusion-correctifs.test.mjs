@@ -15,7 +15,7 @@ test("le QR temporaire reste dans l’accès patient et la carte d’urgence est
   assert.doesNotMatch(shell, /QRCodeSVG|patient-active-qr/, "le QR est revenu dans le shell");
   assert.match(grants, /QRCodeSVG|ActiveAccessQr|access-qr\//);
   assert.match(grants, /id="qr"/);
-  assert.match(settings, /<PatientEmergencyCardSettingsClient\s*\/>/);
+  assert.match(settings, /<PatientEmergencyCardSettingsClient\b(?! variant)[^>]*\/>/);
   assert.match(emergencySettings, /<EmergencyCardVisual card=\{shown\} showQr=\{false\}/);
   assert.match(emergencySettings, /downloadEmergencyCardPng/);
   assert.doesNotMatch(emergencySettings, /QRCodeSVG/, "le QR de la carte virtuelle n’est plus affiché");

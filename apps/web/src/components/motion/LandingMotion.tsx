@@ -6,8 +6,8 @@ import { stickyHeaderHeight, useSmoothScroll } from "./useSmoothScroll";
 
 /* Mouvement de la landing, ajouté par-dessus du HTML rendu côté serveur (le contenu reste lisible sans JavaScript).
 
-   Séquence signature : l'image du hero démarre en petit carré arrondi DANS le titre (entre « votre » et « contrôle », l'emplacement
-   [data-hero-slot="media"] de HeroTiles), puis grossit jusqu'à occuper tout l'écran à mesure qu'on défile, et rétrécit en carte à la
+   Séquence signature : l'image du hero démarre en petit carré arrondi DANS le titre (entre « fil » et « avec », l'emplacement
+   [data-hero-slot="media"] de HeroTitle), puis grossit jusqu'à occuper tout l'écran à mesure qu'on défile, et rétrécit en carte à la
    fin — dans les deux sens, car elle est liée au défilement (scrub). Le reste : titres qui se lèvent, parcours qui s'allume,
    démonstration du consentement.
 
@@ -54,8 +54,9 @@ export function LandingMotion({ children }: { children: ReactNode }) {
       /* --- Ouverture : le titre est masqué par CSS (data-motion="pending") jusqu'à ce que tout soit prêt --- */
       const title = q("#hero-title")[0];
       const titleWords = q("#hero-title [data-hero-word]");
-      const titleSlots = q("[data-hero-slot]"); // les quatre carrés-diaporama et l'emplacement de la grande image (dans HeroTiles)
-      const heroMark = q("[data-hero-mark]"); // le grand « MON E‑CARNET » en filigrane
+      const titleSlots = q("[data-hero-slot]"); // les deux carrés-diaporama et l'emplacement de la grande image, entre les mots du titre (HeroTitle)
+      const preview = q("[data-hero-preview]"); // l'aperçu du tableau de bord, au bas du hero (HeroPreview)
+      const stars = q(".lp-hero__star"); // étoiles décoratives
       gsap.set(title, { visibility: "hidden" });
       gsap.set(q("[data-hero-item]"), { autoAlpha: 0, y: 18 });
       gsap.set(q("[data-hero-media]"), { autoAlpha: 0 });
@@ -65,11 +66,13 @@ export function LandingMotion({ children }: { children: ReactNode }) {
       // il réécrirait le DOM du titre, or les deux diaporamas sont des composants React qui doivent garder leurs éléments.
       gsap.set(titleWords, { yPercent: 125 });
       gsap.set(titleSlots, { autoAlpha: 0, scale: 0.55 });
-      gsap.set(heroMark, { autoAlpha: 0 });
+      gsap.set(preview, { autoAlpha: 0, yPercent: 14 });
+      gsap.set(stars, { autoAlpha: 0, scale: 0.3, rotate: -50 });
       gsap.set(title, { visibility: "visible" });
       gsap.to(titleWords, { yPercent: 0, duration: 0.95, ease: "power4.out", stagger: 0.07, delay: 0.1 });
-      gsap.to(heroMark, { autoAlpha: 1, duration: 1.3, ease: "power2.out", delay: 0.1 });
       gsap.to(titleSlots, { autoAlpha: 1, scale: 1, duration: 0.8, ease: "back.out(1.7)", stagger: 0.12, delay: 0.55 });
+      gsap.to(preview, { autoAlpha: 1, yPercent: 0, duration: 1.2, ease: "power3.out", delay: 0.55 });
+      gsap.to(stars, { autoAlpha: 1, scale: 1, rotate: 0, duration: 1, ease: "back.out(1.8)", stagger: 0.15, delay: 0.8 });
       gsap.delayedCall(2.5, () => { gsap.set(title, { visibility: "visible" }); }); // filet de sécurité si les polices tardent
       const intro = gsap.timeline({ defaults: { ease: "power3.out" } });
       intro
@@ -78,6 +81,10 @@ export function LandingMotion({ children }: { children: ReactNode }) {
 
       /* --- Respiration du hero : boucles lentes, mises en pause dès qu'il sort de l'écran --- */
       loops.push(gsap.to(q(".lp-hero__glow"), { scale: 1.14, duration: 4.6, yoyo: true, repeat: -1, ease: "sine.inOut", stagger: 1.2 }));
+      // Les étoiles flottent : un petit va-et-vient et une légère rotation, chacune à son rythme (la propriété y est animée par GSAP, pas par le CSS).
+      stars.forEach((star, index) => {
+        loops.push(gsap.to(star, { y: index % 2 === 0 ? -14 : 12, rotate: index % 2 === 0 ? 14 : -12, duration: 3.4 + index * 0.7, yoyo: true, repeat: -1, ease: "sine.inOut", delay: 1.6 }));
+      });
 
       /* --- Image qui grossit : petit carré dans le titre → plein écran → carte arrondie, liée au défilement (réversible) ---
          Le hero est épinglé juste sous l'en-tête ; on n'anime que ses enfants (consigne ScrollTrigger). Mobile : trajet plus court. */

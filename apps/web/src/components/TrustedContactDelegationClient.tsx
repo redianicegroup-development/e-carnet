@@ -1,13 +1,11 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { createPortal } from "react-dom";
+import { useEffect, useState, type FormEvent } from "react";
 import { apiDelete, apiGet, apiPost } from "../infrastructure/api/client";
 import { CODE_ERROR_FALLBACK, delegationAcceptedCopy, errorReason } from "../lib/access-outcome";
 import { delegationMessage } from "../lib/share";
 import { OutcomeDialog, type OutcomeDialogProps } from "./modal/OutcomeDialog";
-import { useDialogBehavior } from "./modal/useDialogBehavior";
-import { GooLayer } from "./ui/GooLayer";
+import { PanelDialog } from "./modal/PanelDialog";
 import { Icon } from "./ui/Icon";
 import { ShareCodeButton } from "./ShareCodeButton";
 
@@ -18,26 +16,6 @@ const relationships: Record<string, string> = { conjoint: "Conjoint·e", enfant_
 const statuses: Record<string, string> = { pending: "Mot non utilisé", active: "Accès actif", revoked: "Accès retiré", expired: "Accès expiré" };
 const date = (value: string | null) => value ? new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" }).format(new Date(value)) : "—";
 const GIVE_ERROR_FALLBACK = "Le mot de rattachement n’a pas pu être généré. Vérifiez l’e-mail de votre proche et réessayez.";
-
-/* Fenêtre d'un des deux parcours (« Donner accès » / « Reçu accès »). Rendue dans <body> : au-dessus des paramètres, avec son propre focus. */
-function PanelDialog({ title, lead, onClose, children }: { title: string; lead: string; onClose: () => void; children: ReactNode }) {
-  const dialog = useRef<HTMLElement>(null);
-  const closeButton = useRef<HTMLButtonElement>(null);
-  const titleId = useId();
-  useDialogBehavior({ open: true, container: dialog, initialFocus: closeButton, onEscape: onClose });
-  if (typeof document === "undefined") return null;
-  return createPortal(
-    <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <section ref={dialog} className="modal-dialog trusted-panel" role="dialog" aria-modal="true" aria-labelledby={titleId}>
-        <header className="trusted-panel__head"><h2 id={titleId}>{title}</h2><button ref={closeButton} type="button" className="button small" onClick={onClose} aria-label="Fermer">Fermer</button></header>
-        <p className="muted">{lead}</p>
-        {children}
-      </section>
-      <GooLayer target={dialog} />
-    </div>,
-    document.body,
-  );
-}
 
 export function TrustedContactDelegationClient() {
   const [items, setItems] = useState<Delegation[]>([]);
@@ -106,15 +84,15 @@ export function TrustedContactDelegationClient() {
   return <section className="settings-form">
     <p className="muted">Le patient génère un mot de rattachement temporaire et le remet directement à son proche. Le proche utilise son propre compte : aucun mot de passe de connexion n’est partagé.</p>
     <div className="trusted-tiles">
-      <button type="button" className="trusted-tile" onClick={() => setPanel("give")}>
-        <span className="trusted-tile__icon" aria-hidden="true"><Icon name="share" size={22} /></span>
+      <button type="button" className="trusted-tile" aria-haspopup="dialog" onClick={() => setPanel("give")}>
         <strong>Donner accès</strong>
-        <span className="muted">Générer un mot pour un proche.</span>
+        <span className="trusted-tile__icon" aria-hidden="true"><Icon name="share" size={32} /></span>
+        <span className="trusted-tile__hint">Générer un mot pour un proche.</span>
       </button>
-      <button type="button" className="trusted-tile" onClick={() => setPanel("receive")}>
-        <span className="trusted-tile__icon" aria-hidden="true"><Icon name="link" size={22} /></span>
+      <button type="button" className="trusted-tile" aria-haspopup="dialog" onClick={() => setPanel("receive")}>
         <strong>Reçu accès</strong>
-        <span className="muted">Saisir le mot que l’on m’a remis.</span>
+        <span className="trusted-tile__icon" aria-hidden="true"><Icon name="link" size={32} /></span>
+        <span className="trusted-tile__hint">Saisir le mot que l’on m’a remis.</span>
       </button>
     </div>
     <div className="stack"><h3>Mes délégations</h3>{items.length === 0 ? <p className="muted">Aucune délégation.</p> : items.map((item) => <article className="record" key={item.id}><div><strong>{item.invited_email}</strong><p className="muted">{relationships[item.relationship_label] ?? item.relationship_label} · {statuses[item.status] ?? item.status}{item.status === "active" && ` · jusqu’au ${date(item.expires_at)}`}</p></div>{["pending", "active"].includes(item.status) && <button className="button small" disabled={busy} onClick={() => void action(`/api/v1/patient/delegations/${item.id}/revoke/`, "Accès retiré immédiatement.")}>Retirer l’accès</button>}</article>)}</div>

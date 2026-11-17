@@ -26,7 +26,7 @@ class ProfessionalProfileSerializer(serializers.ModelSerializer):
         from apps.establishments.models import EstablishmentMembership
         from apps.establishments.serializers import logo_for
         items = EstablishmentMembership.objects.filter(professional=obj).select_related("establishment")
-        return [{"id": str(m.id), "establishment_id": str(m.establishment_id), "establishment_name": m.establishment.name, "establishment_logo": logo_for(m.establishment), "city": m.establishment.city, "status": m.status, "requested_at": m.requested_at, "reviewed_at": m.reviewed_at, "terminated_by_establishment": m.terminated_by_establishment, "termination_reason": m.termination_reason} for m in items]
+        return [{"id": str(m.id), "establishment_id": str(m.establishment_id), "establishment_name": m.establishment.name, "establishment_logo": logo_for(m.establishment), "city": m.establishment.city, "status": m.status, "requested_at": m.requested_at, "reviewed_at": m.reviewed_at, "left_at": m.left_at, "establishment_type": m.establishment.establishment_type, "address": m.establishment.address, "terminated_by_establishment": m.terminated_by_establishment, "termination_reason": m.termination_reason} for m in items]
 
     def get_clinical_access(self, obj):
         from .access import professional_clinical_access_error
