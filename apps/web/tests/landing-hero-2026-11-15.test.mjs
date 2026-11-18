@@ -66,7 +66,7 @@ test("le héro : fond miel, titre en lignes qui ne se coupent pas, carrés dans 
   assert.doesNotMatch(css, /\.lp-hero \{[^}]*background: (#0|#1|var\(--text\))/);
   assert.match(css, /\.lp-hero__copy \{ position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; align-items: center; \}/);
   assert.match(css, /\.lp-hero__line \{ display: block; white-space: nowrap; \}/);
-  assert.match(css, /\.lp-hero__slot \{ --t: \.98em;[^}]*width: var\(--t\); height: var\(--t\);/, "les carrés suivent la taille du titre");
+  assert.match(css, /\.lp-hero__slot \{ --t: 1\.14em;[^}]*width: var\(--t\); height: var\(--t\);/, "les carrés suivent la taille du titre");
   assert.match(css, /\.lp-hero__slot--media \{ display: none;/);
   assert.match(css, /\.lp-root\[data-motion="ready"\] \.lp-hero__slot--media \{ display: inline-block; \}/);
   assert.match(css, /\.lp-root:not\(\[data-motion="ready"\]\) \.lp-hero__media \{ display: none; \}/);

@@ -2,7 +2,7 @@
 
 import { formatDay } from "./access/access-history";
 import { EstablishmentLogo } from "./EstablishmentLogo";
-import { ProfileDetailModal } from "./ui/ProfileDetailModal";
+import { ProfileSheet } from "./ui/ProfileSheet";
 import type { Membership } from "./ClinicalGate";
 
 const STATUS_LABEL: Record<Membership["status"], string> = { pending: "En attente", active: "Actif", refused: "Refusé", suspended: "Suspendu", terminated: "Terminé" };
@@ -16,10 +16,10 @@ const EXPLAIN: Record<Membership["status"], string> = {
 
 export function ProfessionalMembershipDetail({ membership, onClose }: { membership: Membership; onClose: () => void }) {
   return (
-    <ProfileDetailModal
-      title={membership.establishment_name}
+    <ProfileSheet
+      name={membership.establishment_name}
       subtitle={membership.city}
-      avatar={<EstablishmentLogo logo={membership.establishment_logo} name={membership.establishment_name} size={56} />}
+      avatar={(size) => <EstablishmentLogo logo={membership.establishment_logo} name={membership.establishment_name} size={size} />}
       rows={[
         { label: "Établissement", value: membership.establishment_name },
         ...(membership.establishment_type ? [{ label: "Type", value: membership.establishment_type }] : []),
@@ -30,9 +30,8 @@ export function ProfessionalMembershipDetail({ membership, onClose }: { membersh
         ...(membership.reviewed_at ? [{ label: "Confirmé le", value: formatDay(membership.reviewed_at) }] : []),
         ...(membership.left_at ? [{ label: "Fin du rattachement", value: formatDay(membership.left_at) }] : []),
       ]}
+      note={EXPLAIN[membership.status]}
       onClose={onClose}
-    >
-      <p className="profile-modal__note muted">{EXPLAIN[membership.status]}</p>
-    </ProfileDetailModal>
+    />
   );
 }

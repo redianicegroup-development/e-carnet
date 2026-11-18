@@ -22,7 +22,7 @@ test("chaque page d'information est enveloppée par InfoPageMotion (Lenis + sch�
 test("le défilement fluide passe par le hook Lenis existant et laisse le sommaire défiler seul", () => {
   assert.match(motion, /useSmoothScroll\(\)/);
   assert.match(motion, /lenis\.current/);
-  assert.match(motion, /scrollTo\(target, \{ offset: -\(stickyHeaderHeight\(\) \+ 16\)/);
+  assert.match(motion, /scrollTo\(target, \{ offset: -\(topBarBottom\(\) \+ 4\)/, "les ancres s'arrêtent sous la barre fixe du logo");
   assert.match(src("components/public/LegalDocument.tsx"), /className="legal__side" data-lenis-prevent/);
 });
 

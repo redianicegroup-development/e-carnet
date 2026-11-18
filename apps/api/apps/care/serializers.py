@@ -75,7 +75,7 @@ class AccessGrantSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AccessGrant
-        fields = ("id", "patient_id", "professional_id", "establishment_id", "professional_name", "facility_label", "scope", "source_establishments", "status", "requested_at", "starts_at", "expires_at", "extension_count", "revoked_at", "refused_at")
+        fields = ("id", "patient_id", "professional_id", "establishment_id", "professional_name", "facility_label", "scope", "source_establishments", "access_mode", "status", "requested_at", "starts_at", "expires_at", "extension_count", "revoked_at", "refused_at")
         read_only_fields = fields
 
 
@@ -169,7 +169,7 @@ class ConsultationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Consultation
-        fields = ("id", "professional_id", "establishment_id", "access_grant_id", "source_encounter_id", "professional_name", "facility_label", "reason", "symptoms", "clinical_exam", "diagnosis", "observations", "vitals", "prescription_lines", "exam_requests", "conclusion", "care_plan", "validated_at", "attestation_signed_at", "attestation_svg_hash", "has_signature", "has_stamp", "provenance")
+        fields = ("id", "professional_id", "establishment_id", "access_grant_id", "access_mode", "drafted_at", "source_encounter_id", "professional_name", "facility_label", "reason", "symptoms", "clinical_exam", "diagnosis", "observations", "vitals", "prescription_lines", "exam_requests", "conclusion", "care_plan", "validated_at", "attestation_signed_at", "attestation_svg_hash", "has_signature", "has_stamp", "provenance")
         read_only_fields = fields
 
     def get_provenance(self, _obj):
@@ -529,6 +529,8 @@ class ProfessionalConsultationCreateSerializer(serializers.Serializer):
     care_plan = serializers.CharField(max_length=4000, required=False, allow_blank=True)
     # PRO-21 : reprise d'une consultation « en attente de résultats » (ses examens et PDF viennent alors de l'attente).
     pending_consultation_id = serializers.UUIDField(required=False)
+    # Mode invité (médecin sans téléphone) : confirmation d'une consultation écrite sur le téléphone du patient.
+    guest_consultation_id = serializers.UUIDField(required=False)
     attestation_svg = serializers.CharField(max_length=20000, trim_whitespace=True)
 
 

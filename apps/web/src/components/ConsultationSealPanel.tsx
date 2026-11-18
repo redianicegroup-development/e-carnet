@@ -6,6 +6,13 @@ import "./consultation-seal.css";
 
 const SEAL_DATE = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeStyle: "short" });
 
+/** Comment l'accès au dossier a été ouvert. En mode invité « professionnel », la consultation a été rédigée sur le téléphone du patient puis confirmée plus tard. */
+const ACCESS_MODE_LABELS: Record<string, string> = {
+  qr: "QR du patient",
+  guest: "Mode invité",
+  guest_pro: "Mode invité · rédigée sur le téléphone du patient",
+};
+
 /** Image de la signature ou du cachet figés sur la consultation (servie au patient et au professionnel signataire seulement). */
 export function sealImageUrl(consultationId: string, kind: "signature" | "stamp"): string {
   return `/api/v1/patient/care/consultations/${consultationId}/seal/${kind}/`;
@@ -53,6 +60,8 @@ export function ConsultationSealPanel({ item, id, images = true }: { item: Consu
         <div><dt>Établissement</dt><dd>{item.facility_label}</dd></div>
         <div><dt>Le</dt><dd><time dateTime={item.validated_at}>{SEAL_DATE.format(new Date(item.validated_at))}</time></dd></div>
         <div><dt>Provenance</dt><dd>{item.provenance.label}</dd></div>
+        {item.access_mode && <div><dt>Mode d’accès</dt><dd>{ACCESS_MODE_LABELS[item.access_mode] ?? item.access_mode}</dd></div>}
+        {item.drafted_at && <div><dt>Rédigée le</dt><dd>{SEAL_DATE.format(new Date(item.drafted_at))}</dd></div>}
         <div><dt>Référence</dt><dd><code>{reference}</code></dd></div>
       </dl>
       {images && <SealImages item={item} />}

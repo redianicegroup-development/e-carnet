@@ -66,6 +66,42 @@ function useLandingSection(enabled: boolean): string | null {
   return enabled ? section : null;
 }
 
+/** Vrai dès que la page a défilé de quelques pixels : le logo fixe en haut prend alors un fond (voir `.pub-header[data-scrolled]` dans site-pages.css). */
+function useScrolled(threshold = 12): boolean {
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const update = () => setScrolled(window.scrollY > threshold);
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    return () => window.removeEventListener("scroll", update);
+  }, [threshold]);
+
+  return scrolled;
+}
+
+/** Tant que le héro de la landing occupe l'écran (y compris pendant qu'il est épinglé), `<html data-in-hero="true">` : site-pages.css cache alors
+ *  le bouton de menu fixé en bas et le bouton d'avis. La bande observée commence à 45 % de la hauteur de l'écran : ils reviennent dès que
+ *  le héro est presque sorti par le haut. Sans JavaScript, l'attribut n'est jamais posé et les deux boutons restent visibles. */
+function useHeroGate(enabled: boolean) {
+  useEffect(() => {
+    if (!enabled || typeof IntersectionObserver === "undefined") return;
+    const root = document.documentElement;
+    const hero = document.querySelector<HTMLElement>("[data-hero]");
+    if (!hero) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[entries.length - 1];
+        if (entry?.isIntersecting) root.dataset.inHero = "true";
+        else delete root.dataset.inHero;
+      },
+      { rootMargin: "-45% 0px 0px 0px" },
+    );
+    observer.observe(hero);
+    return () => { observer.disconnect(); delete root.dataset.inHero; };
+  }, [enabled]);
+}
+
 export function PublicHeader() {
   const [state, setState] = useState<HeaderState>({ status: "checking" });
   const [menuOpen, setMenuOpen] = useState(false);
@@ -74,6 +110,8 @@ export function PublicHeader() {
   const burgerRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const section = useLandingSection(pathname === "/");
+  const scrolled = useScrolled();
+  useHeroGate(pathname === "/");
   const { current: language, busy: languageBusy, choose: chooseLanguage } = useLanguageChooser();
 
   useEffect(() => {
@@ -118,7 +156,7 @@ export function PublicHeader() {
 
   if (state.status === "connected") {
     return (
-      <header className="pub-header pub-header--connected">
+      <header className="pub-header pub-header--connected" data-scrolled={scrolled ? "true" : "false"}>
         <Link className="pub-return-link" href={state.href}>
           <span aria-hidden="true">←</span>
           Retour à mon espace
@@ -140,8 +178,9 @@ export function PublicHeader() {
 
   return (
     <>
-      {/* En-tête public : le logo seul, centré en haut, sans fond ni nom, qui défile avec la page. La navigation est dans le menu (bouton à trois traits, fixé en bas). */}
-      <header className="pub-header">
+      {/* En-tête public : le logo seul, centré et FIXE en haut de l'écran (il ne défile plus avec la page). Transparent tant qu'on est en haut de page,
+          il prend un fond dès que la page défile (data-scrolled). La navigation est dans le menu (bouton à trois traits, fixé en bas, caché dans le héro). */}
+      <header className="pub-header" data-scrolled={scrolled ? "true" : "false"}>
         <Link className="brand" href="/" aria-label="Mon E-Carnet, accueil" onClick={close}>
           <BrandMark variant="duo" />
         </Link>

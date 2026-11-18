@@ -62,7 +62,7 @@ test("onboarding : le nom et les prénoms (étape 1) ne sont pas redemandés à 
   assert.match(fields, /showProfession && <label/);
   const step3 = read("src/components/ProfessionalStep3.tsx");
   assert.match(step3, /showProfession=\{false\}/);
-  assert.match(step3, /Seules la ville et la spécialité sont obligatoires/);
+  assert.match(step3, /Seuls la ville, la date de naissance, le téléphone et la spécialité sont obligatoires/);
   assert.match(read("src/components/IdentityOnboarding.tsx"), /required/, "l'étape 1 exige le nom");
 });
 

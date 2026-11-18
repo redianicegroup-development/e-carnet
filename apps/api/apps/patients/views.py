@@ -522,16 +522,21 @@ def qr_signature(card_id, version):
     return hmac.new(settings.SECRET_KEY.encode(), message, hashlib.sha256).hexdigest()
 
 
+EMERGENCY_CARD_KINDS = ("blood_group", "city", "emergency_contact", "height", "weight", "allergy", "treatment")
+
+
 def emergency_card_data(card, *, public=False):
     """Ce que la carte montre, lu en direct dans le carnet : aucune copie, donc aucune mise à jour à pousser."""
     declarations = ClinicalDeclaration.objects.filter(patient=card.patient, status="declared")
     latest = lambda kind: declarations.filter(kind=kind).order_by("-updated_at").first()
+    # Seules les catégories que la carte AFFICHE y figurent : la carte publique ne doit pas révéler qu'une déclaration d'une autre catégorie
+    # (intervention, implant, autre information médicale, antécédent) existe.
     provenance = {
         item.kind: {
             "code": "patient_declared",
             "label": "Déclaré par le patient — non confirmé par un professionnel",
         }
-        for item in declarations
+        for item in declarations.filter(kind__in=EMERGENCY_CARD_KINDS)
     }
     blood, city, contact = latest("blood_group"), latest("city"), latest("emergency_contact")
     height, weight = latest("height"), latest("weight")

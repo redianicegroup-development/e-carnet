@@ -161,7 +161,7 @@ class TrustedContactDelegation(models.Model):
 
 class ClinicalDeclaration(models.Model):
     """Déclaration patient dont la provenance initiale reste visible."""
-    KIND_CHOICES = (("antecedent", "Antécédent"), ("allergy", "Allergie"), ("treatment", "Traitement"), ("blood_group", "Groupe sanguin"), ("city", "Ville"), ("emergency_contact", "Contact d’urgence"), ("height", "Taille"), ("weight", "Poids"))
+    KIND_CHOICES = (("antecedent", "Antécédent"), ("allergy", "Allergie"), ("treatment", "Traitement"), ("blood_group", "Groupe sanguin"), ("city", "Ville"), ("emergency_contact", "Contact d’urgence"), ("height", "Taille"), ("weight", "Poids"), ("surgery", "Intervention chirurgicale"), ("implant", "Implant ou dispositif médical"), ("other_medical", "Autre information médicale"))
     # Une seule valeur active à la fois : la nouvelle remplace l’ancienne (qui reste dans l’historique, annulée).
     SINGLETON_KINDS = ("blood_group", "city", "emergency_contact", "height", "weight")
     STATUS_CHOICES = (("declared", "Déclaré par le patient"), ("cancelled", "Annulé avec historique"))
@@ -170,6 +170,7 @@ class ClinicalDeclaration(models.Model):
     kind = models.CharField(max_length=24, choices=KIND_CHOICES)
     label = models.CharField(max_length=160)
     details = models.TextField(blank=True, max_length=2000)
+    event_date = models.DateField(null=True, blank=True)  # date de l'événement déclaré (intervention, pose d'implant…)
     status = models.CharField(max_length=24, choices=STATUS_CHOICES, default="declared")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -5,7 +5,7 @@ from xml.etree import ElementTree
 from rest_framework.exceptions import ValidationError
 
 from apps.professionals.access import professional_clinical_access_error
-from .models import AccessGrant, CareEncounter, Consultation, ConsultationRevision, ExamRequest, MedicalDocument, PreConsultationRevision, PrescriptionLine
+from .models import AccessGrant, CareEncounter, Consultation, ConsultationRevision, ExamRequest, GuestConsultation, MedicalDocument, PreConsultationRevision, PrescriptionLine
 from .services import SELF_ACCESS_MESSAGE, is_own_patient_file, require_scope
 from .pending_services import attach_pending_to_consultation, pending_for_signature
 from .vitals import build_consultation_vitals
@@ -28,6 +28,18 @@ def validate_consultation(*, professional, data):
     if not (professional.signature_cloudinary_public_id or professional.stamp_cloudinary_public_id):
         raise ValidationError(SEAL_REQUIRED_MESSAGE)
     establishment = professional.active_establishment
+    # Mode invité (médecin sans téléphone) : la consultation a été écrite sur le téléphone du patient, l'accès de 2 h est fermé depuis. La signature
+    # ne repose alors plus sur un accès actif, mais sur cette saisie en attente : la même, pour ce médecin, ce patient et cette pré-consultation.
+    guest = None
+    if data.get("guest_consultation_id"):
+        guest = GuestConsultation.objects.select_for_update().filter(id=data["guest_consultation_id"], professional=professional).first()
+        if not guest or guest.status != "awaiting_confirmation":
+            raise ValidationError("Cette consultation n’est plus à confirmer.")
+        if guest.expires_at <= timezone.now():
+            # Le statut « expirée » est constaté à la lecture des listes (une écriture ici serait annulée avec la transaction).
+            raise ValidationError("Le délai de confirmation est dépassé : cette consultation n’a pas été signée.")
+        if str(guest.access_grant_id) != str(data["access_grant_id"]) or str(guest.source_encounter_id) != str(data["source_encounter_id"]):
+            raise ValidationError("Cette confirmation ne correspond pas à la consultation rédigée.")
     grant = AccessGrant.objects.select_related("patient", "establishment").filter(id=data["access_grant_id"], professional=professional).first()
     if not grant:
         raise ValidationError("AccessGrant introuvable dans votre périmètre.")
@@ -35,9 +47,15 @@ def validate_consultation(*, professional, data):
         # Défense en profondeur : une autorisation ne devrait jamais exister sur son propre dossier, mais on ne signe jamais pour soi.
         raise ValidationError(SELF_ACCESS_MESSAGE)
     grant.refresh_expiration()
-    if grant.status != "active" or grant.establishment_id != establishment.id:
-        raise ValidationError("L’AccessGrant n’est plus actif dans votre établissement courant.")
-    require_scope(grant, "preconsultation")
+    if guest:
+        if grant.establishment_id != establishment.id:
+            raise ValidationError("Cette consultation a été rédigée pour un autre établissement que votre établissement actif.")
+        if "preconsultation" not in (grant.scope or []):
+            raise ValidationError("Cet accès invité ne couvre pas la consultation.")
+    else:
+        if grant.status != "active" or grant.establishment_id != establishment.id:
+            raise ValidationError("L’AccessGrant n’est plus actif dans votre établissement courant.")
+        require_scope(grant, "preconsultation")
     encounter = CareEncounter.objects.select_for_update().filter(id=data["source_encounter_id"], patient=grant.patient).first()
     if not encounter:
         raise ValidationError("Cette pré-consultation n’existe pas pour ce patient.")
@@ -62,6 +80,8 @@ def validate_consultation(*, professional, data):
         professional=professional,
         establishment=establishment,
         access_grant=grant,
+        access_mode=grant.access_mode,
+        drafted_at=guest.created_at if guest else None,
         source_encounter=encounter,
         professional_name=f"{professional.user.first_name} {professional.user.last_name}".strip() or professional.professional_title,
         facility_label=establishment.name,
@@ -109,6 +129,9 @@ def validate_consultation(*, professional, data):
     ExamRequest.objects.bulk_create(exam_requests)
     if pending:
         attach_pending_to_consultation(pending, consultation, now=signed_at)
+    if guest:
+        guest.status, guest.consultation, guest.resolved_at = "confirmed", consultation, signed_at
+        guest.save(update_fields=("status", "consultation", "resolved_at", "updated_at"))
     # Clôture par le médecin : l’établissement vient de la session du médecin, jamais d’un choix du patient.
     encounter.status = "closed"
     encounter.closed_at = signed_at

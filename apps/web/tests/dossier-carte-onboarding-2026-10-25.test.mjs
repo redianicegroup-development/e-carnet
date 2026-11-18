@@ -93,9 +93,9 @@ test("scanner le QR : plus de case « documents », la demande inclut toujours l
 
 test("équipe de l'établissement : une photo par médecin, fiche au clic avec révocation", () => {
   const consoleSrc = read("src/components/EstablishmentConsole.tsx");
-  assert.match(consoleSrc, /className="team-photo"/);
-  assert.match(consoleSrc, /function MemberDetail/);
-  for (const label of ["Nom", "Prénoms", "Métier", "Âge"]) assert.match(consoleSrc, new RegExp(`\\["${label}", `));
+  assert.match(consoleSrc, /<Profile\s+variant="photo"/, "la photo ronde et la fiche viennent du composant Profil commun");
+  assert.match(consoleSrc, /function MemberProfile/);
+  for (const label of ["Nom", "Prénoms", "Métier", "Âge"]) assert.match(consoleSrc, new RegExp(`\\{ label: "${label}", `));
   assert.match(consoleSrc, /memberships\/\$\{revokeTarget\.id\}\/terminate\/`, \{ reason \}/, "la révocation envoie le motif");
   assert.match(consoleSrc, /<RevocationReasonDialog/, "fenêtre de confirmation avec motif obligatoire (15/11/2026)");
   assert.doesNotMatch(consoleSrc, /\{item\.professional_email \?\? ""\}<\/p><\/div><span className="badge active">/, "plus de ligne e-mail + badge dans la liste de l’équipe");

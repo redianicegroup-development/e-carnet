@@ -15,7 +15,7 @@ class TitulaireIdentityTests(TestCase):
         self.client.post("/api/v1/identity/register/", {"email": "titulaire@example.test", "password": "a-long-local-password", "first_name": "Awa", "last_name": "Test"}, format="json")
 
     def test_onboarding_stores_the_optional_profession(self):
-        response = self.client.patch("/api/v1/identity/onboarding/patient/", {"phone": "+22500000000", "address": "BP 12 Abidjan", "profession": "Couturière", "birth_date": "", "coverage_expiry": ""}, format="json")
+        response = self.client.patch("/api/v1/identity/onboarding/patient/", {"phone": "+22500000000", "address": "BP 12 Abidjan", "profession": "Couturière", "birth_date": "1990-04-12", "coverage_expiry": ""}, format="json")
         self.assertEqual(response.status_code, 200)
         profile = PatientProfile.objects.get(user__email="titulaire@example.test")
         self.assertEqual((profile.address, profile.profession), ("BP 12 Abidjan", "Couturière"))
@@ -24,7 +24,7 @@ class TitulaireIdentityTests(TestCase):
         self.assertIn("created_at", shown.data["data"])
 
     def test_onboarding_without_profession_still_completes(self):
-        response = self.client.patch("/api/v1/identity/onboarding/patient/", {"phone": "+22500000000", "birth_date": "", "coverage_expiry": ""}, format="json")
+        response = self.client.patch("/api/v1/identity/onboarding/patient/", {"phone": "+22500000000", "birth_date": "1990-04-12", "coverage_expiry": ""}, format="json")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(PatientProfile.objects.get(user__email="titulaire@example.test").profession, "")
 

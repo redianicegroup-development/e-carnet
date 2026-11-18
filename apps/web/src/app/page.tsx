@@ -69,7 +69,7 @@ export default function HomePage() {
         <span className="lp-hero__glow lp-hero__glow--b" aria-hidden="true" />
         <div className="lp-hero__copy" data-hero-copy>
           <div className="lp-hero__stars" aria-hidden="true">
-            {["a", "b", "c"].map((id) => <svg key={id} className={`lp-hero__star lp-hero__star--${id}`} viewBox="0 0 24 24"><path d="M12 0c.7 7.2 4.8 11.3 12 12-7.2.7-11.3 4.8-12 12-.7-7.2-4.8-11.3-12-12C7.2 11.3 11.3 7.2 12 0z" /></svg>)}
+            {["a", "b", "c"].map((id) => <svg key={id} className={`lp-hero__star lp-hero__star--${id}`} viewBox="0 0 24 24"><path d="M12 2.5v19M3.8 7.2l16.4 9.6M20.2 7.2 3.8 16.8" /></svg>)}
           </div>
           <div className="lp-hero__head">
             <HeroTitle />

@@ -18,11 +18,11 @@
 .lp-hero__copy { position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; align-items: center; }
 .lp-hero__head { position: relative; z-index: 3; width: min(100%, 1200px); display: grid; justify-items: center; gap: clamp(12px, 2.2svh, 22px); padding: calc(var(--net-banner-h, 0px) + clamp(88px, 13.5svh, 150px)) clamp(16px, 4vw, 40px) 0; text-align: center; }
 
-/* Étoiles à quatre branches : décor, elles flottent doucement (LandingMotion). */
+/* Étoiles : le même astérisque jaune que sur la page de connexion (.ax-glyph : trois traits, bouts arrondis, --brand-3). Décor, elles flottent doucement (LandingMotion). */
 .lp-hero__stars { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
-.lp-hero__star { position: absolute; width: var(--s); height: var(--s); fill: currentColor; filter: drop-shadow(0 .3em .7em color-mix(in srgb, currentColor 42%, transparent)); will-change: transform; }
+.lp-hero__star { position: absolute; width: var(--s); height: var(--s); fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; filter: drop-shadow(0 .3em .7em color-mix(in srgb, currentColor 42%, transparent)); will-change: transform; }
 .lp-hero__star--a { --s: clamp(30px, 4.6vw, 66px); left: 14%; top: 31%; color: var(--brand-3); }
-.lp-hero__star--b { --s: clamp(22px, 3.2vw, 46px); right: 13%; top: 43%; color: var(--primary); }
+.lp-hero__star--b { --s: clamp(22px, 3.2vw, 46px); right: 13%; top: 43%; color: var(--brand-3); }
 .lp-hero__star--c { --s: clamp(14px, 1.8vw, 26px); right: 25%; top: 22%; color: var(--brand-3); }
 
 /* Titre : une ligne = un bloc qui ne se coupe pas. Chaque mot est masqué par un cadre découpé (il monte à l'ouverture, sans toucher au DOM). */
@@ -33,7 +33,7 @@
 
 /* Petits carrés posés entre les mots : une seule boîte par carré (côté --t, en « em » : il suit la taille du titre), légèrement inclinée avec la propriété
    « rotate » (indépendante de l'échelle animée par GSAP). Le carré « media » est vide : la grande image part de lui. */
-.lp-hero__slot { --t: .98em; position: relative; display: inline-block; width: var(--t); height: var(--t); margin-inline: .04em; vertical-align: -.17em; border-radius: calc(var(--t) * .26); overflow: hidden; background: var(--surface-tint); pointer-events: none;
+.lp-hero__slot { --t: 1.14em; position: relative; display: inline-block; width: var(--t); height: var(--t); margin-inline: .04em; vertical-align: -.17em; border-radius: calc(var(--t) * .26); overflow: hidden; background: var(--surface-tint); pointer-events: none;
   box-shadow: 0 0 0 .05em color-mix(in srgb, var(--surface) 92%, transparent), 0 .2em .5em -.16em color-mix(in srgb, var(--text) 52%, transparent); }
 .lp-hero__slot--a { rotate: -6deg; }
 .lp-hero__slot--b { rotate: 5deg; }
@@ -137,8 +137,8 @@
 @media (max-width: 759px) {
   .lp-hero { --hp-h: clamp(230px, 46svh, 400px); }
   .lp-hero__head { gap: 16px; padding-top: calc(var(--net-banner-h, 0px) + clamp(92px, 15svh, 150px)); }
-  .lp-hero__star--a { left: 4%; top: 30%; --s: 26px; }
-  .lp-hero__star--b { right: 5%; top: 40%; --s: 20px; }
+  .lp-hero__star--a { left: 4%; top: 30%; --s: 32px; }
+  .lp-hero__star--b { right: 5%; top: 40%; --s: 26px; }
   .lp-hero__star--c { display: none; }
   .lp-hero .actions { gap: 10px; }
   .lp-hero .actions .button { min-height: 48px; padding-inline: 16px; font-size: .92rem; }

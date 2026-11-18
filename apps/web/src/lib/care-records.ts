@@ -10,6 +10,10 @@ export const EXAM_STATUS_LABELS: Record<ExamRequest["status"], string> = { reque
 
 export type ConsultationRecord = {
   id: string;
+  /** Comment l'accès au dossier a été ouvert pour cette consultation (QR du patient ou mode invité). Absent des anciennes réponses. */
+  access_mode?: "qr" | "guest" | "guest_pro";
+  /** Mode invité, médecin sans téléphone : quand la consultation a été rédigée sur le téléphone du patient, avant la signature du médecin. */
+  drafted_at?: string | null;
   professional_name: string;
   facility_label: string;
   reason: string;

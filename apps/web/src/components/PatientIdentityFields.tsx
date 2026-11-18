@@ -4,7 +4,7 @@ import { ApiError, apiGet, apiPatch, apiPost } from "../infrastructure/api/clien
 import { ageLabel } from "../lib/age";
 
 /* Couverture du carnet papier : ville, adresse (BP), profession, « délivré le ». Le nom et les prénoms sont saisis à l'étape 1 (identité) : ils ne sont pas redemandés ici.
-   Obligatoire : la ville. Le reste est facultatif. Aucune donnée d'origine ethnique : sensible et sans utilité clinique ici.
+   Obligatoires : la ville, la date de naissance et le téléphone (le mode invité retrouve une personne sans téléphone par nom + naissance + numéro). Le reste est facultatif. Aucune donnée d'origine ethnique : sensible et sans utilité clinique ici.
    Ces champs servent à l'étape 3 d'un patient et, dans le même bloc, à l'étape 3 d'un professionnel (son carnet patient). */
 export type PatientForm = {
   city: string;
@@ -58,9 +58,14 @@ export function usePatientIdentityForm() {
   return { form, update, issuedAt };
 }
 
-/** Message à afficher si la ville manque ; chaîne vide si le carnet peut être enregistré. */
+/** Message à afficher si la ville, la date de naissance ou le téléphone manque ; chaîne vide si le carnet peut être enregistré. */
+/** Même seuil que le serveur : en dessous, le mode invité ne peut pas retrouver le dossier. */
+const PHONE_MIN_DIGITS = 8;
+
 export function patientFormProblem(form: PatientForm): string {
-  return form.city.trim() ? "" : "La ville est obligatoire.";
+  if (!form.city.trim()) return "La ville est obligatoire.";
+  if (!form.birth_date) return "La date de naissance est obligatoire.";
+  return form.phone.replace(/\D/g, "").length >= PHONE_MIN_DIGITS ? "" : "Le numéro de téléphone est obligatoire (8 chiffres au minimum).";
 }
 
 /** Enregistre le carnet patient (espace patient). Chaque appel est répétable sans risque : en cas d'échec au milieu, un nouvel essai reprend sans doublon. */
@@ -110,11 +115,11 @@ export function PatientIdentityFields({ form, update, issuedAt, showProfession =
     <label className="field"><span>Ville</span><input required autoComplete="address-level2" maxLength={120} value={form.city} onChange={event => update("city", event.target.value)} /></label>
     <label className="field"><span>Adresse ou BP (facultatif)</span><input autoComplete="street-address" maxLength={240} value={form.address} onChange={event => update("address", event.target.value)} /></label>
     {showProfession && <label className="field"><span>Profession (facultatif)</span><input maxLength={120} value={form.profession} onChange={event => update("profession", event.target.value)} /></label>}
-    <label className="field"><span>Téléphone (facultatif)</span><input autoComplete="tel" value={form.phone} onChange={event => update("phone", event.target.value)} /></label>
+    <label className="field"><span>Téléphone</span><input required type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={event => update("phone", event.target.value)} /></label>
     <fieldset className="onboarding-age-gender">
-      {showBirthDate ? <legend>Âge et genre (facultatifs)</legend> : <legend>Genre (facultatif)</legend>}
+      {showBirthDate ? <legend>Âge et genre (la date de naissance est obligatoire)</legend> : <legend>Genre (facultatif)</legend>}
       {showBirthDate && <>
-        <label className="field"><span>Date de naissance</span><input type="date" max={new Date().toISOString().slice(0, 10)} value={form.birth_date} onChange={event => update("birth_date", event.target.value)} /></label>
+        <label className="field"><span>Date de naissance</span><input required type="date" max={new Date().toISOString().slice(0, 10)} value={form.birth_date} onChange={event => update("birth_date", event.target.value)} /></label>
         <p className="onboarding-age-gender__age" role="status" aria-live="polite"><span>Âge</span><strong>{ageLabel(form.birth_date) || "calculé à partir de la date de naissance"}</strong></p>
       </>}
       <label className="field"><span>Genre</span><select value={form.gender} onChange={event => update("gender", event.target.value)}><option value="">Non précisé</option>{GENDER_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>

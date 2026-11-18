@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, type ReactNode } from "react";
 import { gsap, ScrollTrigger, useGSAP } from "./gsap";
-import { stickyHeaderHeight, useSmoothScroll } from "./useSmoothScroll";
+import { stickyHeaderHeight, topBarBottom, useSmoothScroll } from "./useSmoothScroll";
 
 /* Mouvement des pages d'information : pages légales, crédits, à propos. Ajouté par-dessus du HTML rendu côté serveur
    (le contenu et les schémas restent lisibles sans JavaScript).
@@ -53,7 +53,7 @@ export function InfoPageMotion({ kind = "page", children }: { kind?: Kind; child
       if (!target) return;
       event.preventDefault();
       if (id === "contenu") smooth.scrollTo(0, { duration: 1.1 });
-      else smooth.scrollTo(target, { offset: -(stickyHeaderHeight() + 16), duration: 1.2 });
+      else smooth.scrollTo(target, { offset: -(topBarBottom() + 4), duration: 1.2 });
       window.history.replaceState(null, "", `#${id}`);
       target.setAttribute("tabindex", "-1");
       target.focus({ preventScroll: true });

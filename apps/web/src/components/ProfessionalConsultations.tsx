@@ -14,6 +14,9 @@ import { SYMPTOM_PICTOGRAMS } from "../lib/pictograms";
 import { distinctOptions, matchesQuery, sameOption, withinPeriod } from "../lib/list-filter";
 import { ProfessionalMeasurementEntry } from "./ProfessionalMeasurementEntry";
 import { ProfessionalTemplateApprovals } from "./ProfessionalTemplateApprovals";
+import { ProfessionalGuestAccess } from "./ProfessionalGuestAccess";
+import { ProfessionalGuestToConfirm } from "./ProfessionalGuestToConfirm";
+import { listGuestConsultationsToConfirm, rejectGuestConsultation, type GuestConsultationToConfirm } from "../application/guest-access";
 import { CollapsibleSection } from "./ui/CollapsibleSection";
 import { PersonAvatar } from "./ui/PersonAvatar";
 import { EstablishmentLogo } from "./EstablishmentLogo";
@@ -25,6 +28,7 @@ import { CARE_PLAN_ITEMS, CLINICAL_FINDINGS, CONCLUSION_ITEMS, DIAGNOSES, buildP
 import { buildObservations, OBSERVATIONS_MAX, OTHER_MAX, parseObservations, SYMPTOMS, type SymptomsForm } from "../lib/preconsult";
 import { emptyVitalsForm, parseVitalsForm, vitalsToForm, type VitalsForm } from "../lib/vitals";
 import "./consultation-flow.css";
+import { ProfessionalAttestationReminder } from "./ProfessionalAttestations";
 import "./consultation/consultation-card.css";
 
 /* Consultation du médecin. Même expérience que la pré-consultation du patient : on SÉLECTIONNE (puces, listes), on n'écrit que l'« Autre ».
@@ -79,6 +83,9 @@ export function ProfessionalConsultations() {
   const uploadedProofs = useRef(new WeakMap<File, string>());
   // PRO-21 : consultation de CE patient qui attendait des résultats (null : parcours habituel, ou fonction éteinte).
   const [pending, setPending] = useState<PendingForGrant | null>(null);
+  // Mode invité (médecin sans téléphone) : consultations écrites en son nom sur le téléphone d'un patient, à relire puis signer.
+  const [guestItems, setGuestItems] = useState<GuestConsultationToConfirm[]>([]);
+  const [guestPending, setGuestPending] = useState<GuestConsultationToConfirm | null>(null);
 
   const activeMembership = profile.status === "ready" ? profile.profile.memberships.find((item) => item.establishment_id === profile.profile.active_establishment && item.status === "active") ?? null : null;
 
@@ -103,6 +110,12 @@ export function ProfessionalConsultations() {
     return () => { active = false; };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    listGuestConsultationsToConfirm().then((items) => { if (active) setGuestItems(items); }).catch(() => { /* fonction éteinte ou indisponible : rien à confirmer */ });
+    return () => { active = false; };
+  }, []);
+
   function resetForm() {
     setReason(""); setSymptoms({ selected: [], other: "" }); setVitalsForm(emptyVitalsForm());
     setClinical(EMPTY_PICK); setDiagnosis(EMPTY_PICK); setCarePlan(EMPTY_PICK); setConclusion(EMPTY_PICK);
@@ -110,6 +123,7 @@ export function ProfessionalConsultations() {
   }
 
   async function chooseGrant(value: string, options: { reveal?: boolean } = {}) {
+    setGuestPending(null);
     setGrantId(value);
     setEncounterId("");
     setEncounters([]);
@@ -132,6 +146,65 @@ export function ProfessionalConsultations() {
       setMessage(error instanceof ApiError ? error.message : "Pré-consultations indisponibles.");
     } finally {
       setLoadingEncounters(false);
+    }
+  }
+
+  /* Mode invité : l'accès vient de s'ouvrir sur confirmation du profil, la pré-consultation est créée. Le patient rejoint la liste des
+     autorisations actives et son formulaire de consultation s'ouvre, comme après un scan de QR. */
+  async function openGuestGrant(grant: ProfessionalGrant) {
+    setGrants((current) => [grant, ...current.filter((item) => item.id !== grant.id)]);
+    await chooseGrant(grant.id, { reveal: true });
+  }
+
+  /* Mode invité, médecin sans téléphone : le formulaire habituel s'ouvre prérempli avec ce qui a été écrit sur le téléphone du patient. Le médecin
+     relit, corrige, complète, puis signe : c'est la signature ordinaire qui crée la consultation. L'accès de 2 h est fermé depuis longtemps : la
+     confirmation repose sur cette saisie en attente, pas sur un accès actif (ni photo d'examen ni mesure à ce stade). */
+  function reviewGuest(item: GuestConsultationToConfirm) {
+    const draft = item.draft;
+    setGuestPending(item);
+    setPending(null);
+    setGrantId(item.access_grant_id);
+    setEncounters([item.encounter]);
+    setEncounterId(item.source_encounter_id);
+    setReason(draft.reason ?? item.encounter.reason ?? "");
+    setSymptoms(parseObservations(draft.symptoms ?? item.encounter.observations));
+    setVitalsForm(vitalsToForm((draft.vitals ?? item.encounter.vitals) as Parameters<typeof vitalsToForm>[0]));
+    setClinical({ selected: [], other: draft.clinical_exam ?? "" });
+    setDiagnosis({ selected: [], other: draft.diagnosis ?? "" });
+    setCarePlan({ selected: [], other: draft.care_plan ?? "" });
+    setConclusion({ selected: [], other: draft.conclusion ?? "" });
+    setLines((draft.prescription_lines ?? []) as LineDraft[]);
+    setExams([]);
+    setMessage(`Consultation écrite sur le téléphone de ${item.patient_name || "ce patient"} : relisez, corrigez si besoin, puis signez.`);
+    window.requestAnimationFrame(() => document.getElementById("terminer-consultation")?.scrollIntoView({ block: "start", behavior: "smooth" }));
+  }
+
+  function leaveGuestReview() {
+    resetForm();
+    setGuestPending(null);
+    setGrantId("");
+    setEncounters([]);
+    setEncounterId("");
+    setMessage("Relecture quittée : la consultation reste à confirmer.");
+    if (grants.length === 1) void chooseGrant(grants[0].id);
+  }
+
+  async function rejectGuest(item: GuestConsultationToConfirm) {
+    const accepted = await confirm({
+      title: "Rejeter cette consultation ?",
+      message: "Elle ne sera pas signée et n’entrera pas dans le carnet du patient. Le patient en sera informé.",
+      note: "Utilisez-le si vous ne reconnaissez pas cette saisie.",
+      confirmLabel: "Rejeter",
+      cancelLabel: "La garder",
+    });
+    if (!accepted) return;
+    try {
+      await rejectGuestConsultation(item.id);
+      setGuestItems((current) => current.filter((entry) => entry.id !== item.id));
+      if (guestPending?.id === item.id) leaveGuestReview();
+      setMessage("Consultation rejetée. Le patient en a été informé.");
+    } catch (error) {
+      setMessage(error instanceof ApiError ? error.message : "Rejet impossible.");
     }
   }
 
@@ -232,10 +305,11 @@ export function ProfessionalConsultations() {
     if (!parsedVitals.ok) { setMessage(parsedVitals.message); return; }
     const orders = checkOrders(lines, exams);
     if (!orders.ok) { setMessage(orders.message); return; }
+    if (guestPending && orders.exams.some((exam) => exam.photo)) { setMessage("Pour une consultation écrite sur le téléphone du patient, choisissez l’examen dans la liste : la photo de la demande n’est pas disponible."); return; }
     const accepted = await confirm({
       title: "Terminer et signer la consultation ?",
       message: "La signature clôture la pré-consultation du patient et la rattache à votre établissement. L’ordonnance et les examens demandés sont signés avec la consultation.",
-      note: "Cette action ne peut pas être annulée : le patient verra la consultation dans son carnet, et votre accès à son carnet se fermera automatiquement.",
+      note: guestPending ? "Cette action ne peut pas être annulée : la consultation, écrite sur le téléphone du patient, entrera dans son carnet avec votre signature." : "Cette action ne peut pas être annulée : le patient verra la consultation dans son carnet, et votre accès à son carnet se fermera automatiquement.",
       confirmLabel: "Signer et clôturer",
       cancelLabel: "Continuer à rédiger",
     });
@@ -247,6 +321,7 @@ export function ProfessionalConsultations() {
         access_grant_id: grantId,
         source_encounter_id: encounterId,
         ...(pending ? { pending_consultation_id: pending.id } : {}),
+        ...(guestPending ? { guest_consultation_id: guestPending.id } : {}),
         reason: reason.trim(),
         symptoms: buildObservations(symptoms),
         clinical_exam: buildPicked(clinical.selected, CLINICAL_FINDINGS, clinical.other),
@@ -259,6 +334,7 @@ export function ProfessionalConsultations() {
         attestation_svg: "<svg></svg>",
       });
       setConsultations((current) => [consultation, ...current]);
+      if (guestPending) { const signedGuestId = guestPending.id; setGuestItems((current) => current.filter((entry) => entry.id !== signedGuestId)); setGuestPending(null); }
       // L'accès s'est fermé de lui-même à la signature (côté serveur) : ce patient quitte la liste des patients connectés.
       const signedGrantId = grantId;
       setGrants((current) => current.filter((grant) => grant.id !== signedGrantId));
@@ -267,7 +343,7 @@ export function ProfessionalConsultations() {
       setEncounterId("");
       setGrantId("");
       setPending(null);
-      setMessage("Consultation signée. La pré-consultation est clôturée, le carnet du patient est à jour et votre accès s’est fermé automatiquement.");
+      setMessage(guestPending ? "Consultation confirmée et signée. Elle est dans le carnet du patient, avec la date à laquelle elle a été rédigée." : "Consultation signée. La pré-consultation est clôturée, le carnet du patient est à jour et votre accès s’est fermé automatiquement.");
     } catch (error) {
       setMessage(error instanceof ApiError ? error.message : "Validation impossible.");
     } finally {
@@ -279,14 +355,22 @@ export function ProfessionalConsultations() {
     && withinPeriod(item.validated_at, listFilter.period)
     && (!listFilter.facility || sameOption(item.facility_label, listFilter.facility)));
   const facilityOptions = distinctOptions(consultations.map((item) => item.facility_label));
-  const selectedGrant = grants.find((grant) => grant.id === grantId) ?? null;
+  // Pendant la relecture d'une consultation écrite en mode invité, seul ce patient est proposé : son accès de 2 h est fermé depuis longtemps.
+  const shownGrants: ProfessionalGrant[] = guestPending ? [{
+    id: guestPending.access_grant_id, reference: "invité", professional_id: null, establishment_id: null, professional_name: "", facility_label: guestPending.facility_label,
+    scope: ["preconsultation"], source_establishments: [], access_mode: "guest_pro", status: "active", starts_at: null, expires_at: null, extension_count: 0,
+    patient_name: guestPending.patient_name, patient_avatar: guestPending.patient_avatar,
+  }] : grants;
+  // Pas de saisie de mesure pendant la relecture : l'accès de 2 h est fermé, le serveur la refuserait.
+  const selectedGrant = guestPending ? null : shownGrants.find((grant) => grant.id === grantId) ?? null;
   const symptomsTooLong = buildObservations(symptoms).length > OBSERVATIONS_MAX;
 
-  return <div className="stack-lg"><ProfessionalTemplateApprovals /><ProfessionalPendingList /><section className="hero-page"><h1>Compléter sans ressaisir.</h1><p className="muted">La dernière pré-consultation du patient s’affiche dès que son autorisation est active. En signant, vous la clôturez.</p><p className="notice" role="status" aria-live="polite">{message}</p></section><section className="patient-grid"><form id="terminer-consultation" className="card preconsult-form" onSubmit={submit}><h2>Terminer la consultation</h2>{loading ? <p className="empty">Chargement des autorisations…</p> : grants.length === 0 ? <p className="empty">Aucune autorisation active permettant de reprendre une pré-consultation.</p> : <>
+  return <div className="stack-lg"><ProfessionalTemplateApprovals /><ProfessionalPendingList /><ProfessionalAttestationReminder grantId={grantId} /><ProfessionalGuestToConfirm items={guestItems} activeId={guestPending?.id ?? null} onReview={reviewGuest} onReject={(item) => void rejectGuest(item)} /><section className="hero-page"><h1>Compléter sans ressaisir.</h1><p className="muted">La dernière pré-consultation du patient s’affiche dès que son autorisation est active. En signant, vous la clôturez.</p><p className="notice" role="status" aria-live="polite">{message}</p></section><section className="patient-grid"><form id="terminer-consultation" className="card preconsult-form" onSubmit={submit}><h2>Terminer la consultation</h2>{loading ? <p className="empty">Chargement des autorisations…</p> : shownGrants.length === 0 ? <p className="empty">Aucune autorisation active permettant de reprendre une pré-consultation.</p> : <>
     <div className="consult-context">
       {activeMembership && <div className="consult-establishment"><EstablishmentLogo logo={activeMembership.establishment_logo} name={activeMembership.establishment_name} size={40} /><div><span className="muted">Établissement actif</span><strong>{activeMembership.establishment_name}</strong></div><Link className="button small" href="/professionnel/acces">Changer</Link></div>}
-      {grants.length > 1 && <div className="patient-picker" role="group" aria-label="Patient"><span className="eyebrow">Patient</span>{grants.map((grant) => <button type="button" key={grant.id} className="patient-option" aria-pressed={grant.id === grantId} onClick={() => void chooseGrant(grant.id)}><PersonAvatar src={grant.patient_avatar} name={grant.patient_name || grant.reference} size={40} /><span><strong>{grant.patient_name || `Accès ${grant.reference}`}</strong><small className="muted">Accès {grant.reference}</small></span></button>)}</div>}
-      {grants.length === 1 && <div className="patient-picker"><span className="eyebrow">Patient</span><div className="patient-option" aria-current="true"><PersonAvatar src={grants[0].patient_avatar} name={grants[0].patient_name || grants[0].reference} size={40} /><span><strong>{grants[0].patient_name || `Accès ${grants[0].reference}`}</strong><small className="muted">Accès {grants[0].reference}</small></span></div></div>}
+      {shownGrants.length > 1 && <div className="patient-picker" role="group" aria-label="Patient"><span className="eyebrow">Patient</span>{shownGrants.map((grant) => <button type="button" key={grant.id} className="patient-option" aria-pressed={grant.id === grantId} onClick={() => void chooseGrant(grant.id)}><PersonAvatar src={grant.patient_avatar} name={grant.patient_name || grant.reference} size={40} /><span><strong>{grant.patient_name || `Accès ${grant.reference}`}</strong><small className="muted">{grant.access_mode === "guest" ? "Mode invité · " : ""}Accès {grant.reference}</small></span></button>)}</div>}
+    {guestPending && <div className="notice guest-review" role="status"><span>Relecture d’une consultation écrite sur le téléphone du patient.</span><button type="button" className="button small" onClick={leaveGuestReview}>Quitter la relecture</button></div>}
+      {shownGrants.length === 1 && <div className="patient-picker"><span className="eyebrow">Patient</span><div className="patient-option" aria-current="true"><PersonAvatar src={shownGrants[0].patient_avatar} name={shownGrants[0].patient_name || shownGrants[0].reference} size={40} /><span><strong>{shownGrants[0].patient_name || `Accès ${shownGrants[0].reference}`}</strong><small className="muted">{shownGrants[0].access_mode === "guest_pro" ? "Mode invité · à confirmer" : `${shownGrants[0].access_mode === "guest" ? "Mode invité · " : ""}Accès ${shownGrants[0].reference}`}</small></span></div></div>}
     </div>
     {!grantId ? <p className="muted">Choisissez le patient pour lire sa dernière pré-consultation.</p> : <>
     <div className="preconsult-read" aria-live="polite"><span className="preconsult-read__label">Pré-consultation du patient</span>{loadingEncounters ? <p className="muted">Chargement…</p> : !grantId ? <p className="muted">Choisissez une autorisation pour lire la dernière pré-consultation.</p> : encounters.length === 0 ? <p className="empty">Aucune pré-consultation en préparation pour ce patient.</p> : encounters.map((encounter) => <article className="record preconsult-read__item" key={encounter.id}><div><strong>{encounter.reason || "Sans motif"}</strong>{encounter.observations && <p>{encounter.observations}</p>}{Object.keys(encounter.template_responses ?? {}).length > 0 && <dl className="kv">{Object.entries(encounter.template_responses ?? {}).map(([key, value]) => { const field = encounter.template_fields?.find((entry) => entry.key === key); return <div key={key}><dt>{field?.label ?? key}</dt><dd>{typeof value === "boolean" ? (value ? "Oui" : "Non") : String(value)}{field?.unit ? ` ${field.unit}` : ""}</dd></div>; })}</dl>}{encounter.recorded_with_help && <p className="muted">Rempli avec l’aide de : {encounter.recorded_with_help}</p>}</div><span className="badge pending">Brouillon</span></article>)}</div>
@@ -303,5 +387,5 @@ export function ProfessionalConsultations() {
     <FormSection num={7} title="Conclusion"><ChipPicker label="Conclusion" options={CONCLUSION_ITEMS} selected={conclusion.selected} other={conclusion.other} onSelected={(selected) => setConclusion({ ...conclusion, selected })} onOther={(other) => setConclusion({ ...conclusion, other })} otherLabel="Autre conclusion (facultatif)" /></FormSection>
     <FormSection num={8} title="Ordonnance" hint="Choisissez dans les listes ; « Autre » pour ce qui n’y figure pas."><PrescriptionPicker lines={lines} onChange={setLines} /></FormSection>
     {!pending && <FormSection num={9} title="Examens demandés" hint="Choisissez l’examen, ou joignez la photo de la demande si vous préférez ne pas le saisir. Si le résultat est nécessaire pour conclure, utilisez « Attendre les résultats »."><ExamPicker exams={exams} onChange={setExams} /></FormSection>}
-    <p className="muted">Cette validation ne constitue pas une signature électronique qualifiée.</p><ConsultationSeal onReadyChange={setSealReady} />{!pending && <button className="button" type="button" disabled={submitting || !encounterId || exams.length === 0} onClick={() => void waitResults()}>Attendre les résultats</button>} {pending?.status !== "waiting_results" && <><button className="button primary" type="submit" disabled={submitting || !encounterId || !sealReady} aria-disabled={submitting || !encounterId || !sealReady}>{submitting ? "Signature…" : "Terminer et signer"}</button>{!sealReady && encounterId && <p className="muted" role="status">« Terminer et signer » s’active dès que votre signature ou votre cachet est enregistré.</p>}</>}</>}</>}</form>{selectedGrant && <ProfessionalMeasurementEntry grant={selectedGrant} />}<div className="section-grid"><CollapsibleSection title="Mes consultations" alwaysOpen icon="stethoscope" hint="Historique signé"><div className="professional-history"><div className="professional-history__heading"><ListSearchBar label="Rechercher patient, établissement ou motif" placeholder="Patient, établissement, motif…" state={listFilter} onChange={patchFilter} onReset={resetFilter} shown={filteredConsultations.length} total={consultations.length} filtered={listFiltered} facilityOptions={facilityOptions} showPeriod shortcut /></div>{loading ? <p className="empty">Chargement…</p> : filteredConsultations.length === 0 ? <p className="empty">{consultations.length ? "Aucune consultation ne correspond à cette recherche ou à ces filtres." : "Aucune consultation validée."}</p> : <div className="consult-list" aria-live="polite">{filteredConsultations.map((item, index) => <ConsultationCard key={item.id} item={item} index={index} showPatient />)}</div>}</div></CollapsibleSection></div></section></div>;
+    <p className="muted">Cette validation ne constitue pas une signature électronique qualifiée.</p><ConsultationSeal onReadyChange={setSealReady} />{!pending && !guestPending && <button className="button" type="button" disabled={submitting || !encounterId || exams.length === 0} onClick={() => void waitResults()}>Attendre les résultats</button>} {pending?.status !== "waiting_results" && <><button className="button primary" type="submit" disabled={submitting || !encounterId || !sealReady} aria-disabled={submitting || !encounterId || !sealReady}>{submitting ? "Signature…" : "Terminer et signer"}</button>{!sealReady && encounterId && <p className="muted" role="status">« Terminer et signer » s’active dès que votre signature ou votre cachet est enregistré.</p>}</>}</>}</>}</form>{selectedGrant && <ProfessionalMeasurementEntry grant={selectedGrant} />}<div className="section-grid"><CollapsibleSection title="Mes consultations" alwaysOpen icon="stethoscope" hint="Historique signé"><div className="professional-history"><div className="professional-history__heading"><ListSearchBar label="Rechercher patient, établissement ou motif" placeholder="Patient, établissement, motif…" state={listFilter} onChange={patchFilter} onReset={resetFilter} shown={filteredConsultations.length} total={consultations.length} filtered={listFiltered} facilityOptions={facilityOptions} showPeriod shortcut /></div>{loading ? <p className="empty">Chargement…</p> : filteredConsultations.length === 0 ? <p className="empty">{consultations.length ? "Aucune consultation ne correspond à cette recherche ou à ces filtres." : "Aucune consultation validée."}</p> : <div className="consult-list" aria-live="polite">{filteredConsultations.map((item, index) => <ConsultationCard key={item.id} item={item} index={index} showPatient />)}</div>}</div></CollapsibleSection><CollapsibleSection title="Mode invité" icon="idcard" hint="Patient sans téléphone"><ProfessionalGuestAccess onReady={openGuestGrant} /></CollapsibleSection></div></section></div>;
 }

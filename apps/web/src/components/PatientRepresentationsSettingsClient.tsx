@@ -4,16 +4,17 @@ import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { apiDelete, apiGet, apiPatch, apiPost } from "../infrastructure/api/client";
 import { errorReason } from "../lib/access-outcome";
-import { PROFILE_CHANGED_EVENT, PROFILES_UPDATED_EVENT, profileInitials, profileName, runAsProfile, type PatientProfileEntry } from "../lib/patient-profiles";
+import { PROFILE_CHANGED_EVENT, PROFILES_UPDATED_EVENT, profileName, runAsProfile, type PatientProfileEntry } from "../lib/patient-profiles";
 import { useConfirm } from "./modal/ConfirmProvider";
 import { OutcomeDialog, type OutcomeDialogProps } from "./modal/OutcomeDialog";
 import { PanelDialog } from "./modal/PanelDialog";
-import { Icon } from "./ui/Icon";
+import { Profile } from "./ui/Profile";
+import type { ProfileAction, ProfileRow } from "./ui/ProfileSheet";
 import { EMPTY_PATIENT_FORM, PatientIdentityFields, onboardingErrorMessage, patientFormProblem, saveChildIdentity, type PatientForm } from "./PatientIdentityFields";
 import "./patient-profiles.css";
 
 /* « Profils » (Paramètres > Compte patient) : les profils d'enfants rattachés au compte.
-   - la liste : un clic sur un profil ouvre sa fiche (prénom, nom, identifiant, copier l'identifiant, révoquer) ;
+   - la liste : un clic sur un profil ouvre sa fiche (composant « Profil » : prénom, nom, identifiant, Fermer, Copier l'identifiant, Révoquer) ;
    - la création en deux étapes : 1) le profil, 2) l'onboarding patient de l'enfant (ville, contact, couverture), repris plus tard si besoin ;
    - on ne change PAS de profil ici : le switch est dans Paramètres, sur la carte « Compte patient » (flèche). */
 
@@ -57,33 +58,21 @@ function ChildOnboardingStep({ child, onDone, onLater }: { child: PatientProfile
   );
 }
 
-function ProfileDetail({ item, busy, onClose, onCopy, onRevoke, onReactivate }: { item: PatientProfileEntry; busy: boolean; onClose: () => void; onCopy: (item: PatientProfileEntry) => void; onRevoke: (item: PatientProfileEntry) => void; onReactivate: (item: PatientProfileEntry) => void }) {
-  return (
-    <PanelDialog title={profileName(item)} lead="Profil d’enfant rattaché à votre compte. Son dossier est distinct du vôtre." onClose={onClose}>
-      <dl className="profile-detail">
-        <div><dt>Prénom</dt><dd>{item.first_name}</dd></div>
-        <div><dt>Nom</dt><dd>{item.last_name}</dd></div>
-        <div><dt>Identifiant</dt><dd><code>{item.patient_id}</code></dd></div>
-        <div><dt>Né(e) le</dt><dd>{birthLabel(item.birth_date)}</dd></div>
-        <div><dt>Lien</dt><dd>Enfant · {STATUS_LABELS[item.status]}</dd></div>
-      </dl>
-      <p className="muted">L’identifiant ne se communique que pour une demande de transfert, à la personne concernée.</p>
-      {item.transfer_status === "pending" && <p className="notice">Demande de transfert en attente de vérification manuelle.</p>}
-      {item.transfer_status === "rejected" && <p className="notice">La demande de transfert précédente a été refusée.</p>}
-      <div className="actions">
-        <button type="button" className="button" disabled={busy} onClick={() => onCopy(item)}>Copier l’identifiant</button>
-        {item.status === "active" && <button type="button" className="button danger" disabled={busy} onClick={() => onRevoke(item)}>Révoquer</button>}
-        {item.status === "revoked" && <button type="button" className="button" disabled={busy} onClick={() => onReactivate(item)}>Réactiver le lien</button>}
-      </div>
-    </PanelDialog>
-  );
+/* Lignes de la fiche d'un profil enfant : identité, identifiant (à ne communiquer que pour un transfert), date de naissance, état du lien. */
+function profileRows(item: PatientProfileEntry): ProfileRow[] {
+  return [
+    { label: "Prénom", value: item.first_name },
+    { label: "Nom", value: item.last_name },
+    { label: "Identifiant", value: <code>{item.patient_id}</code> },
+    { label: "Né(e) le", value: birthLabel(item.birth_date) },
+    { label: "Lien", value: `Enfant · ${STATUS_LABELS[item.status]}` },
+  ];
 }
 
 export function PatientRepresentationsSettingsClient() {
   const confirm = useConfirm();
   const [outcome, setOutcome] = useState<Omit<OutcomeDialogProps, "onClose"> | null>(null);
   const [items, setItems] = useState<PatientProfileEntry[]>([]);
-  const [openId, setOpenId] = useState<string | null>(null);
   const [onboarding, setOnboarding] = useState<PatientProfileEntry | null>(null);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -137,48 +126,63 @@ export function PatientRepresentationsSettingsClient() {
     }
   }
 
-  async function revoke(item: PatientProfileEntry) {
+  /** Vrai si le lien a été révoqué (la fiche se ferme alors) ; faux si le titulaire a gardé le lien ou si l'appel a échoué. */
+  async function revoke(item: PatientProfileEntry): Promise<boolean> {
     const accepted = await confirm({ title: "Révoquer ce lien ?", message: `Le lien de représentation pour ${profileName(item)} sera révoqué.`, note: "Son dossier et son historique sont conservés. Vous pourrez réactiver le lien.", confirmLabel: "Révoquer le lien", cancelLabel: "Garder", tone: "danger" });
-    if (!accepted) return;
+    if (!accepted) return false;
     setBusy(true);
     try {
       await apiDelete(`/api/v1/patient/representations/${item.id}/`);
-      setOpenId(null);
       await load();
       // Si c'était le profil ouvert, le serveur est revenu au titulaire : les écrans se rechargent. Sinon seule la liste change.
       window.dispatchEvent(new Event(item.is_active ? PROFILE_CHANGED_EVENT : PROFILES_UPDATED_EVENT));
       setMessage(`Lien révoqué pour ${item.first_name}. Le dossier et son historique sont conservés.`);
+      return true;
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Impossible de révoquer ce lien.");
+      return false;
     } finally {
       setBusy(false);
     }
   }
 
-  async function reactivate(item: PatientProfileEntry) {
+  /** Renvoie la phrase à afficher dans la fiche (réussite ou échec). */
+  async function reactivate(item: PatientProfileEntry): Promise<string> {
     setBusy(true);
     try {
       await apiPatch(`/api/v1/patient/representations/${item.id}/`, {});
       await load();
       listChanged();
-      setMessage(`Lien réactivé pour ${item.first_name}. Le dossier et son historique sont conservés.`);
+      const done = `Lien réactivé pour ${item.first_name}. Le dossier et son historique sont conservés.`;
+      setMessage(done);
+      return done;
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Impossible de réactiver ce lien.");
+      const failed = error instanceof Error ? error.message : "Impossible de réactiver ce lien.";
+      setMessage(failed);
+      return failed;
     } finally {
       setBusy(false);
     }
   }
 
-  async function copyId(item: PatientProfileEntry) {
+  /** Renvoie la phrase à afficher dans la fiche. */
+  async function copyId(item: PatientProfileEntry): Promise<string> {
     try {
       await navigator.clipboard.writeText(item.patient_id);
-      setMessage("Identifiant copié. Partagez-le uniquement avec la personne concernée.");
+      return "Identifiant copié. Partagez-le uniquement avec la personne concernée.";
     } catch {
-      setMessage("Copie impossible sur cet appareil. L’identifiant est affiché dans la fiche du profil.");
+      return "Copie impossible sur cet appareil. L’identifiant est affiché ci-dessus.";
     }
   }
 
-  const open = items.find((item) => item.id === openId) ?? null;
+  /* Boutons de la fiche (toujours en bas, après « Fermer ») : copier l'identifiant ; révoquer un lien actif ou réactiver un lien révoqué. */
+  function profileActions(item: PatientProfileEntry): ProfileAction[] {
+    return [
+      { label: "Copier l’identifiant", disabled: busy, onClick: () => copyId(item) },
+      ...(item.status === "active" ? [{ label: "Révoquer", tone: "danger" as const, disabled: busy, onClick: async ({ close }: { close: () => void }) => { if (await revoke(item)) close(); } }] : []),
+      ...(item.status === "revoked" ? [{ label: "Réactiver le lien", disabled: busy, onClick: () => reactivate(item) }] : []),
+    ];
+  }
 
   return (
     <section className="settings-form">
@@ -190,11 +194,18 @@ export function PatientRepresentationsSettingsClient() {
           <ul className="profile-list">
             {items.map((item) => (
               <li key={item.id}>
-                <button type="button" className="profile-row" aria-haspopup="dialog" onClick={() => setOpenId(item.id)}>
-                  <span className="profile-row__avatar" aria-hidden="true">{profileInitials(item)}</span>
-                  <span className="profile-row__text"><strong>{profileName(item)}</strong><small>Enfant · {STATUS_LABELS[item.status]}</small></span>
-                  <Icon name="chevron" size={18} />
-                </button>
+                <Profile
+                  variant="row"
+                  name={profileName(item)}
+                  subtitle="Profil d’enfant rattaché à votre compte"
+                  meta={`Enfant · ${STATUS_LABELS[item.status]}`}
+                  rows={profileRows(item)}
+                  note="L’identifiant ne se communique que pour une demande de transfert, à la personne concernée. Le dossier de l’enfant est distinct du vôtre."
+                  actions={profileActions(item)}
+                >
+                  {item.transfer_status === "pending" && <p className="notice">Demande de transfert en attente de vérification manuelle.</p>}
+                  {item.transfer_status === "rejected" && <p className="notice">La demande de transfert précédente a été refusée.</p>}
+                </Profile>
               </li>
             ))}
           </ul>
@@ -220,7 +231,6 @@ export function PatientRepresentationsSettingsClient() {
       <p className="muted">La personne devenue adulte doit créer ou ouvrir son propre compte, puis faire elle-même la <Link href="/patient/transfert">demande de transfert</Link> avant de créer un autre dossier patient. La demande sera examinée manuellement. Aucun dossier n’est fusionné.</p>
       <p className="status" role="status" aria-live="polite">{message}</p>
 
-      {open && <ProfileDetail item={open} busy={busy} onClose={() => setOpenId(null)} onCopy={(item) => void copyId(item)} onRevoke={(item) => void revoke(item)} onReactivate={(item) => void reactivate(item)} />}
       {onboarding && <ChildOnboardingStep child={onboarding} onLater={() => setOnboarding(null)} onDone={() => {
         const child = onboarding;
         setOnboarding(null);

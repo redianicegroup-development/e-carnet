@@ -26,7 +26,7 @@ function Slides({ deck, which }: { deck: Deck; which: HeroSlot }) {
   return (
     <span className={`lp-hero__slot lp-hero__slot--${which}`} data-hero-slot={which} aria-hidden="true">
       {HERO_SLIDES.map((src, index) => (
-        <Image key={src} className="lp-hero__slide" data-pos={index === deck.cur ? "in" : index === deck.prev ? "out" : "wait"} src={src} alt="" fill sizes="(max-width: 759px) 72px, 112px" loading="eager" draggable={false} />
+        <Image key={src} className="lp-hero__slide" data-pos={index === deck.cur ? "in" : index === deck.prev ? "out" : "wait"} src={src} alt="" fill sizes="(max-width: 759px) 84px, 132px" loading="eager" draggable={false} />
       ))}
     </span>
   );

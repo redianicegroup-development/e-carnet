@@ -1,7 +1,7 @@
 /* Landing — hero « image qui grossit », repères, fonctionnalités, FAQ, contact.
    Tout est scopé (classes lp-*, faq-*, scene__*) et n'utilise que les variables du thème : la page suit la palette choisie. */
 
-[id="fonctionnalites"], [id="parcours"], [id="profils"], [id="questions"], [id="contact"] { scroll-margin-top: calc(var(--pub-header-h, 58px) + 12px); }
+[id="fonctionnalites"], [id="parcours"], [id="profils"], [id="questions"], [id="contact"] { scroll-margin-top: calc(var(--pub-header-h, 0px) + var(--pub-bar-h, 0px) + var(--net-banner-h, 0px) + 12px); }
 .pub-main--bleed { width: 100%; padding: 0; display: block; }
 .lp-more { display: inline-flex; align-items: center; gap: 7px; width: fit-content; font-weight: 700; }
 .lp-more:focus-visible, .faq-item__heading button:focus-visible, .faq-item__link:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; border-radius: 10px; }
@@ -142,7 +142,7 @@
 .lp-contact__done-icon { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; background: var(--primary); color: var(--on-primary); }
 @media (min-width: 920px) {
   .lp-contact__layout { grid-template-columns: .85fr 1.15fr; gap: 64px; align-items: start; }
-  .lp-contact__intro { position: sticky; top: calc(var(--pub-header-h, 58px) + 24px); }
+  .lp-contact__intro { position: sticky; top: calc(var(--pub-header-h, 0px) + var(--pub-bar-h, 0px) + var(--net-banner-h, 0px) + 24px); }
 }
 
 @media (prefers-reduced-motion: reduce) {

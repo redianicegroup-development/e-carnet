@@ -20,6 +20,7 @@
 .modal-backdrop { position: fixed; inset: 0; display: grid; place-items: center; padding: 16px; background: rgba(8, 19, 29, .58); }
 .modal-backdrop--greeting { z-index: 1300; align-items: start; padding: clamp(16px, 8vh, 64px) 16px 0; background: transparent; pointer-events: none; }
 .modal-backdrop--panel { z-index: 1500; } /* fenêtre ouverte depuis les paramètres (1200) : au-dessus d'eux et du feedback (1400), sous les confirmations */
+.modal-backdrop--sheet { z-index: 1550; } /* fiche d'une personne (ProfileSheet) : au-dessus des fenêtres d'action (1500), sous les confirmations qu'elle déclenche (1600) */
 .modal-backdrop--confirm { z-index: 1600; } /* au-dessus des paramètres (1200), de l'accueil (1300), du feedback et des enquêtes (1400) */
 .modal-dialog { width: min(100%, 440px); max-height: min(92vh, 720px); max-height: min(92dvh, 720px); overflow: auto; overscroll-behavior: contain; display: grid; justify-items: center; gap: 16px; padding: 28px 24px 22px; text-align: center; border: 1px solid var(--border); border-radius: 20px; background: var(--surface); color: var(--text); box-shadow: 0 24px 80px rgba(0, 0, 0, .24); }
 .modal-greeting { width: min(100%, 400px); max-height: none; overflow: visible; grid-template-columns: auto 1fr; justify-items: start; align-items: center; gap: 12px; padding: 16px 20px; text-align: left; pointer-events: none; }

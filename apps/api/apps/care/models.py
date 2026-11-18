@@ -42,6 +42,10 @@ class PreConsultationRevision(models.Model):
 class AccessGrant(models.Model):
     """Autorisation temporaire contrôlée par le patient et le serveur."""
     STATUS_CHOICES = (("pending", "En attente"), ("active", "Active"), ("refused", "Refusée"), ("expired", "Expirée"), ("revoked", "Révoquée"))
+    # Comment l'accès a été ouvert : QR présenté par le patient, ou mode invité (nom + date de naissance + téléphone, patient sans téléphone).
+    # « guest » : patient sans téléphone, retrouvé sur le téléphone du médecin. « guest_pro » : médecin sans téléphone, qui écrit sur le
+    # téléphone du patient (la consultation attend alors sa confirmation).
+    ACCESS_MODE_CHOICES = (("qr", "QR du patient"), ("guest", "Mode invité (patient)"), ("guest_pro", "Mode invité (professionnel)"))
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name="access_grants")
     professional = models.ForeignKey("professionals.ProfessionalProfile", on_delete=models.PROTECT, related_name="access_grants")
@@ -50,6 +54,7 @@ class AccessGrant(models.Model):
     facility_label = models.CharField(max_length=180)
     scope = models.JSONField(default=list)
     source_establishments = models.JSONField(default=list, blank=True)
+    access_mode = models.CharField(max_length=16, choices=ACCESS_MODE_CHOICES, default="qr")
     status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="pending")
     requested_at = models.DateTimeField(auto_now_add=True)
     starts_at = models.DateTimeField(null=True, blank=True)
@@ -116,6 +121,89 @@ class PatientAccessQrToken(models.Model):
         return hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
 
 
+class GuestLookupAttempt(models.Model):
+    """Journal durable des recherches du mode invité (nom + date de naissance + téléphone).
+
+    Sert à limiter les tentatives (par professionnel et par personne ciblée) et à garder la trace de qui a retrouvé quel dossier.
+    Les saisies ne sont jamais stockées : seule une empreinte (HMAC) de l'identité ciblée est conservée. Une recherche réussie porte
+    un jeton opaque à usage unique, que le professionnel échange contre l'accès après avoir comparé le profil avec la personne présente."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    professional = models.ForeignKey("professionals.ProfessionalProfile", on_delete=models.CASCADE, related_name="guest_lookups")
+    target_hash = models.CharField(max_length=64)
+    succeeded = models.BooleanField(default=False)
+    patient = models.ForeignKey(PatientProfile, null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
+    token_hash = models.CharField(max_length=64, unique=True, null=True, blank=True)
+    consumed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=("professional", "succeeded", "created_at"), name="guest_lookup_pro_idx"),
+            models.Index(fields=("target_hash", "succeeded", "created_at"), name="guest_lookup_target_idx"),
+        ]
+
+
+class GuestProfessionalLookupAttempt(models.Model):
+    """Même journal que `GuestLookupAttempt`, dans l'autre sens : un médecin sans téléphone est retrouvé sur le téléphone du patient.
+
+    Celui qui cherche est le patient connecté ; la personne visée est un professionnel. Seule une empreinte (HMAC) de l'identité visée est
+    conservée, jamais la saisie."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name="+")
+    target_hash = models.CharField(max_length=64)
+    succeeded = models.BooleanField(default=False)
+    professional = models.ForeignKey("professionals.ProfessionalProfile", null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
+    token_hash = models.CharField(max_length=64, unique=True, null=True, blank=True)
+    consumed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=("patient", "succeeded", "created_at"), name="guest_prolookup_pat_idx"),
+            models.Index(fields=("target_hash", "succeeded", "created_at"), name="guest_prolookup_tgt_idx"),
+        ]
+
+
+class GuestConsultation(models.Model):
+    """Consultation écrite sur le téléphone du patient par un médecin sans téléphone (mode invité), en attente de sa confirmation.
+
+    Une `Consultation` n'existe qu'une fois signée (règle de tout le produit : historique, agenda, exports). Tant que le médecin ne l'a pas
+    relue et signée sur son propre téléphone, ce qui a été écrit vit ici, sans signature, et le patient la voit comme « en attente ».
+    La confirmation passe par `validate_consultation` : le médecin relit le contenu, le corrige au besoin, puis signe."""
+    STATUS_CHOICES = (
+        ("awaiting_confirmation", "En attente de confirmation"),
+        ("confirmed", "Confirmée"),
+        ("rejected", "Rejetée par le professionnel"),
+        ("expired", "Expirée sans confirmation"),
+    )
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name="guest_consultations")
+    professional = models.ForeignKey("professionals.ProfessionalProfile", on_delete=models.PROTECT, related_name="guest_consultations")
+    establishment = models.ForeignKey("establishments.Establishment", on_delete=models.PROTECT, related_name="guest_consultations")
+    access_grant = models.ForeignKey(AccessGrant, on_delete=models.PROTECT, related_name="guest_consultations")
+    source_encounter = models.ForeignKey("CareEncounter", on_delete=models.PROTECT, related_name="guest_consultations")
+    # Saisie du médecin (motif, symptômes, constantes, ordonnance…), SANS signature.
+    draft = models.JSONField(default=dict, blank=True)
+    status = models.CharField(max_length=24, choices=STATUS_CHOICES, default="awaiting_confirmation")
+    consultation = models.OneToOneField("Consultation", null=True, blank=True, on_delete=models.PROTECT, related_name="guest_origin")
+    # Compte sur lequel la saisie a été faite (celui du patient) : trace de « depuis quel appareil » sans stocker d'empreinte d'appareil.
+    written_on_account = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
+    expires_at = models.DateTimeField()
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+        constraints = [
+            models.UniqueConstraint(fields=("source_encounter",), condition=models.Q(status="awaiting_confirmation"), name="care_guest_consult_one_awaiting"),
+        ]
+        indexes = [
+            models.Index(fields=("patient", "status"), name="care_guestc_patient_st_idx"),
+            models.Index(fields=("professional", "status"), name="care_guestc_prof_st_idx"),
+        ]
+
+
 class Consultation(models.Model):
     """Contribution médicale affichée au patient avec sa provenance."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -123,6 +211,10 @@ class Consultation(models.Model):
     professional = models.ForeignKey("professionals.ProfessionalProfile", null=True, blank=True, on_delete=models.PROTECT, related_name="consultations")
     establishment = models.ForeignKey("establishments.Establishment", null=True, blank=True, on_delete=models.PROTECT, related_name="consultations")
     access_grant = models.ForeignKey(AccessGrant, null=True, blank=True, on_delete=models.PROTECT, related_name="consultations")
+    # Mode d'accès au moment de la validation (copié de l'autorisation) : visible dans l'historique, il ne change plus ensuite.
+    access_mode = models.CharField(max_length=16, default="qr")
+    # Mode invité (médecin sans téléphone) : moment où la consultation a été rédigée sur le téléphone du patient, avant que le médecin la confirme.
+    drafted_at = models.DateTimeField(null=True, blank=True)
     source_encounter = models.ForeignKey(CareEncounter, null=True, blank=True, on_delete=models.PROTECT, related_name="consultations")
     professional_name = models.CharField(max_length=180)
     facility_label = models.CharField(max_length=180)

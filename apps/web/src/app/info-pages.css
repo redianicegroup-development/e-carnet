@@ -5,7 +5,7 @@
 .pm-root { display: contents; }
 
 /* ---------- Aides à la lecture (pages légales) ---------- */
-.pm-progress { position: fixed; z-index: 31; left: 0; right: 0; top: var(--pub-header-h, 0px); height: 3px; pointer-events: none; }
+.pm-progress { position: fixed; z-index: 31; left: 0; right: 0; top: calc(var(--net-banner-h, 0px) + var(--pub-bar-h, 0px)); height: 3px; pointer-events: none; }
 .pm-progress__bar { display: block; height: 100%; background: var(--primary); transform-origin: left center; transform: scaleX(0); }
 
 /* ---------- Pages légales : en-tête, sommaire collant, sections numérotées ---------- */
@@ -51,11 +51,11 @@
 .legal__tocm nav { padding: 0 8px 12px 16px; }
 @media (min-width: 1040px) {
   .legal__layout { grid-template-columns: 250px minmax(0, 1fr); gap: 48px; align-items: start; }
-  .legal__side { display: block; position: sticky; top: calc(var(--pub-header-h, 68px) + 20px); max-height: calc(100dvh - var(--pub-header-h, 68px) - 40px); overflow-y: auto; overscroll-behavior: contain; padding-right: 6px; }
+  .legal__side { display: block; position: sticky; top: calc(var(--net-banner-h, 0px) + var(--pub-bar-h, 0px) + 20px); max-height: calc(100dvh - var(--net-banner-h, 0px) - var(--pub-bar-h, 0px) - 40px); overflow-y: auto; overscroll-behavior: contain; padding-right: 6px; }
   .legal__tocm { display: none; }
 }
 
-.legal__section { position: relative; display: grid; gap: 14px; padding: 24px 0 4px; border-top: 1px solid var(--border); scroll-margin-top: calc(var(--pub-header-h, 68px) + 16px); transition: border-color .3s ease; }
+.legal__section { position: relative; display: grid; gap: 14px; padding: 24px 0 4px; border-top: 1px solid var(--border); scroll-margin-top: calc(var(--net-banner-h, 0px) + var(--pub-bar-h, 0px) + 16px); transition: border-color .3s ease; }
 .legal__section.is-active { border-top-color: var(--primary); }
 .legal__section h2 { display: flex; align-items: baseline; gap: 12px; font-size: clamp(1.15rem, 2.6vw, 1.4rem); line-height: 1.2; letter-spacing: -.01em; text-wrap: balance; }
 .legal__num { display: inline-grid; place-items: center; flex: none; min-width: 36px; height: 30px; padding: 0 9px; border: 1.5px solid var(--border-strong); border-radius: 10px; background: var(--surface-tint); color: var(--text); font-size: .85rem; font-weight: 800; font-variant-numeric: tabular-nums; transition: background-color .3s ease, color .3s ease, border-color .3s ease; }

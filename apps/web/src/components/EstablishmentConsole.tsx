@@ -1,15 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { apiGet, apiPost } from "../infrastructure/api/client";
 import { AvatarBadge, displayName, useSpaceAccount } from "./shell/SpaceShell";
 import { EstablishmentLogo } from "./EstablishmentLogo";
 import "./establishment-logo.css";
 import { useConfirm } from "./modal/ConfirmProvider";
-import { useDialogBehavior } from "./modal/useDialogBehavior";
 import { RevocationReasonDialog } from "./modal/RevocationReasonDialog";
 import { Icon } from "./ui/Icon";
+import { Profile } from "./ui/Profile";
+import type { ProfileRow } from "./ui/ProfileSheet";
 import "./join-codes.css";
 import { PageHeader } from "./ui/PageHeader";
 import { EstablishmentKpis } from "./EstablishmentKpis";
@@ -54,33 +55,27 @@ function MemberAvatar({ member, size = 44 }: { member: Membership; size?: number
   return <AvatarBadge size={size} account={{ ...splitFullName(member.professional_name), email: member.professional_email ?? "", avatar_url: member.professional_avatar_url ?? "" }} />;
 }
 
-/* Équipe : une photo par médecin ; un clic ouvre sa fiche (nom, prénoms, métier, âge) avec la possibilité de révoquer le rattachement. */
-function MemberDetail({ member, busy, onClose, onRevoke }: { member: Membership; busy: boolean; onClose: () => void; onRevoke: () => void }) {
-  const dialog = useRef<HTMLElement>(null);
-  const closeButton = useRef<HTMLButtonElement>(null);
-  const titleId = useId();
-  useDialogBehavior({ open: true, container: dialog, initialFocus: closeButton, onEscape: onClose });
+/* Équipe : une photo par médecin ; un clic ouvre sa fiche (nom, prénoms, métier, âge) avec la possibilité de révoquer le rattachement.
+   Même composant « Profil » que partout ailleurs : la fiche et ses boutons viennent de ui/Profile. */
+function MemberProfile({ member, busy, onRevoke }: { member: Membership; busy: boolean; onRevoke: () => void }) {
   const names = splitFullName(member.professional_name);
   const lastName = member.professional_last_name || names.last_name;
   const firstName = member.professional_first_name || names.first_name;
   const job = [member.professional_title, member.professional_specialty].filter(Boolean).join(" · ");
-  const rows: [string, string][] = [
-    ["Nom", lastName || "Non renseigné"],
-    ["Prénoms", firstName || "Non renseigné"],
-    ["Métier", job || "Non renseigné"],
-    ["Âge", typeof member.professional_age === "number" ? `${member.professional_age} an${member.professional_age > 1 ? "s" : ""}` : "Non renseigné"],
+  const rows: ProfileRow[] = [
+    { label: "Nom", value: lastName || "Non renseigné" },
+    { label: "Prénoms", value: firstName || "Non renseigné" },
+    { label: "Métier", value: job || "Non renseigné" },
+    { label: "Âge", value: typeof member.professional_age === "number" ? `${member.professional_age} an${member.professional_age > 1 ? "s" : ""}` : "Non renseigné" },
   ];
-  return <div className="modal-backdrop modal-backdrop--confirm" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-    <section ref={dialog} className="modal-dialog team-detail" role="dialog" aria-modal="true" aria-labelledby={titleId}>
-      <MemberAvatar member={member} size={84} />
-      <h2 id={titleId}>{member.professional_name || "Médecin"}</h2>
-      <dl className="team-detail__list">{rows.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
-      <div className="modal-actions">
-        <button ref={closeButton} type="button" className="button" onClick={onClose}>Fermer</button>
-        <button type="button" className="button primary danger" disabled={busy} onClick={onRevoke}>Révoquer</button>
-      </div>
-    </section>
-  </div>;
+  return <Profile
+    variant="photo"
+    size={64}
+    name={member.professional_name || "Médecin"}
+    avatar={(size) => <MemberAvatar member={member} size={size} />}
+    rows={rows}
+    actions={[{ label: "Révoquer", tone: "danger", disabled: busy, onClick: ({ close }) => { close(); onRevoke(); } }]}
+  />;
 }
 
 function NoEstablishment() {
@@ -109,7 +104,6 @@ export function EstablishmentConsole({ view }: { view: "home" | "requests" | "do
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const confirm = useConfirm();
-  const [openMemberId, setOpenMemberId] = useState<string | null>(null);
   const [revokeTarget, setRevokeTarget] = useState<Membership | null>(null);
 
   if (error) return <p className="notice" role="alert">{error}</p>;
@@ -142,7 +136,6 @@ export function EstablishmentConsole({ view }: { view: "home" | "requests" | "do
   };
 
   // Révocation avec motif obligatoire : le professionnel le lira à sa prochaine connexion (un push l'avertit sans le révéler).
-  const revoke = (member: Membership) => { setOpenMemberId(null); setRevokeTarget(member); };
   const submitRevoke = async (reason: string) => {
     if (!revokeTarget) return;
     await apiPost(`/api/v1/establishments/${establishment.id}/memberships/${revokeTarget.id}/terminate/`, { reason });
@@ -150,7 +143,6 @@ export function EstablishmentConsole({ view }: { view: "home" | "requests" | "do
     setMessage("Rattachement révoqué. Le professionnel verra le motif à sa prochaine connexion.");
     await reload();
   };
-  const openMember = doctors.find((item) => item.id === openMemberId) ?? null;
 
   const codeCard = <EstablishmentJoinCodes establishmentId={establishment.id} active={active} />;
 
@@ -175,11 +167,10 @@ export function EstablishmentConsole({ view }: { view: "home" | "requests" | "do
     <section className="card" aria-labelledby="doctors-title">
       <div className="section-heading"><div><h2 id="doctors-title">Médecins de l’établissement</h2></div><span className="count-badge">{doctors.length}</span></div>
       {doctors.length === 0 ? <p className="empty">Aucun médecin rattaché pour le moment.</p> : (
-        <ul className="team-grid" aria-label="Médecins de l’établissement">
-          {doctors.map((item) => <li key={item.id}><button type="button" className="team-photo" aria-label={`Voir la fiche de ${item.professional_name || "ce médecin"}`} title={item.professional_name || "Médecin"} onClick={() => setOpenMemberId(item.id)}><MemberAvatar member={item} size={64} /></button></li>)}
+        <ul className="profile-grid" aria-label="Médecins de l’établissement">
+          {doctors.map((item) => <li key={item.id}><MemberProfile member={item} busy={busy} onRevoke={() => setRevokeTarget(item)} /></li>)}
         </ul>
       )}
-      {openMember && <MemberDetail member={openMember} busy={busy} onClose={() => setOpenMemberId(null)} onRevoke={() => revoke(openMember)} />}
       {revokeTarget && <RevocationReasonDialog title="Révoquer ce médecin ?" message={`${revokeTarget.professional_name || "Ce médecin"} ne pourra plus travailler au nom de ${establishment.name}.`} note="Les dossiers et les traces existants sont conservés." confirmLabel="Révoquer" onSubmit={submitRevoke} onCancel={() => setRevokeTarget(null)} />}
     </section>
   );

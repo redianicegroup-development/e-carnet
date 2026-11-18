@@ -5,7 +5,7 @@ import { GRANT_STATUS_LABELS, scopeText } from "../lib/grant-labels";
 import { formatWhen } from "./access/access-history";
 import { EstablishmentLogo } from "./EstablishmentLogo";
 import { PersonAvatar } from "./ui/PersonAvatar";
-import { ProfileDetailModal } from "./ui/ProfileDetailModal";
+import { ProfileSheet } from "./ui/ProfileSheet";
 
 const EXPLAIN: Record<string, string> = {
   active: "L’accès est ouvert. Il se ferme tout seul quand vous signez la consultation ou à l’expiration.",
@@ -20,10 +20,10 @@ export function ProfessionalGrantDetail({ item, onClose }: { item: ProfessionalG
   const name = item.patient_name || item.reference;
   const startsAt = (item as unknown as { starts_at?: string | null }).starts_at;
   return (
-    <ProfileDetailModal
-      title={name}
+    <ProfileSheet
+      name={name}
       subtitle={item.facility_label}
-      avatar={<span className="request-row__avatars"><PersonAvatar src={item.patient_avatar} name={name} size={56} /><EstablishmentLogo logo={item.establishment_logo} name={item.facility_label} size={24} /></span>}
+      avatar={(size) => <span className="request-row__avatars"><PersonAvatar src={item.patient_avatar} name={name} size={size} /><EstablishmentLogo logo={item.establishment_logo} name={item.facility_label} size={Math.round(size * 0.4)} /></span>}
       rows={[
         { label: "Patient", value: name },
         { label: "Établissement", value: item.facility_label || "—" },
@@ -33,9 +33,8 @@ export function ProfessionalGrantDetail({ item, onClose }: { item: ProfessionalG
         ...(item.expires_at ? [{ label: "Fin", value: formatWhen(item.expires_at) }] : []),
         { label: "Référence", value: item.reference },
       ]}
+      note={EXPLAIN[item.status]}
       onClose={onClose}
-    >
-      {EXPLAIN[item.status] && <p className="profile-modal__note muted">{EXPLAIN[item.status]}</p>}
-    </ProfileDetailModal>
+    />
   );
 }

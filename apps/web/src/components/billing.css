@@ -1,10 +1,4 @@
 .billing h3, .billing h4 { margin: 0; }
-.billing__offers { display: grid; gap: 12px; }
-@media (min-width: 720px) { .billing__offers { grid-template-columns: repeat(3, 1fr); } }
-.billing__offer { display: grid; gap: 8px; align-content: start; }
-.billing__offer[data-current="true"] { border-color: var(--primary, #3B826C); border-width: 2px; }
-.billing__offer ul { margin: 0; padding-left: 18px; display: grid; gap: 2px; font-size: .9rem; }
-.billing__price { margin: 0; font-weight: 700; font-size: 1.1rem; }
 .billing__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
 .billing__list li { display: grid; gap: 4px; padding-bottom: 12px; border-bottom: 1px solid var(--border, #E3D9C2); }
 .billing__list li:last-child { border-bottom: 0; padding-bottom: 0; }
@@ -14,3 +8,31 @@
 .billing__notice--warning { background: #FFF3D6; color: #5C4000; border-color: #8A6100; }
 .billing__notice--danger { background: #FBEAE8; color: #7A1F1F; border-color: #A32D2D; }
 .billing .row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ---------- Cartes de tarifs : nom, durée, trait, gros prix, liste (coches / croix) dans un bloc teinté, bouton arrondi, pastille inclinée.
+   Chaque carte a sa teinte (--tone) tirée du thème pour la première, puis ambre et lilas ; le texte reste sur --text / --surface (contraste conservé). ---------- */
+.billing__offers { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 20px; align-items: stretch; padding-top: 10px; }
+.billing__offer { --tone: var(--primary, #3B826C); position: relative; display: flex; flex-direction: column; gap: 16px; min-width: 0; padding: 24px 20px 20px; border: 1.5px solid color-mix(in srgb, var(--tone) 40%, var(--border, #E3D9C2)); border-radius: 28px; background: color-mix(in srgb, var(--tone) 8%, var(--surface, #fff)); color: var(--text); }
+.billing__offer[data-tone="1"] { --tone: #d9941a; }
+.billing__offer[data-tone="2"] { --tone: #8566c9; }
+.billing__offer[data-current="true"] { border-width: 2.5px; border-color: var(--tone); box-shadow: 0 14px 30px -20px var(--tone); }
+.billing__offer-head { display: grid; gap: 4px; padding-bottom: 14px; border-bottom: 1.5px solid color-mix(in srgb, var(--tone) 32%, transparent); }
+.billing__offer-head h4 { margin: 0; font-size: 1.4rem; line-height: 1.15; }
+.billing__capacity { margin: 0; color: var(--text-muted); font-size: .9rem; font-weight: 600; }
+.billing__price { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 8px; margin: 0; }
+.billing__amount { font-size: clamp(2rem, 4.6vw, 2.6rem); font-weight: 800; letter-spacing: -.02em; line-height: 1.05; }
+.billing__amount--quote { font-size: clamp(1.6rem, 3.6vw, 2rem); }
+.billing__unit { color: var(--text-muted); font-size: .85rem; font-weight: 700; }
+.billing__features { flex: 1; display: grid; align-content: start; gap: 11px; margin: 0; padding: 16px 14px; list-style: none; border-radius: 20px; background: color-mix(in srgb, var(--tone) 15%, var(--surface, #fff)); font-size: .9rem; line-height: 1.35; }
+.billing__features li { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 9px; align-items: start; }
+.billing__features li > .icon, .billing__features li > svg { margin-top: 1px; }
+.billing__features li[data-included="true"] > .icon, .billing__features li[data-included="true"] > svg { color: var(--success, #1f7a4d); }
+.billing__features li[data-included="false"] { color: var(--text-muted); }
+.billing__features li[data-included="false"] > .icon, .billing__features li[data-included="false"] > svg { box-sizing: border-box; padding: 3px; border: 1.5px solid currentColor; border-radius: 50%; color: var(--danger, #b42318); }
+.billing__cta { display: inline-flex; align-items: center; justify-content: center; min-height: 46px; padding: 0 22px; border: 1.5px solid var(--text); border-radius: 999px; background: var(--surface, #fff); color: var(--text); font: inherit; font-weight: 800; cursor: pointer; }
+.billing__cta--primary { background: var(--text); color: var(--surface, #fff); }
+.billing__cta:focus-visible { outline: 3px solid var(--focus, var(--primary, #3B826C)); outline-offset: 3px; }
+.billing__cta:disabled { cursor: default; opacity: .7; }
+.billing__quote { display: flex; align-items: center; justify-content: center; min-height: 46px; margin: 0; color: var(--text-muted); font-size: .85rem; font-weight: 600; text-align: center; }
+.billing__sticker { position: absolute; top: -13px; right: 16px; z-index: 1; padding: 5px 13px; border-radius: 999px; background: color-mix(in srgb, var(--tone) 68%, #000); color: #fff; font-size: .74rem; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; transform: rotate(4deg); box-shadow: 0 6px 14px -8px rgb(0 0 0 / .5); }
+@media (hover: hover) and (prefers-reduced-motion: no-preference) { .billing__offer { transition: transform .18s ease; } .billing__offer:hover { transform: translateY(-3px); } }

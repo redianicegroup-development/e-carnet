@@ -6,6 +6,7 @@ import { displayName, useSpaceAccount } from "./shell/SpaceShell";
 import { useProfessionalProfile } from "./ClinicalGate";
 import { Icon } from "./ui/Icon";
 import { ProfessionalToday } from "./ProfessionalToday";
+import { ProfessionalAttestationsTile } from "./ProfessionalAttestations";
 import { listProfessionalConsultations, listProfessionalGrants } from "../application/professional-access-grants";
 import { ProfessionalDashboardChart } from "./RoleDashboards";
 import { ProfessionalDossier } from "./ProfessionalDossier";
@@ -52,6 +53,7 @@ export function ProfessionalHome() {
       {state.status === "error" && <p className="notice" role="alert">{state.message}</p>}
       {state.status !== "loading" && state.status !== "error" && <SetupCard title="Quelques étapes avant d’ouvrir un carnet" steps={steps} actionLabel={actionLabel} />}
       {ready && <ProfessionalToday />}
+      {ready && <ProfessionalAttestationsTile />}
       {account && hasProfile && <ProfessionalDossier account={account} profile={profile} />}
       {activity && ready && <div className="role-dashboard-grid"><ProfessionalDashboardChart metrics={[{ label: "Demandes", value: activity.grants }, { label: "Accès actifs", value: activity.activeGrants }, { label: "Consultations", value: activity.consultations }]} /></div>}
     </div>

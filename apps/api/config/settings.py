@@ -19,7 +19,7 @@ INSTALLED_APPS = [
     "django.contrib.admin", "django.contrib.auth", "django.contrib.contenttypes",
     "django.contrib.sessions", "django.contrib.messages", "django.contrib.staticfiles",
     "corsheaders", "rest_framework", "apps.identity", "apps.patients", "apps.care",
-    "apps.establishments", "apps.professionals", "apps.audit", "apps.referrals", "apps.advertising", "apps.billing",
+    "apps.establishments", "apps.professionals", "apps.audit", "apps.referrals", "apps.advertising", "apps.billing", "apps.attestations",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware", "whitenoise.middleware.WhiteNoiseMiddleware", "apps.identity.middleware.AdminLoginThrottleMiddleware", "corsheaders.middleware.CorsMiddleware",
@@ -73,6 +73,8 @@ REST_FRAMEWORK = {
         "monitoring_webhook": os.environ.get("ECARNET_RATE_MONITOR_WEBHOOK", "600/hour"),
         "code_redeem": os.environ.get("ECARNET_RATE_CODE", "10/hour"),
         "grant_request": os.environ.get("ECARNET_RATE_GRANT", "60/hour"),
+        "guest_lookup": os.environ.get("ECARNET_RATE_GUEST_LOOKUP", "30/hour"),
+        "guest_start": os.environ.get("ECARNET_RATE_GUEST_START", "20/hour"),
         "break_glass_open": os.environ.get("ECARNET_RATE_BREAK_GLASS_OPEN", "6/hour"),
         "break_glass_review": os.environ.get("ECARNET_RATE_BREAK_GLASS_REVIEW", "60/hour"),
         "qr_create": os.environ.get("ECARNET_RATE_QR_CREATE", "30/hour"),

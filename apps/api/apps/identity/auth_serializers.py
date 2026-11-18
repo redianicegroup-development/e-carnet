@@ -1,5 +1,6 @@
 import base64
 import binascii
+from datetime import date
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from rest_framework import serializers
@@ -130,6 +131,24 @@ class PatientOnboardingSerializer(serializers.ModelSerializer):
     class Meta:
         model = PatientProfile
         fields = ("phone", "birth_date", "gender", "address", "profession", "coverage_provider", "coverage_number", "coverage_expiry")
+
+    def validate_birth_date(self, value):
+        # Obligatoire (décision du 17/11/2026), comme le téléphone : le mode invité retrouve une personne par nom + naissance + numéro.
+        if value is None:
+            raise serializers.ValidationError("La date de naissance est obligatoire.")
+        if value > date.today() or value.year < 1900:
+            raise serializers.ValidationError("Entrez une date de naissance valide.")
+        return value
+
+    def validate_phone(self, value):
+        # Obligatoire (décision du 16/11/2026) : le mode invité retrouve un patient sans téléphone par nom + naissance + numéro.
+        # Contrôle fait quand le champ est envoyé : une mise à jour partielle qui ne parle pas du téléphone ne le touche pas.
+        digits = "".join(char for char in str(value or "") if char.isdigit())
+        if not digits:
+            raise serializers.ValidationError("Le numéro de téléphone est obligatoire.")
+        if len(digits) < 8:
+            raise serializers.ValidationError("Entrez un numéro de téléphone valide (8 chiffres au minimum).")
+        return value.strip()
 
 
 class AccountIdentitySerializer(serializers.Serializer):

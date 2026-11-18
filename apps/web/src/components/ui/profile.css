@@ -1,0 +1,42 @@
+/* Profil : déclencheurs (photo ronde, ligne) et fiche (ProfileSheet). Une seule présentation pour toute l'application. Couleurs tirées du thème actif. */
+
+/* Photo ronde qui ouvre la fiche. */
+.profile-grid { display: flex; flex-wrap: wrap; gap: 14px; margin: 0; padding: 0; list-style: none; }
+.profile-photo { padding: 0; border: 0; border-radius: 50%; background: none; color: inherit; line-height: 0; cursor: pointer; transition: transform .15s ease; }
+.profile-photo .person-avatar { box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px color-mix(in srgb, var(--primary) 55%, var(--surface)); }
+.profile-photo:hover { transform: translateY(-2px); }
+.profile-photo:focus-visible { outline: 3px solid var(--focus, var(--primary)); outline-offset: 4px; }
+
+/* Ligne (photo + nom + état + flèche) qui ouvre la fiche. */
+.profile-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.profile-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border: 1.5px solid color-mix(in srgb, var(--text) 78%, transparent); border-radius: 22px; background: var(--surface, var(--bg)); color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.profile-row:not(:active):hover { box-shadow: var(--raise-sm, 0 8px 20px rgba(0, 0, 0, .08)); }
+.profile-row:focus-visible { outline: 3px solid var(--focus, var(--primary)); outline-offset: 3px; }
+.profile-row__text { display: grid; gap: 2px; min-width: 0; }
+.profile-row__text strong { overflow-wrap: anywhere; font-weight: 800; }
+.profile-row__text small { color: var(--text-muted, color-mix(in srgb, var(--text) 70%, transparent)); font-size: .8rem; font-weight: 600; }
+
+/* Fiche : corps défilant + boutons toujours visibles en bas. Sur mobile elle monte du bas de l'écran (comportement de .modal-dialog). */
+.modal-dialog.profile-sheet { display: flex; flex-direction: column; justify-items: normal; gap: 0; padding: 0; overflow: hidden; text-align: center; }
+.profile-sheet__body { display: grid; justify-items: center; gap: 14px; width: 100%; min-height: 0; padding: 28px 24px 14px; overflow-y: auto; overscroll-behavior: contain; }
+.profile-sheet__body h2 { margin: 0; font-size: 1.25rem; overflow-wrap: anywhere; }
+.profile-sheet__subtitle { margin: -8px 0 0; }
+.profile-sheet__list { display: grid; gap: 8px; width: 100%; margin: 0; text-align: left; }
+.profile-sheet__list > div { display: grid; gap: 1px; min-width: 0; padding: 8px 12px; border-radius: 12px; background: var(--surface-tint); }
+.profile-sheet__list dt { color: var(--text-muted); font-size: .76rem; font-weight: 700; letter-spacing: .02em; }
+.profile-sheet__list dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
+.profile-sheet__list code { font-size: .85em; word-break: break-all; }
+.profile-sheet__section { display: grid; gap: 8px; width: 100%; text-align: left; }
+.profile-sheet__section h3 { margin: 0; font-size: .95rem; }
+.profile-sheet__items { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.profile-sheet__items li { display: grid; gap: 2px; padding: 10px 12px; border-radius: 14px; background: var(--surface-tint); font-size: .9rem; }
+.profile-sheet__note { margin: 0; font-size: .85rem; }
+.profile-sheet__actions { display: grid; gap: 6px; width: 100%; padding: 12px 24px 22px; border-top: 1px solid color-mix(in srgb, var(--text) 9%, transparent); }
+.profile-sheet__status { min-height: 1.2em; margin: 0; font-size: .85rem; text-align: center; }
+.profile-sheet__status:empty { display: none; }
+@media (max-width: 600px) {
+  .modal-dialog.profile-sheet { border-radius: 18px 18px 0 0; }
+  .profile-sheet__body { padding: 24px 18px 12px; }
+  .profile-sheet__actions { padding: 12px 18px calc(18px + env(safe-area-inset-bottom)); }
+}
+@media (prefers-reduced-motion: reduce) { .profile-photo { transition: none; } .profile-photo:hover { transform: none; } }

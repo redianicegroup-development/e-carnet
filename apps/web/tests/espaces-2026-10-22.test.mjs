@@ -167,7 +167,8 @@ test("la console établissement affiche le code 48 h et la photo des médecins",
   assert.match(console_, /<EstablishmentJoinCodes establishmentId=\{establishment\.id\} active=\{active\} \/>/);
   assert.doesNotMatch(console_, /createCode|qu’une seule fois/);
   assert.equal((console_.match(/<MemberAvatar member=\{item\} \/>/g) ?? []).length, 1, "demandes : photo, nom et e-mail");
-  assert.match(console_, /<MemberAvatar member=\{item\} size=\{64\} \/>/, "équipe : la photo seule");
+  assert.match(console_, /<Profile\s+variant="photo"\s+size=\{64\}/, "équipe : la photo seule, ouvrant la fiche commune");
+  assert.match(console_, /<MemberAvatar member=\{member\} size=\{size\} \/>/);
   assert.match(console_, /professional_avatar_url/);
 });
 

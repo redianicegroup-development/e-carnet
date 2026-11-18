@@ -115,10 +115,17 @@ body .public-scroll-top { position: fixed; }
 /* PublicShell est partagé par les pages d'information, pas seulement la landing. */
 .pub { min-height: 100dvh; display: grid; grid-template-rows: auto 1fr auto; }
 /* ---------- En-tête public : logo seul, sans fond ni nom ; menu plein écran ouvert par un bouton à trois traits fixé en bas (ordinateur et mobile) ---------- */
-.pub { --pub-header-h: 0px; }
-/* En-tête : une barre de hauteur nulle, sans fond. Le logo flotte au centre, en haut, sur toutes les pages publiques ; pour un visiteur connecté, « Retour à mon espace » flotte à gauche. */
+/* --pub-header-h reste à 0 (l'en-tête ne prend plus de place dans la page : le héro garde sa hauteur). --pub-bar-h = hauteur de la barre fixe du logo,
+   à ajouter aux décalages d'ancres et de blocs collants pour que rien ne passe dessous (voir landing-showcase.css, info-pages.css). */
+.pub { --pub-header-h: 0px; --pub-bar-h: calc(max(14px, env(safe-area-inset-top)) + clamp(46px, 7vw, 58px) + 12px); }
+/* En-tête : le logo est FIXE au centre, en haut de l'écran, sur toutes les pages publiques (pour un visiteur connecté, « Retour à mon espace » est fixe à gauche).
+   Le conteneur garde une hauteur nulle : il ne pousse pas la page. Fixe = positionné par rapport à l'écran, donc sous le bandeau hors connexion
+   (--net-banner-h) sans jamais recompter sa hauteur : le logo ne chevauche plus les textes quand la connexion est coupée.
+   En haut de page il est sans fond ; dès que la page défile (data-scrolled, posé par PublicHeader), une barre translucide passe derrière lui. */
 .pub-header { position: relative; z-index: 20; height: 0; }
-.pub-header .brand { position: absolute; top: calc(var(--net-banner-h, 0px) + max(14px, env(safe-area-inset-top))); left: 50%; transform: translateX(-50%); }
+.pub-header .brand { position: fixed; z-index: 1; top: calc(var(--net-banner-h, 0px) + max(14px, env(safe-area-inset-top))); left: 50%; transform: translateX(-50%); }
+.pub-header::before { content: ""; position: fixed; z-index: 0; top: var(--net-banner-h, 0px); left: 0; right: 0; height: var(--pub-bar-h); background: color-mix(in srgb, var(--bg) 88%, transparent); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent); box-shadow: 0 10px 26px -22px rgba(44, 58, 51, .55); opacity: 0; pointer-events: none; transition: opacity .25s ease; }
+.pub-header[data-scrolled="true"]::before { opacity: 1; }
 .pub-header .brand-mark.brand-mark--duo { height: clamp(46px, 7vw, 58px); }
 .pub-burger { position: fixed; z-index: 840; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom)); display: inline-grid; place-items: center; width: 76px; height: 52px; padding: 0; border: 0; border-radius: 999px; background: var(--primary); color: var(--on-primary); cursor: pointer; transform: translateX(-50%); box-shadow: 0 0 0 1.5px var(--bg), 0 10px 24px -8px color-mix(in srgb, var(--primary) 70%, #000); transition: opacity .25s ease, transform .35s cubic-bezier(.22, .9, .3, 1), visibility 0s; }
 .pub-burger:hover { transform: translateX(-50%) translateY(-2px); }
@@ -129,6 +136,11 @@ body .public-scroll-top { position: fixed; }
 .pub-burger span::before { top: -7px; }
 .pub-burger span::after { top: 7px; }
 .pub-burger[aria-expanded="true"] { opacity: 0; visibility: hidden; pointer-events: none; transform: translateX(-50%) translateY(14px); transition: opacity .25s ease, transform .35s ease, visibility 0s .25s; }
+/* Dans le héro de la landing (PublicHeader pose <html data-in-hero="true"> tant qu'il occupe l'écran), le bouton de menu fixé en bas et le bouton d'avis sont cachés ;
+   ils réapparaissent en douceur dès qu'on le quitte. */
+body .feedback-fab { transition: opacity .25s ease, transform .3s ease, visibility 0s, background-color .2s ease, border-color .2s ease, filter .2s ease; }
+html[data-in-hero="true"] .pub-burger { opacity: 0; visibility: hidden; pointer-events: none; transform: translateX(-50%) translateY(14px); transition: opacity .25s ease, transform .35s ease, visibility 0s .25s; }
+html[data-in-hero="true"] .feedback-fab { opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(14px); transition: opacity .25s ease, transform .3s ease, visibility 0s .25s; }
 /* Menu : panneau plein écran qui s'ouvre en cercle depuis le bouton. Fond vert de la marque, grands liens, langues, réseaux. */
 .pub-menu { --fs: clamp(2rem, min(9.2vw, 8.4svh), 5.2rem); position: fixed; inset: 0; z-index: 900; display: flex; flex-direction: column; gap: 10px; padding: max(14px, env(safe-area-inset-top)) clamp(16px, 4vw, 44px) max(18px, env(safe-area-inset-bottom)); overflow-y: auto; overscroll-behavior: contain; color: var(--on-primary); background: linear-gradient(168deg, color-mix(in srgb, var(--primary) 50%, #06140f) 0%, var(--primary) 100%); visibility: hidden; pointer-events: none; clip-path: circle(0 at 50% calc(100% - 44px)); transition: clip-path .7s cubic-bezier(.76, 0, .24, 1), visibility 0s linear .7s; }
 .pub-menu[data-open="true"] { visibility: visible; pointer-events: auto; clip-path: circle(150vmax at 50% calc(100% - 44px)); transition: clip-path .75s cubic-bezier(.76, 0, .24, 1), visibility 0s; }
@@ -180,7 +192,7 @@ a.pub-menu__social-item:hover { background: var(--on-primary); color: var(--prim
 }
 /* Barre d'un visiteur connecté sur une page publique : « Retour à mon espace », collée en haut. */
 /* Visiteur connecté sur une page publique : « Retour à mon espace », à gauche du logo, sans barre ni fond. */
-.pub-return-link { position: absolute; top: calc(var(--net-banner-h, 0px) + max(14px, env(safe-area-inset-top))); left: clamp(16px, 4vw, 40px); display: inline-flex; align-items: center; gap: 9px; min-height: 44px; color: var(--primary-text); font-weight: 700; text-decoration: none; }
+.pub-return-link { position: fixed; z-index: 1; top: calc(var(--net-banner-h, 0px) + max(14px, env(safe-area-inset-top))); left: clamp(16px, 4vw, 40px); display: inline-flex; align-items: center; gap: 9px; min-height: 44px; color: var(--primary-text); font-weight: 700; text-decoration: none; }
 .pub-return-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 .pub-return-link span { font-size: 1.3rem; line-height: 1; }
 .pub-main { width: min(calc(100% - 32px), 1120px); margin-inline: auto; padding: clamp(76px, 11vw, 96px) 0 40px; display: grid; gap: clamp(40px, 8vw, 84px); align-content: start; }

@@ -70,11 +70,11 @@ test("« Profils » : liste, fiche (prénom, nom, identifiant, copier, révoquer
   assert.doesNotMatch(settings, /Proches et personnes représentées/);
   const profiles = read("components/PatientRepresentationsSettingsClient.tsx");
   assert.doesNotMatch(profiles, /Ouvrir ce dossier|Revenir à mon dossier/, "l'ouverture d'un dossier passe par la flèche de Paramètres");
-  for (const label of ["Prénom", "Nom", "Identifiant"]) assert.match(profiles, new RegExp(`<dt>${label}</dt>`));
+  for (const label of ["Prénom", "Nom", "Identifiant"]) assert.match(profiles, new RegExp(`label: "${label}"`));
   assert.match(profiles, /Copier l’identifiant/);
-  assert.match(profiles, /className="button danger"[\s\S]{0,80}Révoquer</);
-  assert.match(profiles, /className="profile-row"/);
-  assert.match(read("components/patient-profiles.css"), /\.profile-detail \{[^}]*width: 100%/);
+  assert.match(profiles, /label: "Révoquer", tone: "danger"/);
+  assert.match(profiles, /<Profile\s+variant="row"/, "la liste et la fiche viennent du composant Profil commun");
+  assert.doesNotMatch(profiles, /className="profile-row"|<dl className="profile-detail"/, "plus de fiche propre à cette page");
 });
 
 test("créer un profil enfant : étape 2 = carnet de l'enfant, sans changer le profil ouvert", () => {

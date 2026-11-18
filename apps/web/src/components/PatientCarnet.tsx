@@ -10,6 +10,7 @@ import { MedicationReminders } from "./MedicationReminders";
 import { FollowUpPlans } from "./FollowUpPlans";
 import { PatientAppointments } from "./PatientAppointments";
 import { CollapsibleSection } from "./ui/CollapsibleSection";
+import { PatientAttestations } from "./PatientAttestations";
 import { PatientCarnetExport } from "./PatientCarnetExport";
 import { ALLERGY_NEGATION_MESSAGE, allergyStateLabel, isAllergyState, looksLikeAllergyNegation, type AllergyMode } from "../lib/allergy-rules";
 import "./patient-allergy-choice.css";
@@ -116,6 +117,7 @@ export function PatientCarnet() {
       </CollapsibleSection>
 
       <CollapsibleSection title="Déclarations et mesures de santé" icon="pencil" hint="Allergies, mesures…">
+      <PatientAttestations />
       <div className="patient-grid">
         <form className="card" onSubmit={submit} ref={formRef} id="ajouter">
           <span className="eyebrow">{unique && current(form.kind) ? "Modifier" : "Ajouter"}</span>
@@ -149,7 +151,7 @@ export function PatientCarnet() {
               {items.map((item) => (
                 <article className="record declaration" key={item.id}>
                   <div className="declaration__body">
-                    <span className="declaration__kind">{KINDS[item.kind as Kind] ?? "Antécédent"}</span>
+                    <span className="declaration__kind">{({ ...KINDS, surgery: "Intervention chirurgicale", implant: "Implant ou dispositif médical", other_medical: "Autre information médicale" } as Record<string, string>)[item.kind] ?? "Antécédent"}</span>
                     <strong className="declaration__label">{item.label}</strong>
                     {item.details && (item.kind === "emergency_contact" ? <p className="declaration__details"><a href={`tel:${item.details.replace(/[^+\d]/g, "")}`}>{item.details}</a></p> : <p className="muted declaration__details">{item.details}</p>)}
                   </div>

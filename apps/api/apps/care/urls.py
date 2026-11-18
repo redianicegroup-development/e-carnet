@@ -5,6 +5,15 @@ from .break_glass_views import (
     ProfessionalEmergencyAccessDetailView,
     ProfessionalEmergencyAccessListCreateView,
 )
+from .guest_pro_views import (
+    PatientGuestConsultationListView,
+    PatientGuestConsultationSaveView,
+    PatientGuestProfessionalLookupView,
+    PatientGuestProfessionalStartView,
+    ProfessionalGuestConsultationListView,
+    ProfessionalGuestConsultationRejectView,
+)
+from .guest_views import ProfessionalGuestLookupView, ProfessionalGuestPreconsultationView, ProfessionalGuestStartView
 from .pending_views import (
     LabDepositHistoryView,
     LabExamQrResolveView,
@@ -110,6 +119,15 @@ urlpatterns = [
     path("professional/preconsultation-templates/pending/", ProfessionalPendingPreconsultationTemplatesView.as_view(http_method_names=["get"])),
     path("professional/preconsultation-templates/<int:pk>/approve/", ProfessionalPendingPreconsultationTemplatesView.as_view(http_method_names=["post"])),
     path("professional/access-grants/", ProfessionalAccessGrantListCreateView.as_view()),
+    path("professional/guest-access/lookup/", ProfessionalGuestLookupView.as_view()),
+    path("guest-professional/lookup/", PatientGuestProfessionalLookupView.as_view()),
+    path("guest-professional/start/", PatientGuestProfessionalStartView.as_view()),
+    path("guest-professional/<uuid:grant_id>/consultation/", PatientGuestConsultationSaveView.as_view()),
+    path("guest-consultations/", PatientGuestConsultationListView.as_view()),
+    path("professional/guest-consultations/", ProfessionalGuestConsultationListView.as_view()),
+    path("professional/guest-consultations/<uuid:pk>/reject/", ProfessionalGuestConsultationRejectView.as_view()),
+    path("professional/guest-access/start/", ProfessionalGuestStartView.as_view()),
+    path("professional/access-grants/<uuid:pk>/guest-preconsultation/", ProfessionalGuestPreconsultationView.as_view()),
     path("professional/recent-patients/", ProfessionalRecentPatientsView.as_view()),
     # ACS-13 — accès d'urgence « bris de glace » (404 tant que ECARNET_BREAK_GLASS_ENABLED est faux).
     path("professional/emergency-access/", ProfessionalEmergencyAccessListCreateView.as_view()),

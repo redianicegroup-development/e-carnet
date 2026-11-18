@@ -55,10 +55,34 @@ class IdentityOnboardingTests(TestCase):
 
     def test_patient_onboarding_completes_profile(self):
         self.client.post("/api/v1/identity/register/", {"email": "patient@example.test", "password": "a-long-local-password", "first_name": "A", "last_name": "B"}, format="json")
-        response = self.client.patch("/api/v1/identity/onboarding/patient/", {"phone": "+22500000000", "coverage_provider": "Couverture fictive", "birth_date": "", "coverage_expiry": ""}, format="json")
+        response = self.client.patch("/api/v1/identity/onboarding/patient/", {"phone": "+22500000000", "coverage_provider": "Couverture fictive", "birth_date": "1990-04-12", "coverage_expiry": ""}, format="json")
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.data["data"]["patient_profile"]["completed"])
         self.assertTrue(response.data["data"]["contexts"][0]["onboarding_completed"])
+
+    def test_patient_onboarding_requires_a_usable_phone_number(self):
+        # Décision du 16/11/2026 : le mode invité retrouve un patient sans téléphone par nom + naissance + numéro.
+        self.client.post("/api/v1/identity/register/", {"email": "nophone@example.test", "password": "a-long-local-password", "first_name": "A", "last_name": "B"}, format="json")
+        for phone in ("", "   ", "123", "abc"):
+            response = self.client.patch("/api/v1/identity/onboarding/patient/", {"phone": phone}, format="json")
+            self.assertEqual(response.status_code, 400, repr(phone))
+        accepted = self.client.patch("/api/v1/identity/onboarding/patient/", {"phone": "07 12 34 56 78"}, format="json")
+        self.assertEqual(accepted.status_code, 200)
+
+    def test_patient_onboarding_requires_a_real_birth_date(self):
+        self.client.post("/api/v1/identity/register/", {"email": "nobirth@example.test", "password": "a-long-local-password", "first_name": "A", "last_name": "B"}, format="json")
+        for birth_date in ("", None, "2999-01-01", "1800-01-01"):
+            response = self.client.patch("/api/v1/identity/onboarding/patient/", {"phone": "0712345678", "birth_date": birth_date}, format="json")
+            self.assertEqual(response.status_code, 400, repr(birth_date))
+        accepted = self.client.patch("/api/v1/identity/onboarding/patient/", {"phone": "0712345678", "birth_date": "1990-04-12"}, format="json")
+        self.assertEqual(accepted.status_code, 200)
+
+    def test_a_partial_update_that_does_not_mention_the_phone_leaves_it_alone(self):
+        self.client.post("/api/v1/identity/register/", {"email": "keep@example.test", "password": "a-long-local-password", "first_name": "A", "last_name": "B"}, format="json")
+        self.client.patch("/api/v1/identity/onboarding/patient/", {"phone": "0712345678"}, format="json")
+        response = self.client.patch("/api/v1/identity/onboarding/patient/", {"profession": "Couturière"}, format="json")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(User.objects.get(email="keep@example.test").patient_profile.phone, "0712345678")
 
 
 class RecoverySetupTests(TestCase):

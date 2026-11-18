@@ -1,22 +1,7 @@
-/* Profils d'enfants : liste, fiche et sélecteur de profil (carte « Compte patient », choix en consultation). Couleurs tirées du thème actif. */
+/* Profils d'enfants : sélecteur de profil (carte « Compte patient », choix en consultation). La liste et la fiche d'un profil viennent du composant « Profil » (ui/profile.css). Couleurs tirées du thème actif. */
 
-/* Liste « Mes profils » : une ligne cliquable par profil, qui ouvre sa fiche. */
-.profile-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
-.profile-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border: 1.5px solid color-mix(in srgb, var(--text) 78%, transparent); border-radius: 22px; background: var(--surface, var(--bg)); color: inherit; font: inherit; text-align: left; cursor: pointer; }
-.profile-row:not(:active):hover { box-shadow: var(--raise-sm, 0 8px 20px rgba(0, 0, 0, .08)); }
-.profile-row:focus-visible { outline: 3px solid var(--focus, #3b8f6f); outline-offset: 3px; }
-.profile-row__avatar, .profile-menu__avatar { display: grid; place-items: center; flex: none; width: 44px; height: 44px; border-radius: 50%; background: color-mix(in srgb, var(--primary) 46%, var(--surface, var(--bg))); color: var(--text); font-size: .85rem; font-weight: 800; letter-spacing: .02em; }
-.profile-row__text { display: grid; gap: 2px; min-width: 0; }
-.profile-row__text strong { overflow-wrap: anywhere; font-weight: 800; }
-.profile-row__text small { color: color-mix(in srgb, var(--text) 70%, transparent); font-size: .8rem; font-weight: 600; }
+.profile-menu__avatar { display: grid; place-items: center; flex: none; width: 44px; height: 44px; border-radius: 50%; background: color-mix(in srgb, var(--primary) 46%, var(--surface, var(--bg))); color: var(--text); font-size: .85rem; font-weight: 800; letter-spacing: .02em; }
 
-/* Fiche d'un profil : prénom, nom, identifiant, naissance, lien. */
-.profile-detail { display: grid; gap: 8px; width: 100%; margin: 0; }
-.profile-detail > div { display: grid; grid-template-columns: minmax(84px, auto) minmax(0, 1fr); gap: 12px; align-items: baseline; padding: 10px 14px; border-radius: 16px; background: color-mix(in srgb, var(--primary) 10%, var(--surface, var(--bg))); }
-.profile-detail dt { color: color-mix(in srgb, var(--text) 70%, transparent); font-size: .8rem; font-weight: 700; }
-.profile-detail dd { margin: 0; min-width: 0; font-weight: 700; overflow-wrap: anywhere; }
-.profile-detail code { font-size: .8rem; word-break: break-all; }
-.button.danger { border-color: var(--danger, #b3261e); color: var(--danger, #b3261e); }
 
 /* Flèche de la carte « Compte patient » : ouvre le choix du profil. */
 .profile-card__tag { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }

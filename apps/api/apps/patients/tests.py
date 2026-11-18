@@ -132,6 +132,22 @@ class PatientOwnedDataTests(TestCase):
     def declare(self, kind, label, details=""):
         return self.client.post("/api/v1/patient/declarations/", {"kind": kind, "label": label, "details": details}, format="json")
 
+    def test_public_emergency_card_does_not_reveal_that_other_kinds_of_declaration_exist(self):
+        # Patch 3 (18/11/2026) : intervention, implant et autre information médicale se déclarent pour être attestées par un établissement.
+        # La carte publique ne les affiche pas ; elle ne doit pas non plus laisser deviner leur existence (clés de provenance).
+        self.client.force_authenticate(self.a)
+        self.declare("allergy", "Pénicilline")
+        owner = PatientProfile.objects.get(user=self.a)
+        for kind, label in (("surgery", "Intervention fictive"), ("implant", "Implant fictif"), ("other_medical", "Information fictive"), ("antecedent", "Antécédent fictif")):
+            ClinicalDeclaration.objects.create(patient=owner, kind=kind, label=label)
+        self.client.patch("/api/v1/patient/emergency-card/", {"qr_enabled": True}, format="json")
+        token = self.client.get("/api/v1/patient/emergency-card/").data["data"]["qr_token"]
+        self.client.force_authenticate(None)
+        public = self.client.get(f"/api/v1/patient/emergency-card/qr/{token}/").data["data"]
+        self.assertEqual(set(public["declarations_provenance"]), {"allergy"})
+        self.assertNotIn("Implant fictif", str(public))
+        self.assertNotIn("Intervention fictive", str(public))
+
     def test_emergency_qr_is_static_reads_the_carnet_live_and_can_only_be_switched_off(self):
         self.client.force_authenticate(self.a)
         self.declare("blood_group", "AB+")

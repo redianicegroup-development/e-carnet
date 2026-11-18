@@ -21,7 +21,9 @@ test("laboratoire : « Profil » par administrateur, fiche (prénom, nom, e-mail
   const labs = read("src/components/EstablishmentLaboratories.tsx");
   assert.match(labs, />Profil<\/button>/);
   assert.match(labs, /function AdministratorProfile/);
-  for (const label of ["Prénom", "Nom", "E-mail \\(identifiant de connexion\\)", "Accès"]) assert.match(labs, new RegExp(`\\["${label}"`));
+  assert.match(labs, /<ProfileSheet\s+name=/, "la fiche vient du composant Profil commun");
+  for (const label of ["Prénom", "Nom", "E-mail \\(identifiant de connexion\\)", "Accès"]) assert.match(labs, new RegExp(`\\{ label: "${label}"`));
+  assert.match(labs, /label: "Révoquer", tone: "danger"/);
   assert.match(labs, /revokeLaboratoryAdministrator\(establishmentId, revokeTarget\.lab\.id, revokeTarget\.admin\.id, reason\)/);
   assert.match(read("src/application/lab-results.ts"), /administrators\/\$\{administratorId\}\/revoke\/`, \{ reason \}/);
 });

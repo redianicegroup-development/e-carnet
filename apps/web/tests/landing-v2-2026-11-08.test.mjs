@@ -176,7 +176,7 @@ test("retouches du 14/11/2026 : même fond crème entre le hero et le pied de pa
   // Section après le hero : image 13 (ordinateur) / 14 (mobile) via <picture>, mêmes 759 px que le hero.
   assert.match(read("src/components/landing2/ProblemSection.tsx"), /<source media="\(max-width: 759px\)" srcSet=\{PROBLEM_IMAGE\.mobileSrc\}/);
   // Trois étapes : mobile plein écran (100svh), légendes empilées, chrono lancé quand le parcours est à l'écran.
-  assert.match(css, /\.lp2-bleed#parcours \{min-height:calc\(100svh - var\(--pub-header-h, 58px\)\)/);
+  assert.match(css, /\.lp2-bleed#parcours \{min-height:calc\(100svh - var\(--pub-header-h, 0px\) - var\(--pub-bar-h, 0px\)\)/);
   const flow = read("src/components/landing2/FlowSection.tsx");
   assert.match(flow, /className="lp2-step-captions" aria-hidden="true"/);
   assert.match(flow, /\(!mobile \|\| visible\)/);

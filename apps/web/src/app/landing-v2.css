@@ -310,7 +310,7 @@
 /* Mobile : le parcours tient sur un écran plein. Étape 1, 2 ou 3 en haut (chrono sous chaque pastille), la légende de l'étape courante, puis son image en bas.
    Ordinateur et tablette : inchangés. */
 @media (max-width:759px) {
-  .lp2-bleed#parcours {min-height:calc(100svh - var(--pub-header-h, 58px)); display:flex; flex-direction:column; justify-content:center; box-sizing:border-box; padding-block:20px 8px}
+  .lp2-bleed#parcours {min-height:calc(100svh - var(--pub-header-h, 0px) - var(--pub-bar-h, 0px)); display:flex; flex-direction:column; justify-content:center; box-sizing:border-box; padding-block:20px 8px}
   .lp2-bleed#parcours .lp2-flow-wrap {flex:1; width:min(calc(100% - 32px), 1180px); display:flex; flex-direction:column; min-height:0}
   .lp2-bleed#parcours .lp2-head {margin-bottom:12px}
   .lp2-bleed#parcours .lp2-head h2 {font-size:clamp(1.45rem, 6.6vw, 1.85rem)}

@@ -1,13 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { useCallback, useEffect, useState } from "react";
 import { ApiError } from "../infrastructure/api/client";
 import { createLaboratory, isLabFeatureOff, listLaboratories, revokeLaboratoryAdministrator, type CreatedLab, type EstablishmentLab, type LabAdministrator } from "../application/lab-results";
 import { accessMessage, loginUrlFor } from "../lib/share";
 import { ShareCodeButton } from "./ShareCodeButton";
-import { GooLayer } from "./ui/GooLayer";
-import { useDialogBehavior } from "./modal/useDialogBehavior";
+import { ProfileSheet, type ProfileRow } from "./ui/ProfileSheet";
 import { RevocationReasonDialog } from "./modal/RevocationReasonDialog";
 import "./lab-results.css";
 
@@ -20,33 +18,16 @@ const ACCESS_LABEL: Record<string, string> = { temporary_password: "Mot de passe
 
 type ProfileTarget = { lab: EstablishmentLab; admin: LabAdministrator };
 
-/* Fiche « Profil » d'un administrateur du laboratoire : prénom, nom, e-mail, état de l'accès. L'établissement peut y révoquer l'accès (avec motif). */
+/* Fiche « Profil » d'un administrateur du laboratoire : prénom, nom, e-mail, état de l'accès. L'établissement peut y révoquer l'accès (avec motif).
+   Même fiche que partout ailleurs (ProfileSheet) : les boutons d'action restent en bas. */
 function AdministratorProfile({ admin, onClose, onRevoke }: { admin: LabAdministrator; onClose: () => void; onRevoke: () => void }) {
-  const dialog = useRef<HTMLElement>(null);
-  const closeButton = useRef<HTMLButtonElement>(null);
-  const titleId = useId();
-  useDialogBehavior({ open: true, container: dialog, initialFocus: closeButton, onEscape: onClose });
-  const rows: [string, string][] = [
-    ["Prénom", admin.first_name || "Non renseigné"],
-    ["Nom", admin.last_name || "Non renseigné"],
-    ["E-mail (identifiant de connexion)", admin.email],
-    ["Accès", admin.access ? ACCESS_LABEL[admin.access.state] ?? admin.access.state : "Compte activé"],
+  const rows: ProfileRow[] = [
+    { label: "Prénom", value: admin.first_name || "Non renseigné" },
+    { label: "Nom", value: admin.last_name || "Non renseigné" },
+    { label: "E-mail (identifiant de connexion)", value: admin.email },
+    { label: "Accès", value: admin.access ? ACCESS_LABEL[admin.access.state] ?? admin.access.state : "Compte activé" },
   ];
-  if (typeof document === "undefined") return null;
-  return createPortal(
-    <div className="modal-backdrop modal-backdrop--confirm" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <section ref={dialog} className="modal-dialog team-detail" role="dialog" aria-modal="true" aria-labelledby={titleId}>
-        <h2 id={titleId}>Profil de l’administrateur</h2>
-        <dl className="team-detail__list">{rows.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
-        <div className="modal-actions">
-          <button ref={closeButton} type="button" className="button" onClick={onClose}>Fermer</button>
-          <button type="button" className="button primary danger" onClick={onRevoke}>Révoquer</button>
-        </div>
-      </section>
-      <GooLayer target={dialog} />
-    </div>,
-    document.body,
-  );
+  return <ProfileSheet name={admin.name || "Administrateur"} subtitle="Administrateur du laboratoire" rows={rows} onClose={onClose} actions={[{ label: "Révoquer", tone: "danger", onClick: () => onRevoke() }]} />;
 }
 
 export function EstablishmentLaboratories({ establishmentId }: { establishmentId: string }) {

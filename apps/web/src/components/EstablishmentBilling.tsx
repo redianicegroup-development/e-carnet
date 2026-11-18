@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ApiError, apiGet, apiPost } from "../infrastructure/api/client";
 import { formatDay, formatWhen } from "./access/access-history";
+import { Icon } from "./ui/Icon";
 import "./billing.css";
 
 type Offer = { code: string; name: string; price_fcfa: number | null; capacity_label: string; max_practitioners: number | null; self_service: boolean; includes: string[] };
@@ -22,6 +23,16 @@ export const INVOICE_BADGE: Record<InvoiceRow["status"], string> = { paid: "veri
 export const INVOICE_LABEL: Record<InvoiceRow["status"], string> = { paid: "Payée", pending: "En attente", overdue: "En retard", void: "Annulée" };
 export const EVENT_LABEL: Record<string, string> = { subscribed: "Souscription", plan_changed: "Changement d’offre", invoice_issued: "Facture émise", payment_confirmed: "Paiement confirmé", past_due: "Facture en retard", unpaid: "Facture impayée", suspended: "Accès suspendu", reactivated: "Accès rétabli", cancelled: "Souscription annulée", invoice_void: "Facture annulée" };
 const SUB_BADGE: Record<string, string> = { active: "verified", pending_payment: "declared", past_due: "contested", unpaid: "contested", suspended: "contested", cancelled: "expired" };
+
+/* Cartes de tarifs : ce que l'offre contient (coches) et, pour donner envie sans rien promettre de faux, ce que la seule offre du dessus ajoute (croix).
+   Les lignes viennent de l'API : on n'invente aucune fonctionnalité. « Toute l'offre X » n'est pas une fonctionnalité, on ne la compte pas comme manquante. */
+const MAX_MISSING = 3;
+export function missingFeatures(offers: Offer[], index: number): string[] {
+  const own = new Set(offers[index].includes);
+  const next = offers[index + 1];
+  return next ? next.includes.filter((line) => !own.has(line) && !/^toute l[’']offre/i.test(line)).slice(0, MAX_MISSING) : [];
+}
+const amountLabel = (value: number) => new Intl.NumberFormat("fr-FR").format(value);
 
 /* Paramètres de l'établissement → Facturation. Le patient ne paie jamais. Le navigateur ne déclare jamais une facture payée :
    « Régler » donne les instructions et la référence, la confirmation vient du serveur (équipe ou prestataire de paiement). */
@@ -80,17 +91,27 @@ export function EstablishmentBilling({ establishmentId }: { establishmentId: str
       <section className="stack" aria-labelledby="billing-offers">
         <h3 id="billing-offers">Offres</h3>
         <div className="billing__offers">
-          {data.offers.map((offer) => {
+          {data.offers.map((offer, index) => {
             const current = subscription?.offer_code === offer.code && !subscription.next_offer_code && subscription.status !== "cancelled";
+            const upcoming = pendingChange?.code === offer.code;
+            const missing = missingFeatures(data.offers, index);
             return (
-              <article key={offer.code} className="card billing__offer" data-current={current}>
-                <h4>{offer.name}</h4>
-                <p className="billing__price">{offer.price_fcfa === null ? "Sur devis" : `${fcfa(offer.price_fcfa)} / mois`}</p>
-                <p className="muted">{offer.capacity_label}</p>
-                <ul>{offer.includes.map((line) => <li key={line}>{line}</li>)}</ul>
-                {!offer.self_service ? <p className="muted">Contactez l’équipe Mon E‑Carnet pour un devis.</p>
-                  : current ? <button type="button" className="button" disabled>Offre actuelle</button>
-                  : <button type="button" className="button primary" onClick={() => { setChoice(offer); setInstructions(null); }}>Choisir cette offre</button>}
+              <article key={offer.code} className="billing__offer" data-tone={index % 3} data-current={current}>
+                {(current || upcoming) && <span className="billing__sticker">{current ? "Offre actuelle" : "Prochaine période"}</span>}
+                <header className="billing__offer-head">
+                  <h4>{offer.name}</h4>
+                  <p className="billing__capacity">{offer.capacity_label}</p>
+                </header>
+                <p className="billing__price">
+                  {offer.price_fcfa === null ? <strong className="billing__amount billing__amount--quote">Sur devis</strong> : <><strong className="billing__amount">{amountLabel(offer.price_fcfa)}</strong><span className="billing__unit">FCFA / mois</span></>}
+                </p>
+                <ul className="billing__features" aria-label={`Ce que contient l’offre ${offer.name}`}>
+                  {offer.includes.map((line) => <li key={line} data-included="true"><Icon name="check" size={18} /><span>{line}</span></li>)}
+                  {missing.map((line) => <li key={line} data-included="false"><Icon name="close" size={18} /><span><span className="sr-only">Non inclus : </span>{line}</span></li>)}
+                </ul>
+                {!offer.self_service ? <p className="billing__quote">Contactez l’équipe Mon E‑Carnet pour un devis.</p>
+                  : current ? <button type="button" className="billing__cta" disabled>Offre actuelle</button>
+                  : <button type="button" className="billing__cta billing__cta--primary" onClick={() => { setChoice(offer); setInstructions(null); }}>Choisir cette offre</button>}
               </article>
             );
           })}

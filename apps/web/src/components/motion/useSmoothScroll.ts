@@ -12,6 +12,12 @@ const OVERLAYS = ".modal-backdrop, .feedback-backdrop, .product-survey-backdrop,
 /** Hauteur de l'en-tête collant, qui sert à épingler le hero juste en dessous. Les ancres (#contact…) s'arrêtent sous l'en-tête grâce au scroll-margin-top des sections (landing-showcase.css). */
 export const stickyHeaderHeight = () => document.querySelector<HTMLElement>(".pub-header")?.offsetHeight ?? 0;
 
+/** Bas de la barre fixe du logo (bandeau hors connexion compris), en pixels depuis le haut de l'écran : les ancres s'arrêtent juste dessous. */
+export const topBarBottom = () => {
+  const brand = document.querySelector<HTMLElement>(".pub-header .brand");
+  return brand ? Math.round(brand.getBoundingClientRect().bottom) + 12 : stickyHeaderHeight();
+};
+
 /* Défilement fluide (Lenis) synchronisé avec ScrollTrigger. Désactivé si l'utilisateur demande moins de mouvement.
    Lenis ne lisse que la molette/trackpad : le tactile (mobile) reste natif, donc léger sur les téléphones modestes.
    Renvoie l'instance (null tant qu'elle n'existe pas, ou si le mouvement est réduit) pour les déplacements programmés. */

@@ -1,0 +1,24 @@
+/* Mode invité : saisie, comparaison du profil avec la personne présente, début de consultation. Réutilise les champs et boutons existants. */
+.guest-access { display: grid; gap: 14px; }
+.guest-access__fields { display: grid; gap: 12px; }
+.guest-access__compare { display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 18px; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(31, 61, 52, 0.14); }
+.guest-access__compare strong { display: block; font-size: 1.15rem; }
+.guest-access__actions { display: grid; gap: 10px; }
+.guest-access__actions .button { min-height: 44px; }
+@media (min-width: 640px) {
+  .guest-access__fields { grid-template-columns: 1fr 1fr; }
+  .guest-access__actions { grid-template-columns: 1fr 1fr; }
+}
+
+/* En-tête du panneau patient, entrée « Mode invité » à côté de l'étape 1, consultations en attente, relecture côté médecin. */
+.guest-access__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.guest-access__head h3 { margin: 0; }
+.flow-step-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.guest-waiting { display: grid; gap: 8px; }
+.guest-waiting small { display: block; }
+.guest-confirm { display: grid; gap: 12px; }
+.guest-confirm__item { display: grid; gap: 10px; padding: 12px; border-radius: 18px; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(31, 61, 52, 0.14); }
+.guest-confirm__item[aria-current="true"] { border-color: rgba(31, 61, 52, 0.5); }
+.guest-confirm__who { display: flex; align-items: center; gap: 12px; }
+.guest-confirm__who small { display: block; }
+.guest-review { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }

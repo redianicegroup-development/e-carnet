@@ -1,12 +1,12 @@
 "use client";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { apiGet, apiPost } from "../infrastructure/api/client";
 import type { ConsultationRecord } from "../lib/care-records";
 import { ConsultationCard } from "./consultation/ConsultationCard";
 import "./consultation/consultation-card.css";
 import { PageHeader } from "./ui/PageHeader";
 import { AvatarBadge } from "./shell/SpaceShell";
-import { useDialogBehavior } from "./modal/useDialogBehavior";
+import { ProfileSheet, type ProfileRow } from "./ui/ProfileSheet";
 import "./join-codes.css";
 import "./establishment-patient-records.css";
 type Establishment = { id: string; name: string; status: string };
@@ -38,30 +38,23 @@ function fieldValue(value: unknown) { return typeof value === "string" && ISO_DA
 function PatientAvatar({ patient, size = 64 }: { patient: Patient; size?: number }) {
   return <AvatarBadge size={size} account={{ first_name: patient.first_name ?? "", last_name: patient.last_name ?? "", email: "", avatar_url: patient.avatar_url ?? "" }} />;
 }
-/* Fiche simple du patient : identité et dernier soin. Le contenu du dossier n'apparaît qu'après le choix d'un motif (étape suivante). */
+/* Fiche simple du patient : identité et dernier soin. Le contenu du dossier n'apparaît qu'après le choix d'un motif (étape suivante).
+   Même fiche que partout ailleurs (ProfileSheet) : « Voir le dossier » est en bas, avec « Fermer ». */
 function PatientDetail({ patient, onClose, onOpen }: { patient: Patient; onClose: () => void; onOpen: () => void }) {
-  const dialog = useRef<HTMLElement>(null);
-  const closeButton = useRef<HTMLButtonElement>(null);
-  const titleId = useId();
-  useDialogBehavior({ open: true, container: dialog, initialFocus: closeButton, onEscape: onClose });
-  const rows: [string, string][] = [
-    ["Nom", patient.last_name || "Non renseigné"],
-    ["Prénoms", patient.first_name || "Non renseigné"],
-    ["Âge", typeof patient.age === "number" ? `${patient.age} an${patient.age > 1 ? "s" : ""}` : "Non renseigné"],
-    ["Dernier soin", formatDate(patient.last_service_at)],
+  const rows: ProfileRow[] = [
+    { label: "Nom", value: patient.last_name || "Non renseigné" },
+    { label: "Prénoms", value: patient.first_name || "Non renseigné" },
+    { label: "Âge", value: typeof patient.age === "number" ? `${patient.age} an${patient.age > 1 ? "s" : ""}` : "Non renseigné" },
+    { label: "Dernier soin", value: formatDate(patient.last_service_at) },
   ];
-  return <div className="modal-backdrop modal-backdrop--confirm" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-    <section ref={dialog} className="modal-dialog team-detail" role="dialog" aria-modal="true" aria-labelledby={titleId}>
-      <PatientAvatar patient={patient} size={84} />
-      <h2 id={titleId}>{[patient.first_name, patient.last_name].filter(Boolean).join(" ") || "Patient sans nom"}</h2>
-      <dl className="team-detail__list">{rows.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
-      <p className="muted">Le contenu du dossier s’affiche après le choix d’un motif. Chaque ouverture est notifiée au patient.</p>
-      <div className="modal-actions">
-        <button ref={closeButton} type="button" className="button" onClick={onClose}>Fermer</button>
-        <button type="button" className="button primary" onClick={onOpen}>Voir le dossier</button>
-      </div>
-    </section>
-  </div>;
+  return <ProfileSheet
+    name={[patient.first_name, patient.last_name].filter(Boolean).join(" ") || "Patient sans nom"}
+    avatar={(size) => <PatientAvatar patient={patient} size={size} />}
+    rows={rows}
+    note="Le contenu du dossier s’affiche après le choix d’un motif. Chaque ouverture est notifiée au patient."
+    onClose={onClose}
+    actions={[{ label: "Voir le dossier", tone: "primary", onClick: () => onOpen() }]}
+  />;
 }
 function reasonLabel(value: string) { return REASONS.find(([key]) => key === value)?.[1] ?? "Motif enregistré"; }
 /** Une ligne « consultation » complète (le serveur renvoie le même contenu qu'au patient) ; sinon l'affichage générique reste en place. */
