@@ -338,11 +338,11 @@ test("admin : les nouveaux retours sont annoncés dans la navigation et les indi
 });
 
 test("scanner le QR ouvre aussi la lecture seule des documents : plus de case à cocher, le patient voit ce périmètre dans son accès et l’ouverture est immédiate (08/11/2026)", () => {
-  const professional = read("src/components/ProfessionalAccessGrants.tsx");
+  const professional = read("src/components/ProfessionalAccessGrants.tsx") + read("src/components/ProfessionalGrantDetail.tsx");
   const patient = read("src/components/PatientAccessGrants.tsx");
   assert.doesNotMatch(professional, /includeDocuments|type="checkbox"/);
   assert.match(professional, /requestProfessionalGrant\(\["preconsultation", "declarations", "documents"\]/);
-  assert.match(professional, /Documents médicaux \(lecture seule\)/);
+  assert.match(professional, /scopeText\(item\.scope\)/, "la fiche de la demande affiche le périmètre (libellés d'access-history)");
   assert.match(read("src/components/access/access-history.ts"), /documents: "Documents médicaux \(lecture seule\)"/);
   assert.match(patient, /SCOPE_LABELS\[scope\]/);
   // Règle du 08/11/2026 : présenter son QR vaut accord, plus d'envoi de demande à valider côté professionnel.

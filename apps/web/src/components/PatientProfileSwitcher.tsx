@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
+import { createPortal } from "react-dom";
 import { CHILD_LABEL, HOLDER_LABEL, profileInitials, profileName, selectProfile, type PatientProfileEntry } from "../lib/patient-profiles";
 import { Icon } from "./ui/Icon";
 import "./patient-profiles.css";
@@ -12,32 +13,43 @@ export function PatientProfileSwitcher({ holderName, holderInitials, profiles, a
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const root = useRef<HTMLSpanElement>(null);
+  const menu = useRef<HTMLUListElement>(null);
+  const [placed, setPlace] = useState<{ top: number; left: number; width: number } | null>(null);
+  const ready = placed !== null;
   const button = useRef<HTMLButtonElement>(null);
   const menuId = useId();
 
-  // Le menu est ancré à gauche de la pastille : sur un petit écran il déborderait à droite, on le ramène dans la fenêtre (marge de 16 px).
+  // Le menu est posé dans <body>, en position fixe, sous la flèche : aucune carte ni fenêtre parente ne peut le rogner ni le faire déborder. Sa position
+  // est calculée dans la fenêtre visible : même largeur que prévu, au plus 320 px, toujours à 16 px au moins des bords gauche et droit.
   useLayoutEffect(() => {
     if (!open) return;
-    const menu = root.current?.querySelector<HTMLElement>(".profile-menu");
-    if (!menu) return;
-    menu.style.left = "0px";
-    const overflow = menu.getBoundingClientRect().right - (window.innerWidth - 16);
-    if (overflow > 0) menu.style.left = `${-overflow}px`;
+    const place = () => {
+      const anchor = button.current?.getBoundingClientRect();
+      if (!anchor) return;
+      const viewport = Math.min(window.innerWidth, window.visualViewport?.width ?? window.innerWidth);
+      const width = Math.max(220, Math.min(320, viewport - 32));
+      setPlace({ top: anchor.bottom + 8, left: Math.max(16, Math.min(anchor.left, viewport - width - 16)), width });
+    };
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- la position se mesure dans le DOM, après l'affichage de la flèche
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => { window.removeEventListener("resize", place); window.removeEventListener("scroll", place, true); };
   }, [open]);
 
   useEffect(() => {
     if (!open) return;
-    const items = () => Array.from(root.current?.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]') ?? []);
+    const items = () => Array.from(menu.current?.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]') ?? []);
     (items().find((item) => item.getAttribute("aria-checked") === "true") ?? items()[0])?.focus();
-    const onPointerDown = (event: PointerEvent) => { if (!root.current?.contains(event.target as Node)) setOpen(false); };
+    const onPointerDown = (event: PointerEvent) => { const target = event.target as Node; if (!root.current?.contains(target) && !menu.current?.contains(target)) setOpen(false); };
     document.addEventListener("pointerdown", onPointerDown);
     return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, [open]);
+  }, [open, ready]);
 
   function onKeyDown(event: KeyboardEvent<HTMLElement>) {
     if (event.key === "Escape") { event.stopPropagation(); setOpen(false); button.current?.focus(); return; }
     if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
-    const items = Array.from(root.current?.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]') ?? []);
+    const items = Array.from(menu.current?.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]') ?? []);
     const current = items.indexOf(document.activeElement as HTMLButtonElement);
     const next = event.key === "ArrowDown" ? (current + 1) % items.length : (current - 1 + items.length) % items.length;
     event.preventDefault();
@@ -63,8 +75,8 @@ export function PatientProfileSwitcher({ holderName, holderInitials, profiles, a
       <button ref={button} type="button" className="profile-switch__button" aria-label="Changer de profil" aria-haspopup="menu" aria-expanded={open} aria-controls={open ? menuId : undefined} onClick={() => setOpen((value) => !value)}>
         <Icon name="chevron" size={16} />
       </button>
-      {open && (
-        <ul id={menuId} className="profile-menu" role="menu" aria-label="Profils du compte">
+      {open && placed && typeof document !== "undefined" && createPortal(
+        <ul ref={menu} id={menuId} className="profile-menu" role="menu" aria-label="Profils du compte" style={{ top: placed.top, left: placed.left, width: placed.width }}>
           <li role="none">
             <button type="button" role="menuitemradio" aria-checked={!active} className="profile-menu__item" disabled={busy} onClick={() => void choose(null)}>
               <span className="profile-menu__avatar" aria-hidden="true">{holderInitials}</span>
@@ -81,7 +93,8 @@ export function PatientProfileSwitcher({ holderName, holderInitials, profiles, a
               </button>
             </li>
           ))}
-        </ul>
+        </ul>,
+        document.body,
       )}
     </span>
   );

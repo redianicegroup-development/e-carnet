@@ -52,10 +52,12 @@ test("aucun contenu en dur n'a de promesse écartée par la revue juridique", ()
   for (const file of readdirSync(dir)) assert.doesNotMatch(readFileSync(new URL(file, dir), "utf8"), banned, file);
 });
 
-test("les boutons d'inscription de la landing sont « Commencer » vers /connexion, suivis comme inscription", () => {
+test("les boutons d'inscription de la landing sont « S’inscrire gratuitement » vers /connexion?mode=register, suivis comme inscription (19/11/2026)", () => {
   const roleCta = read("src/components/landing2/RoleCta.tsx");
   assert.match(roleCta, /data-track=\{cta\.track\}/);
-  assert.match(read("src/lib/landing-content.ts"), /cta: \{ href: "\/connexion", text: "Commencer", track: "signup" \}/);
+  assert.match(read("src/lib/landing-content.ts"), /cta: \{ href: "\/connexion\?mode=register", text: "S’inscrire gratuitement", track: "signup" \}/);
+  assert.match(read("src/lib/landing-content.ts"), /primary: \{ href: "\/connexion\?mode=register", label: "S’inscrire gratuitement" \}/, "bouton principal du héro");
+  assert.doesNotMatch(read("src/lib/landing-content.ts"), /"Commencer"/, "plus aucun bouton « Commencer » sur la landing");
 });
 
 test("le parcours en trois étapes est accessible : onglets, flèches, pause, animation réduite", () => {

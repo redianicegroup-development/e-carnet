@@ -21,6 +21,9 @@ class PatientProfile(models.Model):
     coverage_provider = models.CharField(max_length=160, blank=True)
     coverage_number = models.CharField(max_length=80, blank=True)
     coverage_expiry = models.DateField(null=True, blank=True)
+    # Photo de profil d'un enfant représenté (un titulaire garde la sienne sur son compte) : voir apps/patients/avatars.py.
+    avatar_url = models.URLField(max_length=500, blank=True)
+    avatar_data = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

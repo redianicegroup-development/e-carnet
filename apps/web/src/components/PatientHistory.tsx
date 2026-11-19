@@ -21,10 +21,11 @@ export function PatientHistory() {
     <div className="stack-lg">
       <PageHeader title="Tout ce qui s’est passé" lead="Consultations, vaccins, mesures et accès donnés à vos données." />
       <div className="section-grid" id="acces">
+        {/* Les tuiles d'abord, puis « Mes consultations » (toujours dépliée) : décision du 19/11/2026. */}
         <CollapsibleSection key={openAccess ? "acces-ouvert" : "acces-ferme"} title="Accès à mes données" solo icon="eye" hint="Qui, quand, combien de temps" initiallyOpen={openAccess}><PatientAccessGrants part="log" /></CollapsibleSection>
-        <CollapsibleSection title="Mes consultations" solo alwaysOpen icon="stethoscope" hint="À venir, passées, pré-consultations"><PatientConsultations /></CollapsibleSection>
         <CollapsibleSection title="Mes vaccins" solo icon="drop" hint="Déclarés et confirmés"><Vaccinations /></CollapsibleSection>
         <CollapsibleSection title="Mes mesures de santé" icon="chart" hint="Évolution dans le temps"><HealthMeasurements /></CollapsibleSection>
+        <CollapsibleSection title="Mes consultations" solo alwaysOpen icon="stethoscope" hint="À venir, passées, pré-consultations"><PatientConsultations /></CollapsibleSection>
       </div>
     </div>
   );

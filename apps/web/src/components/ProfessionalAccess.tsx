@@ -9,25 +9,16 @@ import { OutcomeDialog, type OutcomeDialogProps } from "./modal/OutcomeDialog";
 import { CODE_ERROR_FALLBACK, errorReason, joinRequestSentCopy } from "../lib/access-outcome";
 import { PageHeader } from "./ui/PageHeader";
 import { CollapsibleSection } from "./ui/CollapsibleSection";
-import { EstablishmentLogo } from "./EstablishmentLogo";
-import { ProfessionalMembershipDetail } from "./ProfessionalMembershipDetail";
-import "./ui/profile-detail.css";
+import { Profile, ProfileGrid } from "./ui/Profile";
+import type { ProfileAction } from "./ui/ProfileSheet";
+import { membershipProfile } from "./ProfessionalMembershipDetail";
 import "./establishment-logo.css";
-
-const STATUS: Record<Membership["status"], { label: string; css: string }> = {
-  pending: { label: "En attente de l’établissement", css: "pending" },
-  active: { label: "Rattachement actif", css: "active" },
-  refused: { label: "Refusé", css: "refused" },
-  suspended: { label: "Suspendu", css: "suspended" },
-  terminated: { label: "Terminé", css: "suspended" },
-};
 
 export function ProfessionalAccess() {
   const state = useProfessionalProfile();
   const [code, setCode] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
-  const [detail, setDetail] = useState<Membership | null>(null);
   const [agreementAccepted, setAgreementAccepted] = useState(false);
   const [outcome, setOutcome] = useState<Omit<OutcomeDialogProps, "onClose"> | null>(null);
   const confirm = useConfirm();
@@ -37,10 +28,30 @@ export function ProfessionalAccess() {
   if (state.status === "missing") return <section className="card gate"><h2>Complétez d’abord votre profil</h2><p className="muted">Le rattachement à un établissement demande un profil professionnel.</p><div className="actions"><a className="button primary" href="/professionnel/onboarding">Compléter mon profil</a></div></section>;
 
   const { profile, reload } = state;
-  async function run(action: () => Promise<unknown>, done: string) {
-    setBusy(true);
-    setMessage("");
-    try { await action(); setMessage(done); reload(); window.dispatchEvent(new Event("ecarnet:professional-updated")); } catch (error) { setMessage(error instanceof Error ? error.message : "Action impossible."); } finally { setBusy(false); }
+  /* Action d'une fiche de rattachement : en cas d'erreur elle est relancée, et la fiche affiche le motif. */
+  async function perform(action: () => Promise<unknown>, done: { title: string; message: string }) {
+    await action();
+    setOutcome({ tone: "success", ...done });
+    reload();
+    window.dispatchEvent(new Event("ecarnet:professional-updated"));
+  }
+  function membershipActions(membership: Membership, isActive: boolean): ProfileAction[] {
+    const actions: ProfileAction[] = [];
+    if (membership.status === "active" && !isActive) {
+      actions.push({ label: "Définir comme établissement actif", tone: "primary", onClick: async ({ close }) => {
+        await perform(() => apiPost("/api/v1/establishments/active/", { establishment_id: membership.establishment_id }), { title: "Établissement actif", message: `${membership.establishment_name} est maintenant votre établissement actif pour les consultations.` });
+        close();
+      } });
+    }
+    if (membership.status === "active") {
+      actions.push({ label: "Mettre fin à mon rattachement", tone: "danger", onClick: async ({ close }) => {
+        const ok = await confirm({ title: "Mettre fin à ce rattachement ?", message: "Vos accès cliniques futurs à cet établissement seront bloqués.", note: "Les consultations et l’historique existants ne sont pas supprimés.", confirmLabel: "Mettre fin au rattachement", cancelLabel: "Garder le rattachement", tone: "danger", mood: "farewell" });
+        if (!ok) return;
+        await perform(() => apiPost(`/api/v1/establishments/${membership.establishment_id}/memberships/leave/`, {}), { title: "Rattachement terminé", message: "L’historique et les dossiers existants restent conservés." });
+        close();
+      } });
+    }
+    return actions;
   }
 
   /* Saisie du code médecin. Succès : la demande est envoyée à l'établissement, qui doit la confirmer (ce n'est pas encore un accès accordé).
@@ -82,36 +93,16 @@ export function ProfessionalAccess() {
       <div className="section-grid">
       <CollapsibleSection title="Mes rattachements" initiallyOpen icon="building" hint="Établissements">
         {profile.memberships.length === 0 ? <p className="empty">Aucun rattachement pour le moment. Saisissez le code remis par votre établissement.</p> : (
-          <div className="stack">
+          <ProfileGrid label="Mes rattachements">
             {profile.memberships.map((membership) => {
               const isActive = membership.establishment_id === profile.active_establishment;
-              return (
-                <article className="record membership-row" key={membership.id}>
-                  <div className="membership-row__who">
-                    <button type="button" className="avatar-button" aria-label={`Voir la fiche de ${membership.establishment_name}`} onClick={() => setDetail(membership)}><EstablishmentLogo logo={membership.establishment_logo} name={membership.establishment_name} /></button>
-                    <div>
-                      <strong>{membership.establishment_name}</strong>
-                      <p className="muted">{membership.city}</p>
-                      {membership.status === "terminated" && membership.terminated_by_establishment && membership.termination_reason && <p className="muted">Rattachement retiré par l’établissement. Motif : {membership.termination_reason}</p>}
-                      {membership.status === "active" && !isActive && profile.memberships.filter((entry) => entry.status === "active").length > 1 && <p className="muted">Un seul établissement est actif à la fois pour les consultations.</p>}
-                      <div className="actions">
-                        {membership.status === "active" && !isActive && <button type="button" className="button small primary" disabled={busy} onClick={() => void run(() => apiPost("/api/v1/establishments/active/", { establishment_id: membership.establishment_id }), `${membership.establishment_name} est maintenant votre établissement actif pour les consultations.`)}>Définir comme établissement actif</button>}
-                        {membership.status === "active" && <button type="button" className="button small primary danger" disabled={busy} onClick={() => { void confirm({ title: "Mettre fin à ce rattachement ?", message: "Vos accès cliniques futurs à cet établissement seront bloqués.", note: "Les consultations et l’historique existants ne sont pas supprimés.", confirmLabel: "Mettre fin au rattachement", cancelLabel: "Garder le rattachement", tone: "danger", mood: "farewell" }).then((ok) => { if (ok) void run(() => apiPost(`/api/v1/establishments/${membership.establishment_id}/memberships/leave/`, {}), "Rattachement terminé. L’historique et les dossiers existants restent conservés."); }); }}>Mettre fin à mon rattachement</button>}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="membership-row__status">
-                    <span className={`badge ${STATUS[membership.status].css}`}>{STATUS[membership.status].label}</span>
-                    {isActive && <span className="badge verified">Établissement actif</span>}
-                  </div>
-                </article>
-              );
+              const severalActive = profile.memberships.filter((entry) => entry.status === "active").length > 1;
+              return <Profile key={membership.id} {...membershipProfile(membership, { isActive, severalActive })} actions={membershipActions(membership, isActive)} />;
             })}
-          </div>
+          </ProfileGrid>
         )}
       </CollapsibleSection>
       </div>
-      {detail && <ProfessionalMembershipDetail membership={detail} onClose={() => setDetail(null)} />}
     </div>
   );
 }

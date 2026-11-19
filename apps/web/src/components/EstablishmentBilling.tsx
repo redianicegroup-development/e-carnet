@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ApiError, apiGet, apiPost } from "../infrastructure/api/client";
 import { formatDay, formatWhen } from "./access/access-history";
 import { Icon } from "./ui/Icon";
+import { quoteRequestHref } from "../lib/quote-request";
 import "./billing.css";
 
 type Offer = { code: string; name: string; price_fcfa: number | null; capacity_label: string; max_practitioners: number | null; self_service: boolean; includes: string[] };
@@ -109,7 +110,7 @@ export function EstablishmentBilling({ establishmentId }: { establishmentId: str
                   {offer.includes.map((line) => <li key={line} data-included="true"><Icon name="check" size={18} /><span>{line}</span></li>)}
                   {missing.map((line) => <li key={line} data-included="false"><Icon name="close" size={18} /><span><span className="sr-only">Non inclus : </span>{line}</span></li>)}
                 </ul>
-                {!offer.self_service ? <p className="billing__quote">Contactez l’équipe Mon E‑Carnet pour un devis.</p>
+                {!offer.self_service ? <div className="billing__quote"><p>Contactez l’équipe Mon E‑Carnet pour un devis.</p><a className="billing__cta billing__cta--primary" href={quoteRequestHref({ establishmentName: data.establishment.name, offerName: offer.name, practitioners: data.practitioners })}>Demander un devis</a></div>
                   : current ? <button type="button" className="billing__cta" disabled>Offre actuelle</button>
                   : <button type="button" className="billing__cta billing__cta--primary" onClick={() => { setChoice(offer); setInstructions(null); }}>Choisir cette offre</button>}
               </article>

@@ -7,16 +7,14 @@ import { endProfessionalGrant, listProfessionalGrants, ProfessionalGrant, reques
 import { useConfirm } from "./modal/ConfirmProvider";
 import { formatClock, formatWhen, timeLeft } from "./access/access-history";
 import { QrScanner } from "./QrScanner";
-import { PersonAvatar } from "./ui/PersonAvatar";
-import { ProfessionalGrantDetail } from "./ProfessionalGrantDetail";
+import { Profile, ProfileGrid } from "./ui/Profile";
+import type { ProfileAction } from "./ui/ProfileSheet";
+import { grantProfile } from "./ProfessionalGrantDetail";
 import "./ui/profile-detail.css";
-import { EstablishmentLogo } from "./EstablishmentLogo";
 import "./establishment-logo.css";
 import "./consultation-flow.css";
 
 const MOCK_GRANTS: ProfessionalGrant[] = [];
-const STATUS_LABELS: Record<string, string> = { pending: "En attente du patient", active: "Accès ouvert", refused: "Refusé", expired: "Expiré", revoked: "Révoqué" };
-const SCOPE_LABELS: Record<string, string> = { preconsultation: "Pré-consultation", declarations: "Déclarations", consultations: "Consultations", documents: "Documents médicaux (lecture seule)" };
 /** Le scan réussi mène droit à la consultation du patient : la page « Suivi » ouvre son dossier à partir de ce paramètre. */
 const CONSULTATION_PATH = "/professionnel/consultations";
 
@@ -35,12 +33,10 @@ export function ProfessionalAccessGrants() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("Chargement de vos demandes…");
-  const [endingId, setEndingId] = useState<string | null>(null);
   const confirm = useConfirm();
   const router = useRouter();
   const opening = useRef(false);
   const [formError, setFormError] = useState("");
-  const [detail, setDetail] = useState<ProfessionalGrant | null>(null);
 
   // Le bouton principal de la barre de navigation (« Scanner ») arrive ici avec #scanner : la caméra démarre et le formulaire passe au premier plan.
   useEffect(() => {
@@ -106,20 +102,17 @@ export function ProfessionalAccessGrants() {
     void openAccess(token);
   }
 
-  /** Fin de consultation : libère le patient pour un autre professionnel sans attendre l'expiration des 2 h. */
-  async function endGrant(item: ProfessionalGrant) {
-    const ok = await confirm({ title: "Terminer l’accès à ce patient ?", message: `Vous ne pourrez plus consulter le carnet de ${item.patient_name || "ce patient"}. Le patient pourra se connecter à un autre professionnel.`, note: "Pour revenir, le patient devra présenter un nouveau QR.", confirmLabel: "Terminer l’accès", cancelLabel: "Garder l’accès", tone: "danger", mood: "question" });
-    if (!ok) return;
-    setEndingId(item.id);
-    try {
+  /** Fin de consultation : libère le patient pour un autre professionnel sans attendre l'expiration des 2 h. Action de la fiche : une erreur s'affiche dans la fiche. */
+  function grantActions(item: ProfessionalGrant): ProfileAction[] {
+    if (item.status !== "active") return [];
+    return [{ label: "Terminer l’accès", tone: "danger", onClick: async ({ close }) => {
+      const ok = await confirm({ title: "Terminer l’accès à ce patient ?", message: `Vous ne pourrez plus consulter le carnet de ${item.patient_name || "ce patient"}. Le patient pourra se connecter à un autre professionnel.`, note: "Pour revenir, le patient devra présenter un nouveau QR.", confirmLabel: "Terminer l’accès", cancelLabel: "Garder l’accès", tone: "danger", mood: "question" });
+      if (!ok) return;
       const ended = await endProfessionalGrant(item.id);
       setItems((current) => current.map((entry) => entry.id === ended.id ? { ...entry, ...ended } : entry));
       setMessage("Accès terminé. Le patient peut se connecter à un autre professionnel.");
-    } catch (error) {
-      setMessage(error instanceof ApiError ? error.message : "Impossible de terminer l’accès.");
-    } finally {
-      setEndingId(null);
-    }
+      close();
+    } }];
   }
 
   return <div className="stack-lg">
@@ -137,17 +130,11 @@ export function ProfessionalAccessGrants() {
         {formError && <p className="status" role="alert">{formError}</p>}
         <button className="button primary" type="submit" disabled={submitting || !qrToken.trim()}>{submitting ? "Ouverture…" : "Ouvrir l’accès"}</button>
       </form>
-      <section id="historique" className="card"><h2>Mes demandes</h2>{loading ? <p className="empty" role="status">Chargement…</p> : items.length === 0 ? <p className="empty">Aucune demande pour le moment.</p> : <div className="request-list">{items.map((item) => {
-        const who = item.patient_name || `Patient · accès ${item.reference}`;
-        const scopes = item.scope.map((scope) => SCOPE_LABELS[scope] ?? scope).join(" · ");
+      <section id="historique" className="card"><h2>Mes demandes</h2>{loading ? <p className="empty" role="status">Chargement…</p> : items.length === 0 ? <p className="empty">Aucune demande pour le moment.</p> : <ProfileGrid label="Demandes d’accès">{items.map((item) => {
+        const base = grantProfile(item);
         const line = stateLine(item);
-        return <article className="record request-row" data-status={item.status} key={item.id}>
-          <div className="request-row__who"><button type="button" className="avatar-button request-row__avatars" aria-label={`Voir le détail de la demande de ${item.patient_name || item.reference}`} onClick={() => setDetail(item)}><PersonAvatar src={item.patient_avatar} name={item.patient_name || item.reference} size={46} /><EstablishmentLogo logo={item.establishment_logo} name={item.facility_label} size={22} /></button><div><strong title={who}>{who}</strong><span className="muted request-row__facility" title={item.facility_label}>{item.facility_label}</span></div></div>
-          <p className="muted request-row__scope" title={scopes}>{scopes}</p>
-          <div className="request-row__foot"><div className="request-row__state"><span className={`badge ${item.status === "active" ? "verified" : "declared"}`}>{STATUS_LABELS[item.status] ?? item.status}</span>{line && <small className="muted">{line}</small>}</div>{item.status === "active" && <button type="button" className="button small danger" onClick={() => void endGrant(item)} disabled={endingId === item.id}>{endingId === item.id ? "Fin de l’accès…" : "Terminer l’accès"}</button>}</div>
-        </article>;
-      })}</div>}</section>
+        return <Profile key={item.id} {...base} note={line ? <>{base.note}<br />{line}</> : base.note} actions={grantActions(item)} />;
+      })}</ProfileGrid>}</section>
     </section>
-    {detail && <ProfessionalGrantDetail item={detail} onClose={() => setDetail(null)} />}
   </div>;
 }

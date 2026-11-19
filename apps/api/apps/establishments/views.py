@@ -30,6 +30,8 @@ from apps.identity.models import AccountContext
 from apps.identity.temporary_password import disable_temporary_password, has_pending_temporary_password, issue_temporary_password, temporary_password_expired
 from .provisioning import AccountConflict, ProvisionedAccess, login_url, provision_administrator
 from .join_code_crypto import purge_dead_codes, seal_code, unseal_code
+from .geo import InvalidLocation
+from .location import DIRECTORY_LIMIT, LOCATION_FIELDS, apply_location_update, directory_item, location_payload
 from .revocations import clean_reason, notify_revoked
 from .models import PROFILE_FIELDS, Establishment, EstablishmentAdminInvitation, EstablishmentAdministrator, EstablishmentJoinCode, EstablishmentMembership, EstablishmentNotification, PrescriptionTemplate, generate_internal_code
 from .serializers import EstablishmentProfileSerializer, EstablishmentSerializer, MembershipSerializer, PrescriptionTemplateSerializer, logo_for
@@ -136,6 +138,23 @@ class EstablishmentCatalogView(APIView):
     def get(self, request):
         items = Establishment.with_complete_profile().filter(status="active", is_laboratory=False).order_by("name").values("id", "name", "city")
         return Response({"success": True, "data": [{"id": str(item["id"]), "name": item["name"], "city": item["city"]} for item in items]})
+
+
+class EstablishmentDirectoryView(APIView):
+    """« Établissements partenaires » : structures qui ont confirmé leur position ET choisi d'apparaître dans la recherche.
+
+    Réservée aux comptes connectés (tous espaces) et limitée en débit. La requête ne porte AUCUNE position : le serveur renvoie la liste
+    complète des partenaires visibles et c'est l'appareil de la personne qui calcule les distances. Sa position n'arrive donc jamais ici,
+    ni dans les journaux du serveur. Réponse minimale (avec le logo public, pour la carte) : voir `location.directory_item`."""
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "establishment_directory"
+
+    def get(self, request):
+        rows = list(Establishment.listed_in_directory().order_by("city", "name").values("name", "establishment_type", "city", "address", "phone", "latitude", "longitude", "logo_url")[:DIRECTORY_LIMIT + 1])
+        response = Response({"success": True, "data": {"items": [directory_item(row) for row in rows[:DIRECTORY_LIMIT]], "truncated": len(rows) > DIRECTORY_LIMIT}})
+        response["Cache-Control"] = "private, no-store"  # une structure suspendue doit disparaître tout de suite
+        return response
 
 
 class EstablishmentCreateView(APIView):
@@ -536,7 +555,7 @@ class EstablishmentProfileView(APIView):
     def body(establishment, user=None):
         missing = [field for field in PROFILE_FIELDS if not getattr(establishment, field)]
         locked = [*EstablishmentProfileView.LOCKED_FIELDS, "email"]
-        data = {**payload(establishment), "required_fields": list(PROFILE_FIELDS), "locked_fields": locked, "missing_fields": missing, "profile_complete": not missing}
+        data = {**payload(establishment), **location_payload(establishment), "required_fields": list(PROFILE_FIELDS), "locked_fields": locked, "missing_fields": missing, "profile_complete": not missing}
         if not data["email"] and user is not None:
             data["email"] = user.email  # affiché verrouillé : c'est l'e‑mail du compte, enregistré à la première sauvegarde
         # Établissement qui a demandé le rattachement (laboratoire interne) : l'administrateur du laboratoire le voit, verrouillé.
@@ -567,8 +586,10 @@ class EstablishmentProfileView(APIView):
         if establishment.is_laboratory and "establishment_type" in request.data and str(request.data["establishment_type"]).strip() != establishment.establishment_type:
             return Response({"success": False, "message": "Le type d’un laboratoire est verrouillé : c’est « Laboratoire »."}, status=400)
         previous_name = establishment.name
+        previous_place = (establishment.city, establishment.address)
         serializer = EstablishmentProfileSerializer(establishment, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
+        location_changes = {key: serializer.validated_data[key] for key in LOCATION_FIELDS if key in serializer.validated_data}
         logo = serializer.validated_data.get("logo")  # None = non envoyé ; "" = retirer
         establishment = serializer.save()
         renamed = establishment.name != previous_name
@@ -582,6 +603,11 @@ class EstablishmentProfileView(APIView):
         if logo is not None:
             store_logo(establishment, logo)
         establishment.save()
+        try:
+            apply_location_update(establishment, user=request.user, changes=location_changes, place_changed=(establishment.city, establishment.address) != previous_place)
+        except InvalidLocation as refusal:
+            transaction.set_rollback(True)  # la fiche n'est enregistrée qu'en entier : une position refusée n'emporte pas un changement de nom à moitié appliqué
+            return Response({"success": False, "code": refusal.code, "message": str(refusal)}, status=400)
         first_completion = establishment.is_profile_complete and establishment.profile_completed_at is None
         if first_completion:
             establishment.profile_completed_at = timezone.now()

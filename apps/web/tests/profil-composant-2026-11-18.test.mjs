@@ -50,9 +50,11 @@ test("la fiche passe au-dessus des fenêtres d'action et sous les confirmations 
   assert.match(read("components/ui/ProfileSheet.tsx"), /modal-backdrop modal-backdrop--sheet/);
 });
 
-test("le déclencheur : photo ronde ou ligne, qui ouvre la fiche", () => {
+test("le déclencheur : tuile (photo + nom court), photo seule ou ligne, qui ouvre la fiche", () => {
   const profile = read("components/ui/Profile.tsx");
-  assert.match(profile, /variant\?: "photo" \| "row"/);
+  assert.match(profile, /variant\?: "tile" \| "photo" \| "row"/);
+  assert.match(profile, /className="profile-tile"[\s\S]*aria-label=\{aria\}[\s\S]*className="profile-tile__name"/, "tuile : photo ronde et nom court, comme les dossiers patients");
+  assert.match(profile, /export function ProfileGrid/);
   assert.match(profile, /className="profile-photo"[\s\S]*aria-label=\{`Voir la fiche de \$\{sheet\.name\}`\}/);
   assert.match(profile, /className="profile-row"/);
   assert.match(profile, /\{open && <ProfileSheet \{\.\.\.sheet\} onClose=\{\(\) => setOpen\(false\)\} \/>\}/);
@@ -61,10 +63,11 @@ test("le déclencheur : photo ronde ou ligne, qui ouvre la fiche", () => {
 test("tous les écrans utilisent ce composant : équipe, laboratoire, patient reçu, accès, rattachement, profils d'enfants", () => {
   const profile = (file) => read(`components/${file}`);
   assert.match(profile("EstablishmentConsole.tsx"), /<Profile\s+variant="photo"/);
-  assert.match(profile("PatientRepresentationsSettingsClient.tsx"), /<Profile\s+variant="row"/);
-  for (const file of ["EstablishmentLaboratories.tsx", "EstablishmentPatientRecords.tsx", "ProfessionalPatientDetail.tsx", "ProfessionalGrantDetail.tsx", "ProfessionalMembershipDetail.tsx"]) {
-    assert.match(profile(file), /<ProfileSheet\b/, `${file} utilise ProfileSheet`);
+  // 19/11/2026 : toutes les listes sont des grilles de photos (<ProfileGrid> + <Profile>) ; la fiche est la même partout.
+  for (const file of ["PatientRepresentationsSettingsClient.tsx", "EstablishmentLaboratories.tsx", "ProfessionalRecentPatients.tsx", "ProfessionalAccessGrants.tsx", "ProfessionalAccess.tsx", "TrustedContactDelegationClient.tsx", "PatientProfileChoice.tsx"]) {
+    assert.match(profile(file), /<ProfileGrid\b[\s\S]*<Profile\b/, `${file} : grille de photos`);
   }
+  assert.match(profile("EstablishmentPatientRecords.tsx"), /<ProfileSheet\b/, "dossiers patients de l'établissement (référence)");
 });
 
 test("l'ancienne présentation a disparu : plus de modale « profile-modal », de fiche « team-detail » ni de fiche propre aux profils d'enfants", () => {

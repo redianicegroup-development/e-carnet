@@ -19,6 +19,7 @@ from .access import PatientAccess
 from .models import ClinicalDeclaration, PatientEmergencyCard, PatientProfile, PatientRepresentation, RepresentationTransferRequest, TrustedContactDelegation
 from .serializers import ClinicalDeclarationSerializer, PatientEmergencyCardSerializer, PatientProfileSerializer
 from .allergy_rules import ALLERGY_STATE_LABELS, is_allergy_state
+from .avatars import child_avatar, clean_avatar_data, store_child_avatar
 
 
 def profile_for(user, request=None, scope=None):
@@ -106,6 +107,7 @@ def relationship_payload(representation, active_id=None):
         "patient_id": str(patient.id),
         "first_name": patient.display_first_name(),
         "last_name": patient.display_last_name(),
+        "avatar_url": child_avatar(patient),
         "birth_date": patient.birth_date.isoformat() if patient.birth_date else None,
         "relationship": representation.relationship,
         "status": representation.status,
@@ -158,12 +160,17 @@ class PatientRepresentationListCreateView(APIView):
             return Response({"success": False, "message": "La délégation à un adulte exige son autorisation explicite; elle n’est pas activée dans cette version."}, status=403)
         if request.data.get("legal_representative_confirmed") is not True:
             return Response({"success": False, "message": "Confirmez être autorisé à représenter légalement cet enfant."}, status=400)
+        try:
+            avatar_data = clean_avatar_data(request.data.get("avatar_data"))
+        except ValueError as error:
+            return Response({"success": False, "message": str(error)}, status=400)
         patient = PatientProfile.objects.create(
             user=None,
             first_name=first_name,
             last_name=last_name,
             birth_date=birth_date,
         )
+        store_child_avatar(patient, avatar_data)
         representation = PatientRepresentation.objects.create(
             guardian=request.user,
             patient=patient,

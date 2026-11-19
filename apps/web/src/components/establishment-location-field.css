@@ -1,0 +1,16 @@
+/* Bloc « Position sur la carte » de la fiche établissement. */
+.location-field { display: grid; gap: 12px; margin: 0; padding: 14px; border: 1.5px solid var(--border); border-radius: var(--r-md); background: var(--surface); min-inline-size: 0; }
+.location-field > legend { padding: 0 6px; font-weight: 700; }
+.location-field p { margin: 0; }
+.location-field__warning { background: var(--status-declared-bg); color: var(--status-declared-fg); border-color: var(--status-declared-fg); }
+.location-field__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.location-field__editor { display: grid; gap: 12px; }
+.location-field__reading { font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.location-field__listing { display: flex; gap: 12px; align-items: flex-start; cursor: pointer; }
+.location-field__listing input { flex: none; width: 22px; height: 22px; margin-top: 2px; accent-color: var(--primary); }
+.location-field__listing span { display: grid; gap: 2px; }
+.location-field__listing small { font-weight: 400; }
+.location-field .button { justify-self: start; }
+@media (max-width: 520px) {
+  .location-field__actions .button { flex: 1 1 100%; }
+}

@@ -338,6 +338,24 @@ class PatientRepresentationTests(TestCase):
         self.assertEqual(self.guardian_client.delete("/api/v1/patient/representations/active/").status_code, 200)
         self.assertEqual(self.guardian_client.get("/api/v1/patient/profile/").data["data"]["id"], parent_profile["id"])
 
+    @override_settings(ECARNET_REPRESENTATION_LEGAL_AGE=18)
+    def test_child_profile_keeps_its_photo_and_rejects_a_bad_one(self):
+        import base64
+
+        webp = "data:image/webp;base64," + base64.b64encode(b"RIFF\x10\x00\x00\x00WEBPVP8 ....").decode()
+        body = {"first_name": "Awa", "last_name": "Koné", "birth_date": "2015-05-10", "relationship": "child", "legal_representative_confirmed": True}
+        created = self.guardian_client.post("/api/v1/patient/representations/", {**body, "avatar_data": webp}, format="json")
+        self.assertEqual(created.status_code, 201)
+        self.assertTrue(created.data["data"]["avatar_url"])
+        listed = self.guardian_client.get("/api/v1/patient/representations/")
+        self.assertTrue(listed.data["data"][0]["avatar_url"])
+        bad = self.guardian_client.post("/api/v1/patient/representations/", {**body, "avatar_data": "data:image/png;base64,AAAA"}, format="json")
+        self.assertEqual(bad.status_code, 400)
+        self.assertEqual(PatientProfile.objects.filter(user__isnull=True).count(), 1, "aucun profil n'est créé quand la photo est refusée")
+        without = self.guardian_client.post("/api/v1/patient/representations/", body, format="json")
+        self.assertEqual(without.status_code, 201)
+        self.assertEqual(without.data["data"]["avatar_url"], "")
+
     @override_settings(ECARNET_REPRESENTATION_LEGAL_AGE=None)
     def test_child_profile_creation_waits_for_legal_age_configuration(self):
         response = self.guardian_client.post("/api/v1/patient/representations/", {

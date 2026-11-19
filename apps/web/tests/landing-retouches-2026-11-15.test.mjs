@@ -35,14 +35,14 @@ test("section Solution : l'image main + téléphone est plafonnée à 440 px et 
   assert.match(css, /\.lp2-flow-phone \.lp2-hand-stack \{[^}]*width:min\(100%,420px\)/, "les trois étapes gardent leur taille");
 });
 
-test("en-tête public : le logo seul, centré et FIXE en haut de l'écran (fond seulement quand la page défile), et un bouton à trois traits fixé en bas", () => {
+test("en-tête public : le logo seul, centré et FIXE en haut de l'écran (sans aucun fond, même quand la page défile), et un bouton à trois traits fixé en bas", () => {
   const css = read("src/app/site-pages.css");
   const header = read("src/components/public/PublicHeader.tsx");
   assert.match(css, /\.pub-header \{ position: relative; z-index: 20; height: 0; \}/, "pas de barre : le logo flotte sans arrière-plan");
   assert.match(css, /\.pub-header \.brand \{ position: fixed; z-index: 1; top: calc\(var\(--net-banner-h, 0px\) \+ max\(14px, env\(safe-area-inset-top\)\)\); left: 50%; transform: translateX\(-50%\); \}/, "logo centré et fixe, sous le bandeau hors connexion sans recompter sa hauteur");
-  assert.match(css, /\.pub-header::before \{[^}]*position: fixed;[^}]*opacity: 0;/, "barre translucide derrière le logo, invisible en haut de page");
-  assert.match(css, /\.pub-header\[data-scrolled="true"\]::before \{ opacity: 1; \}/, "…et visible dès que la page défile");
-  assert.match(header, /data-scrolled=\{scrolled \? "true" : "false"\}/, "PublicHeader pose data-scrolled");
+  assert.doesNotMatch(css, /\.pub-header::before/, "plus de barre translucide derrière le logo (retirée le 19/11/2026)");
+  assert.doesNotMatch(css, /data-scrolled/, "…ni au défilement");
+  assert.doesNotMatch(header, /data-scrolled|useScrolled/, "PublicHeader ne gère plus de fond au défilement");
   assert.doesNotMatch(css, /\.pub-header--connected \{[^}]*(background|backdrop-filter)/, "pas de fond non plus pour un visiteur connecté");
   assert.match(css, /\.pub-return-link \{ position: fixed;/, "« Retour à mon espace » est fixe à gauche du logo");
   assert.match(css, /\.pub-burger \{ position: fixed; z-index: 840; left: 50%; bottom: calc\(18px \+ env\(safe-area-inset-bottom\)\);/);

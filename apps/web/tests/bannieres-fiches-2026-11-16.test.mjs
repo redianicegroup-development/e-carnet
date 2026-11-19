@@ -15,9 +15,11 @@ test("« Mes consultations » est toujours déplié, côté patient comme côté
 
 test("photos et logos sont ronds et ouvrent une fiche en lecture seule", () => {
   assert.match(read("components/establishment-logo.css"), /\.establishment-logo \{[^}]*border-radius: 50%/);
-  assert.match(read("components/ProfessionalRecentPatients.tsx"), /className="avatar-button"[\s\S]{0,160}setSelected\(row\)/);
-  assert.match(read("components/ProfessionalAccessGrants.tsx"), /avatar-button request-row__avatars/);
-  assert.match(read("components/ProfessionalAccess.tsx"), /className="avatar-button"[\s\S]{0,160}setDetail\(membership\)/);
+  // 19/11/2026 : les listes sont des grilles de photos (composant « Profil ») ; un toucher ouvre la fiche.
+  assert.match(read("components/ProfessionalRecentPatients.tsx"), /<ProfileGrid label="Patients reçus récemment">[\s\S]*<Profile key=[^>]*\{\.\.\.profile\}>/);
+  assert.match(read("components/ProfessionalGrantDetail.tsx"), /className="request-row__avatars"/);
+  assert.match(read("components/ProfessionalAccessGrants.tsx"), /<Profile key=\{item\.id\} \{\.\.\.base\}/);
+  assert.match(read("components/ProfessionalAccess.tsx"), /<ProfileGrid label="Mes rattachements">[\s\S]*membershipProfile\(membership/);
   const patientDetail = read("components/ProfessionalPatientDetail.tsx");
   assert.match(patientDetail, /ne donne aucun accès au carnet/);
   assert.doesNotMatch(patientDetail, /allerg|vaccin|diagnos|ordonnance/i, "aucune donnée médicale dans la fiche patient reçu");

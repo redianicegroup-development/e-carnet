@@ -16,7 +16,7 @@ test("proches de confiance : la fenêtre d'action passe au-dessus de la fenêtre
   assert.match(dialog, /modal-backdrop modal-backdrop--panel/);
   assert.match(dialog, /createPortal/);
   assert.match(read("components/TrustedContactDelegationClient.tsx"), /import \{ PanelDialog \} from "\.\/modal\/PanelDialog"/);
-  assert.match(read("components/PatientRepresentationsSettingsClient.tsx"), /import \{ PanelDialog \} from "\.\/modal\/PanelDialog"/);
+  assert.match(read("components/ChildOnboarding.tsx"), /import \{ PanelDialog \} from "\.\/modal\/PanelDialog"/);
 });
 
 test("proches de confiance : tuiles à contour, pastille ronde, titre en haut et texte en bas", () => {
@@ -73,17 +73,26 @@ test("« Profils » : liste, fiche (prénom, nom, identifiant, copier, révoquer
   for (const label of ["Prénom", "Nom", "Identifiant"]) assert.match(profiles, new RegExp(`label: "${label}"`));
   assert.match(profiles, /Copier l’identifiant/);
   assert.match(profiles, /label: "Révoquer", tone: "danger"/);
-  assert.match(profiles, /<Profile\s+variant="row"/, "la liste et la fiche viennent du composant Profil commun");
+  assert.match(profiles, /<ProfileGrid label="Profils d’enfants">[\s\S]*<Profile\s+key=\{item\.id\}/, "la liste et la fiche viennent du composant Profil commun : la photo de chaque enfant");
+  assert.match(profiles, /photo=\{item\.avatar_url\}/, "la photo de l'enfant");
   assert.doesNotMatch(profiles, /className="profile-row"|<dl className="profile-detail"/, "plus de fiche propre à cette page");
 });
 
-test("créer un profil enfant : étape 2 = carnet de l'enfant, sans changer le profil ouvert", () => {
-  const profiles = read("components/PatientRepresentationsSettingsClient.tsx");
-  assert.match(profiles, /Étape 1 sur 2 · Le profil/);
-  assert.match(profiles, /Étape 2 sur 2/);
-  assert.match(profiles, /Créer le profil et continuer/);
+test("créer un profil enfant : onboarding à part (photo, date de naissance, carnet), sans changer le profil ouvert (19/11/2026)", () => {
+  const settings = read("components/PatientRepresentationsSettingsClient.tsx");
+  assert.match(settings, /<ChildOnboarding onClose=\{\(\) => setAdding\(false\)\}/, "l'écran Profils ouvre l'onboarding de l'enfant");
+  assert.doesNotMatch(settings, /Étape 1 sur 2|Étape 2 sur 2/, "plus de formulaire en deux étapes");
+  const profiles = read("components/ChildOnboarding.tsx");
+  assert.match(profiles, /<AvatarPicker value=\{photo\}/, "photo de profil de l'enfant");
+  assert.match(profiles, /avatar_data: photo/, "la photo part avec la création du profil");
+  assert.match(profiles, /<span>Date de naissance<\/span><input required type="date"/, "date de naissance dans l'onboarding");
+  assert.match(profiles, /Créer le carnet/);
+  assert.match(profiles, /Réessayer l’enregistrement du carnet/, "si seul le carnet échoue, le profil n'est pas recréé");
+  assert.match(profiles, /tone: "success", title: "Profil créé"/);
+  assert.match(profiles, /tone: "error", title: "Profil non créé"/);
+  assert.match(profiles, /tone: "error", title: "Carnet non enregistré"/);
   assert.match(profiles, /runAsProfile\(child\.patient_id, \(\) => saveChildIdentity\(form\)\)/);
-  assert.match(profiles, /showProfession=\{false\} showBirthDate=\{false\}/, "la naissance est déjà donnée à l'étape 1, la profession ne concerne pas un enfant");
+  assert.match(profiles, /showProfession=\{false\} showBirthDate=\{false\}/, "la naissance est saisie plus haut dans l'onboarding, la profession ne concerne pas un enfant");
   const lib = read("lib/patient-profiles.ts");
   const run = lib.slice(lib.indexOf("export async function runAsProfile"));
   assert.match(run, /finally/, "le profil précédent est toujours rétabli, même si l'enregistrement échoue");
@@ -99,7 +108,9 @@ test("consultation et pré-consultation : choix du profil en tête, seulement s'
   assert.match(read("components/PatientConsultationFlow.tsx"), /<PatientProfileChoice \/>/);
   const choice = read("components/PatientProfileChoice.tsx");
   assert.match(choice, /Pour qui est cette consultation \?/);
-  assert.match(choice, /aria-pressed=/);
+  assert.match(choice, /selected=\{selected\}/, "le profil choisi porte un anneau plein");
+  assert.match(choice, /<ProfileGrid label="Pour qui est cette consultation \?">/);
+  assert.match(choice, /label: "Choisir pour cette consultation"/, "le choix se fait depuis la fiche du profil");
   assert.match(choice, /if \(!ready \|\| usable\.length === 0\) return null/);
   assert.match(choice, /selectProfile/);
 });

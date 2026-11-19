@@ -147,7 +147,10 @@ class DelegationJoinCodeRedeemView(APIView):
         if not PatientProfile.objects.filter(user=request.user).exists():
             return Response({"success": False, "message": "Complétez d’abord votre profil patient."}, status=409)
         raw_code = str(request.data.get("code", "")).strip().upper()
-        item = TrustedContactDelegation.objects.select_for_update().select_related("patient", "patient__user").filter(
+        # of=("self",) : PatientProfile.user est nullable (profil d'enfant sans compte) → select_related("patient__user") est une jointure externe, et
+        # PostgreSQL refuse FOR UPDATE sur le côté nullable d'une jointure externe (erreur 500, que l'application affichait comme « service
+        # momentanément indisponible »). SQLite ignore le verrou, donc les tests ne le voyaient pas. On ne verrouille que la délégation.
+        item = TrustedContactDelegation.objects.select_for_update(of=("self",)).select_related("patient", "patient__user").filter(
             token_hash=TrustedContactDelegation.digest(raw_code), status="pending"
         ).first()
         if not item or item.invitation_expires_at <= timezone.now():
@@ -180,7 +183,8 @@ class PatientDelegationActionView(APIView):
     def _owned(self, request, pk, lock=False):
         query = TrustedContactDelegation.objects
         if lock:
-            query = query.select_for_update()
+            # delegate est nullable (invitation pas encore acceptée) : voir la note de DelegationJoinCodeRedeemView.
+            query = query.select_for_update(of=("self",))
         return query.filter(pk=pk, patient__user=request.user).select_related("patient", "delegate").first()
 
     @transaction.atomic
@@ -235,7 +239,7 @@ class DelegationInvitationDecisionView(APIView):
         if not ensure_enabled():
             return enabled_response()
         raw_token = str(request.data.get("token", "")).strip()
-        item = TrustedContactDelegation.objects.select_for_update().filter(token_hash=TrustedContactDelegation.digest(raw_token)).select_related("patient", "patient__user").first()
+        item = TrustedContactDelegation.objects.select_for_update(of=("self",)).filter(token_hash=TrustedContactDelegation.digest(raw_token)).select_related("patient", "patient__user").first()
         if not item or item.status != "pending" or item.invitation_expires_at <= timezone.now():
             return Response({"success": False, "message": "Cette invitation est invalide, expirée ou déjà utilisée."}, status=404)
         if (request.user.email or "").strip().lower() != item.invited_email:

@@ -85,12 +85,12 @@ test("les graphiques sont en Recharts, chargés à la demande, avec un résumé 
   assert.doesNotMatch(css.replace(/color: #fff;/g, ""), /#[0-9a-fA-F]{3,8}\b/, "pas de couleur propre (hors le blanc sur vert foncé)");
 });
 
-test("accueil patient : les KPI viennent sous « Mise en route », sans nouvel appel dans PatientHome", () => {
+test("accueil patient : les KPI viennent AVANT « Mise en route » (19/11/2026), sans nouvel appel dans PatientHome", () => {
   const home = read("src/components/PatientHome.tsx");
   const setup = home.indexOf("<SetupCard");
   const kpis = home.indexOf("<PatientKpis");
   const todo = home.indexOf('id="home-todo-title"');
-  assert.ok(setup > 0 && kpis > setup && todo > kpis, "ordre : Mise en route, KPI, À faire");
+  assert.ok(kpis > 0 && setup > kpis && todo > setup, "ordre : KPI, Mise en route, À faire");
   assert.equal((home.match(/apiGet</g) ?? []).length, 5, "PatientHome garde ses cinq appels");
   const source = read("src/components/PatientKpis.tsx");
   assert.match(source, /Promise\.allSettled/, "chaque source est indépendante");

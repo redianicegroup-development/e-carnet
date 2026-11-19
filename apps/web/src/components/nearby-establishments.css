@@ -1,0 +1,26 @@
+/* Onglet « Établissements proches de moi » : recherche, carte, résultats. Lisible d'une main sur mobile : cibles de 44 px minimum. */
+.nearby { display: grid; gap: 14px; }
+.nearby p { margin: 0; }
+.nearby__controls { display: grid; gap: 12px; }
+.nearby__locate { display: flex; flex-wrap: wrap; gap: 8px; }
+.nearby__privacy { font-size: .85rem; }
+.nearby__state { display: grid; gap: 8px; justify-items: start; }
+.nearby__count { font-size: .9rem; }
+.nearby__map { display: grid; gap: 10px; scroll-margin-top: 8px; }
+.nearby__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.nearby__item { display: grid; gap: 8px; padding: 14px; border: 1.5px solid var(--border); border-radius: var(--r-md); background: var(--surface); }
+.nearby__item.is-selected { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-tint); }
+.nearby__head { display: flex; align-items: center; gap: 12px; }
+.nearby__title { display: grid; gap: 2px; min-width: 0; flex: 1; }
+.nearby__title strong { overflow-wrap: anywhere; }
+.nearby__logo {
+  flex: none; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; overflow: hidden; border-radius: 50%;
+  border: 2px solid var(--border-strong); background: var(--primary); color: var(--on-primary); font-weight: 800; font-size: .85rem;
+}
+.nearby__logo img { width: 100%; height: 100%; object-fit: contain; background: #fff; display: block; }
+.nearby__distance { flex: none; display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: var(--r-pill); background: var(--primary-tint); color: var(--text); font-size: .85rem; font-weight: 700; white-space: nowrap; }
+.nearby__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.nearby__osm { font-size: .85rem; color: var(--primary-text); min-height: var(--tap-min); display: inline-flex; align-items: center; }
+@media (max-width: 520px) {
+  .nearby__locate .button, .nearby__actions .button { flex: 1 1 100%; }
+}

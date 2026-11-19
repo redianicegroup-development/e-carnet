@@ -15,6 +15,8 @@ export type PatientProfileEntry = {
   patient_id: string;
   first_name: string;
   last_name: string;
+  /** Photo de l'enfant (URL ou image intégrée) ; absente tant qu'aucune photo n'a été choisie : on affiche alors ses initiales. */
+  avatar_url?: string;
   birth_date: string;
   relationship: string;
   status: "active" | "revoked" | "transferred";

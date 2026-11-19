@@ -7,6 +7,23 @@
 .profile-photo:hover { transform: translateY(-2px); }
 .profile-photo:focus-visible { outline: 3px solid var(--focus, var(--primary)); outline-offset: 4px; }
 
+/* Tuile : photo ronde + nom court (comme les dossiers patients de l'espace établissement). Touchée, elle ouvre la fiche. */
+.profile-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 14px 10px; margin: 0; padding: 0; list-style: none; }
+.profile-tiles > li { display: grid; min-width: 0; }
+.profile-tile { display: grid; justify-items: center; align-content: start; gap: 9px; width: 100%; padding: 10px 4px; border: 0; border-radius: 16px; background: none; color: inherit; font: inherit; cursor: pointer; transition: background .15s ease; }
+.profile-tile:hover { background: var(--surface-tint); }
+.profile-tile:focus-visible { outline: 3px solid var(--focus, var(--primary)); outline-offset: 2px; }
+.profile-tile__photo { position: relative; display: grid; line-height: 0; }
+.profile-tile__photo > :first-child { border-radius: 50%; box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px color-mix(in srgb, var(--primary) 55%, var(--surface)); }
+.profile-tile[data-selected="true"] .profile-tile__photo > :first-child { border-radius: 50%; box-shadow: 0 0 0 3px var(--surface), 0 0 0 6px var(--primary); }
+.profile-tile[data-selected="true"] .profile-tile__name { color: var(--primary-text, var(--text)); }
+.profile-tile__name { max-width: 100%; font-size: .84rem; font-weight: 700; line-height: 1.2; text-align: center; overflow-wrap: anywhere; }
+.profile-tile[data-selected="true"] .profile-tile__name { font-weight: 800; }
+.profile-tile__dot { position: absolute; right: -2px; top: -2px; width: 16px; height: 16px; border: 3px solid var(--surface); border-radius: 50%; background: #2f8f68; box-sizing: content-box; }
+.profile-tile__dot[data-tone="warn"] { background: #d9a431; }
+.profile-tile__dot[data-tone="off"] { background: #8a948f; }
+.profile-tile__check { position: absolute; right: -4px; bottom: -4px; display: grid; place-items: center; width: 22px; height: 22px; border: 2px solid var(--surface); border-radius: 50%; background: var(--primary); color: var(--on-primary, #fff); line-height: 0; }
+
 /* Ligne (photo + nom + état + flèche) qui ouvre la fiche. */
 .profile-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
 .profile-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border: 1.5px solid color-mix(in srgb, var(--text) 78%, transparent); border-radius: 22px; background: var(--surface, var(--bg)); color: inherit; font: inherit; text-align: left; cursor: pointer; }
@@ -39,4 +56,4 @@
   .profile-sheet__body { padding: 24px 18px 12px; }
   .profile-sheet__actions { padding: 12px 18px calc(18px + env(safe-area-inset-bottom)); }
 }
-@media (prefers-reduced-motion: reduce) { .profile-photo { transition: none; } .profile-photo:hover { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .profile-photo, .profile-tile { transition: none; } .profile-photo:hover { transform: none; } }

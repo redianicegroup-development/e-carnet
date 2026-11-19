@@ -59,10 +59,15 @@ class EstablishmentProfileSerializer(serializers.ModelSerializer):
     address = serializers.CharField(max_length=240, allow_blank=True, required=False, trim_whitespace=True)
     phone = serializers.CharField(max_length=32, allow_blank=False, trim_whitespace=True)
     logo = serializers.CharField(max_length=350000, required=False, allow_blank=True, write_only=True)
+    # Position GPS : les deux ensemble, ou les deux à null pour la retirer. Les bornes fines (Côte d'Ivoire, inversion lat/lng) sont
+    # contrôlées par `location.apply_location_update`, qui écrit aussi l'historique : ces champs ne sont jamais copiés tels quels sur le modèle.
+    latitude = serializers.FloatField(required=False, allow_null=True)
+    longitude = serializers.FloatField(required=False, allow_null=True)
+    is_listed_in_directory = serializers.BooleanField(required=False)
 
     class Meta:
         model = Establishment
-        fields = ("name", "establishment_type", "city", "address", "phone", "logo")
+        fields = ("name", "establishment_type", "city", "address", "phone", "logo", "latitude", "longitude", "is_listed_in_directory")
 
     def validate_name(self, value):
         value = " ".join(value.split())
@@ -82,6 +87,8 @@ class EstablishmentProfileSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         validated_data.pop("logo", None)  # le stockage de l'image relève de la vue (Cloudinary), pas d'un champ du modèle
+        for field in ("latitude", "longitude", "is_listed_in_directory"):
+            validated_data.pop(field, None)  # écrits par la vue via `location.apply_location_update` (historique, journal, règles de visibilité)
         return super().update(instance, validated_data)
 
     def validate_phone(self, value):

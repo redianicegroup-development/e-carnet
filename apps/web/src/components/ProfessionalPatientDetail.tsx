@@ -5,7 +5,7 @@ import { listProfessionalConsultations, listProfessionalGrants, type Professiona
 import { listedUntil, recentPatientName, type RecentPatient } from "../lib/recent-patients";
 import { GRANT_STATUS_LABELS, normalizeName, scopeText } from "../lib/grant-labels";
 import { formatDay, formatWhen } from "./access/access-history";
-import { ProfileSheet } from "./ui/ProfileSheet";
+import type { ProfileProps } from "./ui/Profile";
 
 type ConsultationLine = { reason?: string; facility_label?: string; patient_name?: string } & Record<string, unknown>;
 
@@ -14,11 +14,27 @@ function dateOf(item: ConsultationLine): string | null {
   return null;
 }
 
-/* Fiche d'un « patient reçu récemment ». Elle ne contient rien de médical et ne donne aucun accès au carnet :
-   uniquement l'identité affichée dans la liste et ce que le professionnel a déjà fait avec ce patient
-   (ses propres demandes d'accès et ses propres consultations signées), retrouvées par le nom. */
-export function ProfessionalPatientDetail({ row, onClose }: { row: RecentPatient; onClose: () => void }) {
+/* Fiche d'un « patient reçu récemment » (tuile « Profil » de la liste). Elle ne contient rien de médical et ne donne aucun accès au carnet :
+   uniquement l'identité affichée dans la liste et ce que le professionnel a déjà fait avec ce patient (ses propres demandes d'accès et ses
+   propres consultations signées), retrouvées par le nom. L'historique n'est chargé qu'à l'ouverture de la fiche (RecentPatientHistory). */
+export function recentPatientProfile(row: RecentPatient): Pick<ProfileProps, "name" | "label" | "subtitle" | "rows" | "note"> {
   const name = recentPatientName(row);
+  const until = listedUntil(row.last_accessed_at);
+  return {
+    name,
+    label: row.first_name || row.last_name || name,
+    subtitle: "Patient reçu récemment",
+    rows: [
+      { label: "Nom", value: row.last_name || "—" },
+      { label: "Prénom", value: row.first_name || "—" },
+      { label: "Dernier accès", value: formatWhen(row.last_accessed_at) },
+      ...(until ? [{ label: "Reste dans la liste jusqu’au", value: formatDay(until) }] : []),
+    ],
+    note: "Cette fiche ne donne aucun accès au carnet. Pour revoir ce patient, faites une nouvelle demande qu’il devra autoriser.",
+  };
+}
+
+export function RecentPatientHistory({ name }: { name: string }) {
   const [grants, setGrants] = useState<ProfessionalGrant[] | null>(null);
   const [consultations, setConsultations] = useState<ConsultationLine[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -36,20 +52,8 @@ export function ProfessionalPatientDetail({ row, onClose }: { row: RecentPatient
     return () => { active = false; };
   }, [name]);
 
-  const until = listedUntil(row.last_accessed_at);
   return (
-    <ProfileSheet
-      name={name}
-      subtitle="Patient reçu récemment"
-      rows={[
-        { label: "Nom", value: row.last_name || "—" },
-        { label: "Prénom", value: row.first_name || "—" },
-        { label: "Dernier accès", value: formatWhen(row.last_accessed_at) },
-        ...(until ? [{ label: "Reste dans la liste jusqu’au", value: formatDay(until) }] : []),
-      ]}
-      note="Cette fiche ne donne aucun accès au carnet. Pour revoir ce patient, faites une nouvelle demande qu’il devra autoriser."
-      onClose={onClose}
-    >
+    <>
       {failed && <p className="notice" role="alert">Historique indisponible pour le moment.</p>}
       {!failed && (grants === null || consultations === null) && <p className="muted">Chargement de l’historique…</p>}
       {grants && (
@@ -76,6 +80,6 @@ export function ProfessionalPatientDetail({ row, onClose }: { row: RecentPatient
           )}
         </section>
       )}
-    </ProfileSheet>
+    </>
   );
 }

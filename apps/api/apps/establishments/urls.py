@@ -17,6 +17,7 @@ from .views import (
     EstablishmentActiveJoinCodeCountView,
     EstablishmentCreateView,
     EstablishmentCatalogView,
+    EstablishmentDirectoryView,
     EstablishmentDetailView,
     EstablishmentInvitationAcceptView,
     EstablishmentInvitationPreviewView,
@@ -46,6 +47,7 @@ from .views import (
 urlpatterns = [
     path("", EstablishmentListView.as_view()),
     path("catalog/", EstablishmentCatalogView.as_view()),
+    path("directory/", EstablishmentDirectoryView.as_view()),
     path("create/", EstablishmentCreateView.as_view()),
     path("invitations/accept/", EstablishmentInvitationAcceptView.as_view()),
     path("invitations/preview/", EstablishmentInvitationPreviewView.as_view()),

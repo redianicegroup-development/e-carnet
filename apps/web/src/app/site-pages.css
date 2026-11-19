@@ -121,11 +121,9 @@ body .public-scroll-top { position: fixed; }
 /* En-tête : le logo est FIXE au centre, en haut de l'écran, sur toutes les pages publiques (pour un visiteur connecté, « Retour à mon espace » est fixe à gauche).
    Le conteneur garde une hauteur nulle : il ne pousse pas la page. Fixe = positionné par rapport à l'écran, donc sous le bandeau hors connexion
    (--net-banner-h) sans jamais recompter sa hauteur : le logo ne chevauche plus les textes quand la connexion est coupée.
-   En haut de page il est sans fond ; dès que la page défile (data-scrolled, posé par PublicHeader), une barre translucide passe derrière lui. */
+   Il n'a JAMAIS de fond (ni en haut de page ni au défilement) : ni barre, ni flou, ni ombre, pour laisser voir les photos des pages publiques (19/11/2026). */
 .pub-header { position: relative; z-index: 20; height: 0; }
 .pub-header .brand { position: fixed; z-index: 1; top: calc(var(--net-banner-h, 0px) + max(14px, env(safe-area-inset-top))); left: 50%; transform: translateX(-50%); }
-.pub-header::before { content: ""; position: fixed; z-index: 0; top: var(--net-banner-h, 0px); left: 0; right: 0; height: var(--pub-bar-h); background: color-mix(in srgb, var(--bg) 88%, transparent); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent); box-shadow: 0 10px 26px -22px rgba(44, 58, 51, .55); opacity: 0; pointer-events: none; transition: opacity .25s ease; }
-.pub-header[data-scrolled="true"]::before { opacity: 1; }
 .pub-header .brand-mark.brand-mark--duo { height: clamp(46px, 7vw, 58px); }
 .pub-burger { position: fixed; z-index: 840; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom)); display: inline-grid; place-items: center; width: 76px; height: 52px; padding: 0; border: 0; border-radius: 999px; background: var(--primary); color: var(--on-primary); cursor: pointer; transform: translateX(-50%); box-shadow: 0 0 0 1.5px var(--bg), 0 10px 24px -8px color-mix(in srgb, var(--primary) 70%, #000); transition: opacity .25s ease, transform .35s cubic-bezier(.22, .9, .3, 1), visibility 0s; }
 .pub-burger:hover { transform: translateX(-50%) translateY(-2px); }

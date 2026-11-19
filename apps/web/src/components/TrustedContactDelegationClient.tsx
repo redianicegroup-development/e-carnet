@@ -7,6 +7,7 @@ import { delegationMessage } from "../lib/share";
 import { OutcomeDialog, type OutcomeDialogProps } from "./modal/OutcomeDialog";
 import { PanelDialog } from "./modal/PanelDialog";
 import { Icon } from "./ui/Icon";
+import { Profile, ProfileGrid, type ProfileStatus } from "./ui/Profile";
 import { ShareCodeButton } from "./ShareCodeButton";
 
 type Delegation = { id: string; status: string; invited_email?: string; patient_first_name?: string; patient_last_name?: string; relationship_label: string; expires_at: string | null; is_selected?: boolean };
@@ -15,6 +16,7 @@ type Panel = "give" | "receive";
 const relationships: Record<string, string> = { conjoint: "Conjoint·e", enfant_adulte: "Enfant adulte", parent: "Parent", ami: "Ami·e", autre: "Autre" };
 const statuses: Record<string, string> = { pending: "Mot non utilisé", active: "Accès actif", revoked: "Accès retiré", expired: "Accès expiré" };
 const date = (value: string | null) => value ? new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" }).format(new Date(value)) : "—";
+const statusTone: Record<string, NonNullable<ProfileStatus["tone"]>> = { active: "ok", pending: "warn" };
 const GIVE_ERROR_FALLBACK = "Le mot de rattachement n’a pas pu être généré. Vérifiez l’e-mail de votre proche et réessayez.";
 
 export function TrustedContactDelegationClient() {
@@ -78,6 +80,8 @@ export function TrustedContactDelegationClient() {
   }
 
   async function action(path: string, success: string) { setBusy(true); try { await apiPost(path); await load(); setMessage(success); } catch (error) { setMessage(error instanceof Error ? error.message : "Action impossible."); } finally { setBusy(false); } }
+  // Fiche d'une délégation : une erreur est relancée, la fiche affiche le motif.
+  async function revoke(item: Delegation) { await apiPost(`/api/v1/patient/delegations/${item.id}/revoke/`); await load(); setMessage("Accès retiré immédiatement."); }
   async function select(item: Delegation) { await action(`/api/v1/patient/delegations/${item.id}/select/`, `Carnet de ${item.patient_first_name ?? "votre proche"} sélectionné en lecture seule.`); }
   async function clear() { setBusy(true); try { await apiDelete(`/api/v1/patient/delegations/${mine.find((item) => item.is_selected)?.id}/select/`); await load(); setMessage("Votre propre carnet est de nouveau sélectionné."); } catch (error) { setMessage(error instanceof Error ? error.message : "Impossible de quitter ce carnet."); } finally { setBusy(false); } }
 
@@ -95,8 +99,22 @@ export function TrustedContactDelegationClient() {
         <span className="trusted-tile__hint">Saisir le mot que l’on m’a remis.</span>
       </button>
     </div>
-    <div className="stack"><h3>Mes délégations</h3>{items.length === 0 ? <p className="muted">Aucune délégation.</p> : items.map((item) => <article className="record" key={item.id}><div><strong>{item.invited_email}</strong><p className="muted">{relationships[item.relationship_label] ?? item.relationship_label} · {statuses[item.status] ?? item.status}{item.status === "active" && ` · jusqu’au ${date(item.expires_at)}`}</p></div>{["pending", "active"].includes(item.status) && <button className="button small" disabled={busy} onClick={() => void action(`/api/v1/patient/delegations/${item.id}/revoke/`, "Accès retiré immédiatement.")}>Retirer l’accès</button>}</article>)}</div>
-    {mine.length > 0 && <div className="stack"><h3>Carnets de proches</h3>{mine.map((item) => <article className="record" key={item.id}><div><strong>{item.patient_first_name} {item.patient_last_name}</strong><p className="muted">Lecture seule · fiche d’urgence · jusqu’au {date(item.expires_at)}</p></div>{item.is_selected ? <button className="button small" disabled={busy} onClick={() => void clear()}>Quitter ce carnet</button> : <button className="button small" disabled={busy} onClick={() => void select(item)}>Ouvrir en lecture seule</button>}</article>)}</div>}
+    <div className="stack"><h3>Mes délégations</h3>{items.length === 0 ? <p className="muted">Aucune délégation.</p> : <ProfileGrid label="Mes délégations">{items.map((item) => {
+      const email = item.invited_email ?? "Proche";
+      const link = relationships[item.relationship_label] ?? item.relationship_label;
+      const state = statuses[item.status] ?? item.status;
+      return <Profile key={item.id} name={email} label={email.split("@")[0]} subtitle={`${link} · ${state}`} status={{ label: state, tone: statusTone[item.status] ?? "off" }}
+        rows={[{ label: "E-mail du proche", value: email }, { label: "Lien", value: link }, { label: "État", value: state }, ...(item.status === "active" ? [{ label: "Accès jusqu’au", value: date(item.expires_at) }] : [])]}
+        note={item.status === "pending" ? "Le mot de rattachement n’a pas encore été utilisé. Remettez-le directement à votre proche, sans le stocker dans un message ou un dossier." : item.status === "active" ? "Votre proche voit votre fiche d’urgence en lecture seule. Chaque accès est journalisé." : "Cet accès n’est plus utilisable."}
+        actions={["pending", "active"].includes(item.status) ? [{ label: "Retirer l’accès", tone: "danger", onClick: async ({ close }) => { await revoke(item); close(); } }] : []} />;
+    })}</ProfileGrid>}</div>
+    {mine.length > 0 && <div className="stack"><h3>Carnets de proches</h3><ProfileGrid label="Carnets de proches">{mine.map((item) => {
+      const name = [item.patient_first_name, item.patient_last_name].filter(Boolean).join(" ") || "Proche";
+      return <Profile key={item.id} name={name} label={item.patient_first_name || name} subtitle="Carnet d’un proche" selected={Boolean(item.is_selected)}
+        rows={[{ label: "Accès", value: "Lecture seule · fiche d’urgence" }, { label: "Jusqu’au", value: date(item.expires_at) }, { label: "Carnet affiché", value: item.is_selected ? "Oui" : "Non" }]}
+        note="Vous voyez ce carnet avec votre propre compte, sans mot de passe partagé. Chaque accès est journalisé."
+        actions={[item.is_selected ? { label: "Quitter ce carnet", onClick: async ({ close }) => { await clear(); close(); } } : { label: "Ouvrir en lecture seule", tone: "primary", onClick: async ({ close }) => { await select(item); close(); } }]} />;
+    })}</ProfileGrid></div>}
     <p className="status" role="status" aria-live="polite">{message}</p>
 
     {panel === "give" && <PanelDialog title="Donner accès" lead="Choisissez votre proche, le lien et la durée. Un mot de rattachement temporaire est généré, à lui remettre en main propre." onClose={closePanel}>

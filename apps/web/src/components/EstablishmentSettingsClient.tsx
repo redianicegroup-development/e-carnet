@@ -7,6 +7,7 @@ import { LinkedProvidersSettingsClient } from "./LinkedProvidersSettingsClient";
 import { ProfileSummary } from "./ProfileSummary";
 import { SettingsDirectory, type SettingsNavItem } from "./SettingsDirectory";
 import { SettingsModal } from "./SettingsModal";
+import { NearbyEstablishments } from "./NearbyEstablishments";
 import { SettingsMoreSection } from "./SettingsMoreSection";
 import { OfflineDataToggle } from "./OfflineDataToggle";
 import { LandingFeedbackWidget } from "./LandingFeedbackWidget";
@@ -92,9 +93,10 @@ export function EstablishmentSettingsClient({ laboratory = false }: { laboratory
   const accountName = `${account?.first_name ?? ""} ${account?.last_name ?? ""}`.trim() || account?.email || "Compte établissement";
   const navItems: SettingsNavItem[] = [
     { id: "administratif", title: "Informations administratives", description: "Identité et statut de la structure.", icon: "building" },
-    { id: "coordonnees", title: "Coordonnées", description: "Adresse, contacts et responsable.", icon: "pin" },
+    { id: "coordonnees", title: "Coordonnées", description: "Adresse, position sur la carte, contacts et responsable.", icon: "pin" },
     { id: "ordonnance", title: "Modèle d’ordonnance", description: "En-tête et pied de page imprimables.", icon: "document" },
     { id: "facturation", title: "Facturation", description: "Offres, abonnement, factures et paiements.", icon: "document" },
+    { id: "etablissements-partenaires", title: "Établissements proches de moi", description: "Carte et recherche des hôpitaux, cliniques et centres de santé partenaires.", icon: "pin" },
     { id: "compte", title: "Personnalisation de mon compte", description: "Personnaliser l’apparence de l’application.", icon: "sparkle" },
     { id: "securite", title: "Sécurité et connexion", description: "Fournisseurs de connexion et appareils connectés.", icon: "lock" },
     { id: "hors-connexion", title: "Hors connexion", description: "Naviguer sans réseau avec une copie chiffrée, en lecture seule.", icon: "download" },
@@ -138,6 +140,8 @@ export function EstablishmentSettingsClient({ laboratory = false }: { laboratory
       {activeSection === "ordonnance" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}>{selected?.status === "active" ? <PrescriptionTemplateSettings establishmentId={selected.id} /> : <p className="muted">Le modèle sera disponible lorsque l’établissement sera actif.</p>}</SettingsModal>}
 
       {activeSection === "facturation" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}>{selected ? <EstablishmentBilling key={selected.id} establishmentId={selected.id} /> : <p className="empty">{loading ? "Chargement…" : "Aucune fiche établissement n’est liée à cette session."}</p>}</SettingsModal>}
+
+      {activeSection === "etablissements-partenaires" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Partenaires Mon E‑Carnet</span><NearbyEstablishments /></div></SettingsModal>}
 
       {activeSection === "compte" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Préférences personnelles</span>
         <dl className="settings-details"><div><dt>Responsable du compte</dt><dd>{accountName}</dd></div><div><dt>Email de connexion</dt><dd>{account?.email ?? (loading ? "Chargement…" : "Non disponible")}</dd></div><div><dt>Contexte établissement</dt><dd>{account?.contexts.find((context) => context.role === "establishment")?.is_active ? "Actif" : "Associé au compte"}</dd></div></dl><ThemeSettingsClient compact space="establishment" />

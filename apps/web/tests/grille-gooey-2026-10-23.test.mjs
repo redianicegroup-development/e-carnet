@@ -18,7 +18,7 @@ test("les rubriques pliables des espaces sont posées dans une grille de tuiles"
   assert.doesNotMatch(read("src/components/PatientCarnet.tsx"), /PatientPreconsultations/, "la pré-consultation est dans l'onglet Consultations");
   assert.doesNotMatch(read("src/app/patient/consultations/page.tsx"), /<PatientConsultations \/>/, "l'historique des consultations est dans l'onglet Historique");
   assert.match(read("src/components/PatientHistory.tsx"), /<PatientConsultations \/>/);
-  assert.match(read("src/app/professionnel/consultations/page.tsx"), /className="section-grid"/);
+  assert.match(read("src/app/professionnel/consultations/page.tsx"), /<ProfessionalConsultations tiles=\{/, "les autres tuiles sont posées dans la même grille que « Mes consultations »");
   assert.match(read("src/components/ProfessionalAccess.tsx"), /className="section-grid"/);
   assert.match(read("src/components/ProfessionalConsultations.tsx"), /className="section-grid"/);
   const css = read("src/components/patient-sections.css");

@@ -5,7 +5,8 @@ import { ApiError } from "../infrastructure/api/client";
 import { createLaboratory, isLabFeatureOff, listLaboratories, revokeLaboratoryAdministrator, type CreatedLab, type EstablishmentLab, type LabAdministrator } from "../application/lab-results";
 import { accessMessage, loginUrlFor } from "../lib/share";
 import { ShareCodeButton } from "./ShareCodeButton";
-import { ProfileSheet, type ProfileRow } from "./ui/ProfileSheet";
+import { Profile, ProfileGrid } from "./ui/Profile";
+import type { ProfileRow } from "./ui/ProfileSheet";
 import { RevocationReasonDialog } from "./modal/RevocationReasonDialog";
 import "./lab-results.css";
 
@@ -18,16 +19,15 @@ const ACCESS_LABEL: Record<string, string> = { temporary_password: "Mot de passe
 
 type ProfileTarget = { lab: EstablishmentLab; admin: LabAdministrator };
 
-/* Fiche « Profil » d'un administrateur du laboratoire : prénom, nom, e-mail, état de l'accès. L'établissement peut y révoquer l'accès (avec motif).
-   Même fiche que partout ailleurs (ProfileSheet) : les boutons d'action restent en bas. */
-function AdministratorProfile({ admin, onClose, onRevoke }: { admin: LabAdministrator; onClose: () => void; onRevoke: () => void }) {
-  const rows: ProfileRow[] = [
+/* Fiche « Profil » d'un administrateur du laboratoire (tuile de la liste, composant « Profil ») : prénom, nom, e-mail, état de l'accès. L'établissement
+   peut y révoquer l'accès (avec motif) ; les boutons d'action restent en bas de la fiche. */
+function administratorRows(admin: LabAdministrator): ProfileRow[] {
+  return [
     { label: "Prénom", value: admin.first_name || "Non renseigné" },
     { label: "Nom", value: admin.last_name || "Non renseigné" },
     { label: "E-mail (identifiant de connexion)", value: admin.email },
     { label: "Accès", value: admin.access ? ACCESS_LABEL[admin.access.state] ?? admin.access.state : "Compte activé" },
   ];
-  return <ProfileSheet name={admin.name || "Administrateur"} subtitle="Administrateur du laboratoire" rows={rows} onClose={onClose} actions={[{ label: "Révoquer", tone: "danger", onClick: () => onRevoke() }]} />;
 }
 
 export function EstablishmentLaboratories({ establishmentId }: { establishmentId: string }) {
@@ -39,7 +39,6 @@ export function EstablishmentLaboratories({ establishmentId }: { establishmentId
   const [lastName, setLastName] = useState("");
   const [busy, setBusy] = useState(false);
   const [created, setCreated] = useState<CreatedLab | null>(null);
-  const [profile, setProfile] = useState<ProfileTarget | null>(null);
   const [revokeTarget, setRevokeTarget] = useState<ProfileTarget | null>(null);
   const [revokedNotice, setRevokedNotice] = useState("");
 
@@ -85,7 +84,7 @@ export function EstablishmentLaboratories({ establishmentId }: { establishmentId
       {labs.map((lab) => <li key={lab.id}><strong>{lab.name}</strong>
         {lab.administrators.length === 0
           ? <p className="muted">Aucun administrateur</p>
-          : <ul className="stack lab-admins">{lab.administrators.map((admin) => <li key={admin.id} className="lab-admin-row"><span>{admin.name || "Administrateur"}</span><button type="button" className="button small" onClick={() => setProfile({ lab, admin })}>Profil</button></li>)}</ul>}
+          : <ProfileGrid label={`Administrateurs · ${lab.name}`}>{lab.administrators.map((admin) => <Profile key={admin.id} name={admin.name || "Administrateur"} label={admin.first_name || admin.name || "Administrateur"} subtitle="Administrateur du laboratoire" rows={administratorRows(admin)} actions={[{ label: "Révoquer", tone: "danger", onClick: ({ close }) => { close(); setRevokeTarget({ lab, admin }); } }]} />)}</ProfileGrid>}
       </li>)}
     </ul>}
     {canAdd
@@ -101,7 +100,6 @@ export function EstablishmentLaboratories({ establishmentId }: { establishmentId
       : <p className="notice" role="status">Le laboratoire a atteint le nombre maximum d’administrateurs.</p>}
     {error && <p className="status" role="alert">{error}</p>}
     {revokedNotice && <p className="notice" role="status">{revokedNotice}</p>}
-    {profile && !revokeTarget && <AdministratorProfile admin={profile.admin} onClose={() => setProfile(null)} onRevoke={() => { setRevokeTarget(profile); setProfile(null); }} />}
     {revokeTarget && <RevocationReasonDialog
       title="Révoquer cet administrateur ?"
       message={`${revokeTarget.admin.name || "Cet administrateur"} ne pourra plus utiliser l’espace du ${revokeTarget.lab.name}.`}

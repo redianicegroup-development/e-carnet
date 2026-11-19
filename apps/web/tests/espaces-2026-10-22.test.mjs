@@ -111,7 +111,7 @@ test("Mes consultations, Vaccinations à confirmer et Mes rattachements sont pli
   assert.match(read("src/app/professionnel/consultations/page.tsx"), /<CollapsibleSection title="Vaccinations à confirmer"/);
   const access = read("src/components/ProfessionalAccess.tsx");
   assert.match(access, /<CollapsibleSection title="Mes rattachements"/);
-  assert.match(access, /<EstablishmentLogo logo=\{membership\.establishment_logo\}/);
+  assert.match(read("src/components/ProfessionalMembershipDetail.tsx"), /<EstablishmentLogo logo=\{membership\.establishment_logo\}/);
   assert.match(read("src/components/EstablishmentLogo.tsx"), /Logo de \$\{name\}/);
 });
 

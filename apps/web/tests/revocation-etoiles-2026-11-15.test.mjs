@@ -19,9 +19,8 @@ test("révocation avec motif : fenêtre dédiée, motif obligatoire de 3 à 500 
 
 test("laboratoire : « Profil » par administrateur, fiche (prénom, nom, e-mail, accès) et révocation avec motif", () => {
   const labs = read("src/components/EstablishmentLaboratories.tsx");
-  assert.match(labs, />Profil<\/button>/);
-  assert.match(labs, /function AdministratorProfile/);
-  assert.match(labs, /<ProfileSheet\s+name=/, "la fiche vient du composant Profil commun");
+  assert.match(labs, /<ProfileGrid label=\{`Administrateurs · \$\{lab\.name\}`\}>[\s\S]*<Profile key=\{admin\.id\}/, "chaque administrateur est une photo ; la fiche vient du composant Profil commun (19/11/2026)");
+  assert.match(labs, /function administratorRows/);
   for (const label of ["Prénom", "Nom", "E-mail \\(identifiant de connexion\\)", "Accès"]) assert.match(labs, new RegExp(`\\{ label: "${label}"`));
   assert.match(labs, /label: "Révoquer", tone: "danger"/);
   assert.match(labs, /revokeLaboratoryAdministrator\(establishmentId, revokeTarget\.lab\.id, revokeTarget\.admin\.id, reason\)/);
@@ -35,7 +34,7 @@ test("avis de révocation : montré à la connexion, marqué lu à la fermeture,
   const shell = read("src/components/shell/SpaceShell.tsx");
   assert.match(shell, /revocation_notices\?: RevocationNotice\[\]/);
   assert.match(shell, /!passwordChangePending && \(state\.account\.revocation_notices\?\.length \?\? 0\) > 0/);
-  assert.match(read("src/components/ProfessionalAccess.tsx"), /Rattachement retiré par l’établissement\. Motif/);
+  assert.match(read("src/components/ProfessionalMembershipDetail.tsx"), /Rattachement retiré par l’établissement\. Motif/);
 });
 
 test("API : la révocation exige un motif, prévient par push sans le motif, l'avis suit le compte", () => {
@@ -95,10 +94,11 @@ test("proches de confiance : deux tuiles « Donner accès » / « Reçu accès �
   assert.match(trusted, /tone: "error", title: "Mot de rattachement non généré"/);
   assert.match(trusted, /Mot de rattachement généré/);
   const reps = read("src/components/PatientRepresentationsSettingsClient.tsx");
-  assert.match(reps, /tone: "success", title: "Profil créé"/);
-  assert.match(reps, /tone: "error", title: "Profil non créé"/);
-  assert.doesNotMatch(reps, /pas encore activé/);
-  assert.match(reps, /<label className="check"><input required type="checkbox"/, "case à cocher sortie de .field");
+  const onboarding = read("src/components/ChildOnboarding.tsx");
+  assert.match(onboarding, /tone: "success", title: "Profil créé"/);
+  assert.match(onboarding, /tone: "error", title: "Profil non créé"/);
+  assert.doesNotMatch(reps + onboarding, /pas encore activé/);
+  assert.match(onboarding, /<label className="check"><input required type="checkbox"/, "case à cocher sortie de .field");
   const settings = readApi("config/settings.py");
   assert.match(settings, /ECARNET_TRUSTED_CONTACTS_ENABLED = os\.environ\.get\("ECARNET_TRUSTED_CONTACTS_ENABLED", "true"\)/);
   assert.match(settings, /os\.environ\.get\("ECARNET_REPRESENTATION_LEGAL_AGE", "18"\)/);

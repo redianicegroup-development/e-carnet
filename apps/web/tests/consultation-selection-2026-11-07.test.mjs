@@ -51,7 +51,7 @@ test("rattachements : un seul établissement actif, activé par un bouton ; logo
   const access = read("src/components/ProfessionalAccess.tsx");
   assert.match(access, /Définir comme établissement actif/);
   assert.match(access, /\/api\/v1\/establishments\/active\//);
-  const grants = read("src/components/ProfessionalAccessGrants.tsx");
+  const grants = read("src/components/ProfessionalGrantDetail.tsx");
   assert.match(grants, /<PersonAvatar src=\{item\.patient_avatar\}/);
   assert.match(grants, /<EstablishmentLogo logo=\{item\.establishment_logo\}/);
   assert.match(read("src/components/EstablishmentLogo.tsx"), /onError=\{\(\) => setFailed\(true\)\}/, "une image cassée retombe sur les initiales");
@@ -65,7 +65,7 @@ test("déconnexion, révocation, fin de rattachement : boutons rouges et confirm
   }
   assert.match(read("src/app/admin/page.tsx"), /Fermer la session administrateur[\s\S]{0,500}tone: "danger"/);
   assert.match(read("src/components/PatientAccessGrants.tsx"), /className="button primary danger"[^\n]*Révoquer cet accès maintenant/);
-  assert.match(read("src/components/ProfessionalAccess.tsx"), /button small primary danger[^\n]*Mettre fin à ce rattachement/);
+  assert.match(read("src/components/ProfessionalAccess.tsx"), /label: "Mettre fin à mon rattachement", tone: "danger"/, "bouton rouge dans la fiche du rattachement");
   assert.match(read("src/components/LinkedProvidersSettingsClient.tsx"), /button small primary danger[^\n]*askUnlink/);
   assert.match(read("src/components/AdminSettingsClient.tsx"), /button primary danger[^\n]*Déconnexion/);
   const css = read("src/app/soft-skin.css");

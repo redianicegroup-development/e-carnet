@@ -25,7 +25,7 @@ test("les croix viennent des lignes de l'offre suivante : rien d'inventé, « To
 test("pastille inclinée sur l'offre actuelle et sur la prochaine période ; bouton « Choisir » seulement pour une offre en libre-service", () => {
   const source = read("components/EstablishmentBilling.tsx");
   assert.match(source, /current \? "Offre actuelle" : "Prochaine période"/);
-  assert.match(source, /!offer\.self_service \? <p className="billing__quote">Contactez l’équipe Mon E‑Carnet pour un devis\.<\/p>/);
+  assert.match(source, /!offer\.self_service \? <div className="billing__quote"><p>Contactez l’équipe Mon E‑Carnet pour un devis\.<\/p><a className="billing__cta billing__cta--primary" href=\{quoteRequestHref\(/, "offre sur devis : bouton « Demander un devis » vers l'e-mail de l'équipe (message prérempli)");
   assert.match(source, /className="billing__cta billing__cta--primary" onClick=\{\(\) => \{ setChoice\(offer\); setInstructions\(null\); \}\}/);
   const css = read("components/billing.css");
   assert.match(css, /\.billing__sticker \{[^}]*transform: rotate\(4deg\)/);

@@ -3,6 +3,7 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { ApiError, apiGet, apiPatch } from "../infrastructure/api/client";
 import { AvatarPicker } from "./AvatarPicker";
+import { EstablishmentLocationField, type LocationFields } from "./EstablishmentLocationField";
 
 /* Formulaire unique de la structure, utilisé à trois endroits : la fiche d'onboarding (« all »), « Informations administratives »
    (« identity ») et « Coordonnées » (« contact ») des paramètres. Une seule source pour les règles :
@@ -31,7 +32,7 @@ export type EstablishmentProfile = {
   /** Nom de l'établissement qui a demandé le rattachement du laboratoire ; vide pour une structure ordinaire. */
   parent_name?: string;
   locked_fields?: string[];
-};
+} & LocationFields;
 export type EditorScope = "all" | "identity" | "contact";
 type Load = { status: "loading" } | { status: "error"; message: string; unauthorized: boolean } | { status: "ready"; profile: EstablishmentProfile };
 type Values = { name: string; establishment_type: string; city: string; address: string; phone: string };
@@ -157,6 +158,7 @@ export function EstablishmentProfileEditor({ scope, establishmentId, submitLabel
           <label className="field"><span>Téléphone</span><input required type="tel" inputMode="tel" maxLength={32} autoComplete="tel" placeholder="+225 07 00 00 00 00" value={values.phone} onChange={(event) => set("phone", event.target.value)} disabled={busy} /></label>
         </div>
         <label className="field"><span>Adresse ou BP (facultatif)</span><input maxLength={240} autoComplete="street-address" value={values.address} onChange={(event) => set("address", event.target.value)} disabled={busy} /></label>
+        {!lab && <EstablishmentLocationField variant={scope === "all" ? "onboarding" : "settings"} profile={profile} onProfileChange={(saved) => setLoad({ status: "ready", profile: saved })} disabled={busy} />}
         <label className="field"><span>E‑mail de la structure (verrouillé)</span>
           <input type="email" value={profile.email} readOnly aria-readonly="true" autoComplete="off" />
           <small className="muted">C’est l’e‑mail du compte avec lequel votre accès a été ouvert : il ne se modifie pas ici.</small>

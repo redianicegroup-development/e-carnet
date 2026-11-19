@@ -59,11 +59,39 @@ class Establishment(models.Model):
     # Date de première complétion de la fiche (information). La complétude elle‑même se lit sur les champs : tant que la
     # fiche est incomplète, la structure n'apparaît pas dans le catalogue des médecins et ne peut pas émettre de code.
     profile_completed_at = models.DateTimeField(null=True, blank=True)
+    # Position GPS de la structure, confirmée UNE fois par son administrateur (épingle posée sur la carte, jamais déduite de l'adresse :
+    # à Abidjan les adresses écrites sont trop imprécises). `location_confirmed_at` vide alors que les coordonnées existent = l'adresse ou
+    # la ville a changé depuis : l'épingle est à reconfirmer et la structure sort de la recherche des patients en attendant.
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
+    location_confirmed_at = models.DateTimeField(null=True, blank=True)
+    # Choix de l'établissement : apparaître dans « Établissements partenaires ». Désactivé par défaut, jamais activé à sa place.
+    is_listed_in_directory = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ("-created_at",)
+
+    @property
+    def has_location(self):
+        return self.latitude is not None and self.longitude is not None
+
+    @property
+    def location_status(self):
+        """missing = jamais posée ; to_confirm = posée mais l'adresse a changé depuis ; confirmed = à jour."""
+        if not self.has_location:
+            return "missing"
+        return "confirmed" if self.location_confirmed_at else "to_confirm"
+
+    @classmethod
+    def listed_in_directory(cls):
+        """Structures visibles dans la recherche des patients : mêmes conditions que le catalogue des médecins (fiche complète, statut
+        « Active » donc non suspendue, pas un laboratoire), plus une position confirmée et le choix explicite de l'établissement."""
+        return cls.with_complete_profile().filter(
+            status="active", is_laboratory=False, is_listed_in_directory=True,
+            location_confirmed_at__isnull=False, latitude__isnull=False, longitude__isnull=False,
+        )
 
     @property
     def is_profile_complete(self):
@@ -76,6 +104,25 @@ class Establishment(models.Model):
         for field in PROFILE_FIELDS:
             missing |= models.Q(**{field: ""})
         return cls.objects.exclude(missing)
+
+
+class EstablishmentLocationChange(models.Model):
+    """Historique des positions d'une structure : une épingle fausse enverrait un patient au mauvais endroit, il faut pouvoir dire
+    qui l'a posée, quand, et ce qu'elle remplaçait. Les coordonnées d'un établissement sont une donnée professionnelle publique,
+    pas une donnée de santé : elles ne passent donc pas par le journal d'audit (dont les métadonnées sont volontairement restreintes)."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    establishment = models.ForeignKey(Establishment, on_delete=models.PROTECT, related_name="location_changes")
+    changed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="establishment_location_changes")
+    previous_latitude = models.FloatField(null=True, blank=True)
+    previous_longitude = models.FloatField(null=True, blank=True)
+    # Vides = position retirée par l'établissement.
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+        indexes = [models.Index(fields=("establishment", "created_at"), name="estab_locchange_idx")]
 
 
 class PrescriptionTemplate(models.Model):

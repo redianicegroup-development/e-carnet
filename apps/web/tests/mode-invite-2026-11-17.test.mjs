@@ -6,9 +6,9 @@ import test from "node:test";
 
 const read = (rel) => readFileSync(new URL(`../${rel}`, import.meta.url), "utf8");
 
-test("l'accueil professionnel a une tuile « Mode invité » à côté de « Mes consultations »", () => {
+test("l'accueil professionnel a une tuile « Mode invité » avant « Mes consultations » (les tuiles d'abord, 19/11/2026)", () => {
   const source = read("src/components/ProfessionalConsultations.tsx");
-  assert.match(source, /title="Mes consultations"[\s\S]*<\/CollapsibleSection><CollapsibleSection title="Mode invité" icon="idcard" hint="Patient sans téléphone"><ProfessionalGuestAccess onReady=\{openGuestGrant\} \/>/);
+  assert.match(source, /<CollapsibleSection title="Mode invité" icon="idcard" hint="Patient sans téléphone"><ProfessionalGuestAccess onReady=\{openGuestGrant\} \/><\/CollapsibleSection>\{tiles\}<CollapsibleSection title="Mes consultations" alwaysOpen/);
 });
 
 test("le mode invité du professionnel ne laisse jamais le profil seul : comparaison avec la personne présente avant l'accès", () => {

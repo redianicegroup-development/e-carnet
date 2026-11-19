@@ -48,9 +48,9 @@ export const HERO_SLIDE_INTERVAL_MS = 4000;
 export const HERO = {
   title: APP_SLOGAN,
   lead: "Réunissez vos informations de santé, remettez votre carnet au médecin et choisissez qui peut le consulter.",
-  primary: { href: "/connexion", label: "Commencer" },
+  primary: { href: "/connexion?mode=register", label: "S’inscrire gratuitement" },
   secondary: { href: "/connexion?mode=register&profil=professionnel", label: "Je suis professionnel" },
-  /** Second bouton du héro (à côté de « Commencer ») : mène au parcours en trois étapes, plus bas dans la page. */
+  /** Second bouton du héro (à côté de « S’inscrire gratuitement ») : mène au parcours en trois étapes, plus bas dans la page. */
   tour: { href: "/#parcours", label: "Comment ça marche" },
   note: "Organisez vos informations de santé dans votre espace sécurisé.",
   /** Texte qui apparaît par-dessus l'image quand elle occupe tout l'écran. Décoratif : repris par la section « confiance ». */
@@ -83,7 +83,7 @@ export const STEPS: Step[] = [
 
 export type Profile = { icon: IconName; label: string; title: string; points: string[]; photo: { src: string; alt: string }; cta: { href: string; text: string; subject?: string; track?: "signup" | "professional_signup" } };
 export const PROFILES: Profile[] = [
-  { icon: "user", label: "Patients", title: "Votre santé, organisée", points: ["Présentez votre QR : le médecin consulte votre carnet", "Gardez la maîtrise des accès"], photo: { src: "/landing/role-patient.webp", alt: "Un patient consulte son carnet sur son téléphone dans une salle d’attente ; un médecin travaille dans la pièce voisine." }, cta: { href: "/connexion", text: "Commencer", track: "signup" } },
+  { icon: "user", label: "Patients", title: "Votre santé, organisée", points: ["Présentez votre QR : le médecin consulte votre carnet", "Gardez la maîtrise des accès"], photo: { src: "/landing/role-patient.webp", alt: "Un patient consulte son carnet sur son téléphone dans une salle d’attente ; un médecin travaille dans la pièce voisine." }, cta: { href: "/connexion?mode=register", text: "S’inscrire gratuitement", track: "signup" } },
   { icon: "stethoscope", label: "Professionnels", title: "Un accès patient par patient", points: ["Scannez le QR du patient et consultez depuis votre espace", "Établissez vos préconisations, elles rejoignent son carnet"], photo: { src: "/landing/role-professional.webp", alt: "Un médecin en blouse consulte un téléphone dans un couloir d’hôpital." }, cta: { href: "/connexion?mode=register&profil=professionnel", text: "Créer mon profil" } },
   { icon: "building", label: "Établissements", title: "Gérez vos rattachements", points: ["Invitez les professionnels", "Traitez les demandes de rattachement"], photo: { src: "/landing/role-establishment.webp", alt: "Une femme sort d’un hôpital en souriant, son téléphone à la main." }, cta: { href: "#contact", text: "Contacter l’équipe", subject: "establishment" } },
 ];
@@ -117,8 +117,8 @@ export const FAQ_ITEMS: FaqItem[] = [
 /** Dernière section : l'invitation à créer son espace, puis le formulaire de contact (une seule section, un seul bouton principal).
  *  `points` résume la valeur en trois lignes, au-dessus du bouton. */
 export const FINAL = {
-  title: "Ouvrez votre carnet avant votre prochain rendez-vous.",
-  lead: "Commencez par l’essentiel, le reste peut venir plus tard.",
+  title: "Ne perdez plus le fil de vos antécédents médicaux.",
+  lead: "Centralisez vos informations de santé et gardez une trace de votre parcours médical.",
   points: [
     "Votre carnet réuni au même endroit",
     "Le médecin consulte votre carnet avec votre QR",

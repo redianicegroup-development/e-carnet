@@ -9,6 +9,7 @@ import { PatientHealthSettingsClient } from "./PatientHealthSettingsClient";
 import { ProfileSummary, usePatientStats } from "./ProfileSummary";
 import { SettingsDirectory, type SettingsNavItem } from "./SettingsDirectory";
 import { SettingsModal } from "./SettingsModal";
+import { NearbyEstablishments } from "./NearbyEstablishments";
 import { SettingsMoreSection } from "./SettingsMoreSection";
 import { LandingFeedbackWidget } from "./LandingFeedbackWidget";
 import { ThemeSettingsClient } from "./ThemeSettingsClient";
@@ -32,6 +33,7 @@ type Account = { first_name: string; last_name: string; email: string; avatar_ur
 const sections: SettingsNavItem[] = [
   { id: "personnel", title: "Mes informations personnelles", description: "Modifier mon nom et ma photo de profil.", icon: "idcard" },
   { id: "sante", title: "Informations de santé déclaratives", description: "Téléphone, adresse et couverture santé.", icon: "heart" },
+  { id: "etablissements-partenaires", title: "Établissements proches de moi", description: "Carte et recherche des hôpitaux, cliniques et centres de santé partenaires.", icon: "pin" },
   { id: "notifications", title: "Notifications", description: "Consulter les notifications de votre carnet et les marquer comme lues.", icon: "bell" },
   { id: "recapitulatif-acces", title: "Récapitulatif des accès", description: "Recevoir un résumé périodique des lectures de votre carnet.", icon: "eye" },
   { id: "hors-connexion", title: "Hors connexion", description: "Naviguer sans réseau avec une copie chiffrée de vos données, en lecture seule.", icon: "download" },
@@ -170,6 +172,8 @@ export function AccountSettingsClient() {
         <div className="actions"><Link className="button" href="/patient/carnet">Gérer mes déclarations du carnet</Link></div>
         <PatientHealthSettingsClient />
       </div></SettingsModal>}
+
+      {activeSection === "etablissements-partenaires" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Partenaires Mon E‑Carnet</span><NearbyEstablishments /></div></SettingsModal>}
 
       {activeSection === "notifications" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><PushNotificationToggle /><div className="settings-modal-section"><PatientNotifications /></div></SettingsModal>}
 

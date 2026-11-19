@@ -31,7 +31,7 @@ test("la page Suivi ouvre le patient scanné, retire le paramètre de l'adresse 
   assert.match(tsx, /votre accès à son carnet se fermera automatiquement/);
 });
 
-test("« Mes demandes » : toutes les cartes sont des rectangles identiques", () => {
+test("« Mes demandes » : chaque demande est une photo ronde (composant « Profil »), la fiche détaille tout (19/11/2026)", () => {
   const css = read("src/components/consultation-flow.css");
   const tsx = read("src/components/ProfessionalAccessGrants.tsx");
   const card = css.match(/\.record\.request-row \{[^}]*\}/)?.[0] ?? "";
@@ -43,8 +43,8 @@ test("« Mes demandes » : toutes les cartes sont des rectangles identiques", ()
   assert.match(css, /\.request-list \{[^}]*display: grid[^}]*repeat\(auto-fill/);
   // Plus de colonne latérale qui écrase le texte : trois zones (identité, périmètre, pied) dans chaque carte, quel que soit le statut.
   assert.doesNotMatch(css, /request-row__side/);
-  assert.match(tsx, /className="request-list"/);
-  assert.match(tsx, /request-row__who[\s\S]*request-row__scope[\s\S]*request-row__foot/);
+  assert.match(tsx, /<ProfileGrid label="Demandes d’accès">[\s\S]*<Profile key=\{item\.id\} \{\.\.\.base\}/, "la liste est une grille de photos, sans carte de texte");
+  assert.match(tsx, /label: "Terminer l’accès", tone: "danger"/, "l'action est dans la fiche");
 });
 
 test("le message de bienvenue est centré au milieu de l'écran, sur PC comme sur mobile, avec la goutte gooey née en son centre", () => {
