@@ -1,4 +1,4 @@
-// PRO-21 — espace laboratoire : trois onglets (Scanner, Dépôts, Moi), choisi d'après le contexte du compte, historique filtrable.
+// PRO-21 — espace laboratoire : quatre onglets (Accueil, Scanner, Dépôts, Moi), choisi d'après le contexte du compte, historique filtrable.
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
@@ -13,18 +13,19 @@ const history = await import("../src/lib/lab-history.ts");
 const LAB = [{ role: "establishment", is_active: true, onboarding_completed: true, is_laboratory: true }];
 const CLINIC = [{ role: "establishment", is_active: true, onboarding_completed: true, is_laboratory: false }];
 
-test("l'espace laboratoire a trois onglets : Scanner, Dépôts, Moi — le compte reste « établissement » côté serveur", () => {
+test("l'espace laboratoire a quatre onglets : Accueil, Scanner, Dépôts, Moi — le compte reste « établissement » côté serveur", () => {
   const lab = spaces.SPACES.laboratory;
-  assert.deepEqual(lab.tabs.map((tab) => tab.id), ["scanner", "depots", "moi"]);
-  assert.deepEqual(lab.tabs.map((tab) => tab.href), ["/laboratoire", "/laboratoire/depots", "/laboratoire/parametres"]);
+  assert.deepEqual(lab.tabs.map((tab) => tab.id), ["home", "scanner", "depots", "moi"]);
+  assert.deepEqual(lab.tabs.map((tab) => tab.href), ["/laboratoire", "/laboratoire/scanner", "/laboratoire/depots", "/laboratoire/parametres"]);
   assert.equal(lab.role, "establishment");
   assert.equal(lab.home, "/laboratoire");
   assert.equal(lab.tabs.at(-1).id, "moi");
-  const [scanner, depots, moi] = lab.tabs;
-  assert.ok(scanner.match("/laboratoire") && !scanner.match("/laboratoire/depots"));
+  const [home, scanner, depots, moi] = lab.tabs;
+  assert.ok(home.match("/laboratoire") && !home.match("/laboratoire/scanner") && !home.match("/laboratoire/depots"), "l'accueil n'est actif que sur /laboratoire");
+  assert.ok(scanner.match("/laboratoire/scanner") && !scanner.match("/laboratoire"));
   assert.ok(depots.match("/laboratoire/depots") && !depots.match("/laboratoire"));
   assert.ok(moi.match("/laboratoire/parametres"));
-  assert.equal(spaces.visibleTabsFor("laboratory", false).length, 3);
+  assert.equal(spaces.visibleTabsFor("laboratory", false).length, 4);
 });
 
 test("l'espace établissement garde ses cinq onglets, sans rien de laboratoire", () => {
@@ -52,11 +53,11 @@ test("aucun changement de contexte serveur n'est demandé pour l'espace laborato
 
 test("la visite guidée du laboratoire désigne de vrais onglets", () => {
   const targets = tour.tourSteps("laboratory").map((step) => step.target).filter(Boolean);
-  assert.deepEqual(targets, ["nav-scanner", "nav-depots", "account"]);
+  assert.deepEqual(targets, ["nav-home", "nav-scanner", "nav-depots", "account"]);
   for (const target of targets.filter((value) => value.startsWith("nav-"))) assert.ok(spaces.SPACES.laboratory.tabs.some((tab) => `nav-${tab.id}` === target), target);
 });
 
-test("hors connexion : les trois écrans du laboratoire sont de vraies pages, tous préparés", () => {
+test("hors connexion : les quatre écrans du laboratoire sont de vraies pages, tous préparés", () => {
   for (const route of routes.SPACE_ROUTES.laboratory) assert.ok(existsSync(new URL(`../src/app${route}/page.tsx`, import.meta.url)), route);
   for (const tab of spaces.SPACES.laboratory.tabs) assert.ok(routes.SPACE_ROUTES.laboratory.includes(tab.href), tab.href);
 });

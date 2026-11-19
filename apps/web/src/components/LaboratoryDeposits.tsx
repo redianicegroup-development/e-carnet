@@ -59,7 +59,7 @@ export function LaboratoryDeposits() {
       {loading && !history && <p className="muted" role="status">Chargement…</p>}
       {history && items.length === 0 && !loading && <div className="empty stack">
         <p>{filter.period === "all" ? "Aucun dépôt pour le moment." : "Aucun dépôt sur cette période."}</p>
-        <div className="actions"><Link className="button small" href="/laboratoire">Scanner un QR d’examen</Link></div>
+        <div className="actions"><Link className="button small" href="/laboratoire/scanner">Scanner un QR d’examen</Link></div>
       </div>}
       {history && items.length > 0 && visible.length === 0 && <p className="empty">Aucun résultat pour cette recherche.</p>}
       {groups.map((group) => <div className="lab-day" key={group.day}>

@@ -58,6 +58,7 @@ const STEPS: Record<TourSpace, TourStep[]> = {
   ],
   laboratory: [
     { id: "welcome", icon: "sparkle", tag: "Bienvenue", title: "Bienvenue dans l’espace laboratoire", text: "Vous ne lisez aucun dossier : vous scannez le QR d’examen du patient, vous vérifiez son identité, puis vous déposez le résultat en PDF." },
+    { id: "home", target: "nav-home", icon: "home", tag: "Accueil", title: "Vos dépôts en un coup d’œil", text: "Les dépôts du jour et de la semaine, les résultats remplacés ou abandonnés, et deux graphiques. Aucun nom de patient n’y figure." },
     { id: "scanner", target: "nav-scanner", icon: "qr", tag: "Scanner", title: "Scanner le QR d’examen", text: "Le patient montre son QR d’examen. Vous voyez son nom, sa date de naissance et les examens demandés, rien d’autre. Confirmez son identité avant tout dépôt." },
     { id: "depots", target: "nav-depots", icon: "document", tag: "Dépôts", title: "Retrouver vos dépôts", text: "Chaque résultat déposé, remplacé par une version corrigée, ou abandonné par le médecin. Filtrez par statut ou par période ; le contenu des fichiers n’est jamais relu." },
     { ...ACCOUNT_STEP, text: "Votre compte, le centre d’aide et la déconnexion se trouvent dans le menu du compte. Vous pouvez aussi y revoir cette visite guidée." },

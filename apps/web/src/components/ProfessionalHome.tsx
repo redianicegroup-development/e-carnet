@@ -1,14 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { displayName, useSpaceAccount } from "./shell/SpaceShell";
 import { useProfessionalProfile } from "./ClinicalGate";
 import { Icon } from "./ui/Icon";
 import { ProfessionalToday } from "./ProfessionalToday";
 import { ProfessionalAttestationsTile } from "./ProfessionalAttestations";
-import { listProfessionalConsultations, listProfessionalGrants } from "../application/professional-access-grants";
-import { ProfessionalDashboardChart } from "./RoleDashboards";
+import { ProfessionalKpis } from "./ProfessionalKpis";
 import { ProfessionalDossier } from "./ProfessionalDossier";
 import { SetupCard, type SetupStep } from "./SetupCard";
 
@@ -23,14 +21,6 @@ export function ProfessionalHome() {
   const pending = memberships.some((item) => item.status === "pending");
   const attached = memberships.some((item) => item.status === "active");
   const ready = Boolean(profile?.clinical_access.allowed);
-  const [activity, setActivity] = useState<{ grants: number; activeGrants: number; consultations: number } | null>(null);
-  useEffect(() => {
-    if (!ready) return;
-    let mounted = true;
-    Promise.all([listProfessionalGrants(), listProfessionalConsultations()]).then(([grants, consultations]) => { if (mounted) setActivity({ grants: grants.length, activeGrants: grants.filter((item) => item.status === "active").length, consultations: consultations.length }); }).catch(() => { if (mounted) setActivity({ grants: 0, activeGrants: 0, consultations: 0 }); });
-    return () => { mounted = false; };
-  }, [ready]);
-
   const steps: SetupStep[] = [
     { key: "profile", title: "Profil professionnel", text: hasProfile ? `${profile?.specialty || "Spécialité à renseigner"} · déclarée, non certifiée par Mon E‑Carnet.` : "Déclarez votre profession et votre spécialité, sans numéro ni pièce justificative.", done: hasProfile, href: "/professionnel/onboarding" },
     { key: "attach", title: "Rattachement à un établissement", text: attached ? "L’établissement a confirmé votre rattachement." : pending ? "Votre établissement examine votre demande." : "Saisissez le code remis par votre établissement.", done: attached, href: "/professionnel/acces" },
@@ -53,9 +43,9 @@ export function ProfessionalHome() {
       {state.status === "error" && <p className="notice" role="alert">{state.message}</p>}
       {state.status !== "loading" && state.status !== "error" && <SetupCard title="Quelques étapes avant d’ouvrir un carnet" steps={steps} actionLabel={actionLabel} />}
       {ready && <ProfessionalToday />}
+      {ready && <ProfessionalKpis />}
       {ready && <ProfessionalAttestationsTile />}
       {account && hasProfile && <ProfessionalDossier account={account} profile={profile} />}
-      {activity && ready && <div className="role-dashboard-grid"><ProfessionalDashboardChart metrics={[{ label: "Demandes", value: activity.grants }, { label: "Accès actifs", value: activity.activeGrants }, { label: "Consultations", value: activity.consultations }]} /></div>}
     </div>
   );
 }

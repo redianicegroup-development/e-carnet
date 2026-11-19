@@ -1,7 +1,7 @@
-import { LaboratoryScanner } from "../../components/LaboratoryScanner";
+import { LaboratoryHome } from "../../components/LaboratoryHome";
 
-export const metadata = { title: "Scanner — Espace laboratoire — Mon E-Carnet", robots: { index: false, follow: false } };
+export const metadata = { title: "Accueil — Espace laboratoire — Mon E-Carnet", robots: { index: false, follow: false } };
 
 export default function LaboratoryPage() {
-  return <LaboratoryScanner />;
+  return <LaboratoryHome />;
 }

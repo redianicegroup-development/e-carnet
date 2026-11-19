@@ -7,6 +7,7 @@ import { PatientBanner } from "./PatientBanner";
 import { displayName, useSpaceAccount } from "./shell/SpaceShell";
 import { Icon, type IconName } from "./ui/Icon";
 import { PatientHomeIdentity } from "./PatientHomeIdentity";
+import { PatientKpis } from "./PatientKpis";
 import { PatientShareQrButton } from "./PatientShareQr";
 import { PatientToday } from "./PatientToday";
 import { SetupCard, type SetupStep } from "./SetupCard";
@@ -95,6 +96,8 @@ export function PatientHome() {
       <PatientToday />
 
       <SetupCard title="Construire mon carnet essentiel" text="Commencez par les informations utiles au quotidien. Vous pourrez modifier chaque élément plus tard." steps={setupSteps} />
+
+      <PatientKpis carnet={summary ? { declarations: summary.declarations, documents: summary.documents, vaccinations: summary.vaccinations } : null} />
 
       {todos.length > 0 && (
         <section className="stack" aria-labelledby="home-todo-title" aria-live="polite">

@@ -7,7 +7,7 @@ export type Tab = { id: string; label: string; long: string; href: string; icon:
 const exact = (href: string) => (path: string) => path === href;
 const section = (...hrefs: string[]) => (path: string) => hrefs.some((href) => path === href || path.startsWith(`${href}/`));
 
-/* Navigation courte : cinq entrées maximum par espace (l'espace laboratoire n'en a que trois : il scanne, il dépose, il consulte ses dépôts). Les fonctions secondaires vivent dans l'écran de leur domaine,
+/* Navigation courte : cinq entrées maximum par espace (l'espace laboratoire n'en a que quatre : son accueil, il scanne et dépose, il consulte ses dépôts, son compte). Les fonctions secondaires vivent dans l'écran de leur domaine,
    plutôt que de créer un onglet séparé pour chaque action. */
 export const SPACES: Record<SpaceId, { label: string; role: string; home: string; tabs: Tab[]; bare: string[]}> = {
   patient: {
@@ -45,7 +45,8 @@ export const SPACES: Record<SpaceId, { label: string; role: string; home: string
   laboratory: {
     label: "Espace laboratoire", role: "establishment", home: "/laboratoire", bare: [],
     tabs: [
-      { id: "scanner", label: "Scanner", long: "Scanner le QR d’examen et déposer un résultat", href: "/laboratoire", icon: "qr", match: exact("/laboratoire") },
+      { id: "home", label: "Accueil", long: "Accueil · indicateurs de vos dépôts", href: "/laboratoire", icon: "home", match: exact("/laboratoire") },
+      { id: "scanner", label: "Scanner", long: "Scanner le QR d’examen et déposer un résultat", href: "/laboratoire/scanner", icon: "qr", match: section("/laboratoire/scanner") },
       { id: "depots", label: "Dépôts", long: "Historique de vos dépôts de résultats", href: "/laboratoire/depots", icon: "document", match: section("/laboratoire/depots") },
       { id: "moi", label: "Moi", long: "Mon compte et paramètres", href: "/laboratoire/parametres", icon: "user", match: section("/laboratoire/parametres") },
     ],

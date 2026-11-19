@@ -46,8 +46,8 @@ const STEPS: Record<TourSpace, RawStep[]> = {
     ACCOUNT_STEP,
   ],
   laboratory: [
-    { id: "scan", href: "/laboratoire", target: "howto-lab-scan", icon: "qr", tag: "Scanner", title: "Scanner le QR d’examen", text: "Le patient vous montre son QR d’examen. Scannez-le, ou saisissez son code (EXQ1…) si la caméra n’est pas disponible. Vous ne voyez que son nom, sa date de naissance et les examens demandés." },
-    { id: "deposit", href: "/laboratoire", icon: "document", tag: "Déposer", title: "Vérifier la personne, puis déposer", text: "Confirmez que le nom et la date de naissance correspondent à la personne présente, puis déposez un PDF par examen. Un second dépôt remplace le premier, qui reste conservé comme version remplacée." },
+    { id: "scan", href: "/laboratoire/scanner", target: "howto-lab-scan", icon: "qr", tag: "Scanner", title: "Scanner le QR d’examen", text: "Le patient vous montre son QR d’examen. Scannez-le, ou saisissez son code (EXQ1…) si la caméra n’est pas disponible. Vous ne voyez que son nom, sa date de naissance et les examens demandés." },
+    { id: "deposit", href: "/laboratoire/scanner", icon: "document", tag: "Déposer", title: "Vérifier la personne, puis déposer", text: "Confirmez que le nom et la date de naissance correspondent à la personne présente, puis déposez un PDF par examen. Un second dépôt remplace le premier, qui reste conservé comme version remplacée." },
     { id: "history", href: "/laboratoire/depots", target: "nav-depots", icon: "clock", tag: "Retrouver", title: "Retrouver vos dépôts", text: "L’onglet Dépôts liste chaque résultat déposé, remplacé ou abandonné par le médecin. Le contenu des fichiers n’est jamais relu." },
     ACCOUNT_STEP,
   ],

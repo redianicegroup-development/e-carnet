@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useId, useMemo } from "react";
 import { AvatarBadge } from "./shell/SpaceShell";
-import { Icon, type IconName } from "./ui/Icon";
+import { Icon } from "./ui/Icon";
 import { splitFullName } from "../lib/join-codes";
+import { KpiStat } from "./dashboard/SpaceKpis";
 import "./establishment-dashboard.css";
 
 /* Tableau de bord de l'accueil établissement (PLAN : maquette « dashboard » — indicateurs, activité de la semaine, rappel, demandes,
@@ -27,16 +28,6 @@ const hourOnly = new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-
 
 function Avatar({ member, size }: { member: DashboardMember; size: number }) {
   return <AvatarBadge size={size} account={{ ...splitFullName(member.professional_name), email: member.professional_email ?? "", avatar_url: member.professional_avatar_url ?? "" }} />;
-}
-
-function Stat({ href, icon, label, value, hint, featured = false }: { href?: string; icon: IconName; label: string; value: number; hint: string; featured?: boolean }) {
-  const body = <>
-    <span className="edash-stat__top"><span className="edash-stat__label">{label}</span>{href && <span className="edash-stat__go" aria-hidden="true"><Icon name="arrowUp" size={16} style={{ transform: "rotate(45deg)" }} /></span>}</span>
-    <span className="edash-stat__value">{value}</span>
-    <span className="edash-stat__hint"><span className="edash-stat__chip" aria-hidden="true"><Icon name={icon} size={13} /></span>{hint}</span>
-  </>;
-  const className = `edash-card edash-stat${featured ? " edash-stat--featured" : ""}`;
-  return href ? <Link className={`${className} is-link`} href={href}>{body}</Link> : <div className={className}>{body}</div>;
 }
 
 /* Jauge en demi-cercle : trois segments (confirmés, en attente, autres) sur un seul arc de longueur 100. */
@@ -105,10 +96,10 @@ export function EstablishmentDashboard({ establishmentName, memberships, activeJ
       </header>
 
       <div className="edash__grid">
-        <Stat featured href="/etablissement/medecins" icon="users" label="Médecins actifs" value={stats.active.length} hint={stats.newThisMonth ? `+${stats.newThisMonth} ces 30 derniers jours` : "Équipe rattachée"} />
-        <Stat href="/etablissement/demandes" icon="document" label="Demandes à traiter" value={stats.pending.length} hint={stats.pending.length ? "En attente de votre réponse" : "Aucune en attente"} />
-        <Stat icon="clock" label="Rendez-vous à venir" value={stats.upcoming.length} hint={`${stats.weekTotal} cette semaine`} />
-        <Stat href="/etablissement/medecins" icon="qr" label="Codes médecin actifs" value={activeJoinCodeCount} hint="Non utilisés · valables 48 h" />
+        <KpiStat featured href="/etablissement/medecins" icon="users" label="Médecins actifs" value={stats.active.length} hint={stats.newThisMonth ? `+${stats.newThisMonth} ces 30 derniers jours` : "Équipe rattachée"} />
+        <KpiStat href="/etablissement/demandes" icon="document" label="Demandes à traiter" value={stats.pending.length} hint={stats.pending.length ? "En attente de votre réponse" : "Aucune en attente"} />
+        <KpiStat icon="clock" label="Rendez-vous à venir" value={stats.upcoming.length} hint={`${stats.weekTotal} cette semaine`} />
+        <KpiStat href="/etablissement/medecins" icon="qr" label="Codes médecin actifs" value={activeJoinCodeCount} hint="Non utilisés · valables 48 h" />
 
         <article className="edash-card edash-week" aria-labelledby="edash-week-title">
           <h3 id="edash-week-title" className="edash-card__title">Rendez-vous de la semaine</h3>
