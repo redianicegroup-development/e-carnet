@@ -7,7 +7,6 @@ import { LinkedProvidersSettingsClient } from "./LinkedProvidersSettingsClient";
 import { ProfileSummary } from "./ProfileSummary";
 import { SettingsDirectory, type SettingsNavItem } from "./SettingsDirectory";
 import { SettingsModal } from "./SettingsModal";
-import { NearbyEstablishments } from "./NearbyEstablishments";
 import { SettingsMoreSection } from "./SettingsMoreSection";
 import { OfflineDataToggle } from "./OfflineDataToggle";
 import { PatientEmergencyCardSettingsClient } from "./PatientEmergencyCardSettingsClient";
@@ -82,7 +81,7 @@ export function ProfessionalSettingsClient() {
   const navItems: SettingsNavItem[] = [
     { id: "professionnel", title: "Informations professionnelles", description: "Profession et spécialité déclarée.", icon: "stethoscope" },
     { id: "etablissement", title: activeEstablishment ? `Mon établissement — ${activeEstablishment.name}` : "Mon établissement", description: "Établissement actif et rattachements.", icon: "building" },
-    { id: "etablissements-partenaires", title: "Établissements proches de moi", description: "Carte et recherche des hôpitaux, cliniques et centres de santé partenaires.", icon: "pin" },
+    { id: "etablissements-partenaires", title: "Établissements proches de moi", description: "Carte et recherche des hôpitaux, cliniques et centres de santé partenaires.", icon: "pin", href: "/professionnel/parametres/etablissements-proches" },
     { id: "compte", title: "Personnalisation de mon compte", description: "Personnaliser l’apparence de l’application.", icon: "sparkle" },
     { id: "securite", title: "Sécurité et connexion", description: "Fournisseurs de connexion et appareils connectés.", icon: "lock" },
     { id: "hors-connexion", title: "Hors connexion", description: "Naviguer sans réseau avec une copie chiffrée, en lecture seule.", icon: "download" },
@@ -107,8 +106,6 @@ export function ProfessionalSettingsClient() {
       {activeSection === "professionnel" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Profil professionnel</span><dl className="settings-details"><div><dt>Profession</dt><dd>{profile?.professional_title || "À renseigner"}</dd></div><div><dt>Spécialité</dt><dd>{profile?.specialty || "À renseigner"}</dd></div></dl><p className="settings-note muted">La spécialité est déclarée par vous. Les justificatifs médicaux ne sont pas collectés par Mon E‑Carnet : leur vérification relève de l’établissement.</p><div className="actions"><Link className="button" href="/professionnel/onboarding?retour=parametres">Modifier mon profil</Link></div></div>{profile && <ProfessionalCredentialsSettings profile={profile} onSaved={(saved) => setProfile((current) => current ? { ...current, ...saved } : current)} />}</SettingsModal>}
 
       {activeSection === "etablissement" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Rattachement</span><dl className="settings-details"><div><dt>Établissement actif</dt><dd>{activeEstablishment ? <span className="professional-dossier__etab"><EstablishmentLogo logo={activeEstablishment.logo} name={activeEstablishment.name} size={32} />{activeEstablishment.name}</span> : (profile?.active_establishment ? "Établissement actif" : "Aucun établissement actif")}</dd></div><div><dt>Email de connexion</dt><dd>{account?.email ?? (loading ? "Chargement…" : "Non disponible")}</dd></div></dl><div className="actions"><Link className="button" href="/professionnel/acces">Gérer les rattachements</Link></div></div></SettingsModal>}
-
-      {activeSection === "etablissements-partenaires" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Partenaires Mon E‑Carnet</span><NearbyEstablishments /></div></SettingsModal>}
 
       {activeSection === "compte" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Préférences personnelles</span><p className="muted">Responsable du compte : {fullName} · {account?.email ?? "Email non disponible"}</p><ThemeSettingsClient compact space="professional" /></div></SettingsModal>}
 

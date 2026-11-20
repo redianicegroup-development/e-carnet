@@ -80,7 +80,7 @@ const sections: LegalSectionDef[] = [
     id: "liens",
     title: "Éléments provenant de sites tiers",
     body: (
-      <p>Le service s’appuie sur Cloudinary pour héberger des fichiers, et peut afficher des éléments hébergés ailleurs, par exemple la photo de profil fournie par Google, Facebook ou Apple. L’éditeur ne contrôle pas ces sites. Se connecter avec Google, Facebook ou Apple, c’est aussi accepter les conditions de ces entreprises.</p>
+      <p>Le service s’appuie sur Cloudinary pour héberger des fichiers, affiche des cartes dont le fond est fourni par OpenStreetMap (© contributeurs d’OpenStreetMap), et peut afficher des éléments hébergés ailleurs, par exemple la photo de profil fournie par Google, Facebook ou Apple. L’éditeur ne contrôle pas ces sites. Se connecter avec Google, Facebook ou Apple, c’est aussi accepter les conditions de ces entreprises.</p>
     ),
   },
   {

@@ -9,13 +9,13 @@ import { PatientHealthSettingsClient } from "./PatientHealthSettingsClient";
 import { ProfileSummary, usePatientStats } from "./ProfileSummary";
 import { SettingsDirectory, type SettingsNavItem } from "./SettingsDirectory";
 import { SettingsModal } from "./SettingsModal";
-import { NearbyEstablishments } from "./NearbyEstablishments";
 import { SettingsMoreSection } from "./SettingsMoreSection";
 import { LandingFeedbackWidget } from "./LandingFeedbackWidget";
 import { ThemeSettingsClient } from "./ThemeSettingsClient";
 import { AccountActionRequestsSettingsClient } from "./AccountActionRequestsSettingsClient";
 import { PatientEmergencyCardSettingsClient } from "./PatientEmergencyCardSettingsClient";
 import { PatientProfileSwitcher } from "./PatientProfileSwitcher";
+import { ChildPhotoForm } from "./ChildPhotoForm";
 import { PatientRepresentationsSettingsClient } from "./PatientRepresentationsSettingsClient";
 import { usePatientProfiles } from "./usePatientProfiles";
 import { TrustedContactDelegationClient } from "./TrustedContactDelegationClient";
@@ -33,20 +33,17 @@ type Account = { first_name: string; last_name: string; email: string; avatar_ur
 const sections: SettingsNavItem[] = [
   { id: "personnel", title: "Mes informations personnelles", description: "Modifier mon nom et ma photo de profil.", icon: "idcard" },
   { id: "sante", title: "Informations de santé déclaratives", description: "Téléphone, adresse et couverture santé.", icon: "heart" },
-  { id: "etablissements-partenaires", title: "Établissements proches de moi", description: "Carte et recherche des hôpitaux, cliniques et centres de santé partenaires.", icon: "pin" },
+  { id: "etablissements-partenaires", title: "Établissements proches de moi", description: "Carte et recherche des hôpitaux, cliniques et centres de santé partenaires.", icon: "pin", href: "/patient/parametres/etablissements-proches" },
   { id: "notifications", title: "Notifications", description: "Consulter les notifications de votre carnet et les marquer comme lues.", icon: "bell" },
   { id: "recapitulatif-acces", title: "Récapitulatif des accès", description: "Recevoir un résumé périodique des lectures de votre carnet.", icon: "eye" },
   { id: "hors-connexion", title: "Hors connexion", description: "Naviguer sans réseau avec une copie chiffrée de vos données, en lecture seule.", icon: "download" },
-  { id: "proches", title: "Profils", description: "Gérer les profils des enfants que vous représentez.", icon: "users" },
+  { id: "proches", title: "Carnet enfant", description: "Créer et gérer le carnet de vos enfants : photo, accès, suppression.", icon: "users" },
   { id: "proches-de-confiance", title: "Proches de confiance", description: "Inviter ou retirer un accès limité à la fiche d’urgence.", icon: "users" },
   { id: "compte", title: "Personnalisation de mon compte", description: "Personnaliser l’apparence de l’application.", icon: "sparkle" },
   { id: "securite", title: "Sécurité et connexion", description: "Fournisseurs de connexion et appareils connectés.", icon: "lock" },
   { id: "en-savoir-plus", title: "En savoir plus", description: "Aide, informations et documents Mon E‑Carnet.", icon: "help" },
   { id: "avis", title: "Noter l’application", description: "Partager une suggestion ou signaler un problème.", icon: "pencil" },
 ];
-/* Rubriques qui concernent le titulaire lui-même (son identité, ses profils d'enfants, ses proches de confiance) : elles ne s'affichent pas
-   tant qu'un profil d'enfant est ouvert. Pour y revenir, on repasse sur « Compte patient » avec la flèche de la carte du haut. */
-const HOLDER_ONLY_SECTIONS = new Set(["personnel", "proches", "proches-de-confiance"]);
 function titleFor(id: string) { return sections.find((section) => section.id === id)?.title ?? "Paramètres"; }
 function initials(account: Account) { return `${account.first_name?.[0] ?? ""}${account.last_name?.[0] ?? ""}`.toUpperCase() || "EC"; }
 
@@ -55,9 +52,9 @@ function PatientSummary({ account, message, profiles, active, onError }: { accou
   const holderName = [account.first_name, account.last_name].filter(Boolean).join(" ") || "Mon compte";
   return (
     <ProfileSummary
-      avatar={<div className="avatar avatar--large" aria-hidden="true">{active ? profileInitials(active) : account.avatar_url ? <img src={account.avatar_url} alt="" /> : initials(account)}</div>}
+      avatar={<div className="avatar avatar--large" aria-hidden="true">{active ? (active.avatar_url ? <img src={active.avatar_url} alt="" /> : profileInitials(active)) : account.avatar_url ? <img src={account.avatar_url} alt="" /> : initials(account)}</div>}
       eyebrow={accountLabel(active)}
-      eyebrowAction={profiles.length > 0 ? <PatientProfileSwitcher holderName={holderName} holderInitials={initials(account)} profiles={profiles} active={active} onError={onError} /> : undefined}
+      eyebrowAction={profiles.length > 0 ? <PatientProfileSwitcher holderName={holderName} holderInitials={initials(account)} holderPhoto={account.avatar_url} profiles={profiles} active={active} onError={onError} /> : undefined}
       name={active ? profileName(active) : holderName} stats={stats}
     >
       <p className="notice" role="status" aria-live="polite">{active ? `Vous consultez le profil de ${active.first_name}. Chacun de vos accès à ce dossier est journalisé.` : message}</p>
@@ -75,9 +72,9 @@ export function AccountSettingsClient() {
   const [signingOut, setSigningOut] = useState(false);
   const [requestedSection, setActiveSection] = useState<string | null>(null);
   const { usable: childProfiles, active: activeChild } = usePatientProfiles();
-  const visibleSections = activeChild ? sections.filter((section) => !HOLDER_ONLY_SECTIONS.has(section.id)) : sections;
-  // Rubrique réellement ouverte : celle demandée, si elle existe pour le profil affiché (voir HOLDER_ONLY_SECTIONS).
-  const activeSection = visibleSections.some((section) => section.id === requestedSection) ? requestedSection : null;
+  // Les paramètres ne changent PAS quand un compte enfant est ouvert (décision du 19/11/2026) : toutes les rubriques restent là, dont « Carnet enfant »
+  // et « Proches de confiance », qui concernent le titulaire. Seule « Mes informations personnelles » suit le profil ouvert (photo de l'enfant).
+  const activeSection = sections.some((section) => section.id === requestedSection) ? requestedSection : null;
 
   useEffect(() => {
     const requested = new URLSearchParams(window.location.search).get("section");
@@ -155,9 +152,13 @@ export function AccountSettingsClient() {
 
       <PatientEmergencyCardSettingsClient key={activeChild?.patient_id ?? "holder"} profile={activeChild} />
 
-      <SettingsDirectory items={visibleSections} activeId={activeSection} onSelect={setActiveSection} onLogout={() => void logout()} logoutDisabled={signingOut} />
+      <SettingsDirectory items={sections} activeId={activeSection} onSelect={setActiveSection} onLogout={() => void logout()} logoutDisabled={signingOut} />
 
-      {activeSection === "personnel" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section">
+      {activeSection === "personnel" && activeChild && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section">
+        <span className="eyebrow">{profileName(activeChild)}</span><p className="muted">Vous modifiez les informations du profil de {activeChild.first_name}. Sa photo est aussi celle que vous voyez dans votre compte (liste des profils, choix du profil).</p>
+        <ChildPhotoForm key={activeChild.patient_id} profile={activeChild} />
+      </div></SettingsModal>}
+      {activeSection === "personnel" && !activeChild && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section">
         <span className="eyebrow">Mon identité</span><p className="muted">Votre nom et votre photo sont rattachés à votre compte Mon E‑Carnet.</p>
         <form className="settings-form" onSubmit={saveIdentity}>
           <div className="auth-name-grid"><label className="field"><span>Prénom</span><input name="first_name" required autoComplete="given-name" defaultValue={account.first_name} disabled={busy} /></label><label className="field"><span>Nom</span><input name="last_name" required autoComplete="family-name" defaultValue={account.last_name} disabled={busy} /></label></div>
@@ -172,8 +173,6 @@ export function AccountSettingsClient() {
         <div className="actions"><Link className="button" href="/patient/carnet">Gérer mes déclarations du carnet</Link></div>
         <PatientHealthSettingsClient />
       </div></SettingsModal>}
-
-      {activeSection === "etablissements-partenaires" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Partenaires Mon E‑Carnet</span><NearbyEstablishments /></div></SettingsModal>}
 
       {activeSection === "notifications" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><PushNotificationToggle /><div className="settings-modal-section"><PatientNotifications /></div></SettingsModal>}
 

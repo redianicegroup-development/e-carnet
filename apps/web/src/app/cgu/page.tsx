@@ -69,6 +69,7 @@ const sections: LegalSectionDef[] = [
         <p>L’administrateur d’un établissement ou d’un laboratoire reçoit un mot de passe temporaire, valable 7 jours. Il se connecte avec son adresse e-mail et ce mot de passe, puis choisit aussitôt son mot de passe personnel ; le mot de passe temporaire ne peut pas être conservé. Celui qui le remet (y compris avec le bouton « Partager ») ne le communique qu’à la personne concernée et répond de cette transmission.</p>
         <p>Un patient, un professionnel, un administrateur d’établissement, un administrateur de laboratoire et le personnel de l’éditeur n’ont pas les mêmes droits. Un même compte peut disposer de plusieurs rôles.</p>
         <p>Mineurs : <Fill k="privacy.minors" />.</p>
+        <p><strong>Carnet enfant.</strong> Un titulaire adulte peut ouvrir, depuis Moi › Carnet enfant, le dossier distinct d’un enfant mineur sans compte dont il est le représentant légal. Il confirme y être autorisé, renseigne l’identité et la date de naissance de l’enfant, peut ajouter sa photo et compléter son carnet. Cette confirmation est déclarée par lui : l’éditeur ne la vérifie pas. Le représentant répond de l’exactitude de ces informations et de l’usage qu’il fait de ce dossier ; chacun de ses accès au dossier de l’enfant est enregistré. Il peut couper son lien (le dossier est alors conservé et le lien peut être réactivé) ou supprimer le profil en indiquant un motif ; cette suppression est définitive (voir « Suspension et clôture »). Devenu adulte, l’enfant ouvre son propre compte et demande lui-même le transfert de son dossier.</p>
       </>
     ),
   },
@@ -108,6 +109,16 @@ const sections: LegalSectionDef[] = [
         </ol>
         <p>Avant d’accepter une demande, le patient vérifie qui la fait, de quel établissement, ce qui est demandé et pour combien de temps. Il peut aussi remettre à un proche de confiance un mot de rattachement (un code utilisable une seule fois) : le proche utilise son propre compte et peut seulement lire la fiche d’urgence. Ce n’est ni un partage de mot de passe, ni une représentation légale. Quand un accès ou un partage prend fin, les consultations déjà validées et le journal des accès (la liste de qui a ouvert quoi, et quand) ne sont pas effacés.</p>
         <p>Un partage avec un autre établissement reste limité à ce que le patient a choisi, et dépend de sa décision. Dans la version actuelle, l’établissement qui reçoit ne peut pas chercher des patients librement, son administrateur ne reçoit pas automatiquement le contenu médical, et aucune copie n’est gardée une fois la période de lecture terminée.</p>
+      </>
+    ),
+  },
+  {
+    id: "annuaire",
+    title: "Établissements proches de moi",
+    body: (
+      <>
+        <p>Un utilisateur connecté peut consulter, sur une page dédiée (Moi › Établissements proches de moi), la carte et la liste des établissements partenaires qui ont choisi d’y apparaître. Chaque établissement renseigne lui-même ses informations (nom, type, ville, adresse, téléphone, position et logo) et en répond : l’éditeur ne garantit ni leur exactitude, ni la disponibilité des soins, ni les horaires. Cette page n’est pas un service d’urgence.</p>
+        <p>Le bouton « Autour de moi » demande la position de l’appareil, uniquement quand l’utilisateur le touche, pour trier la liste par distance. Cette position est calculée sur l’appareil : elle n’est ni envoyée à l’éditeur, ni enregistrée. L’utilisateur peut la refuser et chercher à la main. Le fond de carte est fourni par OpenStreetMap, un service tiers qui reçoit les parties de carte affichées, par exemple le quartier de l’utilisateur (voir la politique de confidentialité).</p>
       </>
     ),
   },
@@ -195,6 +206,7 @@ const sections: LegalSectionDef[] = [
     body: (
       <>
         <p>L’éditeur peut suspendre un accès en cas de menace pour la sécurité, d’usage contraire aux présentes conditions ou de demande d’une autorité compétente.</p>
+        <p>Le représentant d’un enfant peut supprimer le profil de cet enfant depuis Moi › Carnet enfant, en indiquant un motif et en confirmant. La suppression est définitive : l’identité, la photo et les données saisies pour l’enfant (déclarations, documents, vaccins, mesures, rappels, plans de suivi, rendez-vous, carte d’urgence) sont effacées et les accès ouverts sont retirés. Les consultations déjà signées par un professionnel et le journal des accès restent conservés, sans l’identité de l’enfant.</p>
         <p>L’utilisateur peut demander, depuis les paramètres de son compte, une suspension temporaire (pour une durée proposée, 90 jours au plus, traitée par l’équipe) ou la suppression de son compte. Après sa confirmation, la suppression coupe tout de suite l’accès et rend l’identité anonyme ; ses effets sur les données sont expliqués dans la politique de confidentialité, section « Vos droits ».</p>
         <p>Comment un compte est fermé et ce que cela change pour les données : <Fill k="terms.closure" />.</p>
       </>

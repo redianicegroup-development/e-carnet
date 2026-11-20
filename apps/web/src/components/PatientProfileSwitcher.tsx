@@ -9,7 +9,7 @@ import "./patient-profiles.css";
 /* Flèche à côté de la pastille « Compte patient » / « Compte enfant » : ouvre la liste des profils du compte (le titulaire, puis chaque enfant).
    Choisir un profil le rend actif côté serveur et prévient l'application, qui recharge alors le contenu de ce profil.
    Menu à choix unique (role="menu" + menuitemradio) : flèches haut/bas pour naviguer, Échap pour fermer. */
-export function PatientProfileSwitcher({ holderName, holderInitials, profiles, active, onError }: { holderName: string; holderInitials: string; profiles: PatientProfileEntry[]; active: PatientProfileEntry | null; onError?: (message: string) => void }) {
+export function PatientProfileSwitcher({ holderName, holderInitials, holderPhoto, profiles, active, onError }: { holderName: string; holderInitials: string; holderPhoto?: string; profiles: PatientProfileEntry[]; active: PatientProfileEntry | null; onError?: (message: string) => void }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const root = useRef<HTMLSpanElement>(null);
@@ -79,7 +79,7 @@ export function PatientProfileSwitcher({ holderName, holderInitials, profiles, a
         <ul ref={menu} id={menuId} className="profile-menu" role="menu" aria-label="Profils du compte" style={{ top: placed.top, left: placed.left, width: placed.width }}>
           <li role="none">
             <button type="button" role="menuitemradio" aria-checked={!active} className="profile-menu__item" disabled={busy} onClick={() => void choose(null)}>
-              <span className="profile-menu__avatar" aria-hidden="true">{holderInitials}</span>
+              <span className="profile-menu__avatar" aria-hidden="true">{holderPhoto ? <img src={holderPhoto} alt="" referrerPolicy="no-referrer" /> : holderInitials}</span>
               <span className="profile-menu__text"><strong>{holderName}</strong><small>{HOLDER_LABEL}</small></span>
               {!active && <Icon name="check" size={18} />}
             </button>
@@ -87,7 +87,7 @@ export function PatientProfileSwitcher({ holderName, holderInitials, profiles, a
           {profiles.map((profile) => (
             <li role="none" key={profile.patient_id}>
               <button type="button" role="menuitemradio" aria-checked={profile.patient_id === active?.patient_id} className="profile-menu__item" disabled={busy} onClick={() => void choose(profile.patient_id)}>
-                <span className="profile-menu__avatar" aria-hidden="true">{profileInitials(profile)}</span>
+                <span className="profile-menu__avatar" aria-hidden="true">{profile.avatar_url ? <img src={profile.avatar_url} alt="" referrerPolicy="no-referrer" /> : profileInitials(profile)}</span>
                 <span className="profile-menu__text"><strong>{profileName(profile)}</strong><small>{CHILD_LABEL}</small></span>
                 {profile.patient_id === active?.patient_id && <Icon name="check" size={18} />}
               </button>

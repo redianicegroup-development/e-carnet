@@ -22,7 +22,7 @@ function memory(initial = {}) {
 test("chaque espace a son guide : étapes courtes, identifiants uniques, menu du compte en dernier", () => {
   for (const space of SPACE_IDS) {
     const steps = howto.howToSteps(space, ready);
-    assert.ok(steps.length >= 4 && steps.length <= 5, `${space} : un guide court`);
+    assert.ok(steps.length >= 4 && steps.length <= (space === "patient" ? 6 : 5), `${space} : un guide court`);
     assert.equal(new Set(steps.map((step) => step.id)).size, steps.length, `${space} : identifiants uniques`);
     assert.equal(steps.at(-1).target, "account", `${space} : la dernière étape montre le menu du compte`);
     for (const step of steps) assert.ok(step.title && step.text && step.tag && step.icon, `${space}/${step.id} est complet`);
@@ -31,7 +31,7 @@ test("chaque espace a son guide : étapes courtes, identifiants uniques, menu du
 
 test("les étapes suivent les parcours décrits, dans l'ordre", () => {
   const ids = (space) => howto.howToSteps(space, ready).map((step) => step.id);
-  assert.deepEqual(ids("patient"), ["prepare", "share", "history", "account"]);
+  assert.deepEqual(ids("patient"), ["prepare", "share", "history", "child", "trusted", "account"], "20/11/2026 : Carnet enfant et Proches de confiance sont expliqués");
   assert.deepEqual(ids("professional"), ["attach", "credentials", "scan", "consult", "account"]);
   assert.deepEqual(ids("establishment"), ["codes", "approve", "records", "account"]);
   assert.deepEqual(ids("laboratory"), ["scan", "deposit", "history", "account"]);
@@ -66,7 +66,8 @@ test("les repères désignés existent vraiment dans l'interface", () => {
       if (step.target.startsWith("nav-")) assert.ok(tabIds.has(step.target.slice(4)), `${space}/${step.id} : l'onglet ${step.target} existe`);
       else if (step.target.startsWith("settings-")) {
         assert.match(read("src/components/SettingsDirectory.tsx"), /data-tour=\{`settings-\$\{item\.id\}`\}/);
-        assert.match(read("src/components/ProfessionalSettingsClient.tsx"), new RegExp(`id: "${step.target.slice(9)}", title: "Informations professionnelles"`));
+        const settingsFile = space === "patient" ? "AccountSettingsClient" : "ProfessionalSettingsClient";
+        assert.match(read(`src/components/${settingsFile}.tsx`), new RegExp(`id: "${step.target.slice(9)}", title: "`), `${space}/${step.id} : la rubrique ${step.target} existe dans les paramètres`);
       } else {
         assert.ok(markers[step.target], `${space}/${step.id} : repère ${step.target} connu`);
         assert.match(read(markers[step.target]), new RegExp(`data-tour="${step.target}"`));

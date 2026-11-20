@@ -1,5 +1,17 @@
 > **Référence d’état auditée le 06/11/2026.** L’état courant du code, des tests et de l’exploitation est centralisé dans [`ETAT-REEL-PROJET-2026-11-06.md`](ETAT-REEL-PROJET-2026-11-06.md). Les documents datés conservent leur valeur historique ; leurs affirmations ne remplacent pas le code ni cette référence. Une fonctionnalité présente dans le dépôt n’est pas pour autant déployée, validée en staging ou autorisée pour des données réelles.
 
+## Modifications du 20/11/2026 (carnet enfant, établissements proches en page, guide et pages d'information)
+
+- **Grilles de profils** : au moins 3 par ligne sur mobile ; correction d'un bug où le titulaire et les enfants étaient posés dans la même case (deux « Ange » empilés). `ProfileGrid` aplatit les tableaux imbriqués.
+- **Bandeau « Compte enfant »** : plus de texte « chaque accès à ce dossier est journalisé » ; le nom de l'enfant et « Revenir à mon compte » restent.
+- **Paramètres stables en compte enfant** : « Carnet enfant » (ex-« Profils ») et « Proches de confiance » restent visibles ; « Mes informations personnelles » affiche alors la photo de l'enfant ouvert.
+- **Photo d'un carnet enfant** : ajouter, modifier ou retirer, depuis la fiche (Carnet enfant) ou « Mes informations personnelles » ; elle se retrouve aussitôt chez le titulaire (liste, « Pour qui est cette consultation ? », menu de changement de compte). API : `PATCH /api/v1/patient/representations/<id>/avatar/`.
+- **Suppression d'un carnet enfant avec motif** (définitive) : `POST /api/v1/patient/representations/<id>/delete/` ; efface l'identité, la photo et les données saisies pour l'enfant, révoque les accès, garde sans identité les consultations signées et le journal d'audit. Migration `patients/0016` (statut `deleted`, motif, précision, date). **L'API doit être redéployée.**
+- **« Établissements proches de moi » devient une page** (plus un modal) : `/patient|professionnel|etablissement|laboratoire/parametres/etablissements-proches`, liée depuis les paramètres de chaque espace (`SettingsDirectory` accepte une entrée à `href`).
+- **Guide « Comment ça marche ? »** (patient) : deux étapes ajoutées, Carnet enfant et Proches de confiance.
+- **Pages d'information** : Aide (photo, suppression, établissements proches), « Proches et enfants », CGU (carnet enfant, annuaire des établissements, suppression), Confidentialité (profil d'un enfant, établissements partenaires, OpenStreetMap, conservation), Mentions légales (OpenStreetMap). Les textes juridiques décrivent ce que fait l'application et restent à faire valider par un juriste.
+- **Point d'attention** : le fond de carte est chargé depuis OpenStreetMap ; après « Autour de moi », la zone affichée (votre quartier) lui est donc visible, même si votre position GPS n'est jamais envoyée. C'est écrit dans la page, l'aide, les CGU et la politique de confidentialité.
+
 ## Modifications du 19/11/2026 (suite : tuiles « Profil », onboarding enfant, devis)
 
 - **Composant « Profil » = tuile** : toutes les listes de personnes et d'établissements n'affichent plus que la photo ronde (et un nom court), comme les dossiers patients ; un toucher ouvre la fiche en modal avec les informations et les boutons d'action en bas (`ProfileGrid` + `Profile`). Écrans convertis : rattachements du professionnel, patients reçus récemment, mes demandes, administrateurs de laboratoire, proches de confiance (délégations et carnets de proches), profils d'enfants, et « Pour qui est cette consultation ? » (le choix se fait depuis la fiche, le profil choisi a un anneau plein).

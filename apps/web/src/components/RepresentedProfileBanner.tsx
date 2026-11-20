@@ -16,7 +16,7 @@ export function RepresentedProfileBanner() {
   }
   return (
     <aside className="notice trusted-delegation-banner represented-banner" role="status" aria-label={CHILD_LABEL}>
-      <p><span className="eyebrow">{CHILD_LABEL}</span> <strong>{profileName(active)}</strong> · chaque accès à ce dossier est journalisé.</p>
+      <p><span className="eyebrow">{CHILD_LABEL}</span> <strong>{profileName(active)}</strong></p>
       <button className="button small" type="button" onClick={() => void back()}>Revenir à mon compte</button>
       {message && <p className="status">{message}</p>}
     </aside>

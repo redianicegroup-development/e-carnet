@@ -47,3 +47,18 @@ def store_child_avatar(patient, data_url: str) -> None:
 def child_avatar(patient) -> str:
     """Ce que l'application affiche : l'URL Cloudinary, sinon la `data:` URL gardée dans le profil, sinon rien (initiales)."""
     return patient.avatar_url or patient.avatar_data or ""
+
+
+def clear_child_avatar(patient) -> None:
+    """Retire la photo de l'enfant (retour aux initiales). Le fichier Cloudinary est détruit au mieux : un échec n'empêche pas de retirer la photo."""
+    if patient.avatar_url and CLOUDINARY_CONFIGURED:
+        try:
+            import cloudinary.uploader
+            from apps.cloudinary_storage import CLOUDINARY_BASE_FOLDER
+
+            cloudinary.uploader.destroy(f"{CLOUDINARY_BASE_FOLDER}/avatars/children/{patient.id}", resource_type="image", type="upload", invalidate=True)
+        except Exception:  # noqa: BLE001 - la photo n'est plus affichée même si la destruction distante échoue
+            pass
+    patient.avatar_url = ""
+    patient.avatar_data = ""
+    patient.save(update_fields=("avatar_url", "avatar_data", "updated_at"))

@@ -7,8 +7,8 @@ import { PublicShell } from "../../components/public/PublicShell";
 import { Icon, type IconName } from "../../components/ui/Icon";
 
 export const metadata: Metadata = {
-  title: "Proches de confiance et profil enfant — Mon E-Carnet",
-  description: "Comment fonctionnent le proche de confiance et le profil enfant : qui voit quoi, comment les créer et les retirer.",
+  title: "Proches de confiance et carnet enfant — Mon E-Carnet",
+  description: "Comment fonctionnent le proche de confiance et le carnet enfant : qui voit quoi, comment les créer, les retirer ou les supprimer.",
   robots: { index: true, follow: true },
 };
 
@@ -22,11 +22,12 @@ const TRUSTED_STEPS: Step[] = [
 ];
 
 const CHILD_STEPS: Step[] = [
-  { icon: "pencil", title: "Vous créez le profil de l’enfant", text: "Dans Moi → Profils : prénom, nom, date de naissance et lien avec vous. L’enfant n’a pas besoin de compte. Vous complétez ensuite son carnet (étape 2), quand vous voulez." },
+  { icon: "pencil", title: "Vous ouvrez le carnet de l’enfant", text: "Dans Moi → Carnet enfant → « Ajouter un carnet enfant » : photo, prénom, nom, date de naissance, puis son carnet (ville, téléphone…), dans un seul parcours. L’enfant n’a pas besoin de compte. Un message vous confirme la réussite, ou l’échec et son motif." },
   { icon: "check", title: "Vous confirmez être son représentant légal", text: "Une case à cocher l’atteste. L’information est déclarée par vous : Mon E‑Carnet ne la certifie pas." },
   { icon: "idcard", title: "Son dossier est distinct du vôtre", text: "L’enfant a son propre carnet, avec ses déclarations et son historique. Rien n’est mélangé avec le vôtre." },
   { icon: "shield", title: "Vous choisissez quel profil vous ouvrez", text: "Le vôtre ou celui de l’enfant, avec la flèche de la carte « Compte patient » dans Moi, ou au début d’une consultation. Le compte affiché devient « Compte enfant », et vos actions sont journalisées." },
-  { icon: "lock", title: "Vous pouvez retirer le lien", text: "Le dossier et son historique sont conservés ; seul le lien de représentation est révoqué." },
+  { icon: "user", title: "Vous gérez sa photo", text: "Depuis la fiche de l’enfant (Moi → Carnet enfant), « Ajouter une photo » ou « Modifier la photo ». Elle apparaît aussitôt dans votre compte : liste des carnets enfants, choix « Pour qui est cette consultation ? », menu de changement de compte." },
+  { icon: "lock", title: "Vous retirez le lien ou vous supprimez le profil", text: "« Révoquer » coupe seulement le lien : le dossier et son historique sont conservés, et le lien peut être réactivé. « Supprimer le profil » est définitif : vous indiquez un motif, puis l’identité, la photo et tout ce qui a été saisi pour l’enfant sont effacés. Les consultations déjà signées et la liste des accès restent, sans son identité." },
 ];
 
 function StepList({ steps }: { steps: Step[] }) {
@@ -65,7 +66,7 @@ export default function TrustedContactsAndChildrenPage() {
 
           <section className="security__principles" aria-labelledby="enfant-titre">
             <div className="info-page__section-intro">
-              <span className="eyebrow">Profil enfant</span>
+              <span className="eyebrow">Carnet enfant</span>
               <h2 id="enfant-titre">Un dossier séparé pour un enfant mineur sans compte.</h2>
               <p className="muted">Pour un parent ou un représentant légal. Une délégation pour un adulte n’entre pas dans ce parcours : un adulte doit autoriser lui-même ce qu’il partage.</p>
             </div>
@@ -76,7 +77,7 @@ export default function TrustedContactsAndChildrenPage() {
             <div className="info-page__section-intro"><span className="eyebrow">En un coup d’œil</span><h2 id="diff-titre">Ce qui change entre les deux.</h2></div>
             <div className="security__grid">
               <article className="card security__card"><span className="security__icon" aria-hidden="true"><Icon name="users" size={23} /></span><div><h3>Proche de confiance</h3><ul className="muted"><li>Compte propre : oui</li><li>Voit : la fiche d’urgence, en lecture seule</li><li>Lien : mot temporaire à usage unique</li><li>Retrait : par le patient, à tout moment</li></ul></div></article>
-              <article className="card security__card"><span className="security__icon" aria-hidden="true"><Icon name="idcard" size={23} /></span><div><h3>Profil enfant</h3><ul className="muted"><li>Compte propre : non, l’enfant n’en a pas</li><li>Voit : son propre dossier, ouvert par le représentant</li><li>Lien : représentation déclarée, actions journalisées</li><li>Retrait : le lien est révoqué, le dossier est conservé</li></ul></div></article>
+              <article className="card security__card"><span className="security__icon" aria-hidden="true"><Icon name="idcard" size={23} /></span><div><h3>Carnet enfant</h3><ul className="muted"><li>Compte propre : non, l’enfant n’en a pas</li><li>Voit : son propre dossier, ouvert par le représentant</li><li>Lien : représentation déclarée, actions journalisées</li><li>Retrait : le lien est révoqué (dossier conservé) ou le profil est supprimé, avec un motif</li></ul></div></article>
             </div>
           </section>
 

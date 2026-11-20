@@ -8,12 +8,15 @@ import { useConfirm } from "./modal/ConfirmProvider";
 import { Profile, ProfileGrid } from "./ui/Profile";
 import type { ProfileAction, ProfileRow } from "./ui/ProfileSheet";
 import { ChildOnboarding } from "./ChildOnboarding";
+import { ChildPhotoForm } from "./ChildPhotoForm";
+import { DeleteChildProfileDialog } from "./DeleteChildProfileDialog";
+import { PanelDialog } from "./modal/PanelDialog";
 import "./patient-profiles.css";
 
 /* « Profils » (Paramètres > Compte patient) : les profils d'enfants rattachés au compte.
    - la liste : la photo ronde de chaque enfant (composant « Profil », comme partout) ; un toucher ouvre sa fiche (prénom, nom, identifiant, Fermer,
      Copier l'identifiant, Révoquer) ;
-   - « Ajouter un profil » ouvre l'onboarding de l'enfant (ChildOnboarding : photo, date de naissance, carnet) ;
+   - « Ajouter un carnet enfant » ouvre l'onboarding de l'enfant (ChildOnboarding : photo, date de naissance, carnet) ;
    - on ne change PAS de profil ici : le switch est dans Paramètres, sur la carte « Compte patient » (flèche). */
 
 const STATUS_LABELS: Record<PatientProfileEntry["status"], string> = { active: "Lien actif", revoked: "Lien révoqué", transferred: "Dossier transféré" };
@@ -34,6 +37,8 @@ export function PatientRepresentationsSettingsClient() {
   const confirm = useConfirm();
   const [items, setItems] = useState<PatientProfileEntry[]>([]);
   const [adding, setAdding] = useState(false);
+  const [photoTarget, setPhotoTarget] = useState<PatientProfileEntry | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<PatientProfileEntry | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("Chargement des profils…");
@@ -101,12 +106,15 @@ export function PatientRepresentationsSettingsClient() {
     }
   }
 
-  /* Boutons de la fiche (toujours en bas, après « Fermer ») : copier l'identifiant ; révoquer un lien actif ou réactiver un lien révoqué. */
+  /* Boutons de la fiche (toujours en bas, après « Fermer ») : modifier la photo ; copier l'identifiant ; révoquer un lien actif ou réactiver un lien
+     révoqué ; supprimer le profil, avec motif (définitif). */
   function profileActions(item: PatientProfileEntry): ProfileAction[] {
     return [
+      ...(item.status === "active" ? [{ label: item.avatar_url ? "Modifier la photo" : "Ajouter une photo", disabled: busy, onClick: ({ close }: { close: () => void }) => { close(); setPhotoTarget(item); } }] : []),
       { label: "Copier l’identifiant", disabled: busy, onClick: () => copyId(item) },
       ...(item.status === "active" ? [{ label: "Révoquer", tone: "danger" as const, disabled: busy, onClick: async ({ close }: { close: () => void }) => { if (await revoke(item)) close(); } }] : []),
       ...(item.status === "revoked" ? [{ label: "Réactiver le lien", disabled: busy, onClick: () => reactivate(item) }] : []),
+      { label: "Supprimer le profil", tone: "danger" as const, disabled: busy, onClick: ({ close }: { close: () => void }) => { close(); setDeleteTarget(item); } },
     ];
   }
 
@@ -122,8 +130,8 @@ export function PatientRepresentationsSettingsClient() {
       <p className="muted">Un profil est le dossier distinct d’un enfant mineur sans compte. Pour donner accès à un adulte, utilisez « Proches de confiance » : un adulte autorise lui-même la délégation. <Link href="/proches-et-enfants">Comment ça marche ?</Link> Le lien ne crée pas un compte de connexion et n’accorde pas d’accès clinique à un professionnel.</p>
 
       <div className="stack">
-        <h3>Mes profils</h3>
-        {loading ? <p role="status">{message}</p> : items.length === 0 ? <p className="muted">Aucun profil d’enfant n’est rattaché à votre compte.</p> : (
+        <h3>Mes carnets enfants</h3>
+        {loading ? <p role="status">{message}</p> : items.length === 0 ? <p className="muted">Aucun carnet enfant n’est rattaché à votre compte.</p> : (
           <ProfileGrid label="Profils d’enfants">
             {items.map((item) => (
               <Profile
@@ -146,12 +154,14 @@ export function PatientRepresentationsSettingsClient() {
         <p className="muted">Pour ouvrir le dossier d’un profil, utilisez la flèche de la carte « Compte patient », en haut des paramètres.</p>
       </div>
 
-      <div className="actions"><button className="button primary" type="button" disabled={busy || loading} onClick={() => setAdding(true)}>Ajouter un profil</button></div>
+      <div className="actions"><button className="button primary" type="button" disabled={busy || loading} onClick={() => setAdding(true)}>Ajouter un carnet enfant</button></div>
 
       <p className="muted">La personne devenue adulte doit créer ou ouvrir son propre compte, puis faire elle-même la <Link href="/patient/transfert">demande de transfert</Link> avant de créer un autre dossier patient. La demande sera examinée manuellement. Aucun dossier n’est fusionné.</p>
       <p className="status" role="status" aria-live="polite">{message}</p>
 
       {adding && <ChildOnboarding onClose={() => setAdding(false)} onCreated={() => void onCreated()} />}
+      {photoTarget && <PanelDialog title={`Photo de ${photoTarget.first_name}`} lead="La photo apparaît dans votre liste de profils et partout où vous choisissez ce profil." onClose={() => setPhotoTarget(null)}><ChildPhotoForm profile={photoTarget} onSaved={() => void load()} /></PanelDialog>}
+      {deleteTarget && <DeleteChildProfileDialog profile={deleteTarget} onClose={() => setDeleteTarget(null)} onDeleted={() => { setMessage(`Profil de ${deleteTarget.first_name} supprimé.`); void load(); }} />}
     </section>
   );
 }

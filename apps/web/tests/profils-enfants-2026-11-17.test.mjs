@@ -49,30 +49,33 @@ test("le profil d'un enfant porte la bascule : étiquettes, requêtes serveur et
   assert.match(read("components/RepresentedProfileBanner.tsx"), /Revenir à mon compte/);
 });
 
-test("Paramètres : la flèche de la carte « Compte patient » change de profil, et les rubriques du titulaire se masquent côté enfant", () => {
+test("Paramètres : la flèche de la carte « Compte patient » change de profil, et les rubriques NE changent PAS côté enfant (20/11/2026)", () => {
   const settings = read("components/AccountSettingsClient.tsx");
   assert.match(settings, /eyebrow=\{accountLabel\(active\)\}/);
   assert.match(settings, /eyebrowAction=\{profiles\.length > 0 \? <PatientProfileSwitcher/, "la flèche n'apparaît que s'il existe un profil d'enfant");
-  assert.match(settings, /HOLDER_ONLY_SECTIONS = new Set\(\["personnel", "proches", "proches-de-confiance"\]\)/);
+  assert.doesNotMatch(settings, /HOLDER_ONLY_SECTIONS|visibleSections/, "toutes les rubriques restent visibles, dont Carnet enfant et Proches de confiance");
+  assert.match(settings, /activeSection === "personnel" && activeChild[\s\S]*<ChildPhotoForm key=\{activeChild\.patient_id\} profile=\{activeChild\} \/>/, "informations personnelles : la photo de l'enfant ouvert");
   assert.match(settings, /<PatientEmergencyCardSettingsClient key=\{activeChild\?\.patient_id \?\? "holder"\} profile=\{activeChild\} \/>/);
   const switcher = read("components/PatientProfileSwitcher.tsx");
   assert.match(switcher, /aria-label="Changer de profil"/);
   assert.match(switcher, /role="menuitemradio"/);
   assert.match(switcher, /HOLDER_LABEL/);
   assert.match(switcher, /CHILD_LABEL/);
-  assert.match(switcher, /useLayoutEffect[\s\S]{0,400}window\.innerWidth/, "le menu reste dans la fenêtre sur un petit écran");
+  assert.match(switcher, /useLayoutEffect[\s\S]{0,900}window\.innerWidth/, "le menu reste dans la fenêtre sur un petit écran");
   assert.match(read("components/ProfileSummary.tsx"), /eyebrowAction/);
 });
 
-test("« Profils » : liste, fiche (prénom, nom, identifiant, copier, révoquer) et plus de « Ouvrir ce dossier »", () => {
+test("« Carnet enfant » : liste, fiche (photo, prénom, nom, identifiant, copier, révoquer, supprimer avec motif) et plus de « Ouvrir ce dossier »", () => {
   const settings = read("components/AccountSettingsClient.tsx");
-  assert.match(settings, /title: "Profils"/);
+  assert.match(settings, /id: "proches", title: "Carnet enfant"/);
   assert.doesNotMatch(settings, /Proches et personnes représentées/);
   const profiles = read("components/PatientRepresentationsSettingsClient.tsx");
   assert.doesNotMatch(profiles, /Ouvrir ce dossier|Revenir à mon dossier/, "l'ouverture d'un dossier passe par la flèche de Paramètres");
   for (const label of ["Prénom", "Nom", "Identifiant"]) assert.match(profiles, new RegExp(`label: "${label}"`));
   assert.match(profiles, /Copier l’identifiant/);
   assert.match(profiles, /label: "Révoquer", tone: "danger"/);
+  assert.match(profiles, /label: "Supprimer le profil", tone: "danger"/, "suppression avec motif");
+  assert.match(profiles, /item\.avatar_url \? "Modifier la photo" : "Ajouter une photo"/, "photo de l'enfant : ajouter ou modifier");
   assert.match(profiles, /<ProfileGrid label="Profils d’enfants">[\s\S]*<Profile\s+key=\{item\.id\}/, "la liste et la fiche viennent du composant Profil commun : la photo de chaque enfant");
   assert.match(profiles, /photo=\{item\.avatar_url\}/, "la photo de l'enfant");
   assert.doesNotMatch(profiles, /className="profile-row"|<dl className="profile-detail"/, "plus de fiche propre à cette page");

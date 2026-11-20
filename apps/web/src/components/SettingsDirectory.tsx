@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { AppSettingsGroup } from "./app/AppSettingsGroup";
 import { useConfirm } from "./modal/ConfirmProvider";
 import { clearGreetingSession } from "./modal/greeting";
@@ -10,6 +11,8 @@ export type SettingsNavItem = {
   title: string;
   description: string;
   icon: IconName;
+  /** Rubrique qui est une PAGE (et non un modal) : l'entrée devient un lien vers cette page. */
+  href?: string;
 };
 
 type Props = {
@@ -34,6 +37,15 @@ export function SettingsDirectory({ items, activeId, onSelect, onLogout, logoutD
       <div className="setting-list" role="group" aria-label="Rubriques des paramètres">
         {items.map((item) => {
           const open = item.id === activeId;
+          if (item.href) {
+            return (
+              <Link className="setting-item" key={item.id} href={item.href} data-tour={`settings-${item.id}`}>
+                <span className="setting-item__icon" aria-hidden="true"><Icon name={item.icon} size={20} /></span>
+                <span className="setting-item__meta"><strong>{item.title}</strong><span>{item.description}</span></span>
+                <span className="setting-item__chevron" aria-hidden="true">›</span>
+              </Link>
+            );
+          }
           return (
             <button
               className={`setting-item${open ? " setting-item--active" : ""}`}

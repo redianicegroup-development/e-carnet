@@ -356,6 +356,41 @@ class PatientRepresentationTests(TestCase):
         self.assertEqual(without.status_code, 201)
         self.assertEqual(without.data["data"]["avatar_url"], "")
 
+    @override_settings(ECARNET_REPRESENTATION_LEGAL_AGE=18)
+    def test_guardian_changes_and_removes_the_child_photo(self):
+        import base64
+
+        webp = "data:image/webp;base64," + base64.b64encode(b"RIFF\x10\x00\x00\x00WEBPVP8 ....").decode()
+        body = {"first_name": "Awa", "last_name": "Koné", "birth_date": "2015-05-10", "relationship": "child", "legal_representative_confirmed": True}
+        child = self.guardian_client.post("/api/v1/patient/representations/", body, format="json").data["data"]
+        url = f"/api/v1/patient/representations/{child['id']}/avatar/"
+        changed = self.guardian_client.patch(url, {"avatar_data": webp}, format="json")
+        self.assertEqual(changed.status_code, 200)
+        self.assertTrue(changed.data["data"]["avatar_url"])
+        self.assertTrue(self.guardian_client.get("/api/v1/patient/representations/").data["data"][0]["avatar_url"], "le titulaire la retrouve dans sa liste")
+        self.assertEqual(self.guardian_client.patch(url, {"avatar_data": "data:image/png;base64,AAAA"}, format="json").status_code, 400)
+        removed = self.guardian_client.patch(url, {"avatar_data": ""}, format="json")
+        self.assertEqual(removed.data["data"]["avatar_url"], "")
+
+    @override_settings(ECARNET_REPRESENTATION_LEGAL_AGE=18)
+    def test_guardian_deletes_a_child_profile_with_a_reason(self):
+        body = {"first_name": "Awa", "last_name": "Koné", "birth_date": "2015-05-10", "relationship": "child", "legal_representative_confirmed": True}
+        child = self.guardian_client.post("/api/v1/patient/representations/", body, format="json").data["data"]
+        url = f"/api/v1/patient/representations/{child['id']}/delete/"
+        self.assertEqual(self.guardian_client.post(url, {"reason": "not_needed"}, format="json").status_code, 400, "la confirmation est obligatoire")
+        self.assertEqual(self.guardian_client.post(url, {"reason": "other", "confirm": True}, format="json").status_code, 400, "« autre motif » se précise")
+        self.assertEqual(self.guardian_client.post(url, {"reason": "inconnu", "confirm": True}, format="json").status_code, 400)
+        done = self.guardian_client.post(url, {"reason": "not_needed", "confirm": True}, format="json")
+        self.assertEqual(done.status_code, 200)
+        self.assertEqual(self.guardian_client.get("/api/v1/patient/representations/").data["data"], [], "le profil supprimé disparaît de la liste")
+        patient = PatientProfile.objects.get(pk=child["patient_id"])
+        self.assertEqual((patient.first_name, patient.last_name, patient.birth_date), ("", "", None), "l'identité de l'enfant est effacée")
+        representation = PatientRepresentation.objects.get(pk=child["id"])
+        self.assertEqual((representation.status, representation.deletion_reason), ("deleted", "not_needed"))
+        self.assertIsNotNone(representation.deleted_at)
+        again = self.guardian_client.post(url, {"reason": "not_needed", "confirm": True}, format="json")
+        self.assertEqual(again.status_code, 404, "une suppression ne se refait pas")
+
     @override_settings(ECARNET_REPRESENTATION_LEGAL_AGE=None)
     def test_child_profile_creation_waits_for_legal_age_configuration(self):
         response = self.guardian_client.post("/api/v1/patient/representations/", {

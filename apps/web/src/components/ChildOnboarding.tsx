@@ -11,7 +11,7 @@ import { PanelDialog } from "./modal/PanelDialog";
 import { EMPTY_PATIENT_FORM, PatientIdentityFields, onboardingErrorMessage, patientFormProblem, saveChildIdentity, type PatientForm } from "./PatientIdentityFields";
 import "./patient-profiles.css";
 
-/* Onboarding d'un enfant (Paramètres > Profils > Ajouter un profil) : le même parcours que l'onboarding patient (couverture du carnet : ville, adresse,
+/* Onboarding d'un enfant (Paramètres > Carnet enfant > Ajouter un carnet enfant) : le même parcours que l'onboarding patient (couverture du carnet : ville, adresse,
    téléphone, genre, couverture), précédé de ce qui est propre à l'enfant : SA PHOTO, son prénom, son nom et sa DATE DE NAISSANCE.
    Un seul envoi : 1) création du profil (avec la photo) 2) enregistrement du carnet, sans changer le profil ouvert (runAsProfile).
    Le résultat s'affiche toujours dans un modal : succès (le carnet de l'enfant est ouvert) ou échec avec son motif. Si seul le carnet échoue, le profil
@@ -73,7 +73,7 @@ export function ChildOnboarding({ onClose, onCreated }: { onClose: () => void; o
 
   return (
     <>
-      <PanelDialog title="Ajouter un profil enfant" lead="Même parcours que votre propre carnet, pour votre enfant : sa photo, sa date de naissance, sa ville et un téléphone sont demandés. Le reste pourra être ajouté plus tard." onClose={onClose}>
+      <PanelDialog title="Ajouter un carnet enfant" lead="Même parcours que votre propre carnet, pour votre enfant : sa photo, sa date de naissance, sa ville et un téléphone sont demandés. Le reste pourra être ajouté plus tard." onClose={onClose}>
         <form className="settings-form child-onboarding" onSubmit={(event) => void submit(event)}>
           <p className="notice" role="note">Utilisez des informations exactes. Le dossier de l’enfant est distinct du vôtre.</p>
           <h3>L’enfant</h3>

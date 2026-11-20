@@ -154,12 +154,17 @@ test("aucun numéro d'urgence n'est affiché ni codé en dur dans l'onglet", () 
   assert.equal(geo.SAMU_NUMBER, undefined);
 });
 
-test("l'onglet « Établissements proches de moi » existe dans les paramètres de chaque espace", () => {
-  for (const file of ["AccountSettingsClient", "ProfessionalSettingsClient", "EstablishmentSettingsClient"]) {
+test("« Établissements proches de moi » est une PAGE dédiée (plus un modal), liée depuis les paramètres de chaque espace (20/11/2026)", () => {
+  for (const [file, space] of [["AccountSettingsClient", "patient"], ["ProfessionalSettingsClient", "professionnel"], ["EstablishmentSettingsClient", "etablissement"]]) {
     const source = read(`src/components/${file}.tsx`);
-    assert.match(source, /id: "etablissements-partenaires", title: "Établissements proches de moi"/, file);
-    assert.match(source, /activeSection === "etablissements-partenaires"[\s\S]{0,260}<NearbyEstablishments \/>/, file);
+    assert.match(source, new RegExp(`id: "etablissements-partenaires", title: "Établissements proches de moi"[^}]*href: [^}]*/${space}/parametres/etablissements-proches`), file);
+    assert.doesNotMatch(source, /<NearbyEstablishments \/>/, `${file} : plus de modal`);
+    assert.match(read(`src/app/${space}/parametres/etablissements-proches/page.tsx`), /<NearbyEstablishmentsPage backHref=/, `page ${space}`);
   }
+  assert.match(read("src/components/EstablishmentSettingsClient.tsx"), /laboratory \? "\/laboratoire\/parametres\/etablissements-proches"/, "le laboratoire a sa propre page");
+  assert.match(read("src/app/laboratoire/parametres/etablissements-proches/page.tsx"), /backHref="\/laboratoire\/parametres"/);
+  assert.match(read("src/components/NearbyEstablishmentsPage.tsx"), /<NearbyEstablishments \/>/);
+  assert.match(read("src/components/SettingsDirectory.tsx"), /item\.href/, "une rubrique peut être un lien vers une page");
   const laboratory = read("src/app/laboratoire/parametres/page.tsx");
   assert.match(laboratory, /<EstablishmentSettingsClient laboratory \/>/, "l'espace laboratoire réutilise les paramètres établissement, donc la rubrique");
 });

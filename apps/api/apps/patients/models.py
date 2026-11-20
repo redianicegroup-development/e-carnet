@@ -59,12 +59,17 @@ class PatientRepresentation(models.Model):
         ("active", "Actif"),
         ("revoked", "Révoqué"),
         ("transferred", "Transféré au titulaire"),
+        ("deleted", "Supprimé"),
     )
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     guardian = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="patient_representations")
     patient = models.ForeignKey(PatientProfile, on_delete=models.PROTECT, related_name="representations")
     relationship = models.CharField(max_length=20, choices=RELATION_CHOICES)
     status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="active")
+    # Suppression du profil par le représentant (apps/patients/child_deletion.py) : motif choisi, précision pour « Autre motif », date.
+    deletion_reason = models.CharField(max_length=24, blank=True)
+    deletion_details = models.TextField(max_length=1200, blank=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

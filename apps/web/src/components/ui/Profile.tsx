@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { Children, useState, type ReactNode } from "react";
 import { Icon } from "./Icon";
 import { PersonAvatar } from "./PersonAvatar";
 import { ProfileSheet, type ProfileSheetProps } from "./ProfileSheet";
@@ -55,8 +55,8 @@ export function Profile({ variant = "tile", size, meta, label, status, selected,
   );
 }
 
-/** Grille de tuiles : chaque enfant est un <Profile> (ou une autre tuile). Une grille = une liste, lue comme telle par les lecteurs d'écran. */
-export function ProfileGrid({ label, children }: { label: string; children: ReactNode[] | ReactNode }) {
-  const items = Array.isArray(children) ? children : [children];
-  return <ul className="profile-tiles" aria-label={label}>{items.map((child, index) => <li key={index}>{child}</li>)}</ul>;
+/** Grille de tuiles : chaque enfant est un <Profile> (ou une autre tuile). Une grille = une liste, lue comme telle par les lecteurs d'écran.
+ *  Children.toArray aplatit les tableaux imbriqués (le titulaire puis la liste des enfants) : chaque profil a SA case, jamais deux dans la même. */
+export function ProfileGrid({ label, children }: { label: string; children: ReactNode }) {
+  return <ul className="profile-tiles" aria-label={label}>{Children.toArray(children).map((child, index) => <li key={index}>{child}</li>)}</ul>;
 }

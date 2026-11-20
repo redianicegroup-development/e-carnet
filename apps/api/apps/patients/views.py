@@ -19,7 +19,8 @@ from .access import PatientAccess
 from .models import ClinicalDeclaration, PatientEmergencyCard, PatientProfile, PatientRepresentation, RepresentationTransferRequest, TrustedContactDelegation
 from .serializers import ClinicalDeclarationSerializer, PatientEmergencyCardSerializer, PatientProfileSerializer
 from .allergy_rules import ALLERGY_STATE_LABELS, is_allergy_state
-from .avatars import child_avatar, clean_avatar_data, store_child_avatar
+from .avatars import child_avatar, clean_avatar_data, clear_child_avatar, store_child_avatar
+from .child_deletion import anonymize_child_profile, clean_deletion_request
 
 
 def profile_for(user, request=None, scope=None):
@@ -281,6 +282,79 @@ class PatientRepresentationDetailView(APIView):
             metadata={"action": "reactivated", "resource_type": "represented_patient"},
         )
         return Response({"success": True, "data": relationship_payload(representation)})
+
+
+class PatientRepresentationAvatarView(APIView):
+    """Ajouter, remplacer ou retirer la photo d'un enfant représenté. Le représentant la voit partout où l'enfant apparaît dans son compte
+    (liste des profils, « Pour qui est cette consultation ? », menu de changement de profil) : tout est lu dans la même liste."""
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [WriteScopedThrottle]
+    throttle_scope = "representation_changes"
+
+    @transaction.atomic
+    def patch(self, request, pk):
+        require_patient_context(request.user)
+        representation = PatientRepresentation.objects.select_for_update().filter(
+            pk=pk, guardian=request.user, status="active", patient__user__isnull=True,
+        ).select_related("patient").first()
+        if not representation:
+            return Response({"success": False, "message": "Ce profil n’est pas actif."}, status=404)
+        try:
+            avatar_data = clean_avatar_data(request.data.get("avatar_data"))
+        except ValueError as error:
+            return Response({"success": False, "message": str(error)}, status=400)
+        if avatar_data:
+            store_child_avatar(representation.patient, avatar_data)
+        else:
+            clear_child_avatar(representation.patient)
+        record_event(
+            event_type="patient.represented_profile.photo_changed",
+            actor=request.user,
+            actor_role="guardian",
+            patient=representation.patient,
+            metadata={"action": "photo_removed" if not avatar_data else "photo_changed", "resource_type": "represented_patient"},
+        )
+        representation.refresh_from_db()
+        return Response({"success": True, "data": relationship_payload(representation, request.session.get("active_patient_profile_id"))})
+
+
+class PatientRepresentationDeleteView(APIView):
+    """Supprimer définitivement un profil d'enfant, avec motif (voir child_deletion.py). Réservé au représentant, lien actif ou révoqué."""
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [WriteScopedThrottle]
+    throttle_scope = "representation_changes"
+
+    def post(self, request, pk):
+        require_patient_context(request.user)
+        try:
+            reason, details = clean_deletion_request(request.data)
+        except ValueError as error:
+            return Response({"success": False, "message": str(error)}, status=400)
+        try:
+            with transaction.atomic():
+                representation = PatientRepresentation.objects.select_for_update().filter(
+                    pk=pk, guardian=request.user, status__in=("active", "revoked"), patient__user__isnull=True,
+                ).select_related("patient").first()
+                if not representation:
+                    return Response({"success": False, "message": "Ce profil n’existe plus ou ne peut pas être supprimé."}, status=404)
+                anonymize_child_profile(representation.patient)
+                representation.status = "deleted"
+                representation.deletion_reason = reason
+                representation.deletion_details = details
+                representation.deleted_at = timezone.now()
+                representation.save(update_fields=("status", "deletion_reason", "deletion_details", "deleted_at", "updated_at"))
+                if request.session.get("active_patient_profile_id") == str(representation.patient_id):
+                    request.session.pop("active_patient_profile_id", None)
+                record_event(
+                    event_type="patient.representation.deleted",
+                    actor=request.user,
+                    actor_role="guardian",
+                    patient=representation.patient,
+                    metadata={"action": "deleted", "resource_type": "represented_patient", "reason_code": reason},
+                )
+        except RuntimeError as error:
+            return Response({"success": False, "message": str(error)}, status=502)
+        return Response({"success": True, "data": None})
 
 
 class RepresentationTransferRequestView(APIView):
