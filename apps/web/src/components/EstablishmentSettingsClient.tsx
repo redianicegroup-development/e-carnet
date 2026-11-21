@@ -136,7 +136,7 @@ export function EstablishmentSettingsClient({ laboratory = false }: { laboratory
           : <p className="muted">Les coordonnées apparaîtront lorsque l’établissement sera actif.</p>}
       </div></SettingsModal>}
 
-      {activeSection === "ordonnance" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}>{selected?.status === "active" ? <PrescriptionTemplateSettings establishmentId={selected.id} /> : <p className="muted">Le modèle sera disponible lorsque l’établissement sera actif.</p>}</SettingsModal>}
+      {activeSection === "ordonnance" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}>{selected?.status === "active" ? <PrescriptionTemplateSettings establishmentId={selected.id} identity={{ name: selected.name, type: selected.establishment_type, city: selected.city, address: selected.address, phone: selected.phone, email: selected.email, logo: selected.logo }} /> : <p className="muted">Le modèle sera disponible lorsque l’établissement sera actif.</p>}</SettingsModal>}
 
       {activeSection === "facturation" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}>{selected ? <EstablishmentBilling key={selected.id} establishmentId={selected.id} /> : <p className="empty">{loading ? "Chargement…" : "Aucune fiche établissement n’est liée à cette session."}</p>}</SettingsModal>}
 

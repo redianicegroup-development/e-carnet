@@ -84,10 +84,13 @@ test("historique des consultations : une seule carte dans les trois espaces, qui
   assert.match(css, /\.consult-card__badge \{[^}]*white-space: normal/);
   assert.match(css, /\.consult-card__badge \{[^}]*max-width: 100%/);
   assert.match(css, /\.consult-card > \* \{ min-width: 0; \}/);
-  assert.match(css, /\.consult-vitals__grid \{[^}]*repeat\(auto-fill, minmax\(min\(100%, 104px\), 1fr\)\)/);
+  // Les constantes se lisent sur une ligne qui passe à la ligne (pds 61 kg · TA 12/8 · T° 37,4), comme sur le carnet papier.
+  assert.match(css, /\.consult-vline \{[^}]*display: flex; flex-wrap: wrap/);
   const card = read("src/components/consultation/ConsultationCard.tsx");
-  for (const text of [/Constantes/, /Symptômes/, /Examen clinique/, /Conduite à tenir/, /Ordonnance/, /Examens demandés/, /Validée et signée électroniquement/]) assert.match(card, text);
-  assert.match(card, /<SealImages item=\{item\} \/>/);
+  for (const text of [/Constantes/, /Symptômes/, /Examen clinique/, /Conduite à tenir/, /Ordonnance/, /Examens demandés/]) assert.match(card, text);
+  // La ligne de signature (texte de validation, cachet de l'établissement, cachet et signature du médecin) est un composant à part.
+  assert.match(card, /<ConsultationValidation item=\{item\} images=\{sealImages\} \/>/);
+  assert.match(read("src/components/consultation/ConsultationValidation.tsx"), /Validée et signée électroniquement/);
 });
 
 test("validation : sans signature ni cachet, « Terminer et signer » reste fermé ; le professionnel signe (dessin ou photo) sur place", () => {

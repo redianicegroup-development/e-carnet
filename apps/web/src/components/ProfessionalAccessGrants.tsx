@@ -115,6 +115,8 @@ export function ProfessionalAccessGrants() {
     } }];
   }
 
+  // Une demande révoquée (accès terminé ou retiré) disparaît de la liste (20/11/2026).
+  const listed = items.filter((item) => item.status !== "revoked");
   return <div className="stack-lg">
     <section className="hero-page"><h1>Ouvrir l’accès à un patient.</h1><p className="notice" role="status" aria-live="polite">{message}</p></section>
     <section className="patient-grid" aria-label="Demandes d’accès">
@@ -130,7 +132,7 @@ export function ProfessionalAccessGrants() {
         {formError && <p className="status" role="alert">{formError}</p>}
         <button className="button primary" type="submit" disabled={submitting || !qrToken.trim()}>{submitting ? "Ouverture…" : "Ouvrir l’accès"}</button>
       </form>
-      <section id="historique" className="card"><h2>Mes demandes</h2>{loading ? <p className="empty" role="status">Chargement…</p> : items.length === 0 ? <p className="empty">Aucune demande pour le moment.</p> : <ProfileGrid label="Demandes d’accès">{items.map((item) => {
+      <section id="historique" className="card"><h2>Mes demandes</h2>{loading ? <p className="empty" role="status">Chargement…</p> : listed.length === 0 ? <p className="empty">Aucune demande pour le moment.</p> : <ProfileGrid label="Demandes d’accès">{listed.map((item) => {
         const base = grantProfile(item);
         const line = stateLine(item);
         return <Profile key={item.id} {...base} note={line ? <>{base.note}<br />{line}</> : base.note} actions={grantActions(item)} />;

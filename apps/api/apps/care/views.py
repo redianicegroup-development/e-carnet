@@ -30,6 +30,7 @@ from .services import ANOTHER_PROFESSIONAL_CONNECTED_MESSAGE, AUTO_GRANT_DURATIO
 from .notifications import notify_patient, notify_professional
 from .push import is_allowed_endpoint, push_enabled, vapid_public_key
 from .consultation_services import validate_consultation
+from .prescription_context import build_prescription_context
 
 
 class EncounterListCreateView(APIView):
@@ -1086,147 +1087,69 @@ class PatientAccessGrantActionView(APIView):
 class PatientConsultationListView(APIView):
     permission_classes = [IsAuthenticated]
     def get(self, request):
-        items = Consultation.objects.filter(patient=profile_for(request.user, request)).prefetch_related("prescription_lines", "exam_requests")
+        items = Consultation.objects.filter(patient=profile_for(request.user, request)).select_related("professional", "establishment").prefetch_related("prescription_lines", "exam_requests")
         return Response({"success": True, "data": ConsultationSerializer(items, many=True).data})
+
+
+def signed_prescription_for(request, pk):
+    """Consultation signée du patient connecté, avec ses lignes d'ordonnance : (consultation, lignes, réponse d'erreur)."""
+    consultation = Consultation.objects.filter(pk=pk, patient=profile_for(request.user, request)).select_related("patient", "professional", "establishment").prefetch_related("prescription_lines").first()
+    if not consultation:
+        return None, None, Response({"success": False, "message": "Consultation introuvable."}, status=404)
+    if not consultation.attestation_signed_at:
+        return None, None, Response({"success": False, "message": "Cette consultation n’est pas signée : aucune ordonnance ne peut être produite."}, status=409)
+    lines = list(consultation.prescription_lines.all())
+    if not lines:
+        return None, None, Response({"success": False, "message": "Cette consultation ne contient pas d’ordonnance."}, status=404)
+    return consultation, lines, None
+
+
+class PatientPrescriptionSheetView(APIView):
+    """Contenu de l'ordonnance en JSON : la feuille s'affiche et s'imprime dans le carnet (A5 ou A4), avec les mêmes données que le PDF.
+
+    Les images du cachet et de la signature ne passent pas ici : elles se lisent par /consultations/<id>/seal/<signature|stamp>/."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        consultation, lines, error = signed_prescription_for(request, pk)
+        if error:
+            return error
+        return Response({"success": True, "data": build_prescription_context(consultation, lines)})
 
 
 class PatientPrescriptionDownloadView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, pk):
-        consultation = Consultation.objects.filter(pk=pk, patient=profile_for(request.user, request)).select_related("patient", "professional", "establishment").prefetch_related("prescription_lines").first()
-        if not consultation:
-            return Response({"success": False, "message": "Consultation introuvable."}, status=404)
-        if not consultation.attestation_signed_at:
-            return Response({"success": False, "message": "Cette consultation n’est pas signée : aucune ordonnance PDF ne peut être produite."}, status=409)
-        lines = list(consultation.prescription_lines.all())
-        if not lines:
-            return Response({"success": False, "message": "Cette consultation ne contient pas d’ordonnance."}, status=404)
-        from html import escape
-        from io import BytesIO
-        from pathlib import Path
-        from reportlab.lib import colors
-        from reportlab.lib.enums import TA_LEFT
-        from reportlab.lib.pagesizes import A4
-        from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
-        from reportlab.lib.units import mm
-        from reportlab.pdfbase import pdfmetrics
-        from reportlab.pdfbase.ttfonts import TTFont
-        from reportlab.platypus import Image, KeepTogether, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
-        from apps.establishments.models import PrescriptionTemplate
-        template = PrescriptionTemplate.objects.filter(establishment=consultation.establishment).first()
+        consultation, lines, error = signed_prescription_for(request, pk)
+        if error:
+            return error
+        from .prescription_pdf import build_prescription_pdf
+        context = build_prescription_context(consultation, lines)
         professional = consultation.professional
-        patient = consultation.patient
-        patient_name = " ".join(part for part in (patient.display_first_name(), patient.display_last_name()) if part).strip() or "Patient non renseigné"
-        establishment_name = consultation.establishment.name if consultation.establishment_id else consultation.facility_label
-        prescriber = consultation.professional_name or "Prescripteur non renseigné"
-        specialty = professional.specialty if professional and professional.specialty else ""
-        identifier = professional.professional_identifier if professional and professional.professional_identifier else ""
-        next_appointment = Appointment.objects.filter(
-            patient=patient, starts_at__gte=timezone.now(), status__in=("requested", "confirmed")
-        ).order_by("starts_at").first()
 
-        # Un logo_url historique est volontairement ignoré : aucun appel réseau ne doit suivre une URL fournie par un template.
-        asset_images = []
-        for label, public_id, resource_type in (
-            ("Cachet", getattr(professional, "stamp_cloudinary_public_id", "") if professional else "", getattr(professional, "stamp_cloudinary_resource_type", "image") if professional else "image"),
-            ("Signature", getattr(professional, "signature_cloudinary_public_id", "") if professional else "", getattr(professional, "signature_cloudinary_resource_type", "image") if professional else "image"),
-        ):
+        # Cachet et signature : ceux figés à la signature de la consultation (les mêmes que sur la feuille affichée dans le carnet).
+        # Une consultation signée avant que ces images soient figées garde l'ancien comportement : celles du profil du médecin.
+        # Un logo_url historique est volontairement ignoré : aucun appel réseau ne doit suivre une URL fournie par un modèle d'ordonnance.
+        if consultation.stamp_asset_id or consultation.signature_asset_id:
+            sources = (("stamp", consultation.stamp_asset_id, "image"), ("signature", consultation.signature_asset_id, "image"))
+        else:
+            sources = (
+                ("stamp", getattr(professional, "stamp_cloudinary_public_id", "") if professional else "", (getattr(professional, "stamp_cloudinary_resource_type", "image") if professional else "image") or "image"),
+                ("signature", getattr(professional, "signature_cloudinary_public_id", "") if professional else "", (getattr(professional, "signature_cloudinary_resource_type", "image") if professional else "image") or "image"),
+            )
+        images = []
+        for kind, public_id, resource_type in sources:
             if not public_id:
                 continue
             try:
-                asset_bytes = signed_download(public_id, resource_type=resource_type or "image", extension="png")
-                asset_images.append((label, asset_bytes))
+                images.append((kind, signed_download(public_id, resource_type=resource_type, extension="png")))
             except Exception:
                 return Response({"success": False, "message": "Le cachet ou la signature déposée est temporairement indisponible."}, status=502)
 
-        font_dir = Path("/usr/share/fonts/truetype/dejavu")
-        if (font_dir / "DejaVuSans.ttf").exists():
-            if "ECarnetSans" not in pdfmetrics.getRegisteredFontNames():
-                pdfmetrics.registerFont(TTFont("ECarnetSans", str(font_dir / "DejaVuSans.ttf")))
-            if "ECarnetSans-Bold" not in pdfmetrics.getRegisteredFontNames():
-                pdfmetrics.registerFont(TTFont("ECarnetSans-Bold", str(font_dir / "DejaVuSans-Bold.ttf")))
-            base_font, bold_font = "ECarnetSans", "ECarnetSans-Bold"
-        else:
-            base_font, bold_font = "Helvetica", "Helvetica-Bold"
-
-        styles = getSampleStyleSheet()
-        styles.add(ParagraphStyle(name="PrescriptionTitle", parent=styles["Title"], fontName=bold_font, fontSize=18, leading=23, textColor=colors.HexColor("#17324d"), alignment=TA_LEFT, spaceAfter=7))
-        styles.add(ParagraphStyle(name="PrescriptionBody", parent=styles["BodyText"], fontName=base_font, fontSize=10, leading=14, spaceAfter=3))
-        styles.add(ParagraphStyle(name="PrescriptionLabel", parent=styles["BodyText"], fontName=bold_font, fontSize=10, leading=14, textColor=colors.HexColor("#17324d")))
-        styles.add(ParagraphStyle(name="PrescriptionLine", parent=styles["BodyText"], fontName=base_font, fontSize=10.5, leading=15, leftIndent=5, firstLineIndent=-5, spaceAfter=3))
-        styles.add(ParagraphStyle(name="PrescriptionInstruction", parent=styles["BodyText"], fontName=base_font, fontSize=9.5, leading=13, leftIndent=16, textColor=colors.HexColor("#45515c"), spaceAfter=7))
-        styles.add(ParagraphStyle(name="PrescriptionFooter", parent=styles["BodyText"], fontName=base_font, fontSize=7, leading=8, textColor=colors.HexColor("#65727d"), spaceAfter=0))
-        buffer = BytesIO()
-
-        def footer(canvas, document):
-            canvas.saveState()
-            canvas.setStrokeColor(colors.HexColor("#d6dde3"))
-            canvas.line(18 * mm, 16 * mm, A4[0] - 18 * mm, 16 * mm)
-            footer_text = template.footer_text.strip() if template and template.footer_text else ""
-            if footer_text:
-                footer_text = footer_text.replace("\n", " ")
-                if len(footer_text) > 200:
-                    footer_text = footer_text[:199].rstrip() + "…"
-                footer_paragraph = Paragraph(escape(footer_text), styles["PrescriptionFooter"])
-                footer_paragraph.wrapOn(canvas, A4[0] - 36 * mm, 13 * mm)
-                footer_paragraph.drawOn(canvas, 18 * mm, 17 * mm)
-            canvas.setFont(base_font, 7.5)
-            canvas.drawRightString(A4[0] - 18 * mm, 11.5 * mm, f"Page {document.page}")
-            canvas.setFont(base_font, 7)
-            canvas.setFillColor(colors.HexColor("#65727d"))
-            canvas.drawString(18 * mm, 7 * mm, "Document généré depuis Mon E-Carnet — contenu saisi et signé par le prescripteur.")
-            canvas.restoreState()
-
-        document = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=18 * mm, leftMargin=18 * mm, topMargin=17 * mm, bottomMargin=33 * mm, title="Ordonnance médicale")
-        story = [Paragraph("ORDONNANCE MÉDICALE", styles["PrescriptionTitle"])]
-        if template:
-            for text in (template.header_text, template.address, template.phone, template.email):
-                if text:
-                    story.append(Paragraph(escape(text).replace("\n", "<br/>") , styles["PrescriptionBody"]))
-        story.append(Spacer(1, 5))
-        metadata = [
-            [Paragraph("Patient", styles["PrescriptionLabel"]), Paragraph(escape(patient_name), styles["PrescriptionBody"])],
-            [Paragraph("Établissement", styles["PrescriptionLabel"]), Paragraph(escape(establishment_name or "Non renseigné"), styles["PrescriptionBody"])],
-            [Paragraph("Prescripteur", styles["PrescriptionLabel"]), Paragraph(escape(prescriber), styles["PrescriptionBody"])],
-            [Paragraph("Spécialité", styles["PrescriptionLabel"]), Paragraph(escape(specialty or "Non renseignée"), styles["PrescriptionBody"])],
-            [Paragraph("N° d’ordre professionnel déclaré", styles["PrescriptionLabel"]), Paragraph(escape(identifier or "Non renseigné"), styles["PrescriptionBody"])],
-            [Paragraph("Date", styles["PrescriptionLabel"]), Paragraph(consultation.validated_at.strftime("%d/%m/%Y"), styles["PrescriptionBody"])],
-        ]
-        if next_appointment:
-            metadata.append([Paragraph("Prochain rendez-vous", styles["PrescriptionLabel"]), Paragraph(next_appointment.starts_at.strftime("%d/%m/%Y à %H:%M"), styles["PrescriptionBody"])])
-        details = Table(metadata, colWidths=(39 * mm, 130 * mm), hAlign="LEFT")
-        details.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("BOTTOMPADDING", (0, 0), (-1, -1), 1), ("TOPPADDING", (0, 0), (-1, -1), 1)]))
-        story.extend([details, Spacer(1, 9), Paragraph("Prescription", styles["PrescriptionLabel"]), Spacer(1, 4)])
-        for index, line in enumerate(lines, 1):
-            text = f"{index}. {line.drug_name}"
-            if line.dosage:
-                text += f" — {line.dosage}"
-            text += f" — {line.posology}"
-            if line.duration:
-                text += f" — {line.duration}"
-            row = [Paragraph(escape(text), styles["PrescriptionLine"])]
-            if line.instructions:
-                row.append(Paragraph(f"Conseil : {escape(line.instructions)}", styles["PrescriptionInstruction"]))
-            story.append(KeepTogether(row))
-        # Signature électronique Mon E-Carnet : toujours présente (une consultation signée l'est forcément), avec ou sans cachet déposé.
-        signed_at = consultation.attestation_signed_at
-        signed_line = f"Signé électroniquement dans Mon E-Carnet par {escape(prescriber)} le {signed_at.strftime('%d/%m/%Y à %H:%M')} UTC · réf. {str(consultation.id)[:8].upper()}"
-        story.extend([Spacer(1, 12), Paragraph(signed_line, styles["PrescriptionBody"])])
-        if asset_images:
-            story.extend([Spacer(1, 6), Paragraph("Cachet et signature du prescripteur", styles["PrescriptionLabel"])])
-            cells = []
-            for label, asset_bytes in asset_images:
-                image = Image(BytesIO(asset_bytes))
-                image._restrictSize(46 * mm, 20 * mm)
-                image.hAlign = "LEFT"
-                cells.append([Paragraph(escape(label), styles["PrescriptionBody"]), image])
-            assets_table = Table([cells], colWidths=[80 * mm] * len(cells))
-            assets_table.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 6)]))
-            story.append(assets_table)
-        document.build(story, onFirstPage=footer, onLaterPages=footer)
+        pdf = build_prescription_pdf(context, images)
         record_event(event_type="prescription.downloaded", actor=request.user, actor_role=patient_actor_role(request), patient=consultation.patient, establishment=consultation.establishment, consultation=consultation, metadata={"action": "downloaded", "resource_type": "prescription_pdf"})
-        response = HttpResponse(buffer.getvalue(), content_type="application/pdf")
+        response = HttpResponse(pdf, content_type="application/pdf")
         response["Content-Disposition"] = f'attachment; filename="ordonnance-{consultation.id}.pdf"'
         return response
 
@@ -1436,7 +1359,7 @@ class ProfessionalConsultationListCreateView(APIView):
         access_error = professional_clinical_access_error(profile)
         if access_error:
             return Response({"success": False, "message": access_error}, status=403)
-        items = list(Consultation.objects.filter(professional=profile, establishment=profile.active_establishment).select_related("establishment", "source_encounter", "patient__user__account_profile", "access_grant").prefetch_related("prescription_lines", "exam_requests"))
+        items = list(Consultation.objects.filter(professional=profile, establishment=profile.active_establishment).select_related("establishment", "professional", "source_encounter", "patient__user__account_profile", "access_grant").prefetch_related("prescription_lines", "exam_requests"))
         # Un événement par patient concerné (et non un par consultation) : le patient doit pouvoir retrouver chaque lecture de son
         # dossier dans son journal, mais une liste de vingt consultations ne doit pas écrire vingt lignes à chaque chargement.
         groups = {}

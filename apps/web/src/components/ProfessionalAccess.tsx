@@ -73,6 +73,9 @@ export function ProfessionalAccess() {
     } finally { setBusy(false); }
   }
 
+  // Un rattachement terminé (par le professionnel ou retiré par l'établissement) disparaît de la liste (20/11/2026). Le motif d'un retrait par
+  // l'établissement reste annoncé par RevocationNotices.
+  const listed = profile.memberships.filter((membership) => membership.status !== "terminated");
   return (
     <div className="stack-lg">
       {outcome && <OutcomeDialog {...outcome} onClose={() => setOutcome(null)} />}
@@ -92,9 +95,9 @@ export function ProfessionalAccess() {
 
       <div className="section-grid">
       <CollapsibleSection title="Mes rattachements" initiallyOpen icon="building" hint="Établissements">
-        {profile.memberships.length === 0 ? <p className="empty">Aucun rattachement pour le moment. Saisissez le code remis par votre établissement.</p> : (
+        {listed.length === 0 ? <p className="empty">Aucun rattachement pour le moment. Saisissez le code remis par votre établissement.</p> : (
           <ProfileGrid label="Mes rattachements">
-            {profile.memberships.map((membership) => {
+            {listed.map((membership) => {
               const isActive = membership.establishment_id === profile.active_establishment;
               const severalActive = profile.memberships.filter((entry) => entry.status === "active").length > 1;
               return <Profile key={membership.id} {...membershipProfile(membership, { isActive, severalActive })} actions={membershipActions(membership, isActive)} />;

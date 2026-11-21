@@ -166,10 +166,13 @@ class ConsultationSerializer(serializers.ModelSerializer):
     # Seul un booléen est exposé : l'image se lit par /consultations/<id>/seal/<signature|stamp>/, jamais par son identifiant de stockage.
     has_signature = serializers.SerializerMethodField()
     has_stamp = serializers.SerializerMethodField()
+    # Ce qui permet d'écrire la ligne de signature du compte rendu (titre, spécialité, n° d'ordre déclaré ; nom, type et ville de l'établissement).
+    signatory = serializers.SerializerMethodField()
+    establishment = serializers.SerializerMethodField()
 
     class Meta:
         model = Consultation
-        fields = ("id", "professional_id", "establishment_id", "access_grant_id", "access_mode", "drafted_at", "source_encounter_id", "professional_name", "facility_label", "reason", "symptoms", "clinical_exam", "diagnosis", "observations", "vitals", "prescription_lines", "exam_requests", "conclusion", "care_plan", "validated_at", "attestation_signed_at", "attestation_svg_hash", "has_signature", "has_stamp", "provenance")
+        fields = ("id", "professional_id", "establishment_id", "access_grant_id", "access_mode", "drafted_at", "source_encounter_id", "professional_name", "facility_label", "reason", "symptoms", "clinical_exam", "diagnosis", "observations", "vitals", "prescription_lines", "exam_requests", "conclusion", "care_plan", "validated_at", "attestation_signed_at", "attestation_svg_hash", "has_signature", "has_stamp", "signatory", "establishment", "provenance")
         read_only_fields = fields
 
     def get_provenance(self, _obj):
@@ -180,6 +183,20 @@ class ConsultationSerializer(serializers.ModelSerializer):
 
     def get_has_stamp(self, obj):
         return bool(obj.stamp_asset_id)
+
+    def get_signatory(self, obj):
+        professional = obj.professional
+        return {
+            "title": (professional.professional_title or "") if professional else "",
+            "specialty": (professional.specialty or "") if professional else "",
+            "order_number": (professional.professional_identifier or "") if professional else "",
+        }
+
+    def get_establishment(self, obj):
+        establishment = obj.establishment
+        if not establishment:
+            return {"name": obj.facility_label, "type": "", "city": "", "phone": ""}
+        return {"name": establishment.name, "type": establishment.establishment_type or "", "city": establishment.city or "", "phone": establishment.phone or ""}
 
     def get_vitals(self, obj):
         return present_consultation_vitals(obj.vitals)

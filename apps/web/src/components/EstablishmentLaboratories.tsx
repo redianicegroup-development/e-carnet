@@ -74,7 +74,9 @@ export function EstablishmentLaboratories({ establishmentId }: { establishmentId
 
   if (off) return <p className="notice" role="status">Les laboratoires ne sont pas encore activés pour votre structure.</p>;
   const hasLab = Boolean(labs && labs.length > 0);
-  const administratorCount = labs?.reduce((total, lab) => total + lab.administrators.length, 0) ?? 0;
+  // Un administrateur dont l'accès est révoqué disparaît de la liste (20/11/2026) : ni tuile, ni comptage.
+  const listedAdministrators = (lab: EstablishmentLab) => lab.administrators.filter((admin) => admin.access?.state !== "revoked");
+  const administratorCount = labs?.reduce((total, lab) => total + listedAdministrators(lab).length, 0) ?? 0;
   // Le laboratoire interne est le plus ancien ; les anciennes versions pouvaient en créer plusieurs, on les liste tous mais on ajoute au premier.
   const canAdd = !hasLab || Boolean(labs && labs[0].can_add_administrator);
   return <section className="card stack" aria-labelledby="labs-title">
@@ -82,9 +84,9 @@ export function EstablishmentLaboratories({ establishmentId }: { establishmentId
     <p className="muted">Un laboratoire reçoit le nom du patient et dépose ses résultats en PDF. Il n’a accès à aucun dossier médical.</p>
     {hasLab && labs && <ul className="stack" aria-label="Administrateurs du laboratoire">
       {labs.map((lab) => <li key={lab.id}><strong>{lab.name}</strong>
-        {lab.administrators.length === 0
+        {listedAdministrators(lab).length === 0
           ? <p className="muted">Aucun administrateur</p>
-          : <ProfileGrid label={`Administrateurs · ${lab.name}`}>{lab.administrators.map((admin) => <Profile key={admin.id} name={admin.name || "Administrateur"} label={admin.first_name || admin.name || "Administrateur"} subtitle="Administrateur du laboratoire" rows={administratorRows(admin)} actions={[{ label: "Révoquer", tone: "danger", onClick: ({ close }) => { close(); setRevokeTarget({ lab, admin }); } }]} />)}</ProfileGrid>}
+          : <ProfileGrid label={`Administrateurs · ${lab.name}`}>{listedAdministrators(lab).map((admin) => <Profile key={admin.id} name={admin.name || "Administrateur"} label={admin.first_name || admin.name || "Administrateur"} subtitle="Administrateur du laboratoire" rows={administratorRows(admin)} actions={[{ label: "Révoquer", tone: "danger", onClick: ({ close }) => { close(); setRevokeTarget({ lab, admin }); } }]} />)}</ProfileGrid>}
       </li>)}
     </ul>}
     {canAdd

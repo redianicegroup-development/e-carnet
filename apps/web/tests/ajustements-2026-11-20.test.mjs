@@ -46,3 +46,15 @@ test("barre latérale : le menu du compte a la même largeur que le panneau de n
   assert.doesNotMatch(sidebar, /: host\.clientWidth;/, "plus limité à la largeur de la barre latérale");
   assert.match(read("src/components/notifications/NotificationBell.tsx"), /const PANEL_MAX_WIDTH = SIDEBAR_POPOVER_MAX_WIDTH/);
 });
+
+test("révocation : le profil disparaît de la liste (rattachement, demande d'accès, administrateur de laboratoire, délégation)", () => {
+  assert.match(read("src/components/ProfessionalAccess.tsx"), /const listed = profile\.memberships\.filter\(\(membership\) => membership\.status !== "terminated"\)/);
+  assert.match(read("src/components/ProfessionalAccessGrants.tsx"), /const listed = items\.filter\(\(item\) => item\.status !== "revoked"\)/);
+  const labs = read("src/components/EstablishmentLaboratories.tsx");
+  assert.match(labs, /admin\.access\?\.state !== "revoked"/);
+  assert.match(labs, /listedAdministrators\(lab\)\.map\(\(admin\) => <Profile/);
+  assert.match(read("src/components/EstablishmentAdminWorkspace.tsx"), /memberships\.filter\(\(item\) => item\.status !== "terminated"\)/);
+  assert.match(read("src/components/TrustedContactDelegationClient.tsx"), /items\.filter\(\(item\) => item\.status !== "revoked"\)/);
+  // Équipe de l'établissement : seuls les praticiens actifs sont listés (un praticien révoqué n'y figure déjà plus).
+  assert.match(read("src/components/EstablishmentConsole.tsx"), /const doctors = memberships\.filter\(\(item\) => item\.status === "active"\)/);
+});

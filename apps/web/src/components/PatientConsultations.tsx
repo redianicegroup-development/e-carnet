@@ -61,7 +61,7 @@ export function PatientConsultations() {
           </article>
         ))}
         {(filter === "all" || filter === "past") && past.map((item, index) => (
-          <ConsultationCard key={item.id} item={item} index={index} pdfHref={`/api/v1/patient/care/consultations/${item.id}/prescription/`} />
+          <ConsultationCard key={item.id} item={item} index={index} pdfHref={`/api/v1/patient/care/consultations/${item.id}/prescription/`} sheetHref={`/api/v1/patient/care/consultations/${item.id}/prescription-sheet/`} />
         ))}
         {(filter === "all" || filter === "pre") && closed.map((item) => (
           <article className="card visit-card" key={`pre-${item.id}`}>
