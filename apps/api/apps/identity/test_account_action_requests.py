@@ -2,7 +2,8 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from apps.patients.models import ClinicalDeclaration, PatientProfile
+from apps.care.models import CareEncounter
+from apps.patients.models import ClinicalDeclaration, PatientProfile, PatientRepresentation
 from .auth_serializers import RegisterSerializer
 from .models import AccountActionRequest
 
@@ -70,6 +71,23 @@ class AccountActionRequestTests(TestCase):
         self.assertTrue(row["account_deleted"])
         self.assertEqual(row["reason"], "other")
         self.assertEqual(row["details"], "Je souhaite préciser mon motif.")
+
+    def test_account_deletion_erases_the_records_of_the_account_and_of_its_children(self):
+        patient = PatientProfile.objects.create(user=self.user, first_name="Camille", last_name="Patient", phone="+2250102030405")
+        child = PatientProfile.objects.create(first_name="Awa", last_name="Koné")
+        representation = PatientRepresentation.objects.create(guardian=self.user, patient=child, relationship="child")
+        ClinicalDeclaration.objects.create(patient=patient, kind="allergy", label="Allergie du titulaire")
+        ClinicalDeclaration.objects.create(patient=child, kind="allergy", label="Allergie de l'enfant")
+        encounter = CareEncounter.objects.create(patient=child, reason="Fièvre", observations="Toux", status="draft", vitals={"weight_kg": 20.0})
+        created = self.client.post(self.user_url, {"request_type": "deletion", "reason": "not_needed"}, format="json")
+        self.assertEqual(created.status_code, 201)
+        self.assertFalse(ClinicalDeclaration.objects.filter(patient__in=(patient, child)).exists(), "les lignes sont réellement supprimées de la base")
+        child.refresh_from_db()
+        self.assertEqual((child.first_name, child.last_name), ("", ""), "l'identité de l'enfant est effacée avec le compte du titulaire")
+        encounter.refresh_from_db()
+        self.assertEqual((encounter.reason, encounter.observations, encounter.vitals), ("", "", {}))
+        representation.refresh_from_db()
+        self.assertEqual((representation.status, representation.deletion_reason), ("deleted", "account_deleted"))
 
     def test_duplicate_open_request_is_rejected_and_other_accounts_cannot_read_it(self):
         first = self.client.post(self.user_url, {"request_type": "suspension", "suspension_days": 7}, format="json")

@@ -46,7 +46,9 @@ test("photo d'un carnet enfant : ajouter, modifier, retirer ; visible partout ch
 test("suppression d'un carnet enfant : motif obligatoire, confirmation, résultat en modal ; effacement côté serveur", () => {
   const dialog = read("src/components/DeleteChildProfileDialog.tsx");
   assert.match(dialog, /Autre motif/);
-  assert.match(dialog, /<input required type="checkbox"/, "confirmation explicite");
+  assert.match(dialog, /const accepted = await confirm\(\{[\s\S]*tone: "danger",[\s\S]*mood: "farewell"/, "fenêtre de confirmation avec avertissement avant l'appel API");
+  assert.match(dialog, /Cette action est irréversible/);
+  assert.ok(dialog.indexOf("await confirm(") < dialog.indexOf("apiPost("), "la confirmation vient avant la suppression");
   assert.match(dialog, /title: "Profil supprimé"/);
   assert.match(dialog, /title: "Profil non supprimé"/);
   assert.match(dialog, /\/api\/v1\/patient\/representations\/\$\{profile\.id\}\/delete\//);
@@ -56,8 +58,14 @@ test("suppression d'un carnet enfant : motif obligatoire, confirmation, résulta
   assert.match(views, /status="deleted"|representation\.status = "deleted"/);
   const deletion = readApi("apps/patients/child_deletion.py");
   assert.match(deletion, /def clean_deletion_request/);
-  assert.match(deletion, /MedicalDocument\.objects\.filter\(patient=patient\)\.delete\(\)/);
-  assert.match(deletion, /first_name="", last_name="", phone="", birth_date=None/, "l'identité de l'enfant est vidée");
+  assert.match(deletion, /erase_patient_records\(patient\)/, "la suppression efface les lignes de la base");
+  const erasure = readApi("apps/patients/erasure.py");
+  for (const model of ["ClinicalDeclaration", "MedicalDocument", "Vaccination", "HealthMeasurement", "MedicationReminder", "FollowUpPlan", "Appointment", "PatientEmergencyCard", "ConsultationRevision", "PrescriptionLine"]) {
+    assert.match(erasure, new RegExp(`${model}\\.objects\\.filter\\([^\\n]*\\)\\.delete\\(\\)`), `${model} : lignes réellement supprimées`);
+  }
+  assert.match(erasure, /Consultation\.objects\.filter\(patient=patient\)\.update\([\s\S]*reason="", observations=""/, "contenu des consultations effacé");
+  assert.match(erasure, /first_name="", last_name="", phone="", birth_date=None/, "l'identité est vidée");
+  assert.match(readApi("apps/identity/account_action_views.py"), /erase_patient_records\(patient\)[\s\S]*erase_patient_records\(representation\.patient\)/, "la suppression de compte efface le patient et ses carnets enfants");
   assert.match(readApi("apps/patients/models.py"), /\("deleted", "Supprimé"\)/);
   assert.match(readApi("apps/patients/migrations/0016_patientrepresentation_deletion.py"), /deletion_reason/);
 });

@@ -50,47 +50,27 @@ def anonymize_and_disable_account(user):
     if user.is_staff or user.is_superuser:
         raise PermissionDenied("Un compte administrateur ou superadministrateur ne peut pas être supprimé.")
 
-    from apps.patients.models import ClinicalDeclaration, PatientProfile
-    from apps.care.models import AccessGrant, Appointment, CareEncounter, Consultation, FollowUpPlan, HealthMeasurement, MedicalDocument, MedicationReminder, PatientNotification, PreConsultationRevision, PendingConsultation, Vaccination
+    from apps.patients.erasure import erase_patient_records
+    from apps.patients.models import PatientProfile, PatientRepresentation
+    from apps.care.models import AccessGrant, Consultation
     from apps.professionals.models import ProfessionalProfile
     from apps.establishments.models import EstablishmentAdministrator, EstablishmentMembership
 
     now = timezone.now()
+    # Suppression de compte = effacement IMMÉDIAT et IRRÉVERSIBLE des données (lignes réellement supprimées de la base, fichiers distants détruits), voir
+    # apps/patients/erasure.py. Un refus du service de fichiers lève RuntimeError : la transaction est annulée, rien n'est effacé. Ne restent que les
+    # lignes que le journal d'audit protégé référence (déclencheurs de base de données), vidées de tout contenu.
     patient = PatientProfile.objects.filter(user=user).first()
     if patient:
-        # External destruction must succeed before database references are removed. A refusal raises and the surrounding
-        # transaction rolls back, so the account is not anonymized with dangling Cloudinary references.
-        documents = list(MedicalDocument.objects.filter(patient=patient))
-        for document in documents:
-            if document.cloudinary_public_id:
-                try:
-                    cloudinary_destroy(document.cloudinary_public_id, resource_type=document.cloudinary_resource_type or "image")
-                except Exception as exc:
-                    raise RuntimeError("La suppression Cloudinary des documents du compte a échoué ; le compte est conservé.") from exc
-        for document in documents:
-            if document.file:
-                document.file.delete(save=False)
-        MedicalDocument.objects.filter(patient=patient).delete()
-        Vaccination.objects.filter(patient=patient).delete()
-        HealthMeasurement.objects.filter(patient=patient).delete()
-        MedicationReminder.objects.filter(patient=patient).delete()
-        FollowUpPlan.objects.filter(patient=patient).delete()
-        Appointment.objects.filter(patient=patient).delete()
-        PatientNotification.objects.filter(patient=patient).delete()
-        # Clear patient-entered administrative data; keep the opaque profile anchor for immutable audit references.
-        ClinicalDeclaration.objects.filter(patient=patient).delete()
-        PreConsultationRevision.objects.filter(encounter__patient=patient).delete()
-        CareEncounter.objects.filter(patient=patient).update(
-            facility_label="", reason="", observations="", recorded_with_help="",
-            status="closed", closed_at=now, vitals={},
-        )
-        PatientProfile.objects.filter(pk=patient.pk).update(
-            user=None, first_name="", last_name="", phone="", birth_date=None, address="", profession="", coverage_provider="", coverage_number="", coverage_expiry=None,
-            updated_at=now,
-        )
-        AccessGrant.objects.filter(patient=patient, status__in=("pending", "active")).update(status="revoked", revoked_at=now)
-        # PRO-21 : le brouillon clinique d'une consultation en attente est effacé, l'attente annulée et son QR d'examen périmé.
-        PendingConsultation.objects.filter(patient=patient).exclude(status="completed").update(draft={}, status="cancelled", qr_expires_at=now)
+        erase_patient_records(patient)
+        PatientProfile.objects.filter(pk=patient.pk).update(user=None, updated_at=now)
+    # Les carnets enfants du titulaire disparaissent avec son compte : personne ne pourrait plus les consulter ni les supprimer.
+    for representation in PatientRepresentation.objects.select_related("patient").filter(guardian=user).exclude(status__in=("deleted", "transferred")):
+        erase_patient_records(representation.patient)
+        representation.status = "deleted"
+        representation.deletion_reason = "account_deleted"
+        representation.deleted_at = now
+        representation.save(update_fields=("status", "deletion_reason", "deleted_at", "updated_at"))
 
     professional = ProfessionalProfile.objects.filter(user=user).first()
     if professional:

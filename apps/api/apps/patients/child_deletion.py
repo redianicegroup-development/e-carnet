@@ -1,16 +1,11 @@
 """Suppression d'un profil d'enfant, avec motif, par son représentant.
 
-Même règle que la suppression d'un compte (identity.anonymize_and_disable_account) : les données saisies pour l'enfant (documents, vaccins, mesures,
-rappels, plans, rendez-vous, notifications, déclarations, carte d'urgence, photo) sont effacées, l'identité est vidée et les accès ouverts sont
-révoqués. Seul l'ancrage opaque du dossier reste, parce que le journal d'audit et les consultations signées par les professionnels sont conservés et
-y font référence. La suppression est définitive : le lien devient « deleted » et ne peut plus être réactivé.
+La suppression est IMMÉDIATE et IRRÉVERSIBLE : toutes les données de l'enfant sont effacées de la base (voir erasure.py), la photo est détruite chez le
+prestataire de fichiers, les accès ouverts sont révoqués et le lien de représentation passe à « deleted » (il ne peut plus être réactivé). Ne restent que les
+lignes que le journal d'audit protégé référence, vidées de tout contenu (profil sans identité, consultations et prises en charge sans contenu).
 """
-from django.utils import timezone
-
-from apps.cloudinary_storage import destroy as cloudinary_destroy
-
-from .avatars import clear_child_avatar
-from .models import ClinicalDeclaration, PatientEmergencyCard, PatientProfile, RepresentationTransferRequest
+from .erasure import erase_patient_records
+from .models import PatientProfile, RepresentationTransferRequest
 
 # Mêmes motifs que la suppression d'un compte (identity.AccountActionRequest.REASONS) ; « Autre motif » demande une précision.
 DELETION_REASONS = ("not_needed", "duplicate", "privacy", "experience", "other")
@@ -33,36 +28,6 @@ def clean_deletion_request(data) -> tuple[str, str]:
 
 
 def anonymize_child_profile(patient: PatientProfile) -> None:
-    """Efface les données de l'enfant et vide son identité. À appeler dans une transaction : un refus Cloudinary (RuntimeError) l'annule."""
-    from apps.care.models import AccessGrant, Appointment, CareEncounter, FollowUpPlan, HealthMeasurement, MedicalDocument, MedicationReminder, PatientNotification, PreConsultationRevision, PendingConsultation, Vaccination
-
-    now = timezone.now()
-    documents = list(MedicalDocument.objects.filter(patient=patient))
-    for document in documents:
-        if document.cloudinary_public_id:
-            try:
-                cloudinary_destroy(document.cloudinary_public_id, resource_type=document.cloudinary_resource_type or "image")
-            except Exception as exc:
-                raise RuntimeError("La suppression des documents de l’enfant a échoué ; le profil est conservé.") from exc
-    for document in documents:
-        if document.file:
-            document.file.delete(save=False)
-    MedicalDocument.objects.filter(patient=patient).delete()
-    Vaccination.objects.filter(patient=patient).delete()
-    HealthMeasurement.objects.filter(patient=patient).delete()
-    MedicationReminder.objects.filter(patient=patient).delete()
-    FollowUpPlan.objects.filter(patient=patient).delete()
-    Appointment.objects.filter(patient=patient).delete()
-    PatientNotification.objects.filter(patient=patient).delete()
-    ClinicalDeclaration.objects.filter(patient=patient).delete()
-    PatientEmergencyCard.objects.filter(patient=patient).delete()
-    PreConsultationRevision.objects.filter(encounter__patient=patient).delete()
-    CareEncounter.objects.filter(patient=patient).update(facility_label="", reason="", observations="", recorded_with_help="", status="closed", closed_at=now, vitals={})
-    AccessGrant.objects.filter(patient=patient, status__in=("pending", "active")).update(status="revoked", revoked_at=now)
-    PendingConsultation.objects.filter(patient=patient).exclude(status="completed").update(draft={}, status="cancelled", qr_expires_at=now)
+    """Efface les données de l'enfant (nom conservé pour compatibilité des appels). À appeler dans une transaction : un refus du service de fichiers l'annule."""
+    erase_patient_records(patient)
     RepresentationTransferRequest.objects.filter(representation__patient=patient, status="pending").update(status="rejected")
-    clear_child_avatar(patient)
-    PatientProfile.objects.filter(pk=patient.pk).update(
-        first_name="", last_name="", phone="", birth_date=None, gender="", address="", profession="",
-        coverage_provider="", coverage_number="", coverage_expiry=None, updated_at=now,
-    )

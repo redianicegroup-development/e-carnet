@@ -68,9 +68,9 @@ export function AccountActionRequestsSettingsClient({ isPrivileged }: { isPrivil
         return;
       }
       const accepted = await confirm({
-        title: "Supprimer votre compte immédiatement ?",
-        message: "Votre accès sera désactivé maintenant, sans attendre d’agrément de l’administration. Vos identifiants et informations de profil seront anonymisés.",
-        note: "Les traces cliniques et d’audit immuables pourront être conservées sous forme protégée pour préserver l’historique médical. Cette action est irréversible.",
+        title: "Supprimer votre compte définitivement ?",
+        message: "Votre accès sera désactivé maintenant, sans attendre d’agrément de l’administration, et vos données seront effacées de la base immédiatement : identité, carnet, documents, vaccins, mesures, rappels, consultations et, s’il y en a, les carnets de vos enfants.",
+        note: "Cette action est irréversible : rien ne pourra être récupéré. Seules des traces techniques protégées (journal d’accès), vidées de leur contenu et sans votre identité, sont conservées. Si vous êtes professionnel, les consultations que vous avez signées restent dans les carnets des patients concernés.",
         confirmLabel: "Supprimer mon compte",
         cancelLabel: "Garder mon compte",
         tone: "danger",
@@ -114,7 +114,7 @@ export function AccountActionRequestsSettingsClient({ isPrivileged }: { isPrivil
     </section>
 
     <section className="card settings-subsection">
-      <div><h3>Supprimer le compte</h3><p className="muted">Après confirmation, l’accès est désactivé et les informations d’identité du compte sont anonymisées immédiatement. La console admin garde une trace de la demande sans conserver l’identité du compte.</p></div>
+      <div><h3>Supprimer le compte</h3><p className="muted">Après confirmation, l’accès est désactivé et les données du compte sont effacées de la base immédiatement et définitivement, y compris les carnets de vos enfants. Seules des traces techniques protégées, sans contenu ni identité, sont conservées. La console admin garde une trace de la demande sans conserver l’identité du compte.</p></div>
       {isPrivileged ? <p className="notice" role="note">Les comptes staff, administrateur et superadministrateur ne peuvent pas être supprimés depuis cette interface.</p> : <form className="settings-form" onSubmit={(event) => void submit(event, "deletion")}>
         <label className="field"><span>Motif</span><select value={reason} onChange={(event) => setReason(event.target.value)} required disabled={busy}><option value="" disabled>Choisissez un motif</option><option value="not_needed">Je n’ai plus besoin du compte</option><option value="duplicate">J’ai un autre compte</option><option value="privacy">Motif lié à la confidentialité</option><option value="experience">Mon expérience ne correspond pas à mes besoins</option><option value="other">Autre motif</option></select></label>
         {reason === "other" && <label className="field"><span>Précisez votre motif</span><textarea value={details} onChange={(event) => setDetails(event.target.value)} required maxLength={1200} rows={4} disabled={busy} placeholder="Décrivez brièvement le motif de votre demande." /></label>}

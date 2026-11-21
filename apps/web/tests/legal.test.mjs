@@ -143,7 +143,8 @@ test("chaque usage du stockage navigateur est connu, et déclaré dans la politi
 
 test("la politique décrit la suppression immédiate et les seules traces protégées conservées", () => {
   const privacy = read("confidentialite");
-  assert.match(privacy, /désactive immédiatement l’accès, sans agrément préalable/i);
-  assert.match(privacy, /journaux d’audit immuables/i);
+  assert.match(privacy, /immédiate et irréversible : elle désactive l’accès, sans agrément préalable/i, "20/11/2026 : effacement de la base, plus une anonymisation");
+  assert.match(privacy, /journal d’audit, protégé contre toute modification/i);
+  assert.doesNotMatch(privacy, /sont anonymisés/i, "les données ne sont plus seulement anonymisées");
   assert.match(privacy, /trace anonymisée du motif de suppression/i);
 });
