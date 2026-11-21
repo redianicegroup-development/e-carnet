@@ -142,9 +142,9 @@ export function PublicHeader() {
   if (state.status === "connected") {
     return (
       <header className="pub-header pub-header--connected">
-        <Link className="pub-return-link" href={state.href}>
+        <Link className="pub-return-link" href={state.href} aria-label="Retour à mon espace">
           <span aria-hidden="true">←</span>
-          Retour à mon espace
+          Retour
         </Link>
         <Link className="brand" href="/" aria-label="Mon E-Carnet, accueil">
           <BrandMark variant="duo" />

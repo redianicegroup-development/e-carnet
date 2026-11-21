@@ -1,5 +1,6 @@
 "use client";
 
+import { SIDEBAR_POPOVER_MAX_WIDTH } from "../../lib/popover-width";
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { apiDelete, apiGet, apiPatch, apiPost } from "../../infrastructure/api/client";
 import { Icon } from "../ui/Icon";
@@ -28,7 +29,7 @@ const PULSE_URL = "/api/v1/patient/care/notifications/pulse/";
 const POLL_INTERVAL_MS = 5_000;
 const POLL_MAX_BACKOFF_MS = 60_000;
 const CONFIRM_CLEAR_MS = 4_000;
-const PANEL_MAX_WIDTH = 360;
+const PANEL_MAX_WIDTH = SIDEBAR_POPOVER_MAX_WIDTH; // même largeur que le menu du compte de la barre latérale
 const PANEL_MIN_WIDTH = 200;
 const PANEL_EDGE_MARGIN = 12;
 const PANEL_OVERHANG = 8; // le panneau dépasse de 8 px du bouton (voir notification-bell.css)

@@ -82,9 +82,9 @@
 .greeting-toast__eyebrow { color: var(--primary-text); font-size: .65rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
 .greeting-toast__copy h2 { font-size: clamp(1.1rem, 2.2vw, 1.38rem); line-height: 1.16; }
 .greeting-toast__copy p { color: var(--text-muted); font-size: .83rem; line-height: 1.4; }
-.greeting-toast__spark { position: absolute; color: var(--primary); font-size: 1.2rem; }
+.greeting-toast__spark { position: absolute; width: 20px; height: 20px; fill: none; stroke: var(--brand-3, #f2b632); stroke-width: 2.6; stroke-linecap: round; } /* astérisque jaune du héro */
 .greeting-toast__spark--one { top: 8px; left: 14px; }
-.greeting-toast__spark--two { right: 14px; bottom: 9px; font-size: .88rem; opacity: .7; }
+.greeting-toast__spark--two { right: 14px; bottom: 9px; width: 15px; height: 15px; opacity: .85; }
 /* Voile flouté : pendant que le message est affiché (4,2 s, la durée du minuteur de GreetingModal), l'arrière-plan se floute puis se dégage en fondu. Il ne bloque rien (pointer-events: none), comme le reste de la scène. */
 .greeting-stage::before { content: ""; position: absolute; inset: 0; z-index: 0; background: color-mix(in srgb, var(--bg) 45%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); pointer-events: none; }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { .greeting-stage::before { background: color-mix(in srgb, var(--bg) 78%, transparent); } }

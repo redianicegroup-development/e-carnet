@@ -157,11 +157,16 @@ export function TourCard({ step, index, total, onTarget, onNext, onPrevious, onS
     const settle = window.setTimeout(layout, 350);
     window.addEventListener("resize", layout);
     window.addEventListener("scroll", layout, true);
+    // La page peut grandir APRÈS la pose du projecteur (liste des profils d'enfants chargée en retard, image, police) et pousser le repère plus bas :
+    // on le mesure de nouveau à chaque changement de hauteur de la page.
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(() => layout());
+    observer?.observe(document.body);
     return () => {
       window.cancelAnimationFrame(first);
       window.clearTimeout(settle);
       window.removeEventListener("resize", layout);
       window.removeEventListener("scroll", layout, true);
+      observer?.disconnect();
     };
   }, [step.target, onTarget]);
 

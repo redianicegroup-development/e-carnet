@@ -85,6 +85,9 @@ export function TrustedContactDelegationClient() {
   async function select(item: Delegation) { await action(`/api/v1/patient/delegations/${item.id}/select/`, `Carnet de ${item.patient_first_name ?? "votre proche"} sélectionné en lecture seule.`); }
   async function clear() { setBusy(true); try { await apiDelete(`/api/v1/patient/delegations/${mine.find((item) => item.is_selected)?.id}/select/`); await load(); setMessage("Votre propre carnet est de nouveau sélectionné."); } catch (error) { setMessage(error instanceof Error ? error.message : "Impossible de quitter ce carnet."); } finally { setBusy(false); } }
 
+  // Une délégation révoquée disparaît de la liste (20/11/2026) : seules celles en attente ou actives s'affichent.
+  const current = items.filter((item) => item.status !== "revoked");
+
   return <section className="settings-form">
     <p className="muted">Le patient génère un mot de rattachement temporaire et le remet directement à son proche. Le proche utilise son propre compte : aucun mot de passe de connexion n’est partagé.</p>
     <div className="trusted-tiles">
@@ -99,7 +102,7 @@ export function TrustedContactDelegationClient() {
         <span className="trusted-tile__hint">Saisir le mot que l’on m’a remis.</span>
       </button>
     </div>
-    <div className="stack"><h3>Mes délégations</h3>{items.length === 0 ? <p className="muted">Aucune délégation.</p> : <ProfileGrid label="Mes délégations">{items.map((item) => {
+    <div className="stack"><h3>Mes délégations</h3>{current.length === 0 ? <p className="muted">Aucune délégation.</p> : <ProfileGrid label="Mes délégations">{current.map((item) => {
       const email = item.invited_email ?? "Proche";
       const link = relationships[item.relationship_label] ?? item.relationship_label;
       const state = statuses[item.status] ?? item.status;

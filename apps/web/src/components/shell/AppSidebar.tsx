@@ -1,5 +1,6 @@
 "use client";
 
+import { SIDEBAR_POPOVER_MAX_WIDTH } from "../../lib/popover-width";
 import Link from "next/link";
 import { Fragment, useCallback, useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { BrandMark } from "../ui/BrandMark";
@@ -183,9 +184,11 @@ function AccountMenu({ account, menu, notice, collapsed }: { account: SidebarAcc
     if (!host || !inner) return;
     const measure = () => {
       const rect = host.getBoundingClientRect();
+      // Même largeur que le panneau de notifications (SIDEBAR_POPOVER_MAX_WIDTH), bornée à l'écran : le menu du compte n'est plus limité à la largeur
+      // de la barre latérale (ses libellés passaient sur deux lignes) et peut, comme les notifications, déborder sur la page.
       const width = collapsed
-        ? Math.min(300, window.innerWidth - rect.right - 24)
-        : host.clientWidth;
+        ? Math.min(SIDEBAR_POPOVER_MAX_WIDTH, window.innerWidth - rect.right - 24)
+        : Math.min(SIDEBAR_POPOVER_MAX_WIDTH, window.innerWidth - rect.left - 12);
       host.style.setProperty("--gm-w", `${Math.max(180, width)}px`);
       host.style.setProperty("--gm-h", `${inner.offsetHeight}px`);
     };
