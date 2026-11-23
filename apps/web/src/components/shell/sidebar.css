@@ -174,3 +174,13 @@ html:has(.sb) { scroll-padding-bottom: calc(96px + env(safe-area-inset-bottom));
 }
 
 @media print { .sb { display: none; } }
+
+/* Au pied de page (FooterBarsHider) : l'en-tête collant et la barre du bas se retirent, puis reviennent dès qu'on remonte. La barre latérale du
+   bureau (>= 920 px) reste en place : elle ne recouvre pas le pied de page. */
+.space-mobile-header { transition: transform .28s ease, opacity .22s ease, visibility 0s; }
+html[data-at-footer="true"] .space-mobile-header { transform: translateY(calc(-100% - 14px)); opacity: 0; visibility: hidden; transition: transform .28s ease, opacity .22s ease, visibility 0s .28s; }
+@media (max-width: 919px) {
+  .sb { transition: transform .28s ease, opacity .22s ease, visibility 0s; }
+  html[data-at-footer="true"] .sb { transform: translateY(calc(100% + 24px)); opacity: 0; visibility: hidden; transition: transform .28s ease, opacity .22s ease, visibility 0s .28s; }
+}
+@media (prefers-reduced-motion: reduce) { .space-mobile-header, .sb { transition: none !important; } }

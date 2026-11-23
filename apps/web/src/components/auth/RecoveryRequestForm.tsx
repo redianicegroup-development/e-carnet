@@ -49,7 +49,7 @@ export function RecoveryRequestForm({ onBack }: { onBack?: () => void } = {}) {
   if (status === "sent") return <div className="ax-card" data-step="form" data-status="success" role="status">
     <div className="ax-form">
       <h2 className="ax-title" tabIndex={-1} ref={done}>Demande envoyée</h2>
-      <p className="ax-subtitle">L’équipe Mon E‑Carnet vous répondra à l’adresse ou au numéro indiqué pour vérifier votre identité. Aucun accès n’est rouvert avant cet échange.</p>
+      <p className="ax-subtitle">L’équipe <span className="notranslate" translate="no">Mon E‑Carnet</span> vous répondra à l’adresse ou au numéro indiqué pour vérifier votre identité. Aucun accès n’est rouvert avant cet échange.</p>
       <Link className="button primary ax-submit ax-submit--link" href="/connexion"><span className="ax-submit__label">Retour à la connexion</span></Link>
     </div>
   </div>;

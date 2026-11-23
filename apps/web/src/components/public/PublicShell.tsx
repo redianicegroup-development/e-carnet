@@ -11,6 +11,7 @@ import { PROJECT_LOGO_WEBP } from "../../lib/brand";
 import { PublicHeader } from "./PublicHeader";
 import { BackToTopButton } from "./BackToTopButton";
 import { ScrollToTopOnNavigate } from "../ScrollToTopOnNavigate";
+import { FooterBarsHider } from "../shell/FooterBarsHider";
 import { CookiePreferencesLink } from "../CookieConsentBanner";
 import { FooterCredit, RedianiceCredit } from "./FooterCredit";
 
@@ -18,6 +19,7 @@ export function PublicFooter() {
   return (
     <footer className="pub-footer" data-footer-zone="true">
       <ScrollToTopOnNavigate />
+      <FooterBarsHider />
       <div className="pub-footer__cards">
         <section className="pub-footer__card pub-footer__card--brand" aria-label="Mon E‑Carnet">
           <Link className="pub-footer__logo" href="/" aria-label="Mon E-Carnet, accueil"><BrandMark detail /><span className="notranslate" translate="no">Mon E‑Carnet</span></Link>
@@ -51,7 +53,7 @@ export function PublicFooter() {
           </div>
           <div className="pub-footer__lower">
             <div className="pub-footer__legal">
-              <span>© 2026 Mon E‑Carnet</span>
+              <span>© 2026 <span className="notranslate" translate="no">Mon E‑Carnet</span></span>
               <p className="pub-footer__made">Créé par <RedianiceCredit /> et <FooterCredit /></p>
             </div>
           </div>

@@ -14,7 +14,7 @@ test("la cloche patient utilise l’inbox et conserve un panneau accessible", ()
   assert.match(bell, /unread_count/);
   assert.match(bell, /created_at/);
   assert.match(bell, /apiPatch/);
-  assert.match(bell, /notifications\/\$\{encodeURIComponent\(notification\.id\)\}\/read/);
+  assert.match(bell, /endpoints\.base\}\$\{encodeURIComponent\(notification\.id\)\}\/read/);
   assert.match(bell, /role="dialog"/);
   assert.match(bell, /aria-haspopup="dialog"/);
   assert.match(bell, /visibilitychange/);
@@ -26,17 +26,19 @@ test("la cloche patient utilise l’inbox et conserve un panneau accessible", ()
   assert.match(read("src/components/notifications/notification-bell.css"), /notification-bell-pulse/);
 });
 
-test("la cloche est uniquement dans l’espace patient et hors de la liste d’onglets", () => {
+test("la cloche est dans tous les espaces (patient, professionnel, établissement, laboratoire) et hors de la liste d’onglets", () => {
   const sidebar = read("src/components/shell/AppSidebar.tsx");
   const shell = read("src/components/shell/SpaceShell.tsx");
   assert.match(sidebar, /tools\?: ReactNode/);
   assert.match(sidebar, /sb__tools/);
-  assert.match(shell, /space === "patient"/);
   assert.match(shell, /NotificationBell/);
   assert.match(shell, /tools=\{/);
   assert.match(shell, /space-mobile-header/);
-  assert.match(shell, /NotificationBell placement="mobile"/);
+  assert.match(shell, /NotificationBell placement="mobile" scope=\{space\}/);
+  assert.match(shell, /NotificationBell placement="sidebar" scope=\{space\}/);
   assert.doesNotMatch(sidebar, /NotificationBell/);
+  // Médecin : une notification de rattachement recalcule les onglets sans recharger la page.
+  assert.match(shell, /kind\.startsWith\("membership\."\)\)\) setClinicalTick/);
 });
 
 test("les chemins de contexte des notifications restent statiques", () => {
@@ -68,7 +70,7 @@ test("la cloche propose « Les nouvelles », « Voir toutes » et l’effacement
   assert.match(bell, /Les nouvelles/);
   assert.match(bell, /Voir toutes/);
   assert.match(bell, /apiDelete/);
-  assert.match(bell, /notifications\/\$\{encodeURIComponent\(notification\.id\)\}\//);
+  assert.match(bell, /endpoints\.base\}\$\{encodeURIComponent\(notification\.id\)\}\//);
   assert.match(bell, /read-all\//);
   assert.match(bell, /\}clear\//);
   // Tout effacer exige une seconde pression.

@@ -31,7 +31,7 @@ export default function SecurityPage() {
             <div className="info-page__head-copy">
               <span className="eyebrow">Sécurité et confidentialité</span>
               <h1>Le patient garde la maîtrise des accès.</h1>
-              <p className="lead">Mon E‑Carnet organise les autorisations autour d’une règle simple : chacun ne voit que ce qui lui est destiné, pour le temps nécessaire.</p>
+              <p className="lead"><span className="notranslate" translate="no">Mon E‑Carnet</span> organise les autorisations autour d’une règle simple : chacun ne voit que ce qui lui est destiné, pour le temps nécessaire.</p>
             <AppSlogan />
             </div>
             <DocHero icon="lock" />
@@ -52,7 +52,7 @@ export default function SecurityPage() {
             <RecipientsFigure />
           </section>
 
-          <aside className="notice help-data-note security__notice"><strong>Informations importantes :</strong> utilisez des informations exactes et gardez votre compte personnel. Mon E‑Carnet ne remplace pas un avis médical ni les services d’urgence.</aside>
+          <aside className="notice help-data-note security__notice"><strong>Informations importantes :</strong> utilisez des informations exactes et gardez votre compte personnel. <span className="notranslate" translate="no">Mon E‑Carnet</span> ne remplace pas un avis médical ni les services d’urgence.</aside>
           <nav className="legal__others" aria-label="Autres informations">
             <span>À lire aussi :</span>
             <Link href="/aide#donnees">Détails sur les données</Link>

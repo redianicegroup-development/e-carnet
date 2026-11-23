@@ -126,7 +126,7 @@ export function EstablishmentKpis({ memberships, activeJoinCodeCount = 0, showCa
 
         <article className="card role-chart-card">
           <div className="section-heading"><div><span className="eyebrow">Équipe</span><h2>Médecins par spécialité</h2></div></div>
-          <p className="muted">Spécialité déclarée par chaque médecin actif, non certifiée par Mon E‑Carnet.</p>
+          <p className="muted">Spécialité déclarée par chaque médecin actif, non certifiée par <span className="notranslate" translate="no">Mon E‑Carnet</span>.</p>
           {specialtyTotal ? (
             <>
               <div className="role-chart-plot role-chart-plot--donut" role="img" aria-label={`Médecins actifs par spécialité : ${stats.specialties.map((item) => `${item.name} ${item.value}`).join(", ")}`}>

@@ -11,14 +11,16 @@ import { latestDeclaredOn } from "../../lib/allergy-rules";
 const W = 1600;
 const PAD = 64;
 const BAND = 120;
-const CARD_HEIGHT = 1020; // hauteur habituelle ; l’image s’allonge seulement si le contenu est plus haut
-const TILE = "#f5f8f6";
+const CARD_HEIGHT = 1010; // format carte bancaire (85,6 × 54) ; l’image s’allonge seulement si le contenu est plus haut
+const TILE = "rgba(255,255,255,0.06)";
 const PHOTO_W = 340;
 const PHOTO_H = 425;
-const INK = "#17231f";
-const MUTED = "#5a6b64";
-const LINE = "#dfe7e3";
-const DANGER = "#b42318";
+// Palette « carte d’identité médicale » (mêmes valeurs que emergency-card.css) : fond vert encre, or, crème.
+const INK = "#f7f1e1";
+const MUTED = "#b3c3ba";
+const GOLD = "#e3c27a";
+const LINE = "rgba(227,194,122,0.32)";
+const DANGER = "#ff9f91";
 
 type Ctx = CanvasRenderingContext2D & { letterSpacing?: string };
 type Style = { heading: string; body: string; accent: string; onAccent: string };
@@ -78,7 +80,7 @@ function limitLines(ctx: Ctx, lines: string[], max: number, maxWidth: number): s
 
 function label(ctx: Ctx, text: string, x: number, y: number): number {
   ctx.font = `800 18px ${currentBody}`;
-  ctx.fillStyle = MUTED;
+  ctx.fillStyle = GOLD;
   ctx.letterSpacing = "2px";
   ctx.fillText(text.toUpperCase(), x, y + 19);
   ctx.letterSpacing = "0px";
@@ -87,8 +89,8 @@ function label(ctx: Ctx, text: string, x: number, y: number): number {
 
 function chips(ctx: Ctx, items: string[], x: number, y: number, maxWidth: number, tone: "allergy" | "treatment"): number {
   const colors = tone === "allergy"
-    ? { bg: "#fff1ee", border: "#f1c2b8", text: "#8a1c10" }
-    : { bg: "#eef3f0", border: "#d3dfd8", text: "#24352f" };
+    ? { bg: "rgba(220,60,45,0.20)", border: "rgba(255,150,130,0.55)", text: "#ffc7bd" }
+    : { bg: "rgba(255,255,255,0.08)", border: "rgba(227,194,122,0.42)", text: INK };
   const H = 42, GAP = 10, PADX = 18, MAX_ROWS = 2;
   ctx.font = `700 24px ${currentBody}`;
   let cx = x, row = 0, shown = 0;
@@ -143,9 +145,11 @@ function drawPhoto(ctx: Ctx, photo: LoadedPhoto, x: number, y: number, style: St
     ctx.imageSmoothingQuality = "high";
     ctx.drawImage(photo.image, x + (PHOTO_W - w) / 2, y + (PHOTO_H - h) / 2, w, h);
   } else {
-    ctx.fillStyle = style.accent;
+    const foil = ctx.createLinearGradient(x, y, x + PHOTO_W, y + PHOTO_H);
+    foil.addColorStop(0, "#f6e2a4"); foil.addColorStop(0.6, "#c9a050"); foil.addColorStop(1, "#a77b34");
+    ctx.fillStyle = foil;
     ctx.fillRect(x, y, PHOTO_W, PHOTO_H);
-    ctx.fillStyle = style.onAccent;
+    ctx.fillStyle = "#2a1d07";
     ctx.font = `800 170px ${style.heading}`;
     ctx.textAlign = "center";
     ctx.fillText(photo.initials, x + PHOTO_W / 2, y + PHOTO_H / 2 + 60);
@@ -153,14 +157,14 @@ function drawPhoto(ctx: Ctx, photo: LoadedPhoto, x: number, y: number, style: St
   }
   ctx.restore();
   roundRect(ctx, x, y, PHOTO_W, PHOTO_H, 28);
-  ctx.lineWidth = 6; ctx.strokeStyle = "#ffffff"; ctx.stroke();
-  roundRect(ctx, x - 2, y - 2, PHOTO_W + 4, PHOTO_H + 4, 30);
-  ctx.lineWidth = 3; ctx.strokeStyle = LINE; ctx.stroke();
+  ctx.lineWidth = 6; ctx.strokeStyle = "#0e2621"; ctx.stroke();
+  roundRect(ctx, x - 5, y - 5, PHOTO_W + 10, PHOTO_H + 10, 32);
+  ctx.lineWidth = 5; ctx.strokeStyle = GOLD; ctx.stroke();
 }
 
 function drawBrandMark(ctx: Ctx, image: HTMLImageElement | null, x: number, y: number, size: number, style: Style) {
   roundRect(ctx, x, y, size, size, 20);
-  ctx.fillStyle = style.onAccent;
+  ctx.fillStyle = "#fff7e6";
   ctx.fill();
   if (image) {
     ctx.save();
@@ -171,7 +175,7 @@ function drawBrandMark(ctx: Ctx, image: HTMLImageElement | null, x: number, y: n
     ctx.drawImage(image, x, y, size, size);
     ctx.restore();
   } else {
-    ctx.fillStyle = style.accent;
+    ctx.fillStyle = "#17392f";
     ctx.font = `800 ${Math.round(size * .78)}px ${style.body}`;
     ctx.textAlign = "center";
     ctx.fillText("+", x + size / 2, y + size * .73);
@@ -191,36 +195,57 @@ function paint(ctx: Ctx, card: EmergencyCardView, photo: LoadedPhoto, brandLogo:
   const heading = style.heading;
   ctx.textBaseline = "alphabetic";
   ctx.textAlign = "left";
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, W, ctx.canvas.height);
+  const H = ctx.canvas.height;
 
-  // bandeau : couleur du thème + halo clair à droite (sans l’assombrir : le texte garde son contraste)
-  ctx.fillStyle = style.accent;
-  ctx.fillRect(0, 0, W, BAND);
-  const halo = ctx.createRadialGradient(W - 140, 0, 0, W - 140, 0, 420);
-  halo.addColorStop(0, "rgba(255,255,255,.28)");
-  halo.addColorStop(1, "rgba(255,255,255,0)");
-  ctx.fillStyle = halo;
-  ctx.fillRect(0, 0, W, BAND);
+  // fond : dégradé vert encre, halo doré en haut à droite, guillochis très fins, filet doré intérieur
+  const bg = ctx.createLinearGradient(0, 0, W, H);
+  bg.addColorStop(0, "#17392f"); bg.addColorStop(0.5, "#0e2621"); bg.addColorStop(1, "#091a16");
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+  const glow = ctx.createRadialGradient(W, 0, 0, W, 0, 900);
+  glow.addColorStop(0, "rgba(227,194,122,0.17)"); glow.addColorStop(1, "rgba(227,194,122,0)");
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, W, H);
+  ctx.save();
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = "rgba(227,194,122,0.10)";
+  for (let r = 40; r < 1100; r += 18) { ctx.beginPath(); ctx.arc(W * 0.94, -120, r, 0, Math.PI * 2); ctx.stroke(); }
+  ctx.strokeStyle = "rgba(255,255,255,0.05)";
+  for (let r = 40; r < 900; r += 20) { ctx.beginPath(); ctx.arc(W * 0.06, H + 160, r, 0, Math.PI * 2); ctx.stroke(); }
+  ctx.restore();
+  roundRect(ctx, 14, 14, W - 28, H - 28, 40);
+  ctx.lineWidth = 2; ctx.strokeStyle = "rgba(227,194,122,0.30)"; ctx.stroke();
+
+  // en-tête : marque à gauche, étiquette dorée à droite, filet holographique dessous
   const mark = 68;
   drawBrandMark(ctx, brandLogo.image, PAD, (BAND - mark) / 2, mark, style);
-  ctx.fillStyle = style.onAccent;
+  ctx.fillStyle = INK;
   ctx.font = `800 48px ${heading}`;
   ctx.fillText("Mon E‑Carnet", PAD + mark + 24, BAND / 2 + 17);
-  ctx.font = `800 24px ${style.body}`;
-  ctx.letterSpacing = "5px";
+  ctx.font = `800 20px ${style.body}`;
+  ctx.letterSpacing = "4px";
+  const tag = "CARTE D’IDENTITÉ MÉDICALE";
+  const tagW = ctx.measureText(tag).width + 44;
+  roundRect(ctx, W - PAD - tagW, BAND / 2 - 24, tagW, 48, 24);
+  ctx.lineWidth = 2; ctx.strokeStyle = "rgba(227,194,122,0.55)"; ctx.stroke();
+  ctx.fillStyle = GOLD;
   ctx.textAlign = "right";
-  ctx.fillText("CARTE D’URGENCE", W - PAD, BAND / 2 + 9);
+  ctx.fillText(tag, W - PAD - 22, BAND / 2 + 7);
   ctx.textAlign = "left";
   ctx.letterSpacing = "0px";
+  const rule = ctx.createLinearGradient(PAD, 0, W - PAD, 0);
+  rule.addColorStop(0, "rgba(227,194,122,0)"); rule.addColorStop(0.12, "rgba(227,194,122,0.75)"); rule.addColorStop(0.32, "rgba(255,241,205,0.95)");
+  rule.addColorStop(0.56, "rgba(227,194,122,0.70)"); rule.addColorStop(0.8, "rgba(160,200,255,0.60)"); rule.addColorStop(1, "rgba(160,200,255,0)");
+  ctx.fillStyle = rule;
+  ctx.fillRect(PAD, BAND - 1, W - PAD * 2, 2);
 
-  const top = BAND + 52;
+  const top = BAND + 44;
 
   // photo de profil à droite, à la place du QR, sur un fond légèrement teinté
   const photoX = W - PAD - PHOTO_W;
   ctx.save();
-  ctx.globalAlpha = 0.1;
-  ctx.fillStyle = style.accent;
+  ctx.globalAlpha = 0.09;
+  ctx.fillStyle = GOLD;
   roundRect(ctx, photoX - 26, top - 24, PHOTO_W + 52, PHOTO_H + 100, 36);
   ctx.fill();
   ctx.restore();
@@ -237,6 +262,27 @@ function paint(ctx: Ctx, card: EmergencyCardView, photo: LoadedPhoto, brandLogo:
   const width = photoX - 56 - PAD;
   let y = top;
 
+  // puce dorée et « TITULAIRE » au-dessus du nom
+  const chipW = 58, chipH = 44;
+  const chipFoil = ctx.createLinearGradient(x, y, x + chipW, y + chipH);
+  chipFoil.addColorStop(0, "#f6e2a4"); chipFoil.addColorStop(0.45, "#c9a050"); chipFoil.addColorStop(0.62, "#f0d58f"); chipFoil.addColorStop(1, "#a77b34");
+  roundRect(ctx, x, y, chipW, chipH, 8);
+  ctx.fillStyle = chipFoil; ctx.fill();
+  ctx.lineWidth = 2; ctx.strokeStyle = "rgba(80,50,10,0.45)"; ctx.stroke();
+  ctx.lineWidth = 2;
+  roundRect(ctx, x + 7, y + 9, chipW - 14, chipH - 18, 4); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x + chipW * 0.34, y + 9); ctx.lineTo(x + chipW * 0.34, y + chipH - 9);
+  ctx.moveTo(x + chipW * 0.66, y + 9); ctx.lineTo(x + chipW * 0.66, y + chipH - 9);
+  ctx.moveTo(x + 7, y + chipH / 2); ctx.lineTo(x + chipW - 7, y + chipH / 2);
+  ctx.stroke();
+  ctx.font = `800 20px ${style.body}`;
+  ctx.fillStyle = GOLD;
+  ctx.letterSpacing = "4px";
+  ctx.fillText("TITULAIRE", x + chipW + 18, y + 29);
+  ctx.letterSpacing = "0px";
+  y += chipH + 20;
+
   const fullName = emergencyCardFullName(card);
   ctx.font = `800 62px ${heading}`;
   ctx.fillStyle = fullName ? INK : MUTED;
@@ -250,16 +296,14 @@ function paint(ctx: Ctx, card: EmergencyCardView, photo: LoadedPhoto, brandLogo:
     ctx.font = `800 28px ${style.body}`;
     const [text] = limitLines(ctx, [role], 1, width - 92);
     const pillW = Math.min(ctx.measureText(text).width + 92, width);
-    ctx.save();
-    ctx.globalAlpha = 0.2;
-    ctx.fillStyle = style.accent;
     roundRect(ctx, x, y, pillW, 54, 27);
-    ctx.fill();
-    ctx.restore();
+    ctx.fillStyle = "rgba(227,194,122,0.14)"; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = "rgba(227,194,122,0.4)"; ctx.stroke();
     // petite croix médicale
-    ctx.fillStyle = INK;
+    ctx.fillStyle = GOLD;
     roundRect(ctx, x + 24, y + 22, 22, 7, 3); ctx.fill();
     roundRect(ctx, x + 31.5, y + 14.5, 7, 22, 3); ctx.fill();
+    ctx.fillStyle = GOLD;
     ctx.fillText(text, x + 62, y + 37);
     y += 54 + 18;
   } else y += 6;
@@ -267,7 +311,7 @@ function paint(ctx: Ctx, card: EmergencyCardView, photo: LoadedPhoto, brandLogo:
   // groupe sanguin | ville, puis taille | poids : quatre tuiles
   const gap = 16, tileW = Math.floor((width - gap) / 2), tileH = 110;
   const row1 = y, row2 = y + tileH + gap;
-  tile(ctx, x, row1, tileW, tileH, "#fff1ee", "#f1c2b8");
+  tile(ctx, x, row1, tileW, tileH, "rgba(220,60,45,0.24)", "rgba(255,130,110,0.5)");
   tile(ctx, x + tileW + gap, row1, tileW, tileH, TILE, LINE);
   tile(ctx, x, row2, tileW, tileH, TILE, LINE);
   tile(ctx, x + tileW + gap, row2, tileW, tileH, TILE, LINE);
@@ -306,7 +350,7 @@ function paint(ctx: Ctx, card: EmergencyCardView, photo: LoadedPhoto, brandLogo:
   // contact d’urgence : tuile pleine largeur
   const hasContact = Boolean(card.contact_name || card.contact_phone);
   const contactH = 22 + 28 + (hasContact ? (card.contact_name ? 38 : 0) + (card.contact_phone ? 36 : 0) : 32) + 14;
-  tile(ctx, x, y, width, contactH, TILE, LINE);
+  tile(ctx, x, y, width, contactH, "rgba(0,0,0,0.2)", LINE);
   let cy = y + 12;
   cy += label(ctx, "Contact d’urgence", x + 24, cy);
   if (hasContact) {
@@ -328,7 +372,7 @@ function paint(ctx: Ctx, card: EmergencyCardView, photo: LoadedPhoto, brandLogo:
   const footLines = wrap(ctx, EMERGENCY_CARD_FOOTNOTE, W - PAD * 2);
   const footH = 18 + footLines.length * 26 + 14;
   const footTop = Math.max(Math.max(y, photoBottom) + 20, CARD_HEIGHT - footH);
-  ctx.fillStyle = TILE;
+  ctx.fillStyle = "rgba(0,0,0,0.26)";
   ctx.fillRect(0, footTop, W, footH);
   ctx.fillStyle = LINE;
   ctx.fillRect(0, footTop, W, 2);

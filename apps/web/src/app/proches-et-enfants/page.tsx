@@ -81,7 +81,7 @@ export default function TrustedContactsAndChildrenPage() {
             </div>
           </section>
 
-          <aside className="notice help-data-note security__notice"><strong>À savoir :</strong> ces informations sont déclarées par vous, Mon E‑Carnet ne les certifie pas. Pour toute question, consultez l’<Link href="/aide">aide</Link>.</aside>
+          <aside className="notice help-data-note security__notice"><strong>À savoir :</strong> ces informations sont déclarées par vous, <span className="notranslate" translate="no">Mon E‑Carnet</span> ne les certifie pas. Pour toute question, consultez l’<Link href="/aide">aide</Link>.</aside>
         </InfoPageMotion>
       </article>
     </PublicShell>

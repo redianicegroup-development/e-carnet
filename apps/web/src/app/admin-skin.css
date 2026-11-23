@@ -10,6 +10,10 @@ body .space--admin .admin-metrics { grid-template-columns: repeat(2, minmax(0, 1
 @media (min-width: 720px) { body .space--admin .admin-metrics { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; } }
 body .space--admin .admin-metric { min-height: 118px; padding: 16px; border: 0; border-radius: 22px; background: var(--bg); box-shadow: var(--raise-md); overflow-wrap: anywhere; }
 body .space--admin .admin-metric::before { display: none; }
+/* Cartes de chiffres de l'admin : mêmes teintes pastel que les tuiles (couleur principale et couleur d'accent de la palette choisie, en damier), sans couleur propre. */
+body .space--admin .admin-metrics > .admin-metric { --hue: var(--primary); --wash: 15%; border-radius: 26px; background: color-mix(in srgb, var(--hue) var(--wash), var(--surface, var(--bg))); box-shadow: none; }
+body .space--admin .admin-metrics > .admin-metric:nth-child(4n + 2), body .space--admin .admin-metrics > .admin-metric:nth-child(4n + 3) { --hue: var(--brand-3, var(--primary)); --wash: 32%; }
+body .space--admin .admin-metrics > .admin-metric > .muted:first-child { color: color-mix(in srgb, var(--text) 78%, transparent); }
 body .space--admin .admin-metric strong { font-family: var(--font-heading); font-size: clamp(1.6rem, 6vw, 2.2rem); font-weight: 700; }
 body .space--admin .admin-metric > .muted:first-child { font-size: var(--fs-small); font-weight: 600; }
 body .space--admin .admin-metrics--compact .admin-metric { min-height: 96px; }

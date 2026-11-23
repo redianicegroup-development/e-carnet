@@ -143,6 +143,15 @@ class PublicFeedbackView(APIView):
             rating=rating,
             page_category=normalize_page_category(raw_path),
         )
+        # L'équipe est prévenue d'un retour qui demande une réponse : un message écrit, ou une note de 3 étoiles ou moins (une bonne note seule ne dérange personne).
+        if message or (rating is not None and rating <= 3):
+            from apps.establishments.role_notifications import notify_staff
+
+            notify_staff(
+                kind="admin.feedback", title="Nouveau retour utilisateur",
+                body=f"{feedback.get_category_display()}" + (f" · {rating}/5" if rating is not None else "") + " : ouvrez la console pour le lire.",
+                event_key=f"admin-feedback:{feedback.id}", push_url="/admin",
+            )
         visitor_id, set_cookie = _visitor_identity(request)
         response = Response({"success": True, "data": {"id": str(feedback.id)}}, status=201)
         attach_visitor_cookie(request, response, visitor_id, set_cookie)

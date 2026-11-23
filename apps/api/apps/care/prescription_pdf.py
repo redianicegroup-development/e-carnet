@@ -1,9 +1,10 @@
 """Ordonnance en PDF (A4), dans la même mise en page que la feuille affichée dans le carnet.
 
+Modèle simple, celui d'une ordonnance papier : logo en haut à gauche, en-tête de l'établissement au centre, ses coordonnées à droite ; nom du patient ;
+« ORDONNANCE MÉDICALE » encadré ; les médicaments ; en bas, la signature du professionnel et le cachet de l'établissement, puis le pied de page.
 Le contenu vient de `build_prescription_context` : le PDF et la feuille ne peuvent pas dire deux choses différentes.
-Rien n'est téléchargé ici : les images du cachet et de la signature du médecin sont fournies par l'appelant, et le logo de
-l'établissement (une URL saisie dans ses réglages) n'est jamais suivi — à sa place, un monogramme dessiné avec ses initiales.
-Le cachet rond de l'établissement est dessiné en vectoriel (comme à l'écran) : il porte le nom, la ville et la date de validation."""
+Rien n'est téléchargé ici : les images (cachet, signature, logo) sont fournies par l'appelant. Sans scan du cachet de l'établissement, le cachet rond
+électronique (dessiné en vectoriel, comme à l'écran) porte le nom, la ville et la date de validation ; sans logo, un monogramme avec ses initiales."""
 from __future__ import annotations
 
 import math
@@ -13,15 +14,14 @@ from html import escape
 from io import BytesIO
 from pathlib import Path
 
-from django.utils import timezone
 from reportlab.lib import colors
-from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.platypus import Flowable, Image, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from reportlab.platypus import Flowable, HRFlowable, Image, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 INK = colors.HexColor("#1d2b27")
 GREEN = colors.HexColor("#2f6f5c")
@@ -31,12 +31,9 @@ SOFT = colors.HexColor("#3d4c47")
 RULE = colors.HexColor("#c9d3cf")
 DOT = colors.HexColor("#9fb0aa")
 SEAL_INK = colors.HexColor("#1f4e8c")
-PANEL = colors.HexColor("#f8faf9")
-NEXT_PANEL = colors.HexColor("#f1f6f4")
 
 MARGIN_X = 18 * mm
 FRAME_WIDTH = A4[0] - 2 * MARGIN_X
-SEX_LABELS = {"female": "Femme", "male": "Homme"}
 SEAL_NAME_MAX = 34
 STOP_WORDS = re.compile(r"^(de|du|des|la|le|les|et)$", re.IGNORECASE)
 
@@ -88,49 +85,6 @@ class Monogram(Flowable):
         font_size = self.size * 0.36
         canvas.setFont(self.font, font_size)
         canvas.drawCentredString(radius, radius - font_size * 0.35, self.text)
-
-
-class DoubleRule(Flowable):
-    """Filet d'en-tête : un trait épais et un trait fin, comme sous le papier à en-tête."""
-
-    def wrap(self, width, _height):
-        self.width = width
-        return width, 7
-
-    def draw(self):
-        canvas = self.canv
-        canvas.setStrokeColor(GREEN)
-        canvas.setLineWidth(2)
-        canvas.line(0, 5.5, self.width, 5.5)
-        canvas.setLineWidth(0.6)
-        canvas.line(0, 0.6, self.width, 0.6)
-
-
-class TitleRule(Flowable):
-    """« ORDONNANCE MÉDICALE » espacé, centré entre deux filets."""
-
-    def __init__(self, text: str, font: str):
-        super().__init__()
-        self.text, self.font = text, font
-
-    def wrap(self, width, _height):
-        self.width = width
-        return width, 16
-
-    def draw(self):
-        canvas, size, spacing, gap = self.canv, 9.5, 2.8, 10
-        text_width = pdfmetrics.stringWidth(self.text, self.font, size) + spacing * (len(self.text) - 1)
-        middle = self.width / 2
-        canvas.setStrokeColor(RULE)
-        canvas.setLineWidth(0.6)
-        canvas.line(0, 5, max(0, middle - text_width / 2 - gap), 5)
-        canvas.line(min(self.width, middle + text_width / 2 + gap), 5, self.width, 5)
-        text = canvas.beginText(middle - text_width / 2, 2.2)
-        text.setFont(self.font, size)
-        text.setCharSpace(spacing)
-        text.setFillColor(GREEN)
-        text.textOut(self.text)
-        canvas.drawText(text)
 
 
 class PinToBottom(Flowable):
@@ -229,84 +183,94 @@ def paragraph_styles(base: str, bold: str) -> dict[str, ParagraphStyle]:
         return ParagraphStyle(name=name, fontName=kwargs.pop("fontName", base), textColor=kwargs.pop("textColor", INK), **kwargs)
 
     return {
-        "name": style("RxName", fontName=bold, fontSize=14, leading=16.5, textColor=DEEP),
-        "type": style("RxType", fontName=bold, fontSize=8.5, leading=11, textColor=GREEN),
-        "tagline": style("RxTagline", fontSize=8, leading=10.5, textColor=MUTED),
+        "name": style("RxName", fontName=bold, fontSize=13, leading=15.5, alignment=TA_CENTER, textColor=DEEP),
+        "type": style("RxType", fontName=bold, fontSize=8.5, leading=11, alignment=TA_CENTER, textColor=GREEN),
+        "tagline": style("RxTagline", fontSize=8.2, leading=10.8, alignment=TA_CENTER, textColor=MUTED),
         "contact": style("RxContact", fontSize=8, leading=11, alignment=TA_RIGHT, textColor=SOFT),
-        "meta": style("RxMeta", fontSize=9.2, leading=12.6, alignment=TA_LEFT, textColor=SOFT),
-        "meta_end": style("RxMetaEnd", fontSize=9.2, leading=12.6, alignment=TA_RIGHT, textColor=SOFT),
-        "patient_label": style("RxPatientLabel", fontName=bold, fontSize=7.2, leading=11, textColor=MUTED),
-        "patient": style("RxPatient", fontName=bold, fontSize=11, leading=14),
-        "facts": style("RxFacts", fontSize=9.2, leading=13, alignment=TA_RIGHT),
-        "rp": style("RxRp", fontName="Times-BoldItalic", fontSize=22, leading=24, textColor=GREEN),
+        "date": style("RxDate", fontSize=9.4, leading=13, alignment=TA_RIGHT, textColor=SOFT),
+        "patient": style("RxPatient", fontSize=11.5, leading=15),
+        "title": style("RxTitle", fontName=bold, fontSize=14, leading=18, alignment=TA_CENTER, textColor=DEEP),
         "number": style("RxNumber", fontName=bold, fontSize=10.5, leading=14, textColor=GREEN),
         "drug": style("RxDrug", fontSize=10.8, leading=14.4),
         "how": style("RxHow", fontSize=9.8, leading=13.4),
         "note": style("RxNote", fontSize=8.6, leading=11.6, textColor=MUTED),
-        "next": style("RxNext", fontSize=9, leading=12),
         "signed": style("RxSigned", fontSize=7.4, leading=10, textColor=MUTED),
         "caption": style("RxCaption", fontName=bold, fontSize=6.8, leading=8.4, alignment=TA_CENTER, textColor=MUTED),
-        "foot": style("RxFoot", fontSize=7.4, leading=9.6, alignment=TA_CENTER, textColor=SOFT),
+        "who": style("RxWho", fontSize=7.6, leading=10, alignment=TA_CENTER, textColor=SOFT),
+        "foot": style("RxFoot", fontSize=7.8, leading=10, alignment=TA_CENTER, textColor=SOFT),
     }
 
 
-def build_prescription_pdf(data: dict, images: list[tuple[str, bytes]]) -> bytes:
-    """`images` : [("stamp" | "signature", octets PNG)] — ceux figés à la signature, ou à défaut ceux du profil du médecin."""
+ZERO_PADDING = [("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 0), ("TOPPADDING", (0, 0), (-1, -1), 0), ("BOTTOMPADDING", (0, 0), (-1, -1), 0)]
+
+
+def mark_slot(marks: list, caption: str, details: str, width: float, mark_height: float, styles: dict) -> Table:
+    """Un emplacement de la ligne de signature : les marques (images ou cachet dessiné) sur leur ligne, la légende, puis le texte d'identité."""
+    cells = marks or [""]
+    each = width / len(cells)
+    for mark in cells:
+        if isinstance(mark, Image):
+            mark._restrictSize(each - 6, mark_height - 4)
+    strip = Table([cells], colWidths=[each] * len(cells), rowHeights=[mark_height])
+    strip.setStyle(TableStyle([("ALIGN", (0, 0), (-1, -1), "CENTER"), ("VALIGN", (0, 0), (-1, -1), "BOTTOM"), ("LINEBELOW", (0, 0), (-1, 0), 0.7, INK), *ZERO_PADDING]))
+    rows = [[strip], [Paragraph(caption, styles["caption"])]]
+    if details:
+        rows.append([Paragraph(details, styles["who"])])
+    slot = Table(rows, colWidths=[width])
+    slot.setStyle(TableStyle([("TOPPADDING", (0, 1), (-1, -1), 3), ("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 0), ("BOTTOMPADDING", (0, 0), (-1, -1), 0)]))
+    return slot
+
+
+def build_prescription_pdf(data: dict, images: list[tuple[str, bytes]], logo: bytes | None = None) -> bytes:
+    """`images` : [(kind, octets PNG)] avec kind ∈ stamp | signature (le professionnel) et establishment-stamp | establishment-signature (la structure),
+    tels que figés à la signature de la consultation. `logo` : PNG du logo de la structure, ou rien (monogramme à la place)."""
     base, bold = register_fonts()
     styles = paragraph_styles(base, bold)
     place, prescriber, patient = data["establishment"], data["prescriber"], data["patient"]
     issued = datetime.fromisoformat(data["issued_on"])
     signed_at = datetime.fromisoformat(data["signed_at"]).astimezone(dt_timezone.utc) if data.get("signed_at") else None
+    found = {}
+    for kind, raw in images:
+        found.setdefault(kind, raw)
     story: list = []
 
-    # En-tête de l'établissement : monogramme, nom, type, texte d'en-tête ; coordonnées à droite.
+    # En-tête : logo en haut à gauche, identité et texte d'en-tête au centre, coordonnées de la structure à droite.
+    if logo:
+        logo_mark = Image(BytesIO(logo))
+        logo_mark._restrictSize(22 * mm, 22 * mm)
+    else:
+        logo_mark = Monogram(monogram(place["name"] or "Établissement"), 16 * mm, bold)
     identity = [Paragraph(escape(place["name"] or "Établissement"), styles["name"])]
     if place["type"]:
         identity.append(Paragraph(escape(place["type"]), styles["type"]))
     if place["header_text"]:
         identity.append(Paragraph(escape(place["header_text"]).replace("\n", "<br/>"), styles["tagline"]))
-    brand = Table([[Monogram(monogram(place["name"] or "Établissement"), 13 * mm, bold), identity]], colWidths=(16 * mm, FRAME_WIDTH * 0.62 - 16 * mm))
-    brand.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 0), ("TOPPADDING", (0, 0), (-1, -1), 0), ("BOTTOMPADDING", (0, 0), (-1, -1), 0)]))
     contact_lines = [escape(place["address"])] if place["address"] else []
     if place["phone"]:
         contact_lines.append(f"Tél : {escape(place['phone'])}")
     if place["email"]:
         contact_lines.append(escape(place["email"]))
-    letterhead = Table([[brand, Paragraph("<br/>".join(contact_lines), styles["contact"]) if contact_lines else ""]], colWidths=(FRAME_WIDTH * 0.62, FRAME_WIDTH * 0.38))
-    letterhead.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 0), ("TOPPADDING", (0, 0), (-1, -1), 0), ("BOTTOMPADDING", (0, 0), (-1, -1), 0)]))
-    story.extend([letterhead, Spacer(1, 8), DoubleRule(), Spacer(1, 8)])
+    contact = Paragraph("<br/>".join(contact_lines), styles["contact"]) if contact_lines else ""
+    side = 26 * mm
+    letterhead = Table([[logo_mark, identity, contact]], colWidths=(side, FRAME_WIDTH - side - 50 * mm, 50 * mm))
+    letterhead.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("ALIGN", (0, 0), (0, 0), "LEFT"), *ZERO_PADDING, ("LEFTPADDING", (1, 0), (1, 0), 6), ("RIGHTPADDING", (1, 0), (1, 0), 6)]))
+    story.extend([letterhead, Spacer(1, 7), HRFlowable(width="100%", thickness=1.4, color=GREEN, spaceAfter=0), Spacer(1, 9)])
 
-    # Prescripteur à gauche ; lieu, date et numéro à droite.
-    title_line = " · ".join(part for part in (prescriber["title"], prescriber["specialty"]) if part)
-    left = f"<font name='{bold}' size='10.5' color='#1e3a34'>{escape(prescriber['name'])}</font>"
-    if title_line:
-        left += f"<br/>{escape(title_line)}"
-    if prescriber["order_number"]:
-        left += f"<br/>N° d’ordre : {escape(prescriber['order_number'])}"
+    # Lieu et date à droite ; puis le nom et le prénom du patient, rien d'autre.
     place_prefix = f"{escape(place['city'])}, le " if place["city"] else "Le "
-    right = f"{place_prefix}{french_date(issued)}<br/>Ordonnance n° {escape(data['reference'])}"
-    meta = Table([[Paragraph(left, styles["meta"]), Paragraph(right, styles["meta_end"])]], colWidths=(FRAME_WIDTH * 0.58, FRAME_WIDTH * 0.42))
-    meta.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 0), ("TOPPADDING", (0, 0), (-1, -1), 0), ("BOTTOMPADDING", (0, 0), (-1, -1), 0)]))
-    story.extend([meta, Spacer(1, 9)])
+    story.extend([
+        Paragraph(f"{place_prefix}{french_date(issued)}", styles["date"]),
+        Spacer(1, 6),
+        Paragraph(f"<font name='{bold}' size='8' color='#5b6a65'>NOM DU PATIENT :</font>&nbsp;&nbsp;<font name='{bold}'>{escape(patient['name'])}</font>", styles["patient"]),
+        Spacer(1, 14),
+    ])
 
-    # Patient : nom, puis âge, sexe et poids (utiles à la dispensation, surtout chez l'enfant).
-    facts = []
-    if patient["age_years"] is not None:
-        facts.append(f"Âge <b>{patient['age_years']} {'ans' if patient['age_years'] > 1 else 'an'}</b>")
-    if patient["sex"] in SEX_LABELS:
-        facts.append(f"Sexe <b>{SEX_LABELS[patient['sex']]}</b>")
-    if patient["weight"]:
-        facts.append(f"Poids <b>{escape(patient['weight'])}</b>")
-    patient_name = Paragraph(f"<font name='{bold}' size='7.2' color='#5b6a65'>PATIENT</font>&nbsp;&nbsp;{escape(patient['name'])}", styles["patient"])
-    patient_row = [[patient_name, Paragraph("&nbsp;&nbsp;·&nbsp;&nbsp;".join(facts), styles["facts"]) if facts else ""]]
-    patient_box = Table(patient_row, colWidths=(FRAME_WIDTH * 0.52, FRAME_WIDTH * 0.48))
-    patient_box.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), PANEL), ("BOX", (0, 0), (-1, -1), 0.6, RULE), ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("LEFTPADDING", (0, 0), (-1, -1), 8), ("RIGHTPADDING", (0, 0), (-1, -1), 8), ("TOPPADDING", (0, 0), (-1, -1), 6), ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-    ]))
-    story.extend([patient_box, Spacer(1, 12), TitleRule("ORDONNANCE MÉDICALE", bold), Spacer(1, 4), Paragraph("Rp/", styles["rp"]), Spacer(1, 4)])
+    # Grand titre encadré.
+    title_box = Table([[Paragraph("ORDONNANCE MÉDICALE", styles["title"])]], colWidths=(FRAME_WIDTH * 0.7,), hAlign="CENTER")
+    title_box.setStyle(TableStyle([("BOX", (0, 0), (-1, -1), 1.3, INK), ("TOPPADDING", (0, 0), (-1, -1), 6), ("BOTTOMPADDING", (0, 0), (-1, -1), 7), ("LEFTPADDING", (0, 0), (-1, -1), 8), ("RIGHTPADDING", (0, 0), (-1, -1), 8)]))
+    story.extend([title_box, Spacer(1, 14)])
 
-    # Lignes numérotées : médicament et dosage en gras, posologie et durée, conseil en italique. Chaque ligne reste d'un seul tenant.
+    # Médicaments : lignes numérotées (médicament et dosage en gras, posologie et durée, conseil en italique). Chaque ligne reste d'un seul tenant.
     for index, line in enumerate(data["lines"], 1):
         head = f"<b>{escape(line['drug_name'])}</b>" + (f" · {escape(line['dosage'])}" if line["dosage"] else "")
         content = [Paragraph(head, styles["drug"])]
@@ -322,36 +286,28 @@ def build_prescription_pdf(data: dict, images: list[tuple[str, bytes]]) -> bytes
         ]))
         story.extend([row, Spacer(1, 5)])
 
-    if data.get("next_appointment"):
-        when = timezone.localtime(datetime.fromisoformat(data["next_appointment"]))
-        next_box = Table([[Paragraph(f"<font name='{bold}' color='#2f6f5c'>Prochain rendez-vous</font>&nbsp;&nbsp;{when.strftime('%d/%m/%Y à %H:%M')}", styles["next"])]], colWidths=(FRAME_WIDTH,))
-        next_box.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), NEXT_PANEL), ("LEFTPADDING", (0, 0), (-1, -1), 8), ("TOPPADDING", (0, 0), (-1, -1), 5), ("BOTTOMPADDING", (0, 0), (-1, -1), 5)]))
-        story.extend([Spacer(1, 4), next_box])
-
-    # Ligne de signature : cachet de l'établissement, puis cachet et signature du médecin (ou un emplacement vide à remplir à la main).
+    # Bas de feuille : à gauche la signature du professionnel, à droite le cachet de l'établissement (scan déposé, sinon cachet électronique).
     when_signed = f" le {signed_at.strftime('%d/%m/%Y à %H:%M')} UTC" if signed_at else ""
     signed_line = Paragraph(f"Signée électroniquement dans Mon E‑Carnet par {escape(prescriber['name'])}{when_signed} · réf. {escape(data['reference'])}", styles["signed"])
-    seal_date = signed_at or issued
     mark_height = 30 * mm
-    top_row: list = [EstablishmentSealFlowable(place["name"], place["city"], seal_date, mark_height - 2 * mm, bold)]
-    captions: list = [Paragraph("Cachet de l’établissement", styles["caption"])]
-    for kind, label in (("stamp", "Cachet du médecin"), ("signature", "Signature du médecin")):
-        content = next((raw for found, raw in images if found == kind), None)
-        if not content:
-            continue
-        picture = Image(BytesIO(content))
-        picture._restrictSize(42 * mm, 24 * mm)
-        top_row.append(picture)
-        captions.append(Paragraph(label, styles["caption"]))
-    if len(top_row) == 1:
-        top_row.append("")
-        captions.append(Paragraph("Cachet et signature du médecin", styles["caption"]))
-    slot_width = 46 * mm
-    slots = Table([top_row, captions], colWidths=[slot_width] * len(top_row), rowHeights=[mark_height, None], hAlign="RIGHT")
-    slot_style = [("ALIGN", (0, 0), (-1, -1), "CENTER"), ("VALIGN", (0, 0), (-1, 0), "BOTTOM"), ("VALIGN", (0, 1), (-1, 1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 4), ("RIGHTPADDING", (0, 0), (-1, -1), 4), ("TOPPADDING", (0, 0), (-1, -1), 0), ("BOTTOMPADDING", (0, 0), (-1, 0), 2), ("TOPPADDING", (0, 1), (-1, 1), 3)]
-    slot_style.extend(("LINEBELOW", (column, 0), (column, 0), 0.7, INK) for column in range(1, len(top_row)))
-    slots.setStyle(TableStyle(slot_style))
-    story.append(PinToBottom([Spacer(1, 14), signed_line, Spacer(1, 6), slots]))
+    slot_width = FRAME_WIDTH * 0.46
+
+    def picture(kind: str):
+        raw = found.get(kind)
+        return Image(BytesIO(raw)) if raw else None
+
+    professional_marks = [mark for mark in (picture("signature"), picture("stamp")) if mark is not None]
+    title_line = " · ".join(part for part in (prescriber["title"], prescriber["specialty"]) if part)
+    details = f"<font name='{bold}'>{escape(prescriber['name'])}</font>" + (f"<br/>{escape(title_line)}" if title_line else "") + (f"<br/>N° d’ordre : {escape(prescriber['order_number'])}" if prescriber["order_number"] else "")
+    seal_date = signed_at or issued
+    establishment_marks = [picture("establishment-stamp") or EstablishmentSealFlowable(place["name"], place["city"], seal_date, mark_height - 2 * mm, bold)]
+    if found.get("establishment-signature"):
+        establishment_marks.append(picture("establishment-signature"))
+    left = mark_slot(professional_marks, "Signature du professionnel", details, slot_width, mark_height, styles)
+    right = mark_slot(establishment_marks, "Cachet de l’établissement" + (" et signature" if len(establishment_marks) > 1 else ""), "", slot_width, mark_height, styles)
+    slots = Table([[left, "", right]], colWidths=(slot_width, FRAME_WIDTH - 2 * slot_width, slot_width))
+    slots.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), *ZERO_PADDING]))
+    story.append(PinToBottom([Spacer(1, 14), signed_line, Spacer(1, 8), slots]))
 
     footer_text = " ".join((place.get("footer_text") or "").split())
     if len(footer_text) > 240:
@@ -360,13 +316,13 @@ def build_prescription_pdf(data: dict, images: list[tuple[str, bytes]]) -> bytes
     def decorate(canvas, document):
         """Pied de page de chaque feuille (texte de l'établissement, origine, numéro) ; rappel du patient et de la référence dès la page 2."""
         canvas.saveState()
-        canvas.setStrokeColor(RULE)
-        canvas.setLineWidth(0.6)
+        canvas.setStrokeColor(INK)
+        canvas.setLineWidth(0.8)
         canvas.line(MARGIN_X, 22 * mm, A4[0] - MARGIN_X, 22 * mm)
         if footer_text:
             footer_paragraph = Paragraph(escape(footer_text), styles["foot"])
-            _, height = footer_paragraph.wrapOn(canvas, FRAME_WIDTH, 12 * mm)
-            footer_paragraph.drawOn(canvas, MARGIN_X, 22 * mm - 2 * mm - height)
+            _, height = footer_paragraph.wrapOn(canvas, FRAME_WIDTH, 14 * mm)
+            footer_paragraph.drawOn(canvas, MARGIN_X, 22 * mm - 2.5 * mm - height)
         canvas.setFont(base, 6.8)
         canvas.setFillColor(MUTED)
         canvas.drawString(MARGIN_X, 8 * mm, "Document généré depuis Mon E‑Carnet — contenu saisi et signé par le prescripteur.")

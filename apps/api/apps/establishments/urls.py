@@ -10,6 +10,7 @@ from .clinical_views import (
     EstablishmentRecordOpeningsView,
     EstablishmentRecordOpeningCloseView,
 )
+from .credential_views import EstablishmentCredentialAssetView, EstablishmentCredentialsView
 from .laboratories import EstablishmentLaboratoriesView, LaboratoryAdministratorRevokeView
 from .revocations import RevocationNoticeAckView
 from .views import (
@@ -44,6 +45,14 @@ from .views import (
     StartupEstablishmentQueueView,
 )
 
+from .role_notifications import (
+    RoleNotificationBulkView,
+    RoleNotificationDetailView,
+    RoleNotificationInboxView,
+    RoleNotificationPulseView,
+    RoleNotificationReadView,
+)
+
 urlpatterns = [
     path("", EstablishmentListView.as_view()),
     path("catalog/", EstablishmentCatalogView.as_view()),
@@ -52,6 +61,11 @@ urlpatterns = [
     path("invitations/accept/", EstablishmentInvitationAcceptView.as_view()),
     path("invitations/preview/", EstablishmentInvitationPreviewView.as_view()),
     path("notifications/", EstablishmentNotificationListView.as_view()),
+    path("notifications/inbox/", RoleNotificationInboxView.as_view()),
+    path("notifications/pulse/", RoleNotificationPulseView.as_view()),
+    path("notifications/<int:pk>/read/", RoleNotificationReadView.as_view()),
+    path("notifications/<int:pk>/", RoleNotificationDetailView.as_view()),
+    path("notifications/<str:action>/", RoleNotificationBulkView.as_view()),  # après les routes numériques : « 12 » est aussi une chaîne
     path("revocation-notices/ack/", RevocationNoticeAckView.as_view()),
     path("join-codes/redeem/", EstablishmentJoinCodeRedeemView.as_view()),
     path("startup/queue/", StartupEstablishmentQueueView.as_view()),
@@ -68,6 +82,8 @@ urlpatterns = [
     path("<uuid:establishment_id>/join-codes/active-count/", EstablishmentActiveJoinCodeCountView.as_view()),
     path("<uuid:establishment_id>/memberships/<uuid:membership_id>/avatar/", EstablishmentMemberAvatarView.as_view()),
     path("<uuid:establishment_id>/profile/", EstablishmentProfileView.as_view()),
+    path("<uuid:establishment_id>/credentials/", EstablishmentCredentialsView.as_view()),
+    path("<uuid:establishment_id>/credentials/<slug:kind>/", EstablishmentCredentialAssetView.as_view()),
     path("<uuid:establishment_id>/patients/", EstablishmentPatientListView.as_view()),
     path("<uuid:establishment_id>/patients/<uuid:patient_id>/avatar/", EstablishmentPatientAvatarView.as_view()),
     path("<uuid:establishment_id>/patients/<uuid:patient_id>/openings/", EstablishmentRecordOpeningCreateView.as_view()),

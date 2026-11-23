@@ -3,6 +3,7 @@
 import { SIDEBAR_POPOVER_MAX_WIDTH } from "../../lib/popover-width";
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { apiDelete, apiGet, apiPatch, apiPost } from "../../infrastructure/api/client";
+import type { SpaceId } from "../../lib/spaces";
 import { Icon } from "../ui/Icon";
 import { NOTIFICATIONS_REFRESH_EVENT, SERVICE_WORKER_PUSH_MESSAGE, announceNewNotifications } from "./notification-events";
 import "./notification-bell.css";
@@ -18,12 +19,12 @@ export type PatientNotification = {
 
 type NotificationInbox = { items: PatientNotification[]; unread_count: number; total_count?: number };
 type NotificationPulse = { unread_count: number; total_count: number; latest_at: string | null };
-type NotificationBellProps = { placement?: "sidebar" | "mobile" };
+/** `scope` : l'espace où la cloche est montée. Le patient a sa boîte (carnet) ; professionnel, établissement et laboratoire partagent la boîte du compte. */
+type NotificationBellProps = { placement?: "sidebar" | "mobile"; scope?: SpaceId | "admin" };
 type Tab = "new" | "all";
 
-const BASE_URL = "/api/v1/patient/care/notifications/";
-const INBOX_URL = "/api/v1/patient/care/notifications/inbox/";
-const PULSE_URL = "/api/v1/patient/care/notifications/pulse/";
+const PATIENT_ENDPOINTS = { base: "/api/v1/patient/care/notifications/", inbox: "/api/v1/patient/care/notifications/inbox/", pulse: "/api/v1/patient/care/notifications/pulse/" };
+const ACCOUNT_ENDPOINTS = { base: "/api/v1/establishments/notifications/", inbox: "/api/v1/establishments/notifications/inbox/", pulse: "/api/v1/establishments/notifications/pulse/" };
 /* « Temps réel » : le serveur (gunicorn sur Render) ne tient pas de connexion ouverte ; la cloche interroge donc un pouls de quelques octets
    toutes les 5 s tant que l'écran est visible et en ligne, et ne recharge la boîte que si ce pouls change. Un push reçu la réveille aussitôt. */
 const POLL_INTERVAL_MS = 5_000;
@@ -36,14 +37,39 @@ const PANEL_OVERHANG = 8; // le panneau dépasse de 8 px du bouton (voir notific
 
 type PanelFit = { align: "right" | "left"; width: number };
 
-function contextLink(kind: string) {
+function contextLink(kind: string, scope: SpaceId | "admin") {
   const normalized = kind.toLocaleLowerCase("fr-FR");
+  if (scope !== "patient") return accountContextLink(normalized, scope);
   if (/consult|visit|rendez|appointment/.test(normalized)) return { href: "/patient/consultations", label: "Voir les visites" };
   if (/access|share|grant|partag|break_glass/.test(normalized)) return { href: "/patient/historique#acces", label: "Voir les accès" };
   if (/vaccin/.test(normalized)) return { href: "/patient/carnet#vaccinations", label: "Voir mes vaccinations" };
   if (/medicat|treatment|rappel/.test(normalized)) return { href: "/patient/carnet#medications", label: "Voir mes traitements" };
   if (/profile|account|param/.test(normalized)) return { href: "/patient/parametres", label: "Voir le profil" };
   return { href: "/patient/carnet#notifications", label: "Voir dans mon carnet" };
+}
+
+/** Liens des notifications des autres espaces : chaque type d'événement mène à l'écran où l'on agit. */
+function accountContextLink(kind: string, scope: SpaceId | "admin") {
+  if (scope === "admin") {
+    if (/admin\.suspension_request/.test(kind)) return { href: "/admin#account-requests", label: "Voir les demandes" };
+    if (/admin\.feedback/.test(kind)) return { href: "/admin#feedback", label: "Lire le retour" };
+    return { href: "/admin", label: "Ouvrir la console" };
+  }
+  if (scope === "establishment") {
+    if (/membership\.request/.test(kind)) return { href: "/etablissement/demandes", label: "Voir les demandes" };
+    if (/internal\.followup/.test(kind)) return { href: "/etablissement/demandes", label: "Voir les demandes" };
+    if (/membership\.left/.test(kind)) return { href: "/etablissement/medecins", label: "Voir les médecins" };
+    if (/break_glass/.test(kind)) return { href: "/etablissement/urgences", label: "Voir les accès d’urgence" };
+    if (/billing/.test(kind)) return { href: "/etablissement/parametres", label: "Voir la facturation" };
+    return { href: "/etablissement", label: "Ouvrir l’accueil" };
+  }
+  if (scope === "professional") {
+    if (/membership\.(approved|refused|revoked)/.test(kind)) return { href: "/professionnel/acces", label: "Voir mon rattachement" };
+    return { href: "/professionnel", label: "Ouvrir l’accueil" };
+  }
+  if (/laboratory\.welcome/.test(kind)) return { href: "/laboratoire/scanner", label: "Déposer un résultat" };
+  if (/laboratory\.administrator/.test(kind)) return { href: "/laboratoire/parametres", label: "Voir les accès" };
+  return { href: "/laboratoire", label: "Ouvrir l’accueil" };
 }
 
 function formatDate(value: string) {
@@ -84,7 +110,8 @@ function playNotificationChime(audioContext: AudioContext | null, count = 1) {
   }
 }
 
-export function NotificationBell({ placement = "sidebar" }: NotificationBellProps) {
+export function NotificationBell({ placement = "sidebar", scope = "patient" }: NotificationBellProps) {
+  const endpoints = scope === "patient" ? PATIENT_ENDPOINTS : ACCOUNT_ENDPOINTS; // professionnel, établissement, laboratoire, admin : la boîte du compte
   const [notifications, setNotifications] = useState<PatientNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loaded, setLoaded] = useState(false);
@@ -122,7 +149,7 @@ export function NotificationBell({ placement = "sidebar" }: NotificationBellProp
   /** Recharge la boîte complète (appelé seulement quand le pouls a changé, à l'ouverture, ou après une action). */
   const refresh = useCallback(async () => {
     try {
-      const inbox = await apiGet<NotificationInbox>(INBOX_URL);
+      const inbox = await apiGet<NotificationInbox>(endpoints.inbox);
       const nextNotifications = Array.isArray(inbox.items) ? inbox.items : [];
       const incomingUnread = nextNotifications.filter((item) => !item.read_at && !knownIds.current.has(item.id));
       if (hasSeededNotifications.current && incomingUnread.length > 0) {
@@ -145,14 +172,14 @@ export function NotificationBell({ placement = "sidebar" }: NotificationBellProp
     } finally {
       setLoaded(true);
     }
-  }, []);
+  }, [endpoints.inbox]);
 
   /** Un tour de pouls : une requête minuscule ; la boîte n'est rechargée que si le résumé du serveur a changé. */
   const poll = useCallback(async () => {
     if (polling.current) return;
     polling.current = true;
     try {
-      const pulse = await apiGet<NotificationPulse>(PULSE_URL, 8000);
+      const pulse = await apiGet<NotificationPulse>(endpoints.pulse, 8000);
       const next = pulseSignature(pulse);
       if (next !== signature.current || !hasSeededNotifications.current) {
         const ok = await refresh();
@@ -168,7 +195,7 @@ export function NotificationBell({ placement = "sidebar" }: NotificationBellProp
     } finally {
       polling.current = false;
     }
-  }, [refresh]);
+  }, [refresh, endpoints.pulse]);
 
   useEffect(() => {
     let timer: number | null = null;
@@ -293,7 +320,7 @@ export function NotificationBell({ placement = "sidebar" }: NotificationBellProp
     setNotifications((current) => current.map((item) => item.id === notification.id ? { ...item, read_at: readAt } : item));
     setUnreadCount((current) => Math.max(0, current - 1));
     try {
-      await apiPatch<unknown>(`/api/v1/patient/care/notifications/${encodeURIComponent(notification.id)}/read/`, {});
+      await apiPatch<unknown>(`${endpoints.base}${encodeURIComponent(notification.id)}/read/`, {});
     } catch {
       setNotifications((current) => current.map((item) => item.id === notification.id && item.read_at === readAt ? { ...item, read_at: previousReadAt } : item));
       setUnreadCount((current) => current + 1);
@@ -316,7 +343,7 @@ export function NotificationBell({ placement = "sidebar" }: NotificationBellProp
     if (removing.has(notification.id)) return;
     setRemoving((current) => new Set(current).add(notification.id));
     try {
-      await apiDelete<unknown>(`${BASE_URL}${encodeURIComponent(notification.id)}/`);
+      await apiDelete<unknown>(`${endpoints.base}${encodeURIComponent(notification.id)}/`);
       setNotifications((current) => current.filter((item) => item.id !== notification.id));
       setUnreadCount((current) => Math.max(0, current - (notification.read_at ? 0 : 1)));
       setTotalCount((current) => Math.max(0, current - 1));
@@ -337,7 +364,7 @@ export function NotificationBell({ placement = "sidebar" }: NotificationBellProp
     setBulkBusy(true);
     const readAt = new Date().toISOString();
     try {
-      await apiPost<unknown>(`${BASE_URL}read-all/`, {});
+      await apiPost<unknown>(`${endpoints.base}read-all/`, {});
       setNotifications((current) => current.map((item) => item.read_at ? item : { ...item, read_at: readAt }));
       setUnreadCount(0);
       syncSignature(0, totalCount);
@@ -361,7 +388,7 @@ export function NotificationBell({ placement = "sidebar" }: NotificationBellProp
     setConfirmClear(false);
     setBulkBusy(true);
     try {
-      await apiPost<unknown>(`${BASE_URL}clear/`, {});
+      await apiPost<unknown>(`${endpoints.base}clear/`, {});
       setNotifications([]);
       setUnreadCount(0);
       setTotalCount(0);
@@ -398,7 +425,7 @@ export function NotificationBell({ placement = "sidebar" }: NotificationBellProp
           {!loaded && <p className="gm__item notification-bell__status" style={step()} role="status">Chargement des notifications…</p>}
           {loaded && latest.length === 0 && <p className="gm__item notification-bell__status" style={step()}>{activeTab === "new" ? "Aucune nouvelle notification." : "Vous n’avez pas encore de notification."}</p>}
           {latest.length > 0 && <ul className="notification-bell__list" id={`${panelId}-list`} role="tabpanel" aria-labelledby={`${panelId}-tab-${activeTab}`}>{latest.map((notification) => {
-            const context = contextLink(notification.kind);
+            const context = contextLink(notification.kind, scope);
             const isMarking = marking.has(notification.id);
             const isRemoving = removing.has(notification.id);
             return <li className={`gm__item notification-bell__item${notification.read_at ? " is-read" : " is-unread"}`} style={step()} key={notification.id}>

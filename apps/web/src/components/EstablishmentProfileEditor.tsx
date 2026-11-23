@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { ApiError, apiGet, apiPatch } from "../infrastructure/api/client";
 import { AvatarPicker } from "./AvatarPicker";
 import { EstablishmentLocationField, type LocationFields } from "./EstablishmentLocationField";
+import { EstablishmentSealFields, useEstablishmentSealsDraft } from "./EstablishmentSeals";
 
 /* Formulaire unique de la structure, utilisé à trois endroits : la fiche d'onboarding (« all »), « Informations administratives »
    (« identity ») et « Coordonnées » (« contact ») des paramètres. Une seule source pour les règles :
@@ -32,6 +33,9 @@ export type EstablishmentProfile = {
   /** Nom de l'établissement qui a demandé le rattachement du laboratoire ; vide pour une structure ordinaire. */
   parent_name?: string;
   locked_fields?: string[];
+  /** Cachet et signature de la structure déposés (jamais l'image ni son identifiant : elles se lisent par la route privée de l'administrateur). */
+  stamp_uploaded?: boolean;
+  signature_uploaded?: boolean;
 } & LocationFields;
 export type EditorScope = "all" | "identity" | "contact";
 type Load = { status: "loading" } | { status: "error"; message: string; unauthorized: boolean } | { status: "ready"; profile: EstablishmentProfile };
@@ -61,6 +65,11 @@ export function EstablishmentProfileEditor({ scope, establishmentId, submitLabel
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  // Cachet et signature de la structure (« Informations administratives » seulement) : enregistrés avec le même bouton que l'identité.
+  const seals = useEstablishmentSealsDraft(load.status === "ready" ? load.profile.id : "", {
+    stamp_uploaded: load.status === "ready" ? Boolean(load.profile.stamp_uploaded) : false,
+    signature_uploaded: load.status === "ready" ? Boolean(load.profile.signature_uploaded) : false,
+  });
 
   useEffect(() => {
     let active = true;
@@ -114,6 +123,16 @@ export function EstablishmentProfileEditor({ scope, establishmentId, submitLabel
       setMessage(`Enregistré le ${when(saved.updated_at)}. L’équipe Mon E‑Carnet voit cette mise à jour.`);
       window.dispatchEvent(new Event("ecarnet:establishment-updated")); // le header et la sidebar reprennent le nouveau logo
       onSaved?.(saved, wasComplete);
+      if (scope === "identity" && seals.changed) {
+        // La fiche est déjà enregistrée : un dépôt refusé (fichier illisible, stockage injoignable) se signale sans rien défaire.
+        try {
+          await seals.upload();
+          setMessage(`Enregistré le ${when(saved.updated_at)}. Le cachet et la signature seront apposés sur les prochaines consultations et ordonnances.`);
+        } catch (reason) {
+          setError(reason instanceof Error ? `L’identité est enregistrée, mais pas le cachet ou la signature : ${reason.message}` : "L’identité est enregistrée, mais pas le cachet ou la signature.");
+          setMessage("");
+        }
+      }
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Enregistrement impossible.");
     } finally {
@@ -139,7 +158,7 @@ export function EstablishmentProfileEditor({ scope, establishmentId, submitLabel
       {identity && <>
         <div className="establishment-editor__logo">
           <AvatarPicker subject="logo" value={logo} onChange={(value) => { setLogo(value); setLogoChanged(true); }} fallback={establishmentInitials(values.name || profile.name)} disabled={busy} />
-          <p className="muted">Logo de votre structure (facultatif). Touchez-le pour le changer ; il s’affiche dans votre espace et pour l’équipe Mon E‑Carnet.</p>
+          <p className="muted">Logo de votre structure (facultatif). Touchez-le pour le changer ; il s’affiche dans votre espace et pour l’équipe <span className="notranslate" translate="no">Mon E‑Carnet</span>.</p>
         </div>
         <label className="field"><span>{lab ? "Nom du laboratoire" : "Nom de l’établissement"}</span>
           <input required minLength={2} maxLength={180} autoComplete="organization" value={values.name} onChange={(event) => set("name", event.target.value)} disabled={busy} />
@@ -170,6 +189,8 @@ export function EstablishmentProfileEditor({ scope, establishmentId, submitLabel
           </label>
           : <label className="field"><span>Responsable (verrouillé)</span><input value={profile.responsible_name || "—"} readOnly aria-readonly="true" autoComplete="off" /></label>}
       </>}
+
+      {identity && scope === "identity" && !lab && <EstablishmentSealFields draft={seals} />}
 
       <dl className="settings-details establishment-editor__meta">
         {showInternalCode && <div><dt>Code interne</dt><dd>{profile.internal_code ?? "Attribué après activation"}</dd></div>}

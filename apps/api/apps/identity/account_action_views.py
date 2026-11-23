@@ -1,7 +1,9 @@
+import logging
 import uuid
 
 from django.contrib.auth import get_user_model, logout
-from django.db import transaction
+from django.db import DatabaseError, transaction
+from django.db.models import ProtectedError, RestrictedError
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import serializers
@@ -15,8 +17,14 @@ from .models import AccountActionRequest, AccountContext, AccountProfile, AuthId
 from apps.cloudinary_storage import destroy as cloudinary_destroy
 
 
+logger = logging.getLogger(__name__)
+
 SUSPENSION_DAYS = {1, 7, 14, 30, 60, 90}
 OPEN_STATUSES = ("new", "in_review")
+DELETION_FAILED_MESSAGE = (
+    "La suppression n’a pas pu aboutir et rien n’a été effacé : votre compte est intact. "
+    "Réessayez dans un instant ; si cela continue, écrivez à l’équipe Mon E‑Carnet."
+)
 
 
 class AccountActionRequestInputSerializer(serializers.Serializer):
@@ -146,8 +154,22 @@ class CurrentAccountActionRequestsView(APIView):
         requests = AccountActionRequest.objects.filter(user=request.user)
         return Response({"success": True, "data": [request_payload(item) for item in requests]})
 
-    @transaction.atomic
     def post(self, request):
+        """Enveloppe de `_handle`.
+
+        Tout échec de base de données (clé étrangère protégée, contrainte différée vérifiée à la validation de la transaction, verrou…)
+        devenait une page HTML 500 que le navigateur affichait « Le service est momentanément indisponible », sans que personne ne sache
+        pourquoi. Ici la transaction est annulée (rien n'est effacé), la cause est journalisée avec sa trace et la personne reçoit une
+        phrase claire en JSON. `_handle` est atomique : une erreur levée à sa validation remonte jusqu'ici.
+        """
+        try:
+            return self._handle(request)
+        except (ProtectedError, RestrictedError, DatabaseError):
+            logger.exception("suppression de compte: échec de base de données (user=%s)", getattr(request.user, "pk", None))
+            return Response({"success": False, "message": DELETION_FAILED_MESSAGE}, status=500)
+
+    @transaction.atomic
+    def _handle(self, request):
         serializer = AccountActionRequestInputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         values = serializer.validated_data
@@ -176,14 +198,30 @@ class CurrentAccountActionRequestsView(APIView):
             try:
                 anonymize_and_disable_account(user)
             except RuntimeError as exc:
+                logger.warning("suppression de compte: service de fichiers refusé (user=%s): %s", user.pk, exc)
                 transaction.set_rollback(True)
                 return Response({"success": False, "message": str(exc)}, status=502)
+            except PermissionDenied:
+                raise
+            except Exception:  # noqa: BLE001 - quelle que soit la cause, la transaction est annulée et la cause est journalisée
+                logger.exception("suppression de compte: erreur inattendue (user=%s)", user.pk)
+                transaction.set_rollback(True)
+                return Response({"success": False, "message": DELETION_FAILED_MESSAGE}, status=500)
             item.user = None  # keep the request/reason anonymized in the admin log, not linked to the deleted identity
             item.save(update_fields=("user",))
             logout(request)
             return Response({"success": True, "data": request_payload(item)}, status=201)
 
         item = AccountActionRequest.objects.create(user=user, **values)
+        if item.request_type == "suspension":
+            # La demande attend l'équipe : notification sans identité (elle se lit dans la console).
+            from apps.establishments.role_notifications import notify_staff
+
+            notify_staff(
+                kind="admin.suspension_request", title="Nouvelle demande de suspension de compte",
+                body=f"Une personne demande une suspension de {item.suspension_days} jour(s). Ouvrez la console pour la traiter.",
+                event_key=f"admin-suspension-request:{item.id}", push_url="/admin",
+            )
         return Response({"success": True, "data": request_payload(item)}, status=201)
 
 

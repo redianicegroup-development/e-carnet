@@ -1124,20 +1124,22 @@ class PatientPrescriptionDownloadView(APIView):
         consultation, lines, error = signed_prescription_for(request, pk)
         if error:
             return error
+        from .prescription_logo import establishment_logo_png
         from .prescription_pdf import build_prescription_pdf
         context = build_prescription_context(consultation, lines)
         professional = consultation.professional
 
         # Cachet et signature : ceux figés à la signature de la consultation (les mêmes que sur la feuille affichée dans le carnet).
         # Une consultation signée avant que ces images soient figées garde l'ancien comportement : celles du profil du médecin.
-        # Un logo_url historique est volontairement ignoré : aucun appel réseau ne doit suivre une URL fournie par un modèle d'ordonnance.
+        # Le cachet et la signature de l'ÉTABLISSEMENT sont toujours ceux figés (une consultation plus ancienne n'en a pas : cachet électronique).
         if consultation.stamp_asset_id or consultation.signature_asset_id:
-            sources = (("stamp", consultation.stamp_asset_id, "image"), ("signature", consultation.signature_asset_id, "image"))
+            sources = [("stamp", consultation.stamp_asset_id, "image"), ("signature", consultation.signature_asset_id, "image")]
         else:
-            sources = (
+            sources = [
                 ("stamp", getattr(professional, "stamp_cloudinary_public_id", "") if professional else "", (getattr(professional, "stamp_cloudinary_resource_type", "image") if professional else "image") or "image"),
                 ("signature", getattr(professional, "signature_cloudinary_public_id", "") if professional else "", (getattr(professional, "signature_cloudinary_resource_type", "image") if professional else "image") or "image"),
-            )
+            ]
+        sources += [("establishment-stamp", consultation.establishment_stamp_asset_id, "image"), ("establishment-signature", consultation.establishment_signature_asset_id, "image")]
         images = []
         for kind, public_id, resource_type in sources:
             if not public_id:
@@ -1147,7 +1149,7 @@ class PatientPrescriptionDownloadView(APIView):
             except Exception:
                 return Response({"success": False, "message": "Le cachet ou la signature déposée est temporairement indisponible."}, status=502)
 
-        pdf = build_prescription_pdf(context, images)
+        pdf = build_prescription_pdf(context, images, establishment_logo_png(consultation.establishment))
         record_event(event_type="prescription.downloaded", actor=request.user, actor_role=patient_actor_role(request), patient=consultation.patient, establishment=consultation.establishment, consultation=consultation, metadata={"action": "downloaded", "resource_type": "prescription_pdf"})
         response = HttpResponse(pdf, content_type="application/pdf")
         response["Content-Disposition"] = f'attachment; filename="ordonnance-{consultation.id}.pdf"'
@@ -1155,12 +1157,12 @@ class PatientPrescriptionDownloadView(APIView):
 
 
 class ConsultationSealImageView(APIView):
-    """Signature ou cachet du professionnel, tels que figés à la validation de la consultation (jamais ceux de son profil actuel).
+    """Signature ou cachet du professionnel — et cachet ou signature de l'établissement — tels que figés à la validation de la consultation (jamais ceux du profil actuel).
 
     Lisibles par le patient propriétaire de la consultation et par le professionnel qui l'a signée ; toute autre personne reçoit 404.
     L'identifiant de stockage reste côté serveur : seul le PNG est servi."""
     permission_classes = [IsAuthenticated]
-    KIND_FIELDS = {"signature": "signature_asset_id", "stamp": "stamp_asset_id"}
+    KIND_FIELDS = {"signature": "signature_asset_id", "stamp": "stamp_asset_id", "establishment-stamp": "establishment_stamp_asset_id", "establishment-signature": "establishment_signature_asset_id"}
 
     def get(self, request, pk, kind):
         field = self.KIND_FIELDS.get(kind)

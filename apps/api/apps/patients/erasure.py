@@ -11,11 +11,16 @@ VIDÉES de tout contenu : le profil patient (identifiant technique sans nom, dat
 permettent plus de retrouver ni de reconnaître la personne.
 Fonction à appeler dans une transaction : un refus du service de fichiers (RuntimeError) l'annule en entier, rien n'est alors effacé.
 """
+from django.db.models import QuerySet
 from django.utils import timezone
 
 from apps.cloudinary_storage import destroy as cloudinary_destroy
 
 from .avatars import clear_child_avatar
+
+
+# Texte qui remplace le motif libre d'un accès d'urgence : la base refuse un motif vide (contrainte emg_acc_reason_note_required_ck).
+ERASED_EMERGENCY_NOTE = "Contenu effacé à la suppression du compte."
 
 
 def erase_patient_records(patient) -> None:
@@ -73,7 +78,10 @@ def erase_patient_records(patient) -> None:
         facility_label="", reason="", observations="", recorded_with_help="", vitals={}, template_responses={}, status="closed", closed_at=now,
     )
     AccessGrant.objects.filter(patient=patient, status__in=("pending", "active")).update(status="revoked", revoked_at=now)
-    EmergencyAccessRequest.objects.filter(patient=patient).update(reason_note="")
+    # Les accès d'urgence sont immuables : leur gestionnaire REFUSE update() et delete() (TypeError). Appeler `.filter(...).update(...)` ici faisait
+    # donc échouer TOUTE suppression de compte avec une erreur 500. L'effacement du texte libre du motif est la seule exception voulue (il peut
+    # décrire la personne) : on passe par `QuerySet.update` de base, en gardant qui / quand / où / catégorie, que le journal doit conserver.
+    QuerySet.update(EmergencyAccessRequest.objects.filter(patient=patient), reason_note=ERASED_EMERGENCY_NOTE)
     CareReferral.objects.filter(patient=patient).update(reason_note="")
 
     # 4) Le profil : identité, coordonnées, couverture et photo vidés (l'identifiant technique reste, sans rien d'identifiant).

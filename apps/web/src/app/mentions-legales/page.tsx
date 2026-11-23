@@ -16,7 +16,7 @@ const sections: LegalSectionDef[] = [
     title: "Éditeur du service",
     body: (
       <>
-        <p>Le service « Mon E‑Carnet » est édité et exploité par :</p>
+        <p>Le service « <span className="notranslate" translate="no">Mon E‑Carnet</span> » est édité et exploité par :</p>
         <dl>
           <div><dt>Dénomination ou nom</dt><dd><Fill k="publisher.name" /></dd></div>
           <div><dt>Forme juridique</dt><dd><Fill k="publisher.legalForm" /></dd></div>

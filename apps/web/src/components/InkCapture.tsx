@@ -207,7 +207,7 @@ function SignaturePad({ onDone, onCancel }: { onDone: (pixels: Pixels) => void; 
 
   return <div className="ink-capture">
     <h4>Dessinez votre signature</h4>
-    <p className="muted">Signez avec le doigt, le stylet ou la souris. Elle sera apposée sur vos ordonnances, avec la mention « Signé électroniquement dans Mon E‑Carnet ».</p>
+    <p className="muted">Signez avec le doigt, le stylet ou la souris. Elle sera apposée sur vos ordonnances, avec la mention « Signé électroniquement dans <span className="notranslate" translate="no">Mon E‑Carnet</span> ».</p>
     <canvas ref={canvasRef} className={count === 0 ? "ink-pad ink-pad--empty" : "ink-pad"} role="img" aria-label="Zone de signature" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} />
     <div className="ink-controls"><fieldset><legend>Couleur du trait</legend>
       <label className="ink-chip"><input type="radio" name="pad-color" checked={color === "black"} onChange={() => recolor("black")} /><span className="ink-chip__dot" style={{ background: `rgb(${INK_BLACK.join(",")})` }} />Noir</label>

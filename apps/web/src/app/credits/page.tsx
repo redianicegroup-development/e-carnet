@@ -30,7 +30,7 @@ export default function CreditsPage() {
             <BrandLogo height={60} />
             <span className="eyebrow">Crédits et remerciements</span>
             <h1>Merci à celles et ceux qui ont rendu ce carnet possible.</h1>
-            <p className="lead">Mon E-Carnet est porté par <RedianiceLink />, une startup qui construit des outils simples au service de la santé. L’application est développée par AKATech Studio, dont le fondateur fait partie de l’équipe.</p>
+            <p className="lead"><span className="notranslate" translate="no">Mon E-Carnet</span> est porté par <RedianiceLink />, une startup qui construit des outils simples au service de la santé. L’application est développée par AKATech Studio, dont le fondateur fait partie de l’équipe.</p>
             <AppSlogan />
           </div>
           <DocHero icon="sparkle" />

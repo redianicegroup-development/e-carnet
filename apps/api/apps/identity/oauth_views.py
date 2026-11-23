@@ -201,7 +201,7 @@ class OAuthCallbackView(APIView):
                 email = profile.get("email", "")
                 stage = "email_lookup"
                 user = User.objects.filter(email__iexact=email).first() if email else None
-                if user: return ui_redirect(provider, status="conflict", message="Un compte existe déjà. Connectez-vous d'abord pour lier ce fournisseur.")
+                if user: return ui_redirect(provider, status="conflict", message=f"Cette adresse e‑mail a déjà un compte Mon E‑Carnet. Connectez-vous avec votre mot de passe, puis liez {provider.capitalize()} dans Réglages › Sécurité et connexion.")
                 fallback_first, fallback_last = split_name(profile.get("name"))
                 first_name = profile.get("first_name") or fallback_first
                 last_name = profile.get("last_name") or fallback_last

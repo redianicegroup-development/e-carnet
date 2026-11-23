@@ -18,6 +18,7 @@ import { useConfirm } from "../../components/modal/ConfirmProvider";
 import { BrandMark } from "../../components/ui/BrandMark";
 import { Icon, type IconName } from "../../components/ui/Icon";
 import { AppSidebar, type SidebarItem, type SidebarMenuItem } from "../../components/shell/AppSidebar";
+import { NotificationBell } from "../../components/notifications/NotificationBell";
 import { ScreenLoader } from "../../components/ui/ScreenLoader";
 
 type Visitor = {
@@ -105,6 +106,17 @@ export default function AdminPage() {
   const [manualRefreshing, setManualRefreshing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<AdminTab>("overview");
+  // Les notifications de la cloche mènent à `/admin#feedback`, `/admin#account-requests`… : l'onglet correspondant s'ouvre (au chargement et au changement de #).
+  useEffect(() => {
+    const openFromHash = () => {
+      const id = window.location.hash.replace(/^#/, "");
+      const target = tabs.find((tab) => tab.id === id);
+      if (target) setActiveTab(target.id);
+    };
+    openFromHash();
+    window.addEventListener("hashchange", openFromHash);
+    return () => window.removeEventListener("hashchange", openFromHash);
+  }, []);
   const [visitorSearch, setVisitorSearch] = useState("");
   const [feedbackSearch, setFeedbackSearch] = useState("");
   const [surveySearch, setSurveySearch] = useState("");
@@ -190,7 +202,7 @@ export default function AdminPage() {
       <BrandMark />
       <span className="brand-text"><strong className="notranslate" translate="no">Mon E‑Carnet</strong><small>Retour à l’accueil</small></span>
     </Link>
-    <span className="eyebrow">Mon E‑Carnet · Administration</span><h1>Console d’administration</h1>
+    <span className="eyebrow"><span className="notranslate" translate="no">Mon E‑Carnet</span> · Administration</span><h1>Console d’administration</h1>
     <p className="muted">Accès réservé aux superadministrateurs autorisés.</p>
     <form className="stack" onSubmit={signIn}>
       <label className="field"><span>Email administrateur</span><input type="email" autoComplete="username" required value={email} onChange={(event) => setEmail(event.target.value)} /></label>
@@ -251,6 +263,7 @@ export default function AdminPage() {
       menu={sidebarMenu}
       collapsed={navCollapsed}
       onToggle={() => setNavCollapsed((collapsed) => !collapsed)}
+      tools={<NotificationBell placement="sidebar" scope="admin" />}
     />
     <main className="space-main admin-space-main">
       <header className="space-mobile-header">
@@ -258,8 +271,9 @@ export default function AdminPage() {
           <BrandMark />
           <span><strong className="notranslate" translate="no">Mon E‑Carnet</strong><small>Administration</small></span>
         </Link>
+        <div className="space-mobile-header__actions"><NotificationBell placement="mobile" scope="admin" /></div>
       </header>
-      <header className="admin-page-heading"><div><span className="eyebrow">Console privée</span><h1>Administration Mon E‑Carnet</h1><p className="muted">Actualisé {formatDate(dashboard.generated_at)} · synchronisation automatique toutes les 2 min</p></div><button type="button" className={`admin-refresh-icon${manualRefreshing ? " is-refreshing" : ""}`} aria-label="Actualiser les données" title="Actualiser les données" aria-busy={manualRefreshing} disabled={manualRefreshing} onClick={() => void loadDashboard(true, true)}><Icon name="refresh" size={20} /></button></header>
+      <header className="admin-page-heading"><div><span className="eyebrow">Console privée</span><h1>Administration <span className="notranslate" translate="no">Mon E‑Carnet</span></h1><p className="muted">Actualisé {formatDate(dashboard.generated_at)} · synchronisation automatique toutes les 2 min</p></div><button type="button" className={`admin-refresh-icon${manualRefreshing ? " is-refreshing" : ""}`} aria-label="Actualiser les données" title="Actualiser les données" aria-busy={manualRefreshing} disabled={manualRefreshing} onClick={() => void loadDashboard(true, true)}><Icon name="refresh" size={20} /></button></header>
       {refreshMessage && <p className="admin-refresh-note" role="status">{refreshMessage}</p>}
       <div className="admin-workspace__content">
 
@@ -320,7 +334,7 @@ export default function AdminPage() {
     </section>}
 
     {activeTab === "establishments" && <section id="admin-panel-establishments" role="tabpanel" aria-labelledby="admin-tab-establishments" className="grid admin-management-grid">
-      <AdminEstablishmentsClient aside={<article className="card"><span className="eyebrow">Limites du rôle</span><h2>Contrôle administratif, pas clinique</h2><p className="muted">Le staff Mon E‑Carnet ne vérifie pas les justificatifs personnels du médecin dans ce parcours. L’établissement vérifie ses médecins, émet un code temporaire et décide des demandes de rattachement. L’espace établissement n’accède jamais aux dossiers médicaux.</p></article>} />
+      <AdminEstablishmentsClient aside={<article className="card"><span className="eyebrow">Limites du rôle</span><h2>Contrôle administratif, pas clinique</h2><p className="muted">Le staff <span className="notranslate" translate="no">Mon E‑Carnet</span> ne vérifie pas les justificatifs personnels du médecin dans ce parcours. L’établissement vérifie ses médecins, émet un code temporaire et décide des demandes de rattachement. L’espace établissement n’accède jamais aux dossiers médicaux.</p></article>} />
     </section>}
     {activeTab === "account-requests" && <section id="admin-panel-account-requests" role="tabpanel" aria-labelledby="admin-tab-account-requests"><AdminAccountActionRequestsClient /></section>}
     {activeTab === "audit" && <section id="admin-panel-audit" role="tabpanel" aria-labelledby="admin-tab-audit"><AdminAuditJournal /></section>}

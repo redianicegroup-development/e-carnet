@@ -22,59 +22,49 @@
 
 .rx-sheet__sample { position: absolute; top: .8em; right: 1em; padding: .25em .8em; border-radius: 99em; background: #fff3d6; color: #8a6100; font-size: .62em; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
 
-/* En-tête de l'établissement : logo (ou monogramme), nom, type, texte d'en-tête ; coordonnées à droite. */
-.rx-sheet__letterhead { display: flex; justify-content: space-between; align-items: flex-start; gap: 1.2em; }
-.rx-sheet__brand { display: flex; align-items: center; gap: .9em; min-width: 0; }
-.rx-sheet__logo { flex: none; width: 3.8em; height: 3.8em; object-fit: contain; }
-.rx-sheet__monogram { flex: none; display: grid; place-items: center; width: 3.5em; height: 3.5em; border-radius: 50%; background: var(--rx-green); color: #fff; font-size: 1.05em; font-weight: 800; letter-spacing: .04em; }
-.rx-sheet__brand h2 { font-size: 1.42em; font-weight: 800; line-height: 1.15; color: var(--rx-deep); }
+/* En-tête : logo (ou monogramme) en haut à gauche, identité et texte d'en-tête au centre, coordonnées de la structure à droite. */
+.rx-sheet__letterhead { display: grid; grid-template-columns: 4.2em minmax(0, 1fr); align-items: center; gap: 0 1em; }
+.rx-sheet__letterhead[data-contact] { grid-template-columns: 4.2em minmax(0, 1fr) minmax(0, 36%); }
+.rx-sheet__logo { width: 4.2em; height: 4.2em; object-fit: contain; object-position: left center; }
+.rx-sheet__monogram { display: grid; place-items: center; width: 3.6em; height: 3.6em; border-radius: 50%; background: var(--rx-green); color: #fff; font-size: 1.05em; font-weight: 800; letter-spacing: .02em; }
+.rx-sheet__identity { min-width: 0; text-align: center; }
+.rx-sheet__identity h2 { font-size: 1.36em; font-weight: 800; line-height: 1.15; color: var(--rx-deep); }
 .rx-sheet__type { margin-top: .15em !important; font-size: .78em; font-weight: 700; color: var(--rx-green); }
-.rx-sheet__tagline { margin-top: .2em !important; font-size: .72em; color: var(--rx-muted); }
-.rx-sheet__contact { display: grid; gap: .1em; flex: none; max-width: 40%; font-size: .72em; font-style: normal; line-height: 1.45; text-align: right; color: #3d4c47; }
-.rx-sheet__rule { margin: 1em 0 .9em; border-top: .17em solid var(--rx-green); border-bottom: .06em solid var(--rx-green); height: .26em; }
+.rx-sheet__tagline { margin-top: .2em !important; font-size: .74em; color: var(--rx-muted); white-space: pre-line; }
+.rx-sheet__contact { display: grid; gap: .1em; font-size: .72em; font-style: normal; line-height: 1.45; text-align: right; color: #3d4c47; }
+.rx-sheet__rule { margin: .9em 0 .8em; border-top: .17em solid var(--rx-green); }
 
-/* Prescripteur à gauche, date et numéro à droite. */
-.rx-sheet__meta { display: flex; justify-content: space-between; align-items: flex-start; gap: 1em; font-size: .86em; }
-.rx-sheet__meta > div { display: grid; gap: .1em; min-width: 0; }
-.rx-sheet__meta strong { font-size: 1.08em; color: var(--rx-deep); }
-.rx-sheet__meta span { color: #3d4c47; }
-.rx-sheet__meta-end { text-align: right; }
-.rx-sheet__meta code { font-family: var(--font-mono, ui-monospace, monospace); font-size: .92em; }
+/* Lieu et date à droite, puis le nom et le prénom du patient (rien d'autre). */
+.rx-sheet__date { font-size: .86em; text-align: right; color: #3d4c47; }
+.rx-sheet__patient { display: flex; flex-wrap: wrap; align-items: baseline; gap: .1em .6em; margin-top: .7em !important; }
+.rx-sheet__patient span { font-size: .68em; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--rx-muted); }
+.rx-sheet__patient strong { font-size: 1.12em; }
 
-/* Patient : nom, puis âge, sexe et poids (utiles à la dispensation, surtout chez l'enfant). */
-.rx-sheet__patient { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .3em 1.2em; margin-top: .9em; padding: .65em .9em; border: .07em solid var(--rx-rule); border-radius: .5em; background: #f8faf9; }
-.rx-sheet__patient p { display: flex; align-items: baseline; gap: .6em; }
-.rx-sheet__patient p span, .rx-sheet__patient dt { font-size: .68em; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--rx-muted); }
-.rx-sheet__patient p strong { font-size: 1.08em; }
-.rx-sheet__patient dl { display: flex; flex-wrap: wrap; gap: .2em 1.1em; }
-.rx-sheet__patient dl > div { display: flex; align-items: baseline; gap: .4em; }
-.rx-sheet__patient dd { font-weight: 700; }
+/* Grand titre encadré. */
+.rx-sheet__title { width: 72%; margin: 1.3em auto 0 !important; padding: .45em .6em .5em; border: .12em solid var(--rx-ink); font-size: 1.08em; font-weight: 800; letter-spacing: .12em; text-align: center; text-transform: uppercase; color: var(--rx-deep); }
 
-.rx-sheet__title { display: flex; align-items: center; gap: .8em; margin-top: 1.2em !important; font-size: .9em; font-weight: 800; letter-spacing: .28em; text-transform: uppercase; color: var(--rx-green); }
-.rx-sheet__title::before, .rx-sheet__title::after { content: ""; flex: 1; border-top: .07em solid var(--rx-rule); }
-
-/* Prescription : Rp/ puis lignes numérotées (médicament et dosage en gras, posologie et durée, conseil en italique). */
-.rx-sheet__rp { margin-top: .5em !important; font: italic 700 1.7em/1 Georgia, "Times New Roman", serif; color: var(--rx-green); }
-.rx-sheet__lines { display: grid; gap: .6em; margin: .5em 0 0; padding: 0; list-style: none; }
+/* Médicaments : lignes numérotées (médicament et dosage en gras, posologie et durée, conseil en italique). */
+.rx-sheet__lines { display: grid; gap: .6em; margin: 1.2em 0 0; padding: 0; list-style: none; }
 .rx-sheet__lines li { display: grid; grid-template-columns: 1.7em minmax(0, 1fr); gap: 0 .3em; padding-bottom: .6em; border-bottom: .07em dotted var(--rx-dot); break-inside: avoid; }
 .rx-sheet__n { font-weight: 800; color: var(--rx-green); }
 .rx-sheet__drug { font-size: 1.04em; }
 .rx-sheet__drug b { font-weight: 800; }
 .rx-sheet__how { margin-top: .1em !important; font-size: .94em; }
 .rx-sheet__note { margin-top: .2em !important; font-size: .82em; font-style: italic; color: var(--rx-muted); }
-.rx-sheet__next { margin-top: .9em !important; padding: .5em .8em; border-radius: .45em; background: #f1f6f4; font-size: .82em; }
-.rx-sheet__next span { font-weight: 800; color: var(--rx-green); }
 
-/* Bas de feuille : ligne de signature (cachet de l'établissement, cachet et signature du médecin), pied de page de l'établissement. */
-.rx-sheet__signoff { display: grid; gap: .7em; margin-top: auto; padding-top: 1.6em; break-inside: avoid; }
+/* Bas de feuille : à gauche la signature du professionnel, à droite le cachet de l'établissement ; puis le pied de page de la structure. */
+.rx-sheet__signoff { display: grid; gap: .8em; margin-top: auto; padding-top: 1.8em; break-inside: avoid; }
 .rx-sheet__signed { font-size: .68em; line-height: 1.4; color: var(--rx-muted); }
-.rx-sheet__slots { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: flex-end; gap: 1.1em; }
-.rx-sheet__slots figure { display: grid; justify-items: center; gap: .3em; width: 8.4em; }
-.rx-sheet__mark { display: grid; place-items: center; width: 100%; min-height: 6em; padding: .2em; border-bottom: .07em solid var(--rx-ink); }
-.rx-sheet__mark img { display: block; max-width: 100%; max-height: 5.6em; width: auto; height: auto; object-fit: contain; }
+.rx-sheet__slots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.4em; align-items: start; }
+.rx-sheet__slot { display: grid; align-content: start; justify-items: stretch; gap: .3em; }
+.rx-sheet__mark { display: flex; align-items: flex-end; justify-content: center; gap: .5em; min-height: 6em; padding: .2em; border-bottom: .07em solid var(--rx-ink); }
+.rx-sheet__mark img { display: block; min-width: 0; max-width: 100%; max-height: 5.6em; width: auto; height: auto; object-fit: contain; }
+.rx-sheet__mark:has(img + img) img { max-width: 48%; }
 .rx-sheet .rx-sheet__seal { width: 5.7em; height: 5.7em; color: #1f4e8c; }
-.rx-sheet__slots figcaption { font-size: .6em; font-weight: 700; line-height: 1.25; text-align: center; color: var(--rx-muted); }
-.rx-sheet__foot { margin-top: 1.1em !important; padding-top: .7em; border-top: .07em solid var(--rx-rule); font-size: .68em; line-height: 1.4; text-align: center; color: #3d4c47; }
+.rx-sheet__slot figcaption { font-size: .6em; font-weight: 700; line-height: 1.25; text-align: center; color: var(--rx-muted); }
+.rx-sheet__who { display: grid; gap: .05em; font-size: .72em; line-height: 1.35; text-align: center; color: #3d4c47; }
+.rx-sheet__who b { font-size: 1.05em; color: var(--rx-deep); }
+.rx-sheet__foot { margin-top: 1.1em !important; padding-top: .7em; border-top: .1em solid var(--rx-ink); font-size: .72em; line-height: 1.4; text-align: center; white-space: pre-line; color: #3d4c47; }
 .rx-sheet__origin { margin-top: .5em !important; font-size: .56em; text-align: center; color: var(--rx-muted); }
 
 /* ---------- Fenêtre de lecture (« Voir l'ordonnance ») ---------- */

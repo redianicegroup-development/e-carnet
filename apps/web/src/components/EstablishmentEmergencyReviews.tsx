@@ -43,7 +43,7 @@ function ReviewForm({ item, establishmentId, onDone }: { item: EmergencyReviewIt
       <textarea value={note} onChange={(event) => setNote(event.target.value)} rows={2} maxLength={BREAK_GLASS_MAX_REVIEW_NOTE} /></label>}
     {error && <p className="notice error" role="alert">{error}</p>}
     <div className="actions"><button className={`button ${outcome === "unjustified" ? "danger" : "primary"}`} type="submit" disabled={!outcome || missingNote || busy}>{busy ? "Enregistrement…" : outcome === "unjustified" ? "Signaler l’abus" : "Valider la revue"}</button></div>
-    <p className="muted"><small>La décision est définitive. Un abus est signalé à l’équipe Mon E‑Carnet et au patient ; la sanction (par exemple suspendre le rattachement du professionnel) se décide ensuite.</small></p>
+    <p className="muted"><small>La décision est définitive. Un abus est signalé à l’équipe <span className="notranslate" translate="no">Mon E‑Carnet</span> et au patient ; la sanction (par exemple suspendre le rattachement du professionnel) se décide ensuite.</small></p>
   </form>;
 }
 

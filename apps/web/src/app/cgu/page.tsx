@@ -26,7 +26,7 @@ const sections: LegalSectionDef[] = [
     title: "Objet et statut du service",
     body: (
       <>
-        <p>Les présentes conditions encadrent l’utilisation du service « Mon E‑Carnet », édité par <Fill k="publisher.name" /> (voir les <Link href="/mentions-legales">mentions légales</Link>).</p>
+        <p>Les présentes conditions encadrent l’utilisation du service « <span className="notranslate" translate="no">Mon E‑Carnet</span> », édité par <Fill k="publisher.name" /> (voir les <Link href="/mentions-legales">mentions légales</Link>).</p>
         <p>Le service permet de tenir un carnet de santé personnel (déclarations, documents, vaccinations, mesures, rappels de médicaments, rendez-vous), de préparer une consultation et de gérer des autorisations d’accès ; pour les professionnels autorisés, il permet aussi d’enregistrer des consultations, des ordonnances et des plans de suivi, dans les limites prévues par le service.</p>
         <p>La <strong>version actuellement disponible</strong> n’est pas destinée à recevoir des dossiers de santé réels. Elle n’a pas encore été validée de façon complète sur les plans juridique, médical et technique.</p>
       </>
@@ -37,7 +37,7 @@ const sections: LegalSectionDef[] = [
     title: "Définitions",
     body: (
       <dl>
-        <div><dt>Service</dt><dd>L’application web et mobile « Mon E-Carnet ».</dd></div>
+        <div><dt>Service</dt><dd>L’application web et mobile « <span className="notranslate" translate="no">Mon E-Carnet</span> ».</dd></div>
         <div><dt>Éditeur</dt><dd>La personne identifiée dans les mentions légales.</dd></div>
         <div><dt>Patient</dt><dd>Titulaire d’un carnet. Il décide qui peut ouvrir son carnet.</dd></div>
         <div><dt>Professionnel</dt><dd>Professionnel de santé rattaché à un établissement, qui peut ouvrir le carnet d’un patient si celui-ci lui en donne l’accès.</dd></div>

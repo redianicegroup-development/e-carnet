@@ -87,6 +87,63 @@
 @container ecard (max-width: 300px) { .ecard__tag { display: none; } }
 
 /* =====================================================================================================
+   Version premium « carte d'identité médicale » : format carte bancaire (85,6 × 54), fond vert encre profond à guillochis fins, filets et
+   puce dorés, tuiles en verre, photo sous double cadre doré. Couleurs fixes (pas celles du thème) : la carte a toujours la même allure et
+   reste lisible partout. Même dessin que l'image PNG (emergency-card-image.ts). Sélecteurs en `.ecard-wrap .ecard…` : ils passent devant
+   les habillages `body .ecard` des thèmes.
+   ===================================================================================================== */
+.ecard-wrap .ecard {
+  --ecard-ink: #f7f1e1; --ecard-muted: #b3c3ba; --ecard-line: rgba(227, 194, 122, .32); --ecard-danger: #ff9f91;
+  --ecard-gold: #e3c27a;
+  position: relative; isolation: isolate;
+  aspect-ratio: 85.6 / 54;
+  border: 1px solid rgba(227, 194, 122, .6); border-radius: 24px;
+  background: radial-gradient(120% 90% at 100% 0%, rgba(227, 194, 122, .17), transparent 56%), linear-gradient(135deg, #17392f 0%, #0e2621 48%, #091a16 100%);
+  color: var(--ecard-ink);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16), 0 30px 46px -26px rgba(5, 20, 16, .9), 0 0 0 1px rgba(0, 0, 0, .28);
+}
+/* guillochis : deux réseaux d'arcs très fins, estompés au centre pour que le texte reste net */
+.ecard-wrap .ecard::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
+  background: repeating-radial-gradient(circle at 94% -12%, rgba(227, 194, 122, .11) 0 1px, transparent 1px 9px), repeating-radial-gradient(circle at 6% 124%, rgba(255, 255, 255, .055) 0 1px, transparent 1px 11px);
+  -webkit-mask-image: linear-gradient(120deg, #000 0%, rgba(0, 0, 0, .3) 52%, #000 100%); mask-image: linear-gradient(120deg, #000 0%, rgba(0, 0, 0, .3) 52%, #000 100%);
+}
+/* filet doré intérieur, comme sur une pièce d'identité */
+.ecard-wrap .ecard::after { content: ""; position: absolute; inset: 6px; z-index: 0; border: 1px solid rgba(227, 194, 122, .26); border-radius: 19px; pointer-events: none; }
+
+.ecard-wrap .ecard__band { background: transparent; color: var(--ecard-ink); padding-block: clamp(7px, 1.7cqi, 13px); }
+/* bande holographique : un filet qui passe de l'or au bleu pâle */
+.ecard-wrap .ecard__band::after {
+  inset: auto clamp(8px, 2cqi, 16px) 0; width: auto; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(227, 194, 122, .75) 12%, rgba(255, 241, 205, .95) 32%, rgba(227, 194, 122, .7) 56%, rgba(160, 200, 255, .6) 80%, transparent);
+}
+.ecard-wrap .ecard__brand { color: var(--ecard-ink); letter-spacing: .01em; }
+.ecard-wrap .ecard__mark { background: #fff7e6; box-shadow: 0 0 0 1px rgba(227, 194, 122, .7); }
+.ecard-wrap .ecard__tag { color: var(--ecard-gold); border-color: rgba(227, 194, 122, .55); letter-spacing: .14em; }
+
+.ecard__idline { display: flex; align-items: center; gap: clamp(5px, 1.1cqi, 10px); min-width: 0; }
+.ecard__chip { position: relative; flex: 0 0 auto; display: block; width: clamp(24px, 5.6cqi, 42px); aspect-ratio: 1.32; border-radius: 6px; background: linear-gradient(135deg, #f6e2a4, #c9a050 45%, #f0d58f 62%, #a77b34); box-shadow: inset 0 0 0 1px rgba(80, 50, 10, .45), 0 1px 3px rgba(0, 0, 0, .4); }
+.ecard__chip::before { content: ""; position: absolute; inset: 20% 11%; border: 1px solid rgba(80, 50, 10, .45); border-radius: 3px; background: linear-gradient(90deg, transparent 31%, rgba(80, 50, 10, .45) 31% 34%, transparent 34% 66%, rgba(80, 50, 10, .45) 66% 69%, transparent 69%), linear-gradient(0deg, transparent 46%, rgba(80, 50, 10, .45) 46% 54%, transparent 54%); }
+.ecard__kicker { margin: 0; color: var(--ecard-gold); font-size: clamp(.42rem, .9cqi, .62rem); font-weight: 800; letter-spacing: .18em; text-transform: uppercase; }
+
+.ecard-wrap .ecard__name { color: var(--ecard-ink); letter-spacing: .005em; text-shadow: 0 1px 0 rgba(0, 0, 0, .35); }
+.ecard-wrap .ecard__role { border: 1px solid rgba(227, 194, 122, .4); background: rgba(227, 194, 122, .14); color: var(--ecard-gold); }
+.ecard-wrap .ecard__role .icon { color: var(--ecard-gold); }
+
+.ecard-wrap .ecard__field { border-color: rgba(227, 194, 122, .22); background: rgba(255, 255, 255, .055); }
+.ecard-wrap .ecard__field dt { color: rgba(227, 194, 122, .95); }
+.ecard-wrap .ecard__field--blood { border-color: rgba(255, 130, 110, .5); background: linear-gradient(135deg, rgba(220, 60, 45, .3), rgba(220, 60, 45, .12)); }
+.ecard-wrap .ecard__field--contact { border-color: rgba(227, 194, 122, .3); background: rgba(0, 0, 0, .2); }
+.ecard-wrap .ecard__chips--allergy li { border-color: rgba(255, 150, 130, .55); background: rgba(220, 60, 45, .2); color: #ffc7bd; }
+.ecard-wrap .ecard__chips--treatment li { border-color: rgba(227, 194, 122, .42); background: rgba(255, 255, 255, .08); color: var(--ecard-ink); }
+
+.ecard-wrap .ecard__qr-box { border-color: rgba(227, 194, 122, .85); box-shadow: 0 0 0 3px rgba(0, 0, 0, .28); }
+.ecard-wrap .ecard__qr-off { border-color: rgba(227, 194, 122, .42); }
+.ecard-wrap .ecard__photo-frame { border: 0; border-radius: 16px; background: linear-gradient(145deg, #f6e2a4, #c9a050 60%, #a77b34); color: #2a1d07; box-shadow: 0 0 0 2px #0e2621, 0 0 0 4px rgba(227, 194, 122, .92), 0 14px 22px -12px rgba(0, 0, 0, .75); }
+.ecard-wrap .ecard__foot { border-top: 1px solid rgba(227, 194, 122, .28); background: rgba(0, 0, 0, .26); color: var(--ecard-muted); }
+.ecard-wrap .ecard__provenance { color: var(--ecard-ink); }
+
+/* =====================================================================================================
    Panneau des réglages : carte + actions + modification + carte imprimable
    ===================================================================================================== */
 .ecard-panel { gap: 16px; }

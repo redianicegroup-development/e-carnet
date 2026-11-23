@@ -88,7 +88,8 @@ test("le cachet et la signature sont apposés à la fin des consultations qui on
   assert.match(read("src/components/ProfessionalConsultations.tsx"), /<ConsultationSeal onReadyChange=\{setSealReady\} \/>/);
   const seal = read("src/components/ConsultationSeal.tsx");
   assert.match(seal, /useSealImage/);
-  assert.match(read("src/components/useSealImage.ts"), /\/api\/v1\/professionals\/credentials\//);
+  // Le professionnel est la lecture par défaut ; l'administrateur d'une structure passe sa propre route (`endpoint`).
+  assert.match(read("src/components/useSealImage.ts"), /\/api\/v1\/professionals\/credentials/);
 });
 
 test("récupération de compte : essais restants, blocage et réponse acceptée sont dits clairement", () => {

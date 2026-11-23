@@ -39,6 +39,14 @@ class Establishment(models.Model):
     # Logo de la structure : URL Cloudinary en production ; `logo_data` (WebP en data URL) n'existe qu'en développement / tests.
     logo_url = models.URLField(max_length=500, blank=True, default="")
     logo_data = models.TextField(blank=True, default="")
+    # Cachet et signature de la structure : scans privés chez Cloudinary (mêmes règles que ceux du professionnel). Le serveur les lit pour
+    # l'administrateur ; à la validation d'une consultation, leur identifiant est figé sur la consultation (jamais le fichier « courant »).
+    stamp_cloudinary_public_id = models.CharField(max_length=500, blank=True, default="")
+    stamp_cloudinary_resource_type = models.CharField(max_length=16, blank=True, default="image")
+    stamp_cloudinary_version = models.PositiveBigIntegerField(null=True, blank=True)
+    signature_cloudinary_public_id = models.CharField(max_length=500, blank=True, default="")
+    signature_cloudinary_resource_type = models.CharField(max_length=16, blank=True, default="image")
+    signature_cloudinary_version = models.PositiveBigIntegerField(null=True, blank=True)
     # Trace du renommage par l'établissement : le nom vérifié à la création est conservé dans `original_name`.
     original_name = models.CharField(max_length=180, blank=True, default="")
     name_updated_at = models.DateTimeField(null=True, blank=True)
@@ -194,8 +202,10 @@ class EstablishmentAdminInvitation(models.Model):
 
 
 class EstablishmentNotification(models.Model):
-    """Notification interne d’un administrateur, cloisonnée à sa structure."""
-    establishment = models.ForeignKey(Establishment, on_delete=models.CASCADE, related_name="notifications")
+    """Notification interne (administrateur d'établissement, professionnel, laboratoire, équipe), cloisonnée à son destinataire.
+
+    `establishment` est vide pour les notifications de l'équipe qui ne concernent aucune structure (nouveau retour utilisateur, demande de suspension de compte)."""
+    establishment = models.ForeignKey(Establishment, on_delete=models.CASCADE, null=True, blank=True, related_name="notifications")
     recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="establishment_notifications")
     kind = models.CharField(max_length=64)
     title = models.CharField(max_length=180)

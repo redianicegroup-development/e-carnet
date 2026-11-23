@@ -166,7 +166,10 @@ test("la console établissement affiche le code 48 h et la photo des médecins",
   const console_ = read("src/components/EstablishmentConsole.tsx");
   assert.match(console_, /<EstablishmentJoinCodes establishmentId=\{establishment\.id\} active=\{active\} \/>/);
   assert.doesNotMatch(console_, /createCode|qu’une seule fois/);
-  assert.equal((console_.match(/<MemberAvatar member=\{item\} \/>/g) ?? []).length, 1, "demandes : photo, nom et e-mail");
+  // Demandes : plus de grosse carte, la même photo ronde (profil « En attente ») qui ouvre une fiche avec Refuser / Confirmer.
+  assert.doesNotMatch(console_, /<MemberAvatar member=\{item\} \/>/);
+  assert.match(console_, /function PendingProfile/);
+  assert.match(console_, /label="En attente"/);
   assert.match(console_, /<Profile\s+variant="photo"\s+size=\{64\}/, "équipe : la photo seule, ouvrant la fiche commune");
   assert.match(console_, /<MemberAvatar member=\{member\} size=\{size\} \/>/);
   assert.match(console_, /professional_avatar_url/);

@@ -63,7 +63,7 @@ export function HelpNotices() {
   return (
     <div className="notice help__notice" role="note">
       <p><strong>Informations importantes :</strong> n’enregistrez que des informations exactes.</p>
-      <p><strong>En cas d’urgence</strong>, contactez immédiatement les services de secours de votre pays. Mon E-Carnet n’est pas un service d’urgence et ne remplace pas un avis médical.</p>
+      <p><strong>En cas d’urgence</strong>, contactez immédiatement les services de secours de votre pays. <span className="notranslate" translate="no">Mon E-Carnet</span> n’est pas un service d’urgence et ne remplace pas un avis médical.</p>
     </div>
   );
 }

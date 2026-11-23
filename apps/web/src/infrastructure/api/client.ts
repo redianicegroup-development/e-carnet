@@ -46,11 +46,21 @@ function flatten(value: unknown): string {
   return "";
 }
 
+/* Phrase de repli quand le serveur ne renvoie aucun message lisible (page HTML d'erreur, corps vide). Un 500 n'est pas une « indisponibilité » :
+   le serveur est joint mais l'action a échoué ; seuls 502/503/504 (proxy, démarrage, surcharge) veulent dire « réessayez plus tard ». */
+function fallbackMessage(status: number): string {
+  if (status === 429) return "Trop de tentatives. Patientez quelques minutes avant de réessayer.";
+  if (status === 500) return "Une erreur est survenue sur le serveur : votre action n’a pas été enregistrée. Réessayez dans un instant.";
+  if (status === 403) return "Votre session de sécurité a expiré. Rechargez la page, puis réessayez.";
+  if (status === 404) return "Cette action n’existe plus. Rechargez la page, puis réessayez.";
+  return "Le service est momentanément indisponible.";
+}
+
 async function parse<T>(response: Response): Promise<T> {
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
     const detail = payload?.message ?? flatten(payload?.detail ?? payload);
-    const fallback = response.status === 429 ? "Trop de tentatives. Patientez quelques minutes avant de réessayer." : "Le service est momentanément indisponible.";
+    const fallback = fallbackMessage(response.status);
     throw new ApiError(detail || fallback, response.status, payload);
   }
   return payload.data as T;

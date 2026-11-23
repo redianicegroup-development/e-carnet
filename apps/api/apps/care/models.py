@@ -234,6 +234,10 @@ class Consultation(models.Model):
     # les remplacer ou les retirer ensuite dans son profil ne change pas ce qui figure sur une consultation déjà signée.
     signature_asset_id = models.CharField(max_length=500, blank=True)
     stamp_asset_id = models.CharField(max_length=500, blank=True)
+    # Cachet et signature de l'ÉTABLISSEMENT (« Informations administratives »), figés eux aussi à la validation : le remplacement
+    # ultérieur par l'établissement ne change jamais ce qui figure sur une consultation ou une ordonnance déjà signée.
+    establishment_stamp_asset_id = models.CharField(max_length=500, blank=True)
+    establishment_signature_asset_id = models.CharField(max_length=500, blank=True)
     validated_at = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
 

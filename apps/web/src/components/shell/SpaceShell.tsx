@@ -11,6 +11,7 @@ import { GreetingModal } from "../modal/GreetingModal";
 import { BrandMark } from "../ui/BrandMark";
 import { ScreenLoader } from "../ui/ScreenLoader";
 import { NotificationBell } from "../notifications/NotificationBell";
+import { FooterBarsHider } from "./FooterBarsHider";
 import { useNewNotifications } from "../notifications/notification-events";
 import { ProductTour } from "../tour/ProductTour";
 import { HowToTour } from "../tour/HowToTour";
@@ -159,6 +160,10 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
   // Le QR est à usage unique : dès qu'un professionnel l'a scanné (accès ouvert), il disparaît partout au lieu de rester affiché jusqu'à son expiration.
   useNewNotifications(({ kinds }) => { if (space === "patient" && kinds.includes("access.opened")) setPatientAccessQr(null); });
 
+  // Médecin : dès que l'établissement accepte, refuse ou retire le rattachement, les onglets sont recalculés sans recharger la page
+  // (accepté → tous les onglets cliniques apparaissent ; retiré → on revient à l'accueil et au rattachement).
+  useNewNotifications(({ kinds }) => { if (space === "professional" && kinds.some((kind) => kind.startsWith("membership."))) setClinicalTick((tick) => tick + 1); });
+
   useEffect(() => {
     if (space !== "professional" || state.status !== "ready") return;
     let active = true;
@@ -176,6 +181,26 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
       .catch(() => undefined); // sans réponse : initiales du compte, jamais la photo Google
     return () => { active = false; };
   }, [organisationSpace, state.status, organisationTick]);
+
+  // Établissement : le nombre de demandes de rattachement en attente s'affiche en badge sur l'onglet « Demandes » (au changement d'écran,
+  // à l'arrivée d'une notification de rattachement, et après chaque décision prise dans la console).
+  const [pendingRequests, setPendingRequests] = useState(0);
+  const [requestsTick, setRequestsTick] = useState(0);
+  useEffect(() => {
+    if (space !== "establishment" || state.status !== "ready") return;
+    let active = true;
+    apiGet<{ id: string; status: string }[]>("/api/v1/establishments/")
+      .then((list) => (list[0]?.status === "active" ? apiGet<{ status: string }[]>(`/api/v1/establishments/${list[0].id}/memberships/`) : []))
+      .then((rows) => { if (active) setPendingRequests(rows.filter((row) => row.status === "pending").length); })
+      .catch(() => undefined); // sans réponse : on garde le dernier nombre connu
+    return () => { active = false; };
+  }, [space, state.status, pathname, requestsTick]);
+  useNewNotifications(({ kinds }) => { if (space === "establishment" && kinds.some((kind) => kind.startsWith("membership."))) setRequestsTick((tick) => tick + 1); });
+  useEffect(() => {
+    const refresh = () => setRequestsTick((value) => value + 1);
+    window.addEventListener("ecarnet:membership-requests-changed", refresh);
+    return () => window.removeEventListener("ecarnet:membership-requests-changed", refresh);
+  }, []);
 
   useEffect(() => {
     const refresh = () => setOrganisationTick((value) => value + 1);
@@ -311,7 +336,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
   }, [toActivate]);
 
   const visibleTabs = visibleTabsFor(space, clinicalReady === true);
-  const items: SidebarItem[] = visibleTabs.map((tab) => ({ id: tab.id, label: tab.label, long: tab.long, icon: tab.icon, href: tab.href, active: tab.match(pathname), account: tab === moi, featured: tab.featured === true }));
+  const items: SidebarItem[] = visibleTabs.map((tab) => ({ id: tab.id, label: tab.label, long: tab.long, icon: tab.icon, href: tab.href, active: tab.match(pathname), account: tab === moi, featured: tab.featured === true, badge: space === "establishment" && tab.id === "demandes" && pendingRequests > 0 ? pendingRequests : undefined }));
   const menu: SidebarMenuItem[] = [
     { id: "settings", label: "Profil et paramètres", icon: "sliders", href: moi.href },
     ...(switchTarget ? [{ id: "switch-space", label: switching ? "Changement d’espace…" : `Changer d’espace : ${switchTarget.label.toLowerCase()}`, icon: "refresh" as const, disabled: switching, onSelect: () => void switchSpace() }] : []),
@@ -333,7 +358,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
         accountHref={moi.href}
         menu={menu}
         notice={logoutMessage || switchError}
-        tools={space === "patient" && state.status === "ready" ? <NotificationBell placement="sidebar" /> : null}
+        tools={state.status === "ready" ? <NotificationBell placement="sidebar" scope={space} /> : null}
         collapsed={navCollapsed}
         onToggle={toggleNav}
         bare={bare}
@@ -348,7 +373,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
             </Link>
             {/* Menu du compte en goutte (barre haute mobile) : sur grand écran, le même menu est dans la sidebar. */}
             <div className="space-mobile-header__actions">
-              {space === "patient" && state.status === "ready" && <NotificationBell placement="mobile" />}
+              {state.status === "ready" && <NotificationBell placement="mobile" scope={space} />}
               {shownAccount && <GooeyAccountMenu account={shownAccount} menu={menu} notice={logoutMessage || switchError} />}
             </div>
           </header>
@@ -371,7 +396,7 @@ export function SpaceShell({ space, children }: { space: SpaceId; children: Reac
             </PatientAccessQrContext.Provider>
           </AccountContext.Provider>
         )}
-        {!bare && <p className="space-footer" data-scroll-top="true"><Link href="/aide">Aide</Link></p>}
+        {!bare && <><FooterBarsHider /><p className="space-footer" data-scroll-top="true"><Link href="/aide">Aide</Link></p></>}
       </main>
       {state.status === "ready" && !bare && !spaceRedirect && !passwordChangePending && (state.account.revocation_notices?.length ?? 0) > 0 && <RevocationNotices notices={state.account.revocation_notices ?? []} />}
       {state.status === "ready" && !bare && !spaceRedirect && !((state.account.revocation_notices?.length ?? 0) > 0) && <GreetingModal account={state.account} space={space} />}

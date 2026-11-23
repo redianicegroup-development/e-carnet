@@ -1,6 +1,6 @@
 /* =====================================================================================================
    Tableau de bord de l'accueil établissement (EstablishmentDashboard).
-   Aucune couleur propre : verts dérivés de --primary, fonds de --surface / --bg, textes de --text. Les sélecteurs sont préfixés par
+   Aucune couleur propre : teintes dérivées de la palette (--primary, --brand-3), fonds de --surface / --bg, textes de --text. Les sélecteurs sont préfixés par
    `body` comme le reste des couches de style, pour passer devant les règles génériques (.card, .button…).
    ===================================================================================================== */
 body .edash {
@@ -104,6 +104,44 @@ body .edash-codes__text { margin: 0; color: rgb(255 255 255 / .84); font-size: .
 body .edash-codes__cta { display: inline-flex; align-items: center; justify-content: center; gap: 8px; margin-top: 10px; min-height: 44px; border-radius: 999px; background: #fff; color: color-mix(in srgb, var(--primary) 55%, #0b1a12); font-size: .9rem; font-weight: 750; text-decoration: none; }
 body .edash-codes__cta:hover { background: color-mix(in srgb, #fff 90%, var(--primary)); }
 
+/* ---------- Cartes pastel (refonte 11/2026) : mêmes couleurs que les tuiles ----------
+   Jamais de couleur propre à une carte : deux teintes, celles de la PALETTE choisie, en damier. A : la couleur principale (--primary, icône en --on-primary) ;
+   B : la couleur d'accent (--brand-3, icône en encre du thème). Palette par défaut Miel : vert et jaune ; autres palettes : leurs propres couleurs.
+   Fond = la teinte mélangée à la matière du thème, sans bordure, coins très arrondis. Les cartes de chiffres portent en bas à droite l'objet en relief des tuiles
+   (la pastille d'icône du pied de carte). Les cartes sombres (« en vedette », codes médecin) gardent leur fond foncé dérivé de --primary. */
+/* --wash : part de la teinte dans le fond. L'accent est plus clair que la couleur principale (jaune de Miel…) : il en faut davantage pour rester visible. */
+body .edash__grid > .edash-card { --hue: var(--primary); --on-hue: var(--on-primary, #fff); --wash: 11%; border: 0; border-radius: 26px; }
+body .edash__grid > .edash-stat { --wash: 17%; }
+body .edash__grid > .edash-card:nth-child(4n + 2), body .edash__grid > .edash-card:nth-child(4n + 3) { --hue: var(--brand-3, var(--primary)); --on-hue: var(--text); --wash: 22%; }
+body .edash__grid > .edash-stat:nth-child(4n + 2), body .edash__grid > .edash-stat:nth-child(4n + 3) { --wash: 34%; }
+body .edash__grid > .edash-card:not(.edash-stat--featured):not(.edash-codes) { background: color-mix(in srgb, var(--hue) var(--wash), var(--surface, var(--bg))); }
+body .edash__grid > .edash-stat { min-height: 156px; }
+body .edash__grid > .edash-stat.is-link:hover { box-shadow: 0 10px 22px -12px color-mix(in srgb, var(--hue) 60%, transparent); }
+body .edash__grid > .edash-stat .edash-stat__top { padding-right: 34px; }
+body .edash__grid > .edash-stat .edash-stat__go { position: absolute; top: 12px; right: 12px; width: 28px; height: 28px; border: 0; background: color-mix(in srgb, var(--surface, #fff) 82%, transparent); color: color-mix(in srgb, var(--text) 70%, transparent); }
+body .edash__grid > .edash-stat--featured .edash-stat__go { background: #fff; color: var(--edash-dark); }
+body .edash__grid > .edash-stat .edash-stat__hint { padding-right: 66px; }
+/* carte en vedette : fond foncé conservé, pastille claire */
+body .edash__grid > .edash-stat--featured { --hue: color-mix(in srgb, var(--primary) 28%, #fff); --on-hue: color-mix(in srgb, var(--primary) 58%, #0b1a12); }
+/* objet en relief : deux plaques (celle de derrière décalée, celle de devant en dégradé avec reflet et ombre colorée) et l'icône par-dessus */
+body .edash__grid > .edash-stat .edash-stat__chip {
+  position: absolute; right: 12px; bottom: 12px; isolation: isolate; display: grid; place-items: center; width: 54px; height: 54px; border-radius: 18px; transform: rotate(-9deg);
+  background: none; color: var(--on-hue); transition: transform .35s var(--spring-soft, cubic-bezier(.2, .8, .2, 1));
+}
+body .edash__grid > .edash-stat .edash-stat__chip::before, body .edash__grid > .edash-stat .edash-stat__chip::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+body .edash__grid > .edash-stat .edash-stat__chip::before { z-index: -2; transform: translate(-10px, 6px) rotate(16deg); background: color-mix(in srgb, var(--hue) 40%, var(--surface, var(--bg))); }
+body .edash__grid > .edash-stat .edash-stat__chip::after {
+  z-index: -1;
+  background:
+    radial-gradient(circle at 26% 20%, rgba(255, 255, 255, .42), transparent 46%),
+    linear-gradient(150deg, color-mix(in srgb, var(--hue) 86%, #fff), var(--hue) 55%, color-mix(in srgb, var(--hue) 78%, #000));
+  box-shadow: 0 10px 16px -8px color-mix(in srgb, var(--hue) 75%, transparent), inset 0 2px 0 rgba(255, 255, 255, .45), inset 0 -4px 8px rgba(0, 0, 0, .16);
+}
+body .edash__grid > .edash-stat .edash-stat__chip .icon { width: 26px; height: 26px; }
+body .edash__grid > .edash-stat:hover .edash-stat__chip { transform: rotate(-4deg) translateY(-2px) scale(1.04); }
+/* cartes sombres : mêmes coins */
+body .edash__grid > .edash-codes { border-radius: 26px; }
+
 /* ---------- Tablette et grand écran ---------- */
 @media (min-width: 700px) {
   body .edash__grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
@@ -129,5 +167,6 @@ body .edash-codes__cta:hover { background: color-mix(in srgb, #fff 90%, var(--pr
   body .edash-codes { min-height: 190px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  body .edash-stat, body .edash-week__bar { transition: none; }
+  body .edash-stat, body .edash-week__bar, body .edash__grid > .edash-stat .edash-stat__chip { transition: none; }
+  body .edash__grid > .edash-stat:hover .edash-stat__chip { transform: rotate(-9deg); }
 }

@@ -1,5 +1,5 @@
 import re
-from datetime import date, timedelta
+from datetime import date
 from io import BytesIO
 from unittest.mock import patch
 
@@ -12,8 +12,7 @@ from rest_framework.test import APIClient
 from apps.establishments.models import Establishment, PrescriptionTemplate
 from apps.patients.models import PatientProfile
 from apps.professionals.models import ProfessionalProfile
-from .models import Appointment, Consultation, PrescriptionLine
-from .prescription_context import age_in_years, weight_label
+from .models import Consultation, PrescriptionLine
 from .prescription_pdf import build_prescription_pdf, monogram
 
 User = get_user_model()
@@ -27,27 +26,6 @@ def png_bytes():
 
 
 class PrescriptionHelperTests(SimpleTestCase):
-    def test_age_counts_full_years_only(self):
-        today = date(2026, 11, 21)
-        self.assertEqual(age_in_years(date(1992, 11, 21), today), 34)
-        self.assertEqual(age_in_years(date(1992, 11, 22), today), 33)
-        self.assertEqual(age_in_years(date(2026, 1, 1), today), 0)
-
-    def test_age_is_unknown_without_a_plausible_birth_date(self):
-        today = date(2026, 11, 21)
-        self.assertIsNone(age_in_years(None, today))
-        self.assertIsNone(age_in_years(date(2027, 1, 1), today))
-        self.assertIsNone(age_in_years(date(1800, 1, 1), today))
-
-    def test_weight_reads_the_stored_vital_in_any_shape(self):
-        self.assertEqual(weight_label({"weight_kg": {"value": 61, "source": "professional"}}), "61 kg")
-        self.assertEqual(weight_label({"weight_kg": {"value": "61.5"}}), "61,5 kg")
-        self.assertEqual(weight_label({"weight_kg": 8.25}), "8,2 kg")
-        self.assertEqual(weight_label({"weight_kg": {"value": None}}), "")
-        self.assertEqual(weight_label({"weight_kg": {"value": "n/a"}}), "")
-        self.assertEqual(weight_label({}), "")
-        self.assertEqual(weight_label(None), "")
-
     def test_monogram_keeps_the_first_useful_words(self):
         self.assertEqual(monogram("Clinique des Lagunes"), "CL")
         self.assertEqual(monogram("Centre de Santé d’Abobo"), "CS")
@@ -100,13 +78,14 @@ class PrescriptionSheetTests(TestCase):
         self.assertEqual(data["establishment"]["type"], "Clinique")
         self.assertEqual(data["establishment"]["city"], "Abidjan")
         self.assertEqual(data["prescriber"], {"name": "Dr Awa Kouassi", "title": "Médecin", "specialty": "Pédiatrie", "order_number": "ORD-123"})
-        self.assertEqual(data["patient"]["name"], "Zoé Kouamé")
-        self.assertEqual(data["patient"]["sex"], "female")
-        self.assertEqual(data["patient"]["weight"], "61 kg")
-        self.assertIsInstance(data["patient"]["age_years"], int)
+        # Modèle simple : le patient n'apparaît que par ses nom et prénom (ni âge, ni sexe, ni poids).
+        self.assertEqual(data["patient"], {"name": "Zoé Kouamé"})
+        self.assertNotIn("next_appointment", data)
         self.assertEqual([line["drug_name"] for line in data["lines"]], ["Paracétamol"])
         self.assertTrue(data["has_stamp"])
         self.assertTrue(data["has_signature"])
+        self.assertFalse(data["has_establishment_stamp"])
+        self.assertFalse(data["has_establishment_signature"])
 
     def test_sheet_never_exposes_storage_identifiers(self):
         consultation = self.consultation(stamp_asset_id="private/stamp-secret", signature_asset_id="private/signature-secret")
@@ -115,37 +94,29 @@ class PrescriptionSheetTests(TestCase):
         self.assertNotIn("stamp-secret", body)
         self.assertNotIn("signature-secret", body)
 
-    def test_template_fields_win_and_blank_ones_fall_back_to_the_establishment_record(self):
-        PrescriptionTemplate.objects.create(establishment=self.establishment, header_text="Pédiatrie · Maternité", footer_text="Ouvert 7j/7", phone="+225 07 11 11 11 11")
+    def test_template_only_gives_the_header_and_footer_everything_else_follows_the_establishment_record(self):
+        # Anciennes colonnes du modèle (téléphone, logo…) : elles ne sont plus lues, la fiche de l'établissement fait foi.
+        PrescriptionTemplate.objects.create(establishment=self.establishment, header_text="Pédiatrie · Maternité", footer_text="Ouvert 7j/7", phone="+225 07 11 11 11 11", address="Ancienne adresse", logo_url=SAFE_LOGO)
+        self.establishment.logo_url = "https://res.cloudinary.com/demo/image/upload/fiche.png"
+        self.establishment.save(update_fields=("logo_url",))
         consultation = self.consultation()
         self.line(consultation)
         establishment = self.sheet(consultation).json()["data"]["establishment"]
         self.assertEqual(establishment["header_text"], "Pédiatrie · Maternité")
         self.assertEqual(establishment["footer_text"], "Ouvert 7j/7")
-        self.assertEqual(establishment["phone"], "+225 07 11 11 11 11")
+        self.assertEqual(establishment["phone"], "+225 27 00 00 00 00")
         self.assertEqual(establishment["address"], "Cocody, rue des Jardins")
         self.assertEqual(establishment["email"], "contact@lagunes.test")
+        self.assertEqual(establishment["logo_url"], "https://res.cloudinary.com/demo/image/upload/fiche.png")
 
-    def test_logo_is_only_taken_from_trusted_storage(self):
-        template = PrescriptionTemplate.objects.create(establishment=self.establishment, logo_url="http://tracker.example/pixel.png")
-        self.establishment.logo_url = "https://res.cloudinary.com/demo/image/upload/fiche.png"
-        self.establishment.save(update_fields=("logo_url",))
-        consultation = self.consultation()
+    def test_sheet_tells_which_establishment_marks_are_frozen_on_the_consultation(self):
+        consultation = self.consultation(establishment_stamp_asset_id="private/est-stamp-secret", establishment_signature_asset_id="private/est-signature-secret")
         self.line(consultation)
-        self.assertEqual(self.sheet(consultation).json()["data"]["establishment"]["logo_url"], "https://res.cloudinary.com/demo/image/upload/fiche.png")
-        template.logo_url = SAFE_LOGO
-        template.save(update_fields=("logo_url",))
-        self.assertEqual(self.sheet(consultation).json()["data"]["establishment"]["logo_url"], SAFE_LOGO)
-
-    def test_next_appointment_is_the_one_at_the_same_establishment(self):
-        other = Establishment.objects.create(name="Autre clinique", status="active")
-        Appointment.objects.create(patient=self.profile, establishment=other, reason="Ailleurs", starts_at=timezone.now() + timedelta(days=1), status="confirmed")
-        consultation = self.consultation()
-        self.line(consultation)
-        self.assertIsNone(self.sheet(consultation).json()["data"]["next_appointment"])
-        Appointment.objects.create(patient=self.profile, establishment=self.establishment, reason="Suivi", starts_at=timezone.now() + timedelta(days=3), status="confirmed")
-        Appointment.objects.create(patient=self.profile, establishment=self.establishment, reason="Annulé", starts_at=timezone.now() + timedelta(days=1), status="cancelled")
-        self.assertIsNotNone(self.sheet(consultation).json()["data"]["next_appointment"])
+        response = self.sheet(consultation)
+        data = response.json()["data"]
+        self.assertTrue(data["has_establishment_stamp"])
+        self.assertTrue(data["has_establishment_signature"])
+        self.assertNotIn("est-stamp-secret", response.content.decode())
 
     def test_sheet_is_refused_for_unsigned_or_empty_prescriptions_and_other_patients(self):
         unsigned = self.consultation(signed=False)
@@ -215,6 +186,26 @@ class PrescriptionSheetTests(TestCase):
         self.assertTrue(response.content.startswith(b"%PDF"))
         self.assertEqual(len(re.findall(rb"/Type /Page(?!s)", response.content)), 1)
 
+    @patch("apps.care.views.signed_download")
+    def test_pdf_reads_the_establishment_stamp_and_signature_frozen_at_signature(self, download):
+        self.establishment.stamp_cloudinary_public_id = "etab/stamp-now"
+        self.establishment.save(update_fields=("stamp_cloudinary_public_id",))
+        consultation = self.consultation(signature_asset_id="frozen/signature", establishment_stamp_asset_id="frozen/est-stamp", establishment_signature_asset_id="frozen/est-signature")
+        self.line(consultation)
+        download.return_value = png_bytes()
+        response = self.client.get(f"/api/v1/patient/care/consultations/{consultation.id}/prescription/")
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.content.startswith(b"%PDF"))
+        # Jamais le cachet « courant » de l'établissement : seulement ce qui a été figé à la signature.
+        self.assertEqual([call.args[0] for call in download.call_args_list], ["frozen/signature", "frozen/est-stamp", "frozen/est-signature"])
+
+    def test_pdf_without_any_scan_still_carries_the_electronic_seal(self):
+        consultation = self.consultation()
+        self.line(consultation)
+        response = self.client.get(f"/api/v1/patient/care/consultations/{consultation.id}/prescription/")
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.content.startswith(b"%PDF"))
+
 
 class PrescriptionPdfBuilderTests(SimpleTestCase):
     def data(self, **overrides):
@@ -222,9 +213,9 @@ class PrescriptionPdfBuilderTests(SimpleTestCase):
             "consultation_id": "c1", "reference": "A1B2C3D4", "issued_on": "2026-11-21", "signed_at": "2026-11-21T10:42:00+00:00",
             "establishment": {"name": "Clinique des Lagunes Internationale de Cocody Angré", "type": "", "city": "", "address": "", "phone": "", "email": "", "logo_url": "", "header_text": "", "footer_text": ""},
             "prescriber": {"name": "Dr Awa Kouassi", "title": "", "specialty": "", "order_number": ""},
-            "patient": {"name": "Zoé N’Guessan", "age_years": None, "sex": "", "weight": ""},
+            "patient": {"name": "Zoé N’Guessan"},
             "lines": [{"id": "l1", "drug_name": "Paracétamol <b>", "dosage": "", "posology": "1 comprimé", "duration": "", "instructions": ""}],
-            "next_appointment": None, "has_signature": False, "has_stamp": False,
+            "has_signature": False, "has_stamp": False, "has_establishment_stamp": False, "has_establishment_signature": False,
         }
         base.update(overrides)
         return base
@@ -238,8 +229,22 @@ class PrescriptionPdfBuilderTests(SimpleTestCase):
         data = self.data(lines=[{"id": "l1", "drug_name": "<para><b>Test</i>", "dosage": "", "posology": "&nbsp;<x>", "duration": "", "instructions": "<font size=99>"}])
         self.assertTrue(build_prescription_pdf(data, []).startswith(b"%PDF"))
 
-    def test_images_and_next_appointment_are_drawn(self):
-        data = self.data(next_appointment="2026-12-01T09:30:00+00:00", has_stamp=True, has_signature=True)
+    def test_images_are_drawn(self):
+        data = self.data(has_stamp=True, has_signature=True)
         without = build_prescription_pdf(data, [])
         with_images = build_prescription_pdf(data, [("stamp", png_bytes()), ("signature", png_bytes())])
         self.assertGreater(len(with_images), len(without))
+
+    def test_establishment_scans_and_logo_are_drawn(self):
+        data = self.data(has_establishment_stamp=True, has_establishment_signature=True)
+        without = build_prescription_pdf(data, [])
+        with_scans = build_prescription_pdf(data, [("establishment-stamp", png_bytes()), ("establishment-signature", png_bytes())])
+        with_logo = build_prescription_pdf(data, [], logo=png_bytes())
+        # Sans scan : cachet électronique dessiné en vectoriel (aucune image). Avec scans : le scan REMPLACE le cachet dessiné.
+        self.assertEqual(without.count(b"/Subtype /Image"), 0)
+        self.assertGreater(with_scans.count(b"/Subtype /Image"), 0)
+        self.assertGreater(with_logo.count(b"/Subtype /Image"), 0)
+
+    def test_header_footer_and_contact_lines_build_a_pdf(self):
+        establishment = {"name": "Clinique des Lagunes", "type": "Clinique", "city": "Abidjan", "address": "Cocody", "phone": "+225 27 00 00 00 00", "email": "contact@lagunes.test", "logo_url": "", "header_text": "Pédiatrie\nMaternité", "footer_text": "Prière de revenir avec l’ordonnance."}
+        self.assertTrue(build_prescription_pdf(self.data(establishment=establishment), []).startswith(b"%PDF"))

@@ -2,7 +2,7 @@
 
 import { useId, useState } from "react";
 import { carnetDate, consultationReference, type ConsultationRecord } from "../../lib/care-records";
-import { sealImageUrl } from "../ConsultationSealPanel";
+import { sealImageUrl, type SealImageKind } from "../ConsultationSealPanel";
 
 const FULL_DATE = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeStyle: "short" });
 
@@ -43,7 +43,7 @@ export function EstablishmentSeal({ name, city, validatedAt, size = 104, classNa
   );
 }
 
-function SealPhoto({ id, kind, label }: { id: string; kind: "signature" | "stamp"; label: string }) {
+function SealPhoto({ id, kind, label }: { id: string; kind: SealImageKind; label: string }) {
   const [failed, setFailed] = useState(false);
   if (failed) return <span className="consult-valid__missing">Image indisponible</span>;
   // eslint-disable-next-line @next/next/no-img-element -- image privée servie par l'API, avec cookie de session
@@ -66,6 +66,8 @@ type Props = {
 export function ConsultationValidation({ item, images = true }: Props) {
   const date = new Date(item.validated_at);
   const hasMarks = Boolean(item.has_stamp || item.has_signature);
+  // Dans l'espace établissement (images=false) les scans ne sont pas servis : le cachet électronique reste affiché.
+  const showEstablishmentStamp = images && Boolean(item.has_establishment_stamp);
   const signatory = item.signatory;
   const identity = [signatory?.title, signatory?.specialty].filter(Boolean).join(" · ");
   const establishmentName = item.establishment?.name || item.facility_label;
@@ -77,10 +79,28 @@ export function ConsultationValidation({ item, images = true }: Props) {
         {" · "}réf. <code>{consultationReference(item.id)}</code>.
       </p>
       <div className="consult-valid__slots">
-        <figure className="consult-valid__slot consult-valid__slot--seal">
-          <div className="consult-valid__mark consult-valid__mark--seal"><EstablishmentSeal name={establishmentName} city={item.establishment?.city} validatedAt={item.validated_at} /></div>
-          <figcaption>Cachet de l’établissement</figcaption>
-        </figure>
+        {/* Cachet de l'établissement : le scan déposé dans « Informations administratives » (figé à la validation) ; à défaut, le cachet électronique. */}
+        {showEstablishmentStamp ? (
+          <figure className="consult-valid__slot consult-valid__slot--pro">
+            <div className="consult-valid__marks">
+              <div className="consult-valid__mark consult-valid__mark--stamp"><SealPhoto id={item.id} kind="establishment-stamp" label={`Cachet de ${establishmentName}`} /></div>
+            </div>
+            <figcaption>Cachet de l’établissement</figcaption>
+          </figure>
+        ) : (
+          <figure className="consult-valid__slot consult-valid__slot--seal">
+            <div className="consult-valid__mark consult-valid__mark--seal"><EstablishmentSeal name={establishmentName} city={item.establishment?.city} validatedAt={item.validated_at} /></div>
+            <figcaption>Cachet de l’établissement</figcaption>
+          </figure>
+        )}
+        {images && item.has_establishment_signature && (
+          <figure className="consult-valid__slot consult-valid__slot--pro">
+            <div className="consult-valid__marks">
+              <div className="consult-valid__mark consult-valid__mark--signature"><SealPhoto id={item.id} kind="establishment-signature" label={`Signature de ${establishmentName}`} /></div>
+            </div>
+            <figcaption>Signature de l’établissement</figcaption>
+          </figure>
+        )}
 
         {hasMarks ? (
           <figure className="consult-valid__slot consult-valid__slot--pro">

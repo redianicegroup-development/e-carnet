@@ -40,7 +40,7 @@ export function GreetingModal({ account }: Props) {
   return <div className="greeting-stage"><div className="greeting-toast" ref={toast} data-kind={kind} role="status" aria-live="polite" aria-atomic="true" aria-labelledby={titleId}>
     <span className="greeting-toast__halo" aria-hidden="true" />
     <div className="greeting-toast__character" aria-hidden="true"><WelcomeCharacter mood="greet" /></div>
-    <div className="greeting-toast__copy"><span className="greeting-toast__eyebrow">Votre espace Mon E‑Carnet</span><h2 id={titleId}>{titleFor(kind, firstNameOf(account.first_name))}</h2><p>{messageFor(kind)}</p></div>
+    <div className="greeting-toast__copy"><span className="greeting-toast__eyebrow">Votre espace <span className="notranslate" translate="no">Mon E‑Carnet</span></span><h2 id={titleId}>{titleFor(kind, firstNameOf(account.first_name))}</h2><p>{messageFor(kind)}</p></div>
     {/* Le même astérisque jaune que le héro de la landing et la page de connexion (trois traits, bouts arrondis), à la place des étoiles vertes. */}
     <svg className="greeting-toast__spark greeting-toast__spark--one" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5v19M3.8 7.2l16.4 9.6M20.2 7.2 3.8 16.8" /></svg><svg className="greeting-toast__spark greeting-toast__spark--two" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5v19M3.8 7.2l16.4 9.6M20.2 7.2 3.8 16.8" /></svg>
   </div>

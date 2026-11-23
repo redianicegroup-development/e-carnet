@@ -78,7 +78,7 @@ export function LinkedProvidersSettingsClient({ nextPath }: Props) {
   const linked = new Set(identities.map((identity) => identity.provider));
   return (
     <div className="settings-subsection">
-      <p className="muted">La liaison se fait depuis une session authentifiée. Mon E‑Carnet ne fusionne pas automatiquement deux comptes par adresse e-mail.</p>
+      <p className="muted">La liaison se fait depuis une session authentifiée. <span className="notranslate" translate="no">Mon E‑Carnet</span> ne fusionne pas automatiquement deux comptes par adresse e-mail.</p>
       <div className="settings-provider-list">
         {providers.map((provider) => (
           <div className="record settings-provider" key={provider.id}>

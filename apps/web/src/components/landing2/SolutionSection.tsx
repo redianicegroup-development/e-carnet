@@ -28,7 +28,7 @@ export function SolutionSection() {
     <div className="lp2-row lp2-solution">
       <div className="lp2-copy lp2-rv">
         <h2 id="solution-title">Un carnet que vous remettez, un médecin qui peut conseiller.</h2>
-        <p className="lp2-lead">Mon E-Carnet réunit votre santé au même endroit. Un infirmier peut préparer la pré-consultation ; sinon, le médecin scanne votre QR depuis son espace professionnel.</p>
+        <p className="lp2-lead"><span className="notranslate" translate="no">Mon E-Carnet</span> réunit votre santé au même endroit. Un infirmier peut préparer la pré-consultation ; sinon, le médecin scanne votre QR depuis son espace professionnel.</p>
         <ul className="lp2-picks">
           {SHOTS.map((shot, index) => (
             <li key={shot.src}>

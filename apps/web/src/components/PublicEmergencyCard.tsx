@@ -36,13 +36,13 @@ export function PublicEmergencyCard({ token }: { token: string }) {
   }, [token]);
 
   if (status === "loading") return <main className="epub"><section className="epub__state" role="status"><span className="epub__pulse" /><h1>Ouverture de la carte d’urgence…</h1></section></main>;
-  if (status === "missing" || !data) return <main className="epub"><section className="epub__state" role="alert"><span className="eyebrow">Mon E‑Carnet</span><h1>Carte indisponible</h1><p>Ce QR a été désactivé ou renouvelé. Si c’est votre première visite, connectez-vous à Internet puis réessayez.</p></section></main>;
+  if (status === "missing" || !data) return <main className="epub"><section className="epub__state" role="alert"><span className="eyebrow"><span className="notranslate" translate="no">Mon E‑Carnet</span></span><h1>Carte indisponible</h1><p>Ce QR a été désactivé ou renouvelé. Si c’est votre première visite, connectez-vous à Internet puis réessayez.</p></section></main>;
 
   const phone = data.contact_phone.replace(/[^+\d]/g, "");
   return <main className="epub"><div className="epub__inner">
     <div className="epub__intro"><span className="eyebrow">À présenter aux secours</span><p>Informations d’urgence déclarées par le titulaire de la carte.</p>{status === "cached" && <p className="epub__offline" role="status">Connexion indisponible : dernière synchronisation le {new Date(cachedAt).toLocaleString("fr-FR")}. Ces informations peuvent être obsolètes.</p>}</div>
     <EmergencyCardVisual card={data} showQr={false} />
     {phone && <a className="epub__call" href={`tel:${phone}`}><Icon name="phone" size={22} /><span>Appeler {data.contact_name || "le contact d’urgence"}<small>{data.contact_phone}</small></span></a>}
-    <p className="epub__notice">Cette carte contient des déclarations personnelles, non vérifiées par Mon E‑Carnet. Elle ne remplace pas un avis médical ni les services d’urgence.</p>
+    <p className="epub__notice">Cette carte contient des déclarations personnelles, non vérifiées par <span className="notranslate" translate="no">Mon E‑Carnet</span>. Elle ne remplace pas un avis médical ni les services d’urgence.</p>
   </div></main>;
 }

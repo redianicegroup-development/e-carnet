@@ -32,11 +32,18 @@ test("l'espace établissement utilise les mêmes tuiles que patient et professio
   assert.match(console_, /<CollapsibleSection title="Ouvertures récentes"/);
 });
 
-test("la tuile fermée est une carte : titre, cercle d'icône, description centrés, couleurs du thème", () => {
+test("la tuile fermée est une carte pastel : titre et description en haut, objet en relief en bas à droite, teinte de la palette mélangée à la matière du thème", () => {
   const css = read("src/components/patient-sections.css");
-  assert.match(css, /\.carnet-accordion\[data-open="false"\] \.carnet-accordion__label \{ display: contents; \}/);
-  assert.match(css, /carnet-accordion__badge \{\s*order: 2;[^}]*border-radius: 50%/);
-  assert.doesNotMatch(css.slice(css.indexOf('[data-open="false"]')), /#[0-9a-fA-F]{3,8}\b/, "pas de couleur en dur dans la carte fermée");
+  const closed = css.slice(css.indexOf("Tuile fermée : carte pastel"));
+  assert.match(closed, /\.carnet-accordion\[data-open="false"\] \.carnet-accordion__label \{ display: contents; \}/);
+  // L'objet en relief : badge sans fond propre, plaque arrière (::before) et plaque avant en dégradé (::after), icône par-dessus.
+  assert.match(closed, /carnet-accordion__badge \{\s*position: absolute; right: 12px; bottom: 12px;[^}]*background: none/);
+  assert.match(closed, /carnet-accordion__badge::before \{\s*z-index: -2/);
+  assert.match(closed, /carnet-accordion__badge::after \{\s*z-index: -1/);
+  // Fond de la carte : la teinte de la rubrique mélangée à la matière du thème (clair comme sombre), jamais un fond en dur.
+  assert.match(closed, /background: color-mix\(in srgb, var\(--hue\) var\(--wash\), var\(--surface, var\(--bg\)\)\)/);
+  // Les seules couleurs en dur : le blanc et le noir des reflets et ombres de l'objet en relief ; les teintes viennent toutes de la palette.
+  assert.doesNotMatch(closed.replace(/#fff\b|#000\b/g, ""), /#[0-9a-fA-F]{3,8}\b/, "pas d'autre couleur en dur dans la carte fermée");
 });
 
 test("le tableau de bord reste dans la palette du thème et se replie sur téléphone", () => {

@@ -55,7 +55,7 @@ export function InstallLanding() {
     </>;
   } else if (env.inApp) {
     body = <>
-      <p className="notice" role="status">Ce lien est ouvert dans une application (Facebook, WhatsApp, Instagram…) qui ne permet pas d’installer Mon E‑Carnet. Ouvrez-le d’abord dans votre navigateur.</p>
+      <p className="notice" role="status">Ce lien est ouvert dans une application (Facebook, WhatsApp, Instagram…) qui ne permet pas d’installer <span className="notranslate" translate="no">Mon E‑Carnet</span>. Ouvrez-le d’abord dans votre navigateur.</p>
       <ol className="install-landing__steps">
         <li>Touchez le menu <strong>⋮</strong> ou <strong>…</strong> en haut ou en bas de l’écran.</li>
         <li>Choisissez <strong>« Ouvrir dans le navigateur »</strong> (Chrome, Safari…).</li>
@@ -74,7 +74,7 @@ export function InstallLanding() {
       <ol className="install-landing__steps">
         <li>Touchez le bouton <strong>Partager</strong> (le carré avec une flèche vers le haut).</li>
         <li>Faites défiler et choisissez <strong>« Sur l’écran d’accueil »</strong>.</li>
-        <li>Touchez <strong>« Ajouter »</strong>. L’icône Mon E‑Carnet apparaît sur votre écran d’accueil.</li>
+        <li>Touchez <strong>« Ajouter »</strong>. L’icône <span className="notranslate" translate="no">Mon E‑Carnet</span> apparaît sur votre écran d’accueil.</li>
       </ol>
     </>;
   } else {
@@ -88,7 +88,7 @@ export function InstallLanding() {
       {/* eslint-disable-next-line @next/next/no-img-element -- icône de marque locale, décorative */}
       <img className="install-landing__logo" src={PROJECT_LOGO_WEBP} alt="" width={84} height={84} draggable={false} />
       <span className="eyebrow">Application gratuite</span>
-      <h1 id="install-title">Installez Mon E‑Carnet</h1>
+      <h1 id="install-title">Installez <span className="notranslate" translate="no">Mon E‑Carnet</span></h1>
       <p className="lead">Votre carnet de santé personnel, sur l’écran d’accueil de votre téléphone : ouverture en un geste, plein écran, consultation hors connexion de votre copie chiffrée.</p>
       {body}
       {message && <p className="notice" role="status" aria-live="polite">{message}</p>}

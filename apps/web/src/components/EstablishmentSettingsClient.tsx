@@ -91,9 +91,9 @@ export function EstablishmentSettingsClient({ laboratory = false }: { laboratory
   const selected = establishments.find((item) => item.id === selectedId) ?? establishments[0] ?? null;
   const accountName = `${account?.first_name ?? ""} ${account?.last_name ?? ""}`.trim() || account?.email || "Compte établissement";
   const navItems: SettingsNavItem[] = [
-    { id: "administratif", title: "Informations administratives", description: "Identité et statut de la structure.", icon: "building" },
+    { id: "administratif", title: "Informations administratives", description: "Identité, logo, cachet et signature de la structure.", icon: "building" },
     { id: "coordonnees", title: "Coordonnées", description: "Adresse, position sur la carte, contacts et responsable.", icon: "pin" },
-    { id: "ordonnance", title: "Modèle d’ordonnance", description: "En-tête et pied de page imprimables.", icon: "document" },
+    { id: "ordonnance", title: "Modèle d’ordonnance", description: "En-tête et pied de page de l’ordonnance.", icon: "document" },
     { id: "facturation", title: "Facturation", description: "Offres, abonnement, factures et paiements.", icon: "document" },
     { id: "etablissements-partenaires", title: "Établissements proches de moi", description: "Carte et recherche des hôpitaux, cliniques et centres de santé partenaires.", icon: "pin", href: laboratory ? "/laboratoire/parametres/etablissements-proches" : "/etablissement/parametres/etablissements-proches" },
     { id: "compte", title: "Personnalisation de mon compte", description: "Personnaliser l’apparence de l’application.", icon: "sparkle" },
@@ -119,7 +119,7 @@ export function EstablishmentSettingsClient({ laboratory = false }: { laboratory
 
       {activeSection === "administratif" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Identité de la structure</span>
         {selected && selected.status === "active" && <>
-          <p className="muted">Logo et nom de votre établissement. Toute modification est enregistrée avec sa date et visible de l’équipe Mon E‑Carnet.</p>
+          <p className="muted">Logo, nom, cachet et signature de votre établissement : ils alimentent vos consultations et vos ordonnances. Toute modification de l’identité est enregistrée avec sa date et visible de l’équipe <span className="notranslate" translate="no">Mon E‑Carnet</span>.</p>
           <EstablishmentProfileEditor key={selected.id} scope="identity" establishmentId={selected.id} submitLabel="Enregistrer l’identité" onSaved={applySaved} />
         </>}
         {selected && selected.status !== "active" && <dl className="settings-details"><div><dt>Nom</dt><dd>{selected.name}</dd></div><div><dt>Statut</dt><dd><span className="badge pending">{statusLabel(selected.status)}</span></dd></div></dl>}
@@ -150,7 +150,7 @@ export function EstablishmentSettingsClient({ laboratory = false }: { laboratory
 
       {activeSection === "hors-connexion" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><OfflineDataToggle audience="third-party" /></SettingsModal>}
       {activeSection === "en-savoir-plus" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><SettingsMoreSection /></SettingsModal>}
-      {activeSection === "avis" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Amélioration continue</span><p className="muted">Votre retour aide l’équipe Mon E‑Carnet à améliorer l’application. N’indiquez aucune information personnelle ou médicale.</p><LandingFeedbackWidget inline /></div></SettingsModal>}
+      {activeSection === "avis" && <SettingsModal title={titleFor(activeSection)} onClose={() => setActiveSection(null)}><div className="settings-modal-section"><span className="eyebrow">Amélioration continue</span><p className="muted">Votre retour aide l’équipe <span className="notranslate" translate="no">Mon E‑Carnet</span> à améliorer l’application. N’indiquez aucune information personnelle ou médicale.</p><LandingFeedbackWidget inline /></div></SettingsModal>}
     </div>
   );
 }

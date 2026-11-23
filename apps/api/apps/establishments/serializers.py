@@ -111,10 +111,8 @@ class MembershipSerializer(serializers.ModelSerializer):
 class PrescriptionTemplateSerializer(serializers.ModelSerializer):
     class Meta:
         model = PrescriptionTemplate
-        fields = ("logo_url", "header_text", "footer_text", "phone", "email", "address", "updated_at")
+        # Le modèle d'ordonnance ne garde que l'en-tête et le pied de page : logo, adresse, téléphone, e-mail, cachet et signature
+        # viennent de la fiche de l'établissement (« Informations administratives » et « Coordonnées »). Les anciennes colonnes restent
+        # en base mais ne sont plus lues ni écrites.
+        fields = ("header_text", "footer_text", "updated_at")
         read_only_fields = ("updated_at",)
-
-    def validate_logo_url(self, value):
-        if value and not value.lower().startswith(("https://", "http://")):
-            raise serializers.ValidationError("Le logo doit être une URL HTTP ou HTTPS.")
-        return value

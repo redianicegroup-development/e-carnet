@@ -18,7 +18,6 @@ from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAdminUser, IsAuthenticated, AllowAny
 from rest_framework.response import Response
-from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from apps.identity.throttles import IpScopedThrottle
@@ -33,6 +32,7 @@ from .join_code_crypto import purge_dead_codes, seal_code, unseal_code
 from .geo import InvalidLocation
 from .location import DIRECTORY_LIMIT, LOCATION_FIELDS, apply_location_update, directory_item, location_payload
 from .revocations import clean_reason, notify_revoked
+from .role_notifications import notify_establishment_admins, notify_laboratory_admins, notify_user
 from .models import PROFILE_FIELDS, Establishment, EstablishmentAdminInvitation, EstablishmentAdministrator, EstablishmentJoinCode, EstablishmentMembership, EstablishmentNotification, PrescriptionTemplate, generate_internal_code
 from .serializers import EstablishmentProfileSerializer, EstablishmentSerializer, MembershipSerializer, PrescriptionTemplateSerializer, logo_for
 
@@ -406,6 +406,19 @@ class StaffEstablishmentStatusView(APIView):
             return Response({"success": False, "message": "Action attendue : suspend ou reactivate."}, status=400)
         establishment.save(update_fields=fields)
         record_event(event_type=event_type, actor=request.user, actor_role="ecarnet_staff", establishment=establishment, metadata=metadata)
+        # L'établissement ET son laboratoire l'apprennent tout de suite (les actions de gestion et l'accès aux dossiers sont bloqués pendant la suspension).
+        suspended = establishment.status == "suspended"
+        announce = {
+            "kind": "establishment.suspended" if suspended else "establishment.reactivated",
+            "title": "Structure suspendue" if suspended else "Structure réactivée",
+            "body": (f"{establishment.name} est suspendue par l’équipe Mon E‑Carnet : la gestion et l’accès aux dossiers sont bloqués. Écrivez à l’équipe pour en connaître la raison."
+                     if suspended else f"{establishment.name} est de nouveau active : la gestion et l’accès aux dossiers sont rétablis."),
+            "event_key": f"{event_type}:{establishment.id}:{now.isoformat()}",
+            "push_url": "/etablissement",
+            "push_body": "L’état de votre structure a changé.",
+        }
+        notify_establishment_admins(establishment, **announce)
+        notify_laboratory_admins(establishment, **{**announce, "push_url": "/laboratoire", "body": announce["body"].replace(establishment.name, f"{establishment.name} (votre établissement)", 1)})
         return Response({"success": True, "data": {"id": str(establishment.id), "status": establishment.status, "suspended_at": establishment.suspended_at, "suspension_reason": establishment.suspension_reason}})
 
 
@@ -560,6 +573,9 @@ class EstablishmentProfileView(APIView):
             data["email"] = user.email  # affiché verrouillé : c'est l'e‑mail du compte, enregistré à la première sauvegarde
         # Établissement qui a demandé le rattachement (laboratoire interne) : l'administrateur du laboratoire le voit, verrouillé.
         data["parent_name"] = establishment.parent.name if establishment.parent_id else ""
+        # Cachet et signature : seul un booléen sort ici, les images se lisent à part (route privée de l'administrateur).
+        data["stamp_uploaded"] = bool(establishment.stamp_cloudinary_public_id)
+        data["signature_uploaded"] = bool(establishment.signature_cloudinary_public_id)
         if establishment.is_laboratory:
             # Un laboratoire n'a pas de code interne à montrer, son type est verrouillé, et chacun de ses administrateurs voit SON e‑mail.
             data["internal_code"] = None
@@ -642,8 +658,8 @@ class EstablishmentLogoView(APIView):
 
 
 class EstablishmentPrescriptionTemplateView(APIView):
+    """Modèle d'ordonnance : seulement l'en-tête et le pied de page. Le reste de la feuille se lit sur la fiche de l'établissement."""
     permission_classes = [IsAuthenticated]
-    parser_classes = [MultiPartParser, FormParser]
 
     def get(self, request, establishment_id):
         admin = active_administrator(request.user, establishment_id)
@@ -658,19 +674,10 @@ class EstablishmentPrescriptionTemplateView(APIView):
         if not admin:
             return Response({"success": False, "message": "Vous n’êtes pas administrateur de cet établissement actif."}, status=403)
         template, _ = PrescriptionTemplate.objects.select_for_update().get_or_create(establishment=admin.establishment)
-        data = request.data.copy()
-        logo = request.FILES.get("logo")
-        if logo:
-            if logo.content_type not in {"image/png", "image/jpeg", "image/webp", "image/svg+xml"} or logo.size > 5 * 1024 * 1024:
-                raise ValidationError({"logo": "Le logo doit être une image PNG, JPG, WebP ou SVG de 5 Mo maximum."})
-            if not CLOUDINARY_CONFIGURED:
-                raise ValidationError({"logo": "Cloudinary n’est pas configuré pour recevoir le logo."})
-            result = cloudinary_upload(logo, folder="establishments", public_id=f"{admin.establishment_id}/prescription-logo", resource_type="image", delivery_type="upload")
-            data["logo_url"] = result["secure_url"]
-        serializer = PrescriptionTemplateSerializer(template, data=data, partial=True)
+        serializer = PrescriptionTemplateSerializer(template, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         template = serializer.save()
-        record_event(event_type="establishment.prescription_template.updated", actor=request.user, actor_role="establishment_administrator", establishment=admin.establishment, metadata={"action": "updated", "resource_type": "prescription_template"})
+        record_event(event_type="establishment.prescription_template.updated", actor=request.user, actor_role="establishment_administrator", establishment=admin.establishment, metadata={"action": "updated", "resource_type": "prescription_template", "status": admin.establishment.status})
         return Response({"success": True, "data": PrescriptionTemplateSerializer(template).data})
 
 
@@ -879,6 +886,15 @@ class EstablishmentJoinCodeRedeemView(APIView):
         join_code.save(update_fields=("consumed_at", "code_encrypted"))
         record_event(event_type="establishment.join_code.consumed", actor=request.user, actor_role="professional", establishment=join_code.establishment, metadata={"action": "consumed", "status": "pending", "join_code_id": str(join_code.id), "membership_id": str(membership.id)})
         record_event(event_type="membership.requested", actor=request.user, actor_role="professional", establishment=join_code.establishment, metadata={"action": "requested", "status": "pending", "membership_id": str(membership.id), "agreement_version": membership.agreement_version, "agreement_accepted_at": membership.agreement_accepted_at.isoformat()})
+        # Chaque administrateur actif apprend tout de suite qu'une demande attend sa décision (badge + notification, sans nom dans le push).
+        person = f"{request.user.first_name} {request.user.last_name}".strip() or "Un médecin"
+        for administrator in EstablishmentAdministrator.objects.filter(establishment=join_code.establishment, status="active").select_related("user"):
+            notify_user(
+                administrator.user, join_code.establishment, kind="membership.request", title="Nouvelle demande de rattachement",
+                body=f"{person} demande à rejoindre {join_code.establishment.name}. Confirmez ou refusez depuis « Demandes ».",
+                event_key=f"membership-request:{membership.id}:{membership.requested_at.isoformat()}",
+                push_url="/etablissement/demandes", push_body="Un médecin demande son rattachement.",
+            )
         # Le nom de l'établissement sert au modal « demande envoyée à X » (la demande attend la confirmation de l'établissement).
         return Response({"success": True, "data": {**MembershipSerializer(membership).data, "establishment_name": join_code.establishment.name}}, status=201 if created else 200)
 
@@ -908,6 +924,17 @@ class MembershipDecisionView(APIView):
         membership.reviewed_at = timezone.now()
         membership.save(update_fields=("status", "reviewed_at"))
         record_event(event_type=f"membership.{decision}", actor=request.user, actor_role="establishment_administrator", establishment=establishment, metadata={"action": decision, "status": membership.status, "membership_id": str(membership.id)})
+        approved = decision == "approve"
+        notify_user(
+            membership.professional.user, establishment,
+            kind="membership.approved" if approved else "membership.refused",
+            title="Rattachement accepté" if approved else "Rattachement refusé",
+            body=(f"{establishment.name} a accepté votre demande : vous êtes rattaché(e) et vos onglets d’établissement sont disponibles."
+                  if approved else f"{establishment.name} n’a pas retenu votre demande de rattachement."),
+            event_key=f"membership-{decision}:{membership.id}:{membership.reviewed_at.isoformat()}",
+            push_url="/professionnel",
+            push_body="Votre demande de rattachement a reçu une réponse.",
+        )
         return Response({"success": True, "data": MembershipSerializer(membership).data})
 
 
@@ -929,6 +956,12 @@ class MembershipLeaveView(APIView):
             profile.active_establishment = None
             profile.save(update_fields=("active_establishment", "updated_at"))
         record_event(event_type="membership.terminated_by_professional", actor=request.user, actor_role="professional", establishment=membership.establishment, metadata={"action": "terminated", "membership_id": str(membership.id), "reason": "professional_initiated"})
+        person = f"{request.user.first_name} {request.user.last_name}".strip() or "Un médecin"
+        notify_establishment_admins(
+            membership.establishment, kind="membership.left", title="Un médecin a quitté l’établissement",
+            body=f"{person} a mis fin à son rattachement à {membership.establishment.name}.",
+            event_key=f"membership-left:{membership.id}:{membership.left_at.isoformat()}", push_url="/etablissement/medecins", push_body="Un médecin a quitté votre établissement.",
+        )
         return Response({"success": True, "data": MembershipSerializer(membership).data})
 
 
@@ -961,6 +994,11 @@ class MembershipTerminateByEstablishmentView(APIView):
             profile.save(update_fields=("active_establishment", "updated_at"))
         record_event(event_type="membership.terminated_by_establishment", actor=request.user, actor_role="establishment_administrator", establishment=membership.establishment, metadata={"action": "terminated", "membership_id": str(membership.id), "reason": "establishment_initiated"})
         notify_revoked(profile.user_id, "membership.revoked", url="/professionnel")
+        notify_user(
+            profile.user, membership.establishment, kind="membership.revoked", title="Rattachement retiré",
+            body=f"{membership.establishment.name} a mis fin à votre rattachement. Le motif s’affiche à votre prochaine connexion.",
+            event_key=f"membership-revoked:{membership.id}:{now.isoformat()}", push=False,
+        )
         return Response({"success": True, "data": MembershipSerializer(membership).data})
 
 

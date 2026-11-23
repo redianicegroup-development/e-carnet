@@ -19,7 +19,7 @@ export default function LoginPage() {
       <span className="ax-blob ax-blob--b" aria-hidden="true" />
       <span className="ax-blob ax-blob--c" aria-hidden="true" />
       <PulseLine className="ax-stage__pulse" />
-      <Link href="/" className="ax-brand" aria-label="Mon E‑Carnet : retour à la page d’accueil" data-auth-item><BrandMark /><span>Mon E‑Carnet</span></Link>
+      <Link href="/" className="ax-brand" aria-label="Mon E‑Carnet : retour à la page d’accueil" data-auth-item><BrandMark /><span className="notranslate" translate="no">Mon E‑Carnet</span></Link>
       <AuthWelcome />
       <div className="ax-stage__copy">
         <p className="ax-stage__eyebrow" data-auth-item>Votre carnet, simplement</p>

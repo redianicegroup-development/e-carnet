@@ -36,7 +36,7 @@ export function ShareAppSettings() {
   return (
     <div className="settings-modal-section share-app">
       <span className="eyebrow">Faire connaître l’application</span>
-      <p className="muted">Envoyez ce lien : en l’ouvrant, la personne peut installer Mon E‑Carnet sur son téléphone ou son ordinateur en un geste.</p>
+      <p className="muted">Envoyez ce lien : en l’ouvrant, la personne peut installer <span className="notranslate" translate="no">Mon E‑Carnet</span> sur son téléphone ou son ordinateur en un geste.</p>
       <div className="actions">
         {canShare && <button type="button" className="button primary" onClick={() => void nativeShare()} disabled={!url}><Icon name="share" size={18} /> Partager…</button>}
         <button type="button" className={canShare ? "button" : "button primary"} onClick={() => void copy()} disabled={!url}><Icon name="link" size={18} /> Copier le lien</button>

@@ -98,6 +98,8 @@ def validate_consultation(*, professional, data):
         attestation_signed_at=signed_at,
         signature_asset_id=professional.signature_cloudinary_public_id,
         stamp_asset_id=professional.stamp_cloudinary_public_id,
+        establishment_stamp_asset_id=establishment.stamp_cloudinary_public_id,
+        establishment_signature_asset_id=establishment.signature_cloudinary_public_id,
         validated_at=signed_at,
     )
     prescription_lines = [

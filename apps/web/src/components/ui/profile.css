@@ -12,6 +12,8 @@
 /* Sur mobile : toujours au moins 3 profils par ligne (jamais 2 colonnes), même dans une fenêtre étroite. */
 @media (max-width: 560px) { .profile-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 6px; } }
 .profile-tiles > li { display: grid; min-width: 0; }
+/* Une photo seule (équipe de l'établissement) posée dans la même grille que les tuiles : centrée, à la hauteur de leurs photos, jamais étirée en ovale. */
+.profile-tiles > li > .profile-photo { justify-self: center; align-self: start; margin-top: 10px; }
 .profile-tile { display: grid; justify-items: center; align-content: start; gap: 9px; width: 100%; padding: 10px 4px; border: 0; border-radius: 16px; background: none; color: inherit; font: inherit; cursor: pointer; transition: background .15s ease; }
 .profile-tile:hover { background: var(--surface-tint); }
 .profile-tile:focus-visible { outline: 3px solid var(--focus, var(--primary)); outline-offset: 2px; }

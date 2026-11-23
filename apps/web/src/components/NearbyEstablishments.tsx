@@ -133,7 +133,7 @@ export function NearbyEstablishments() {
             </select>
           </label>
         )}
-        <p className="muted nearby__privacy">Votre position n’est demandée que lorsque vous touchez « Autour de moi ». Elle reste sur votre appareil : elle n’est ni envoyée à Mon E‑Carnet ni enregistrée. Le fond de carte vient d’OpenStreetMap, qui reçoit les parties de carte affichées, par exemple votre quartier.</p>
+        <p className="muted nearby__privacy">Votre position n’est demandée que lorsque vous touchez « Autour de moi ». Elle reste sur votre appareil : elle n’est ni envoyée à <span className="notranslate" translate="no">Mon E‑Carnet</span> ni enregistrée. Le fond de carte vient d’OpenStreetMap, qui reçoit les parties de carte affichées, par exemple votre quartier.</p>
         {locating.state === "unavailable" && <p className="notice" role="status">{locating.message}</p>}
       </div>
 

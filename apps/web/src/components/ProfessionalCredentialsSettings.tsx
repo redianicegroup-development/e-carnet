@@ -14,7 +14,7 @@ export type Credentials = {
   signature_uploaded: boolean;
 };
 
-type Pending = { file: File; url: string };
+export type Pending = { file: File; url: string };
 type Props = {
   profile: Credentials;
   onSaved: (profile: Credentials) => void;
@@ -28,18 +28,26 @@ type Props = {
   backHref?: string;
 };
 
-const COPY: Record<SealKind, { title: string; add: string; replace: string; saved: string; none: string; removeTitle: string }> = {
+type SealCopy = { title: string; add: string; replace: string; saved: string; none: string; removeTitle: string };
+const COPY: Record<SealKind, SealCopy> = {
   stamp: { title: "Cachet personnel", add: "Ajouter mon cachet", replace: "Remplacer le cachet", saved: "Cachet enregistré.", none: "Aucun cachet", removeTitle: "Retirer votre cachet ?" },
   signature: { title: "Signature personnelle", add: "Ajouter ma signature", replace: "Remplacer la signature", saved: "Signature enregistrée.", none: "Aucune signature", removeTitle: "Retirer votre signature ?" },
 };
+/** Libellés du cachet et de la signature de la STRUCTURE (« Informations administratives »). */
+export const ESTABLISHMENT_SEAL_COPY: Record<SealKind, SealCopy> = {
+  stamp: { title: "Cachet de l’établissement", add: "Ajouter le cachet", replace: "Remplacer le cachet", saved: "Cachet enregistré.", none: "Aucun cachet", removeTitle: "Retirer le cachet de l’établissement ?" },
+  signature: { title: "Signature de l’établissement", add: "Ajouter la signature", replace: "Remplacer la signature", saved: "Signature enregistrée.", none: "Aucune signature", removeTitle: "Retirer la signature de l’établissement ?" },
+};
 
-function SealField({ kind, uploaded, pending, refreshKey, busy, open, onOpen, onClose, onPick, onDiscard, onRemoveSaved }: {
+/** Un cachet ou une signature : aperçu, « Ajouter / Remplacer », « Retirer ». Sert au professionnel (par défaut) et à la structure (`endpoint` et `copy`). */
+export function SealField({ kind, uploaded, pending, refreshKey, busy, open, onOpen, onClose, onPick, onDiscard, onRemoveSaved, endpoint, copy: copyOverride, hint }: {
   kind: SealKind; uploaded: boolean; pending: Pending | undefined; refreshKey: number; busy: boolean; open: boolean;
   onOpen: () => void; onClose: () => void; onPick: (file: File) => void; onDiscard: () => void; onRemoveSaved: () => void;
+  endpoint?: string; copy?: SealCopy; hint?: { pending: string; none: string };
 }) {
-  const saved = useSealImage(kind, uploaded && !pending, refreshKey);
+  const saved = useSealImage(kind, uploaded && !pending, refreshKey, endpoint);
   const shown = pending?.url ?? saved;
-  const copy = COPY[kind];
+  const copy = copyOverride ?? COPY[kind];
   return <div className="seal-field">
     <span className="seal-field__label">{copy.title}</span>
     <div className="seal-field__row">
@@ -50,7 +58,7 @@ function SealField({ kind, uploaded, pending, refreshKey, busy, open, onOpen, on
         {!pending && uploaded && <button type="button" className="button danger" onClick={onRemoveSaved} disabled={busy}>Retirer</button>}
       </div>
     </div>
-    <small className="muted">{pending ? "Nouveau fichier prêt : cliquez sur « Enregistrer » pour l’utiliser sur vos consultations et ordonnances." : uploaded ? copy.saved : "Une signature ou un cachet est requis pour valider une consultation."}</small>
+    <small className="muted">{pending ? (hint?.pending ?? "Nouveau fichier prêt : cliquez sur « Enregistrer » pour l’utiliser sur vos consultations et ordonnances.") : uploaded ? copy.saved : (hint?.none ?? "Une signature ou un cachet est requis pour valider une consultation.")}</small>
     {open && <InkCapture kind={kind} onCancel={onClose} onUse={(file) => { onPick(file); onClose(); }} />}
   </div>;
 }

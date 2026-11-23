@@ -26,6 +26,11 @@ function destinationFor(account: Account, mode: AuthMode, requested: string | nu
   if (context.role === "establishment") return context.onboarding_completed ? "/etablissement" : "/etablissement/fiche";
   return context.onboarding_completed ? "/patient" : "/onboarding/identite";
 }
+/* Retour d'un fournisseur (Google…) en échec : « conflict » = l'adresse e-mail a déjà un compte qui n'est pas encore lié à ce fournisseur. */
+function oauthErrorTitleFor(status: string | null): string {
+  if (status === "conflict") return "Ce compte existe déjà";
+  return "Connexion impossible";
+}
 /* Titre du modal d'erreur de connexion : le motif clair est dans le message du serveur, le titre dit de quoi il s'agit. */
 function errorTitleFor(status: number, code: unknown, login: boolean): string {
   if (code === "temporary_password_expired") return "Mot de passe temporaire expiré";
@@ -79,7 +84,7 @@ export function AuthForms() {
       if (params.get("mode") === "register") { setMode("register"); setStep("form"); }
       if (params.has("next") || params.has("message") || params.has("oauth")) setStep("form");
       if (params.has("oauth") && params.get("status") === "success") setMessage("Connexion réussie, ouverture de votre espace…");
-      else if (params.has("oauth") && params.get("status") !== "success") { setErrorModal(params.get("message") || "La connexion avec ce fournisseur n’a pas abouti. Réessayez ou choisissez une autre méthode."); setStatus("error"); }
+      else if (params.has("oauth") && params.get("status") !== "success") { setErrorTitle(oauthErrorTitleFor(params.get("status"))); setErrorModal(params.get("message") || "La connexion avec ce fournisseur n’a pas abouti. Réessayez ou choisissez une autre méthode."); setStatus("error"); }
       else if (params.get("message")) { setErrorModal(params.get("message") ?? ""); setStatus("error"); }
     }, 0);
     return () => window.clearTimeout(timer);

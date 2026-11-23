@@ -9,7 +9,7 @@ test("« Mes consultations » est toujours déplié, côté patient comme côté
   assert.match(read("components/PatientHistory.tsx"), /title="Mes consultations" solo alwaysOpen/);
   assert.match(read("components/ProfessionalConsultations.tsx"), /title="Mes consultations" alwaysOpen/);
   const section = read("components/ui/CollapsibleSection.tsx");
-  const staticBranch = section.slice(section.indexOf("if (alwaysOpen)"), section.indexOf("return (\n    <section className=\"card carnet-accordion\" data-open={open}>"));
+  const staticBranch = section.slice(section.indexOf("if (alwaysOpen)"), section.indexOf("<section className=\"card carnet-accordion\" data-open={open}"));
   assert.doesNotMatch(staticBranch, /<button/, "une section toujours dépliée n'a pas de bouton");
 });
 

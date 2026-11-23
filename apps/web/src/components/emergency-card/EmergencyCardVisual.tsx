@@ -42,7 +42,7 @@ function Chips({ items, tone }: { items: EmergencyCardItem[]; tone: "allergy" | 
 }
 
 /**
- * Carte d’urgence (et carte du médecin : même carte, avec son métier) : identité, groupe sanguin, ville, allergies et contact à gauche, QR (scan public) ou photo du titulaire (carte téléchargée) à côté.
+ * Carte d’identité médicale (carte d’urgence ; et carte du médecin : même carte, avec son métier) : identité, groupe sanguin, ville, allergies et contact à gauche, QR (scan public) ou photo du titulaire (carte téléchargée) à côté.
  * Elle se met en colonne toute seule quand son conteneur est étroit (container query), sans dépendre de la taille de l’écran.
  * Le même visuel est dessiné en PNG par emergency-card-image.ts.
  */
@@ -59,11 +59,12 @@ export function EmergencyCardVisual({ card, qrUrl = "", showQr = true, photo }: 
           <span className="ecard__brand"><span className="ecard__mark" aria-hidden="true">
             {/* eslint-disable-next-line @next/next/no-img-element -- logo WebP versionné sur Cloudinary */}
             <img src={PROJECT_LOGO_MINI_WEBP} alt="" draggable={false} />
-          </span>Mon E‑Carnet</span>
-          <span className="ecard__tag">Carte d’urgence</span>
+          </span><span className="notranslate" translate="no">Mon E‑Carnet</span></span>
+          <span className="ecard__tag">Carte d’identité médicale</span>
         </header>
         <div className="ecard__body">
           <div className="ecard__info">
+            <div className="ecard__idline"><span className="ecard__chip" aria-hidden="true" /><p className="ecard__kicker">Titulaire</p></div>
             <h3 className={`ecard__name${name ? "" : " is-empty"}`}>{name || "Identité non renseignée"}</h3>
             {role && <p className="ecard__role"><Icon name="stethoscope" size={14} />{role}</p>}
             <dl className="ecard__fields">

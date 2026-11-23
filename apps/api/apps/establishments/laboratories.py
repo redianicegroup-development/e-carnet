@@ -22,6 +22,7 @@ from .provisioning import AccountConflict, provision_administrator
 from apps.identity.temporary_password import temporary_password_expired
 
 from .views import access_response_data, account_conflict_response, active_administrator, secret_response
+from .role_notifications import notify_establishment_admins, notify_user
 
 LAB_TYPE_LABEL = "Laboratoire"
 # Plafond de comptes administrateurs du laboratoire interne : chaque ajout ouvre un compte avec mot de passe temporaire.
@@ -130,6 +131,18 @@ class EstablishmentLaboratoriesView(APIView):
         if created_lab:
             record_event(event_type="laboratory.created", actor=request.user, actor_role="establishment_admin", establishment=parent, metadata={"action": "created", "resource_type": "establishment", "resource_id": str(lab.id)})
         record_event(event_type="laboratory.administrator.added", actor=request.user, actor_role="establishment_admin", establishment=parent, metadata={"action": "added", "resource_type": "establishment", "resource_id": str(lab.id)})
+        # Bienvenue dans la boîte du nouvel administrateur (il la voit à sa première connexion) ; les collègues déjà actifs apprennent son arrivée.
+        stamp = timezone.now().isoformat()
+        notify_user(
+            access.user, lab, kind="laboratory.welcome", title="Bienvenue dans votre laboratoire",
+            body=f"{parent.name} vous a rattaché(e) comme administrateur de {lab.name}. Vous pouvez déposer des résultats d’examens depuis l’onglet Scanner.",
+            event_key=f"laboratory-welcome:{lab.id}:{access.user.pk}:{stamp}", push=False,
+        )
+        notify_establishment_admins(
+            lab, exclude=access.user, kind="laboratory.administrator_added", title="Un nouvel administrateur a été ajouté",
+            body=f"{first_name} {last_name} est maintenant administrateur de {lab.name}.",
+            event_key=f"laboratory-admin-added:{lab.id}:{access.user.pk}:{stamp}", push_url="/laboratoire", push_body="Un administrateur a été ajouté à votre laboratoire.",
+        )
         data = access_response_data(lab, access)
         data["laboratory"] = {"id": str(lab.id), "name": lab.name}
         data["laboratory_created"] = created_lab
@@ -169,4 +182,9 @@ class LaboratoryAdministratorRevokeView(APIView):
         record.save(update_fields=("status", "ended_at", "end_reason", "ended_by", "end_notice_seen_at"))
         record_event(event_type="laboratory.administrator.revoked", actor=request.user, actor_role="establishment_admin", establishment=parent_admin.establishment, metadata={"action": "revoked", "resource_type": "establishment", "resource_id": str(record.establishment_id)})
         notify_revoked(record.user_id, "laboratory.revoked", url="/")
+        notify_establishment_admins(
+            record.establishment, exclude=record.user, kind="laboratory.administrator_removed", title="Un administrateur n’a plus accès",
+            body=f"L’accès d’un administrateur de {record.establishment.name} a été retiré par l’établissement.",
+            event_key=f"laboratory-admin-removed:{record.id}:{record.ended_at.isoformat()}", push_url="/laboratoire", push_body="Un accès du laboratoire a été retiré.",
+        )
         return Response({"success": True, "data": {"id": str(record.id), "revoked": 1}})

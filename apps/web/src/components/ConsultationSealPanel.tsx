@@ -13,12 +13,16 @@ const ACCESS_MODE_LABELS: Record<string, string> = {
   guest_pro: "Mode invité · rédigée sur le téléphone du patient",
 };
 
-/** Image de la signature ou du cachet figés sur la consultation (servie au patient et au professionnel signataire seulement). */
-export function sealImageUrl(consultationId: string, kind: "signature" | "stamp"): string {
+/** Image figée sur la consultation (servie au patient et au professionnel signataire seulement) : signature et cachet du professionnel,
+    cachet et signature de l'établissement. */
+export type SealImageKind = "signature" | "stamp" | "establishment-stamp" | "establishment-signature";
+export function sealImageUrl(consultationId: string, kind: SealImageKind): string {
   return `/api/v1/patient/care/consultations/${consultationId}/seal/${kind}/`;
 }
 
-function SealImage({ id, kind, label }: { id: string; kind: "signature" | "stamp"; label: string }) {
+const SEAL_CAPTIONS: Record<SealImageKind, string> = { signature: "Signature", stamp: "Cachet", "establishment-stamp": "Cachet de l’établissement", "establishment-signature": "Signature de l’établissement" };
+
+function SealImage({ id, kind, label }: { id: string; kind: SealImageKind; label: string }) {
   const [failed, setFailed] = useState(false);
   if (failed) return null; // image indisponible (stockage injoignable) : on n'affiche rien plutôt qu'une image cassée
   return (
@@ -27,18 +31,22 @@ function SealImage({ id, kind, label }: { id: string; kind: "signature" | "stamp
         {/* eslint-disable-next-line @next/next/no-img-element -- image privée servie par l'API, avec cookie de session */}
         <img src={sealImageUrl(id, kind)} alt={label} loading="lazy" onError={() => setFailed(true)} />
       </span>
-      <figcaption>{kind === "signature" ? "Signature" : "Cachet"}</figcaption>
+      <figcaption>{SEAL_CAPTIONS[kind]}</figcaption>
     </figure>
   );
 }
 
-/** Signature et cachet du médecin tels qu'ils étaient au moment de la validation. Rien si la consultation n'en porte pas (anciennes consultations). */
+/** Signature et cachet du médecin, cachet et signature de l'établissement, tels qu'ils étaient au moment de la validation. Rien si la consultation
+    n'en porte pas (anciennes consultations). */
 export function SealImages({ item }: { item: ConsultationRecord }) {
-  if (!item.has_signature && !item.has_stamp) return null;
+  if (!item.has_signature && !item.has_stamp && !item.has_establishment_stamp && !item.has_establishment_signature) return null;
+  const place = item.establishment?.name || item.facility_label;
   return (
     <div className="consult-seal-images">
       {item.has_signature && <SealImage id={item.id} kind="signature" label={`Signature de ${item.professional_name}`} />}
       {item.has_stamp && <SealImage id={item.id} kind="stamp" label={`Cachet de ${item.professional_name}`} />}
+      {item.has_establishment_stamp && <SealImage id={item.id} kind="establishment-stamp" label={`Cachet de ${place}`} />}
+      {item.has_establishment_signature && <SealImage id={item.id} kind="establishment-signature" label={`Signature de ${place}`} />}
     </div>
   );
 }

@@ -41,7 +41,7 @@ export default function AboutPage() {
           <div className="info-page__head-copy">
             <span className="eyebrow">À propos</span>
             <h1>Un carnet qui suit votre santé dans la durée.</h1>
-            <p className="lead">Mon E‑Carnet est un carnet de santé numérique porté par la startup <RedianiceLink />. Il garde vos informations au même endroit, et c’est vous qui décidez qui peut les consulter.</p>
+            <p className="lead"><span className="notranslate" translate="no">Mon E‑Carnet</span> est un carnet de santé numérique porté par la startup <RedianiceLink />. Il garde vos informations au même endroit, et c’est vous qui décidez qui peut les consulter.</p>
             <AppSlogan />
             <div className="about__pulse" aria-hidden="true"><PulseLine /></div>
           </div>
@@ -60,7 +60,7 @@ export default function AboutPage() {
         <section className="about__block" aria-labelledby="solution">
           <div className="about__intro">
             <h2 id="solution">La solution : un seul carnet, qui continue</h2>
-            <p className="muted">C’est pour cela que la startup a développé Mon E‑Carnet : garder le suivi sur la durée, sans jamais perdre le fil, avec le patient aux commandes.</p>
+            <p className="muted">C’est pour cela que la startup a développé <span className="notranslate" translate="no">Mon E‑Carnet</span> : garder le suivi sur la durée, sans jamais perdre le fil, avec le patient aux commandes.</p>
           </div>
           <ul className="about-points">
             {SOLUTION.map((item) => (

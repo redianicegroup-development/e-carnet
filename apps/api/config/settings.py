@@ -224,3 +224,18 @@ elif DEBUG:
     CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache", "LOCATION": "ecarnet-local"}}
 else:
     CACHES = {"default": {"BACKEND": "django.core.cache.backends.db.DatabaseCache", "LOCATION": "ecarnet_cache"}}
+
+# Journaux : sans cette configuration, Django n'écrit AUCUNE trace d'erreur quand DEBUG est faux (la seule sortie est la ligne d'accès de gunicorn :
+# « POST … 500 4.39 »), et une erreur 500 en production reste inexplicable. Les erreurs de requête (avec leur trace complète) et tous les
+# avertissements de l'application sortent sur la console, que l'hébergeur conserve. Rien de personnel n'y est écrit : seulement les traces.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {"plain": {"format": "%(levelname)s %(name)s: %(message)s"}},
+    "handlers": {"console": {"class": "logging.StreamHandler", "formatter": "plain"}},
+    "root": {"handlers": ["console"], "level": os.environ.get("ECARNET_LOG_LEVEL", "WARNING")},
+    "loggers": {
+        "django.request": {"handlers": ["console"], "level": "ERROR", "propagate": False},
+        "django.security": {"handlers": ["console"], "level": "WARNING", "propagate": False},
+    },
+}

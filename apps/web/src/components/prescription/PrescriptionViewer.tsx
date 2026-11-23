@@ -87,6 +87,8 @@ export function PrescriptionViewer({ sheetHref, pdfHref = null }: { sheetHref: s
               format={format}
               stampSrc={state.data.has_stamp ? sealImageUrl(state.data.consultation_id, "stamp") : null}
               signatureSrc={state.data.has_signature ? sealImageUrl(state.data.consultation_id, "signature") : null}
+              establishmentStampSrc={state.data.has_establishment_stamp ? sealImageUrl(state.data.consultation_id, "establishment-stamp") : null}
+              establishmentSignatureSrc={state.data.has_establishment_signature ? sealImageUrl(state.data.consultation_id, "establishment-signature") : null}
             />
           </div>
         )}

@@ -5,12 +5,22 @@ import test from "node:test";
 
 const read = (rel) => readFileSync(new URL(`../${rel}`, import.meta.url), "utf8");
 
-test("les tuiles n'ont aucune couleur propre : elles suivent la palette choisie", () => {
+test("les tuiles ne sont pas multicolores : elles prennent les deux couleurs de la palette choisie (Miel par défaut : vert et jaune)", () => {
   const css = read("src/components/patient-sections.css");
-  const grid = css.slice(css.indexOf("Grille de rubriques"));
-  assert.match(grid, /--tile: color-mix\(in srgb, var\(--primary\) 16%, var\(--bg\)\)/);
-  assert.doesNotMatch(grid, /data-tone|#[0-9a-fA-F]{6}\b/);
-  assert.doesNotMatch(read("src/components/ui/CollapsibleSection.tsx"), /tone/);
+  const grid = css.slice(css.indexOf("Tuile fermée : carte pastel"));
+  // A : la couleur principale ; B : la couleur d'accent de la palette (--brand-3) ; alternance en damier ; jamais une couleur en dur par rubrique.
+  assert.match(grid, /--hue: var\(--primary\); --on-hue: var\(--on-primary, #fff\)/);
+  assert.match(grid, /:nth-child\(4n \+ 2\)[^{]*:nth-child\(4n \+ 3\) \{ --hue: var\(--brand-3, var\(--primary\)\); --on-hue: var\(--text\); --wash: 32%/);
+  assert.match(grid, /\[data-tone="primary"\]/);
+  assert.match(grid, /\[data-tone="accent"\]/);
+  assert.match(grid, /--tile: color-mix\(in srgb, var\(--hue\) var\(--wash-open\), var\(--surface, var\(--bg\)\)\)/);
+  assert.doesNotMatch(grid, /--hue: #/, "aucune teinte en dur : tout vient de la palette");
+  assert.doesNotMatch(grid, /data-tone="(pink|peach|butter|mint|sky|lavender|teal)"/, "plus de couleur propre à chaque rubrique");
+  const section = read("src/components/ui/CollapsibleSection.tsx");
+  assert.match(section, /export type TileTone = "primary" \| "accent"/);
+  assert.match(section, /data-tone=\{tone\}/);
+  assert.doesNotMatch(section, /TONE_BY_ICON|tileTone/, "la couleur ne dépend plus de l'icône");
+  assert.doesNotMatch(read("src/components/EstablishmentConsole.tsx"), /tone="(pink|peach|butter|mint|sky|lavender|teal)"/);
 });
 
 test("les rubriques pliables des espaces sont posées dans une grille de tuiles", () => {

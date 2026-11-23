@@ -10,3 +10,29 @@
 .attest-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .attest-share { display: grid; gap: 4px; padding: 10px 12px; border-radius: 14px; background: var(--surface-muted, #FFF7E6); }
 .attest-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Carte « Déclarations à attester » : même style que les tuiles (pastel aux couleurs de la palette choisie, objet en relief en bas à droite).
+   Elle prend la couleur d'accent de la palette (--brand-3 : le jaune de Miel…), le compteur garde la couleur principale. */
+body .attest-tile {
+  --hue: var(--brand-3, var(--primary)); --on-hue: var(--text);
+  position: relative; min-height: 150px; padding-bottom: 18px; border: 0; border-radius: 26px;
+  background: color-mix(in srgb, var(--hue) 32%, var(--surface, var(--bg))); box-shadow: none;
+}
+body .attest-tile__head { padding-right: 78px; }
+body .attest-tile__count { position: absolute; top: 14px; right: 14px; margin: 0; background: var(--primary, #3B826C); color: var(--on-primary, #fff); }
+body .attest-tile .button { justify-self: start; align-self: end; border-radius: 999px; }
+/* objet en relief : badge sans fond propre, plaque arrière (::before) et plaque avant en dégradé (::after), icône par-dessus */
+body .attest-tile .carnet-accordion__badge {
+  position: absolute; right: 14px; bottom: 14px; isolation: isolate; display: grid; place-items: center; width: 60px; height: 60px; border-radius: 20px; transform: rotate(-9deg);
+  background: none; box-shadow: none; color: var(--on-hue);
+}
+body .attest-tile .carnet-accordion__badge::before, body .attest-tile .carnet-accordion__badge::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+body .attest-tile .carnet-accordion__badge::before { z-index: -2; transform: translate(-11px, 6px) rotate(16deg); background: color-mix(in srgb, var(--hue) 40%, var(--surface, var(--bg))); }
+body .attest-tile .carnet-accordion__badge::after {
+  z-index: -1;
+  background:
+    radial-gradient(circle at 26% 20%, rgba(255, 255, 255, .42), transparent 46%),
+    linear-gradient(150deg, color-mix(in srgb, var(--hue) 86%, #fff), var(--hue) 55%, color-mix(in srgb, var(--hue) 78%, #000));
+  box-shadow: 0 10px 16px -8px color-mix(in srgb, var(--hue) 75%, transparent), inset 0 2px 0 rgba(255, 255, 255, .45), inset 0 -4px 8px rgba(0, 0, 0, .16);
+}
+body .attest-tile .carnet-accordion__badge .icon { width: 28px; height: 28px; }

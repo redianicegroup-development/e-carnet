@@ -11,8 +11,14 @@ import "./profile-detail.css";
    Hors grille, elle garde l'ancienne présentation en ligne. Le contenu n'est monté qu'à l'ouverture (chargement des données à la demande). */
 /* `solo` : le contenu porte déjà, dans sa propre carte, un titre identique à celui du bouton. Ce titre en double est alors masqué
    à l'écran (il reste lu par les technologies d'assistance et garde son id pour aria-labelledby) ; son sur-titre reste visible. */
-export function CollapsibleSection({ title, children, initiallyOpen = false, solo = false, icon = "folder", hint, alwaysOpen = false }: {
-  title: string; children: ReactNode; initiallyOpen?: boolean; solo?: boolean; icon?: IconName; hint?: string; alwaysOpen?: boolean;
+/* Teinte de la tuile : jamais une couleur propre à la rubrique. Les tuiles prennent les deux couleurs de la PALETTE choisie par la personne : la couleur
+   principale (--primary) et la couleur d'accent (--brand-3). Avec la palette par défaut (Miel) ce sont donc son vert et son jaune ; avec une autre palette,
+   des teintes proches de ses propres couleurs. Elles alternent en damier dans la grille (voir patient-sections.css) ; `tone` force l'une des deux. */
+export type TileTone = "primary" | "accent";
+
+/* `count` : pastille ronde posée sur la tuile fermée (ex. le nombre de demandes en attente) ; la phrase d'`hint` la répète pour les lecteurs d'écran. */
+export function CollapsibleSection({ title, children, initiallyOpen = false, solo = false, icon = "folder", hint, alwaysOpen = false, tone, count = 0 }: {
+  title: string; children: ReactNode; initiallyOpen?: boolean; solo?: boolean; icon?: IconName; hint?: string; alwaysOpen?: boolean; tone?: TileTone; count?: number;
 }) {
   const [openState, setOpen] = useState(initiallyOpen);
   const open = alwaysOpen || openState;
@@ -20,7 +26,7 @@ export function CollapsibleSection({ title, children, initiallyOpen = false, sol
   if (alwaysOpen) {
     // Section toujours dépliée : pas de bouton, pas de flèche, le contenu est toujours visible.
     return (
-      <section className="card carnet-accordion" data-open="true">
+      <section className="card carnet-accordion" data-open="true" data-tone={tone}>
         <h2 className="carnet-accordion__title">
           <span className="carnet-accordion__toggle carnet-accordion__toggle--static">
             <span className="carnet-accordion__badge" aria-hidden="true"><Icon name={icon} size={22} /></span>
@@ -32,7 +38,7 @@ export function CollapsibleSection({ title, children, initiallyOpen = false, sol
     );
   }
   return (
-    <section className="card carnet-accordion" data-open={open}>
+    <section className="card carnet-accordion" data-open={open} data-tone={tone}>
       <h2 className="carnet-accordion__title">
         <button
           className="carnet-accordion__toggle"
@@ -46,6 +52,7 @@ export function CollapsibleSection({ title, children, initiallyOpen = false, sol
           <Icon name="chevron" size={20} />
         </button>
       </h2>
+      {count > 0 && <span className="carnet-accordion__count" aria-hidden="true">{count > 99 ? "99+" : count}</span>}
       {open && <div id={panelId} className={`carnet-accordion__panel${solo ? " carnet-accordion__panel--solo" : ""}`}>{children}</div>}
     </section>
   );

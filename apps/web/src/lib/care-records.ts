@@ -35,6 +35,9 @@ export type ConsultationRecord = {
   /** Signature / cachet du médecin figés sur la consultation au moment de la validation (les images sont servies à part). */
   has_signature?: boolean;
   has_stamp?: boolean;
+  /** Cachet et signature de l'ÉTABLISSEMENT (« Informations administratives »), figés eux aussi à la validation. */
+  has_establishment_stamp?: boolean;
+  has_establishment_signature?: boolean;
   signatory?: ConsultationSignatory | null;
   establishment?: ConsultationEstablishment | null;
   provenance: { label: string };
@@ -49,11 +52,13 @@ export type PrescriptionSheetData = {
   signed_at: string | null;
   establishment: { name: string; type: string; city: string; address: string; phone: string; email: string; logo_url: string; header_text: string; footer_text: string };
   prescriber: { name: string; title: string; specialty: string; order_number: string };
-  patient: { name: string; age_years: number | null; sex: "female" | "male" | ""; weight: string };
+  /** Modèle simple : le patient n'apparaît que par ses nom et prénom. */
+  patient: { name: string };
   lines: PrescriptionLine[];
-  next_appointment: string | null;
   has_signature: boolean;
   has_stamp: boolean;
+  has_establishment_stamp: boolean;
+  has_establishment_signature: boolean;
 };
 
 const SHORT_DATE = new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit", year: "2-digit" });

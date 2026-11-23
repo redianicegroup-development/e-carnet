@@ -347,3 +347,9 @@ a.pub-menu__social-item:hover { background: var(--on-primary); color: var(--prim
 .rdn-link:hover { color: var(--primary-text); }
 .rdn-link:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
 .credit-reveal__link--plain { cursor: default; }
+
+/* Au pied de page (FooterBarsHider) : le logo fixe, le lien « Retour » et le bouton du menu s'effacent, puis reviennent dès qu'on remonte. */
+.pub-header .brand, .pub-return-link { transition: opacity .25s ease, visibility 0s; }
+html[data-at-footer="true"] .pub-header .brand, html[data-at-footer="true"] .pub-return-link { opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .25s ease, visibility 0s .25s; }
+html[data-at-footer="true"] .pub-burger { opacity: 0; visibility: hidden; pointer-events: none; transform: translateX(-50%) translateY(14px); transition: opacity .25s ease, transform .35s ease, visibility 0s .25s; }
+@media (prefers-reduced-motion: reduce) { .pub-header .brand, .pub-return-link, .pub-burger { transition: none !important; } }

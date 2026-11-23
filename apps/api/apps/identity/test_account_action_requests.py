@@ -89,6 +89,32 @@ class AccountActionRequestTests(TestCase):
         representation.refresh_from_db()
         self.assertEqual((representation.status, representation.deletion_reason), ("deleted", "account_deleted"))
 
+    def test_account_deletion_succeeds_for_a_patient_who_had_an_emergency_access(self):
+        """Régression : le gestionnaire des accès d'urgence refuse update() (TypeError, « immuables »). L'effacement l'appelait pour vider le motif libre :
+        TOUTE suppression de compte renvoyait donc une erreur 500. Le motif libre est maintenant remplacé, le reste (qui, quand, où) est conservé."""
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from apps.care.models import EmergencyAccessRequest
+        from apps.care.tests import make_clinic_doctor
+        from apps.patients.erasure import ERASED_EMERGENCY_NOTE
+
+        patient = PatientProfile.objects.create(user=self.user, first_name="Camille", last_name="Patient")
+        _doctor, profile, establishment = make_clinic_doctor(self.user, "acctdel")
+        EmergencyAccessRequest.objects.create(
+            patient=patient, professional=profile, establishment=establishment, professional_name="Docteur Acctdel", facility_label=establishment.name,
+            reason_category="unconscious", reason_note="Camille retrouvée inconsciente chez elle", expires_at=timezone.now() + timedelta(hours=1),
+            review_due_at=timezone.now() + timedelta(hours=72),
+        )
+        created = self.client.post(self.user_url, {"request_type": "deletion", "reason": "not_needed"}, format="json")
+        self.assertEqual(created.status_code, 201)
+        access = EmergencyAccessRequest.objects.get()
+        self.assertEqual(access.reason_note, ERASED_EMERGENCY_NOTE)
+        self.assertEqual((access.professional_name, access.reason_category), ("Docteur Acctdel", "unconscious"))
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+
     def test_duplicate_open_request_is_rejected_and_other_accounts_cannot_read_it(self):
         first = self.client.post(self.user_url, {"request_type": "suspension", "suspension_days": 7}, format="json")
         self.assertEqual(first.status_code, 201)

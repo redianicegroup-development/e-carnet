@@ -7,9 +7,11 @@ import { AvatarBadge, displayName, useSpaceAccount } from "./shell/SpaceShell";
 import { EstablishmentLogo } from "./EstablishmentLogo";
 import "./establishment-logo.css";
 import { useConfirm } from "./modal/ConfirmProvider";
+import { OutcomeDialog, type OutcomeDialogProps } from "./modal/OutcomeDialog";
 import { RevocationReasonDialog } from "./modal/RevocationReasonDialog";
+import { useNewNotifications } from "./notifications/notification-events";
 import { Icon } from "./ui/Icon";
-import { Profile } from "./ui/Profile";
+import { Profile, ProfileGrid } from "./ui/Profile";
 import type { ProfileRow } from "./ui/ProfileSheet";
 import "./join-codes.css";
 import { PageHeader } from "./ui/PageHeader";
@@ -78,12 +80,41 @@ function MemberProfile({ member, busy, onRevoke }: { member: Membership; busy: b
   />;
 }
 
+/* Demande de rattachement en attente : la même photo ronde que les médecins, « En attente » dessous et un point jaune sur la photo.
+   Au toucher, la fiche s'ouvre avec quelques informations et les boutons Refuser / Confirmer (la décision, puis un modal de résultat). */
+function PendingProfile({ member, busy, onDecide }: { member: Membership; busy: boolean; onDecide: (decision: "approve" | "refuse") => void }) {
+  const names = splitFullName(member.professional_name);
+  const lastName = member.professional_last_name || names.last_name;
+  const firstName = member.professional_first_name || names.first_name;
+  const job = [member.professional_title, member.professional_specialty].filter(Boolean).join(" · ");
+  const rows: ProfileRow[] = [
+    { label: "Nom", value: lastName || "Non renseigné" },
+    { label: "Prénoms", value: firstName || "Non renseigné" },
+    { label: "Métier", value: job || "Non renseigné" },
+    { label: "E‑mail", value: member.professional_email || "Non communiqué" },
+  ];
+  return <Profile
+    variant="tile"
+    size={64}
+    name={member.professional_name || "Médecin"}
+    label="En attente"
+    status={{ label: "En attente de rattachement", tone: "warn" }}
+    avatar={(size) => <MemberAvatar member={member} size={size} />}
+    rows={rows}
+    note="Cette personne a saisi votre code médecin. Confirmez pour la rattacher à l’établissement, ou refusez."
+    actions={[
+      { label: "Refuser", tone: "danger", disabled: busy, onClick: ({ close }) => { close(); onDecide("refuse"); } },
+      { label: "Confirmer", tone: "primary", disabled: busy, onClick: ({ close }) => { close(); onDecide("approve"); } },
+    ]}
+  />;
+}
+
 function NoEstablishment() {
   return (
     <section className="card establishment-empty">
       <span className="establishment-welcome__icon"><Icon name="building" size={26} /></span>
       <h2>Aucun établissement n’est rattaché à ce compte</h2>
-      <p className="muted">L’ouverture est gérée par l’équipe Mon E‑Carnet. Le guide explique les étapes.</p>
+      <p className="muted">L’ouverture est gérée par l’équipe <span className="notranslate" translate="no">Mon E‑Carnet</span>. Le guide explique les étapes.</p>
       <div className="actions"><Link className="button" href="/aide#establishment">Guide établissement</Link><Link className="button" href="/">Retour à l’accueil</Link></div>
     </section>
   );
@@ -105,6 +136,9 @@ export function EstablishmentConsole({ view }: { view: "home" | "requests" | "do
   const [busy, setBusy] = useState(false);
   const confirm = useConfirm();
   const [revokeTarget, setRevokeTarget] = useState<Membership | null>(null);
+  const [outcome, setOutcome] = useState<Omit<OutcomeDialogProps, "onClose"> | null>(null);
+  // Une demande qui arrive (ou une décision prise depuis un autre appareil) apparaît sans recharger la page.
+  useNewNotifications(({ kinds }) => { if (kinds.some((kind) => kind.startsWith("membership."))) void reload(); });
 
   if (error) return <p className="notice" role="alert">{error}</p>;
   if (!data) return <div className="skeleton" role="status"><span className="sr-only">Chargement…</span><i /><i /></div>;
@@ -116,23 +150,40 @@ export function EstablishmentConsole({ view }: { view: "home" | "requests" | "do
   const pending = memberships.filter((item) => item.status === "pending");
   const doctors = memberships.filter((item) => item.status === "active");
 
-  async function run(action: () => Promise<void>, done?: string) {
-    setBusy(true);
-    setMessage("");
-    try { await action(); if (done) setMessage(done); await reload(); } catch (reason) { setMessage(reason instanceof Error ? reason.message : "Action impossible."); } finally { setBusy(false); }
-  }
+  /* Décision sur une demande : « Confirmer » part directement (la fiche de la personne est déjà l'étape de vérification) ; « Refuser » demande
+     une confirmation. Dans les deux cas, un modal annonce le résultat : succès, ou l'erreur avec son motif (rien n'est alors modifié). */
   const decide = async (id: string, decision: "approve" | "refuse") => {
     const member = data.memberships.find((entry) => entry.id === id);
     const who = member?.professional_name || member?.professional_email || "ce médecin";
     const approve = decision === "approve";
-    const accepted = await confirm({
-      title: approve ? "Confirmer le rattachement ?" : "Refuser cette demande ?",
-      message: approve ? `${who} pourra travailler au nom de ${establishment.name}.` : `${who} ne sera pas rattaché(e) à ${establishment.name}.`,
-      note: approve ? "Vous pourrez mettre fin au rattachement à tout moment." : "Le médecin pourra refaire une demande avec un nouveau code.",
-      confirmLabel: approve ? "Confirmer le rattachement" : "Refuser la demande",
-    });
-    if (!accepted) return;
-    await run(async () => { await apiPost(`/api/v1/establishments/${establishment.id}/memberships/${id}/decision/`, { decision }); }, approve ? "Rattachement confirmé : le médecin peut travailler." : "Demande refusée.");
+    if (!approve) {
+      const accepted = await confirm({
+        title: "Refuser cette demande ?",
+        message: `${who} ne sera pas rattaché(e) à ${establishment.name}.`,
+        note: "Le médecin pourra refaire une demande avec un nouveau code.",
+        confirmLabel: "Refuser la demande",
+      });
+      if (!accepted) return;
+    }
+    setBusy(true);
+    setMessage("");
+    try {
+      await apiPost(`/api/v1/establishments/${establishment.id}/memberships/${id}/decision/`, { decision });
+      setOutcome(approve
+        ? { tone: "success", title: "Rattachement confirmé", message: `Vous avez accepté la demande : ${who} est rattaché(e) à ${establishment.name}.`, note: "Le médecin est prévenu tout de suite et ses onglets s’activent." }
+        : { tone: "success", title: "Demande refusée", message: `Vous avez refusé la demande de ${who}.`, note: "Le médecin est prévenu. Il pourra refaire une demande avec un nouveau code." });
+      await reload();
+      window.dispatchEvent(new Event("ecarnet:membership-requests-changed"));
+    } catch (reason) {
+      setOutcome({
+        tone: "error",
+        title: approve ? "Rattachement impossible" : "Refus impossible",
+        message: reason instanceof Error && reason.message ? reason.message : "L’action n’a pas abouti.",
+        note: "Rien n’a été modifié : la demande reste en attente. Vous pouvez réessayer.",
+      });
+    } finally {
+      setBusy(false);
+    }
   };
 
   // Révocation avec motif obligatoire : le professionnel le lira à sa prochaine connexion (un push l'avertit sans le révéler).
@@ -148,17 +199,11 @@ export function EstablishmentConsole({ view }: { view: "home" | "requests" | "do
 
   const requestRows = (
     <section className="card" aria-labelledby="requests-title">
-      <div className="section-heading"><div><h2 id="requests-title">Demandes de rattachement</h2></div><span className="count-badge">{pending.length}</span></div>
+      <div className="section-heading"><div><h2 id="requests-title">Demandes de rattachement</h2></div><span className="count-badge" aria-label={`${pending.length} en attente`}>{pending.length}</span></div>
       {pending.length === 0 ? <p className="empty">Aucune demande en attente.</p> : (
-        <div className="stack">
-          {pending.map((item) => (
-            <article className="record" key={item.id}>
-              <div><div className="team-member"><MemberAvatar member={item} /><div><strong>{item.professional_name ?? "Médecin"}</strong><p className="muted">{item.professional_email ?? "Email non communiqué"}</p></div></div>
-                <div className="actions"><button type="button" className="button small primary" disabled={busy} onClick={() => void decide(item.id, "approve")}>Confirmer</button><button type="button" className="button small danger" disabled={busy} onClick={() => void confirm({ title: "Refuser cette demande ?", message: `${item.professional_name ?? "Ce médecin"} ne sera pas rattaché à votre établissement.`, confirmLabel: "Refuser la demande", cancelLabel: "Revenir", tone: "danger", mood: "decision" }).then((ok) => { if (ok) void decide(item.id, "refuse"); })}>Refuser</button></div></div>
-              <span className="badge pending">En attente</span>
-            </article>
-          ))}
-        </div>
+        <ProfileGrid label="Demandes de rattachement en attente">
+          {pending.map((item) => <PendingProfile key={item.id} member={item} busy={busy} onDecide={(decision) => void decide(item.id, decision)} />)}
+        </ProfileGrid>
       )}
     </section>
   );
@@ -166,19 +211,20 @@ export function EstablishmentConsole({ view }: { view: "home" | "requests" | "do
   const doctorRows = (
     <section className="card" aria-labelledby="doctors-title">
       <div className="section-heading"><div><h2 id="doctors-title">Médecins de l’établissement</h2></div><span className="count-badge">{doctors.length}</span></div>
-      {doctors.length === 0 ? <p className="empty">Aucun médecin rattaché pour le moment.</p> : (
-        <ul className="profile-grid" aria-label="Médecins de l’établissement">
-          {doctors.map((item) => <li key={item.id}><MemberProfile member={item} busy={busy} onRevoke={() => setRevokeTarget(item)} /></li>)}
-        </ul>
+      {doctors.length === 0 && pending.length === 0 ? <p className="empty">Aucun médecin rattaché pour le moment.</p> : (
+        <ProfileGrid label="Médecins de l’établissement">
+          {doctors.map((item) => <MemberProfile key={item.id} member={item} busy={busy} onRevoke={() => setRevokeTarget(item)} />)}
+          {pending.map((item) => <PendingProfile key={item.id} member={item} busy={busy} onDecide={(decision) => void decide(item.id, decision)} />)}
+        </ProfileGrid>
       )}
       {revokeTarget && <RevocationReasonDialog title="Révoquer ce médecin ?" message={`${revokeTarget.professional_name || "Ce médecin"} ne pourra plus travailler au nom de ${establishment.name}.`} note="Les dossiers et les traces existants sont conservés." confirmLabel="Révoquer" onSubmit={submitRevoke} onCancel={() => setRevokeTarget(null)} />}
     </section>
   );
 
-  const status = <p className="status" role="status" aria-live="polite">{message}</p>;
+  const status = <><p className="status" role="status" aria-live="polite">{message}</p>{outcome && <OutcomeDialog {...outcome} onClose={() => setOutcome(null)} />}</>;
 
   /* Même présentation en tuiles que les espaces patient et professionnel (section-grid + CollapsibleSection). */
-  if (view === "requests") return <div className="stack-lg"><PageHeader eyebrow={establishment.name} title="Demandes" lead="Confirmez ou refusez les médecins qui saisissent votre code." />{!active && <Pending establishment={establishment} />}<div className="section-grid"><CollapsibleSection title="Demandes de rattachement" solo initiallyOpen={pending.length > 0} icon="document" hint={pending.length ? `${pending.length} en attente` : "Aucune en attente"}>{requestRows}</CollapsibleSection>{active && <CollapsibleSection title="Laboratoires" solo icon="document" hint="Résultats d’examens"><EstablishmentLaboratories establishmentId={establishment.id} /></CollapsibleSection>}</div>{status}</div>;
+  if (view === "requests") return <div className="stack-lg"><PageHeader eyebrow={establishment.name} title="Demandes" lead="Confirmez ou refusez les médecins qui saisissent votre code." />{!active && <Pending establishment={establishment} />}<div className="section-grid"><CollapsibleSection title="Demandes de rattachement" solo initiallyOpen={pending.length > 0} count={pending.length} icon="document" hint={pending.length ? `${pending.length} en attente` : "Aucune en attente"}>{requestRows}</CollapsibleSection>{active && <CollapsibleSection title="Laboratoires" solo icon="document" hint="Résultats d’examens"><EstablishmentLaboratories establishmentId={establishment.id} /></CollapsibleSection>}</div>{status}</div>;
   if (view === "doctors") return <div className="stack-lg"><PageHeader eyebrow={establishment.name} title="Médecins" lead="Touchez une photo pour voir la fiche." /><div className="section-grid"><CollapsibleSection title="Codes médecin" icon="qr" hint="Valables 48 h">{codeCard}</CollapsibleSection><CollapsibleSection title="Médecins de l’établissement" solo initiallyOpen icon="users" hint={`${doctors.length} rattaché${doctors.length > 1 ? "s" : ""}`}>{doctorRows}</CollapsibleSection></div>{status}</div>;
 
   return (
@@ -192,7 +238,7 @@ export function EstablishmentConsole({ view }: { view: "home" | "requests" | "do
         <CollapsibleSection title="Rendez-vous" solo icon="clock" hint="Pris dans l’établissement"><section className="card" aria-labelledby="appointments-list-title"><div className="section-heading"><div><h2 id="appointments-list-title">Rendez-vous</h2></div></div>{appointments.length === 0 ? <p className="empty">Aucun rendez-vous.</p> : <ul className="stack">{appointments.map((item) => <li className="record" key={item.id}><strong>{new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(item.starts_at))}</strong><span className="badge">{item.status}</span></li>)}</ul>}</section></CollapsibleSection>
         <CollapsibleSection title="Codes médecin" icon="qr" hint="Valables 48 h">{codeCard}</CollapsibleSection>
       </div>}
-      {!active && <section className="card progress-card"><div className="section-heading"><div><h2>Activer l’espace établissement</h2></div></div><p className="muted">L’équipe Mon E‑Carnet doit d’abord valider votre structure.</p><div className="progress-card__line" role="progressbar" aria-valuemin={0} aria-valuemax={2} aria-valuenow={establishment.status === "pending" ? 1 : 0}><span style={{ width: `${establishment.status === "pending" ? 50 : 0}%` }} /></div><div className="progress-card__meta"><span>{establishment.status === "pending" ? "Demande reçue" : "Fiche à préparer"}</span><Link className="text-link" href="/etablissement/parametres">Voir les paramètres</Link></div></section>}
+      {!active && <section className="card progress-card"><div className="section-heading"><div><h2>Activer l’espace établissement</h2></div></div><p className="muted">L’équipe <span className="notranslate" translate="no">Mon E‑Carnet</span> doit d’abord valider votre structure.</p><div className="progress-card__line" role="progressbar" aria-valuemin={0} aria-valuemax={2} aria-valuenow={establishment.status === "pending" ? 1 : 0}><span style={{ width: `${establishment.status === "pending" ? 50 : 0}%` }} /></div><div className="progress-card__meta"><span>{establishment.status === "pending" ? "Demande reçue" : "Fiche à préparer"}</span><Link className="text-link" href="/etablissement/parametres">Voir les paramètres</Link></div></section>}
       {!active && codeCard}
       {status}
       <section className="notice"><strong>Dossiers.</strong> Vous voyez les dossiers qui ont une pré-consultation clôturée ou une consultation dans votre établissement. Un médecin ne voit que le dossier que le patient l’a autorisé à ouvrir.</section>
