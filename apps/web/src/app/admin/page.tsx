@@ -5,14 +5,12 @@ import Link from "next/link";
 import { ApiError, apiGet, apiPatch, apiPost } from "../../infrastructure/api/client";
 import { cleanUpBeforeLogout } from "../../lib/logout";
 import { AdminActivityCharts, type DailyActivityPoint } from "../../components/AdminActivityCharts";
-import { AdminAccountActionRequestsClient } from "../../components/AdminAccountActionRequestsClient";
-import { AdminRepresentationTransfersClient } from "../../components/AdminRepresentationTransfersClient";
+import { AdminUsersClient } from "../../components/AdminUsersClient";
+import { AdminOverviewPanel } from "../../components/AdminOverviewPanel";
 import { AdminBannersClient } from "../../components/AdminBannersClient";
 import { AdminBillingClient } from "../../components/AdminBillingClient";
-import { AdminRecoveryClient } from "../../components/AdminRecoveryClient";
 import { AdminEstablishmentsClient } from "../../components/AdminEstablishmentsClient";
 import { AdminSettingsClient } from "../../components/AdminSettingsClient";
-import { AdminOperationsClient } from "../../components/AdminOperationsClient";
 import { AdminAuditJournal } from "../../components/AdminAuditJournal";
 import { useConfirm } from "../../components/modal/ConfirmProvider";
 import { BrandMark } from "../../components/ui/BrandMark";
@@ -51,23 +49,27 @@ type Dashboard = {
   visitors: Visitor[]; feedback: Feedback[]; survey_responses: SurveyResponse[];
 };
 type AdminProfile = { email: string; first_name: string; last_name: string; avatar_url?: string };
-type AdminTab = "overview" | "operations" | "audit" | "activity" | "feedback" | "survey" | "establishments" | "account-requests" | "recovery" | "representation-transfers" | "banners" | "billing" | "settings";
+type AdminTab = "overview" | "users" | "establishments" | "billing" | "banners" | "audit" | "feedback" | "settings"
+type RetoursView = "feedback" | "activity" | "survey"
 
+/* Huit onglets, pas treize : la barre du bas tient sur UNE ligne et ne masque plus le bas des pages. La surveillance technique a son propre portail (/surveillance),
+   la récupération de compte n'est plus une fonction de la console, et visites, feedback et enquête vivent dans « Retours ». */
 const tabs: { id: AdminTab; label: string; short: string; icon: IconName }[] = [
   { id: "overview", label: "Vue d’ensemble", short: "Accueil", icon: "home" },
-  { id: "operations", label: "Surveillance technique", short: "Surveillance", icon: "shield" },
-  { id: "audit", label: "Journal d’audit", short: "Audit", icon: "clock" },
-  { id: "activity", label: "Visites & clics", short: "Activité", icon: "chart" },
-  { id: "feedback", label: "Feedback", short: "Feedback", icon: "pencil" },
-  { id: "survey", label: "Enquête UX", short: "Enquête", icon: "document" },
+  { id: "users", label: "Utilisateurs", short: "Comptes", icon: "users" },
   { id: "establishments", label: "Établissements", short: "Établ.", icon: "building" },
-  { id: "account-requests", label: "Gestion des comptes", short: "Comptes", icon: "users" },
-  { id: "recovery", label: "Récupérations de compte", short: "Récup.", icon: "lock" },
-  { id: "representation-transfers", label: "Transferts de dossiers", short: "Transferts", icon: "share" },
+  { id: "billing", label: "Facturation", short: "Factures", icon: "document" },
   { id: "banners", label: "Bannières", short: "Bannières", icon: "folder" },
-  { id: "billing", label: "Facturation", short: "Facturation", icon: "document" },
+  { id: "audit", label: "Journal d’audit", short: "Audit", icon: "clock" },
+  { id: "feedback", label: "Retours des visiteurs", short: "Retours", icon: "pencil" },
   { id: "settings", label: "Paramètres", short: "Moi", icon: "user" },
 ];
+/* Anciennes adresses (`/admin#activity`, notifications déjà envoyées…) : elles mènent au nouvel onglet. */
+const HASH_TARGETS: Record<string, { tab: AdminTab; view?: RetoursView }> = {
+  feedback: { tab: "feedback", view: "feedback" }, activity: { tab: "feedback", view: "activity" }, survey: { tab: "feedback", view: "survey" },
+  "account-requests": { tab: "users" }, "representation-transfers": { tab: "users" }, recovery: { tab: "users" }, operations: { tab: "overview" },
+};
+const RETOURS: { id: RetoursView; label: string }[] = [{ id: "feedback", label: "Feedback" }, { id: "activity", label: "Visites & clics" }, { id: "survey", label: "Enquête UX" }];
 const categoryLabel: Record<string, string> = {
   landing: "Accueil", public: "Pages publiques", auth: "Connexion / inscription",
   patient: "Espace patient", professional: "Espace professionnel", establishment: "Espace établissement", other: "Autre",
@@ -106,17 +108,20 @@ export default function AdminPage() {
   const [manualRefreshing, setManualRefreshing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<AdminTab>("overview");
+  const [retoursView, setRetoursView] = useState<RetoursView>("feedback");
+  const openTab = useCallback((id: string) => {
+    const legacy = HASH_TARGETS[id];
+    if (legacy) { setActiveTab(legacy.tab); if (legacy.view) setRetoursView(legacy.view); return; }
+    const target = tabs.find((tab) => tab.id === id);
+    if (target) setActiveTab(target.id);
+  }, []);
   // Les notifications de la cloche mènent à `/admin#feedback`, `/admin#account-requests`… : l'onglet correspondant s'ouvre (au chargement et au changement de #).
   useEffect(() => {
-    const openFromHash = () => {
-      const id = window.location.hash.replace(/^#/, "");
-      const target = tabs.find((tab) => tab.id === id);
-      if (target) setActiveTab(target.id);
-    };
+    const openFromHash = () => openTab(window.location.hash.replace(/^#/, ""));
     openFromHash();
     window.addEventListener("hashchange", openFromHash);
     return () => window.removeEventListener("hashchange", openFromHash);
-  }, []);
+  }, [openTab]);
   const [visitorSearch, setVisitorSearch] = useState("");
   const [feedbackSearch, setFeedbackSearch] = useState("");
   const [surveySearch, setSurveySearch] = useState("");
@@ -240,7 +245,7 @@ export default function AdminPage() {
   const adminName = [adminProfile?.first_name, adminProfile?.last_name].filter(Boolean).join(" ") || adminProfile?.email || "Administrateur";
   const adminInitials = `${adminProfile?.first_name?.[0] ?? ""}${adminProfile?.last_name?.[0] ?? ""}`.toUpperCase() || adminProfile?.email?.[0]?.toUpperCase() || "A";
 
-  const tabGroup: Partial<Record<AdminTab, string>> = { overview: "Pilotage", operations: "Pilotage", establishments: "Gestion", "representation-transfers": "Gestion", banners: "Gestion", billing: "Gestion", settings: "Compte" };
+  const tabGroup: Partial<Record<AdminTab, string>> = { overview: "Pilotage", audit: "Pilotage", users: "Gestion", establishments: "Gestion", billing: "Gestion", banners: "Gestion", feedback: "Retours", settings: "Compte" };
   const sidebarItems: SidebarItem[] = tabs.map((tab) => ({
     id: tab.id, label: tab.short, long: tab.label, icon: tab.icon, active: activeTab === tab.id,
     onSelect: () => setActiveTab(tab.id), domId: `admin-tab-${tab.id}`, controls: `admin-panel-${tab.id}`, heading: tabGroup[tab.id],
@@ -278,6 +283,7 @@ export default function AdminPage() {
       <div className="admin-workspace__content">
 
     {activeTab === "overview" && <section id="admin-panel-overview" role="tabpanel" aria-labelledby="admin-tab-overview" className="stack-lg">
+      <AdminOverviewPanel onOpenTab={openTab} />
       <div className="admin-metrics" aria-label="Indicateurs clés">
         <article className="card admin-metric"><span className="muted">Visiteurs suivis</span><strong>{dashboard.visitors_total}</strong><small>cookies pseudonymes · rétention 90 jours</small></article>
         <article className="card admin-metric"><span className="muted">Actifs sur 24 h</span><strong>{dashboard.visitors_active_24h}</strong><small>visiteurs distincts estimés</small></article>
@@ -289,12 +295,12 @@ export default function AdminPage() {
         <article className="card admin-metric"><span className="muted">Facilité moyenne après usage</span>{dashboard.product_survey_average_rating !== null ? <><StarRating value={dashboard.product_survey_average_rating} label={`Facilité moyenne ${dashboard.product_survey_average_rating.toFixed(1)} sur 5`} /><strong>{dashboard.product_survey_average_rating.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}<small className="admin-metric-inline">/5</small></strong></> : <strong>—</strong>}<small>{dashboard.product_survey_responses_total} réponse(s)</small></article>
       </div>
       <AdminActivityCharts data={dashboard.daily_activity} />
-      <section className="card admin-table-card"><div className="admin-table-title"><div><span className="eyebrow">Résumé</span><h2>Activité récente</h2></div><div className="admin-inline-actions"><button className="button small" onClick={() => setActiveTab("activity")}>Voir les visites et clics</button><button className="button small" onClick={() => setActiveTab("survey")}>Voir l’enquête UX</button></div></div><p className="muted">Les détails par visiteur pseudonyme, la recherche et les dernières catégories de clic sont disponibles dans l’onglet Visites & clics.</p></section>
+      <section className="card admin-table-card"><div className="admin-table-title"><div><span className="eyebrow">Résumé</span><h2>Activité récente</h2></div><div className="admin-inline-actions"><button className="button small" onClick={() => openTab("activity")}>Voir les visites et clics</button><button className="button small" onClick={() => openTab("survey")}>Voir l’enquête UX</button></div></div><p className="muted">Les détails par visiteur pseudonyme, la recherche et les dernières catégories de clic sont disponibles dans l’onglet Visites & clics.</p></section>
     </section>}
 
-    {activeTab === "operations" && <section id="admin-panel-operations" role="tabpanel" aria-labelledby="admin-tab-operations" className="stack-lg"><AdminOperationsClient /></section>}
 
-    {activeTab === "activity" && <section id="admin-panel-activity" role="tabpanel" aria-labelledby="admin-tab-activity" className="stack-lg">
+    {activeTab === "feedback" && <div className="admin-subtabs" role="group" aria-label="Retours des visiteurs">{RETOURS.map((view) => <button key={view.id} type="button" className="admin-chip" data-active={retoursView === view.id ? "true" : undefined} aria-pressed={retoursView === view.id} onClick={() => setRetoursView(view.id)}><span>{view.label}</span></button>)}</div>}
+    {activeTab === "feedback" && retoursView === "activity" && <section id="admin-panel-activity" role="tabpanel" aria-labelledby="admin-tab-activity" className="stack-lg">
       <div className="admin-metrics admin-metrics--compact"><article className="card admin-metric"><span className="muted">Pages vues</span><strong>{dashboard.page_views_total}</strong></article><article className="card admin-metric"><span className="muted">Clics anonymisés</span><strong>{dashboard.clicks_total}</strong></article><article className="card admin-metric"><span className="muted">Connexions réussies</span><strong>{dashboard.auth_successes_total}</strong></article><article className="card admin-metric"><span className="muted">Échecs login</span><strong>{dashboard.login_failures_total}</strong></article></div>
       <section className="card admin-table-card"><div className="admin-table-title"><div><span className="eyebrow">Mesure de fréquentation</span><h2>Visiteurs pseudonymes</h2></div><span className="muted">{filteredVisitors.length} résultat(s) · 200 visiteurs les plus récents chargés</span></div>
         <label className="field admin-search"><span>Rechercher par identifiant ou catégorie</span><input type="search" value={visitorSearch} onChange={(event) => setVisitorSearch(event.target.value)} placeholder="ID, accueil, inscription, clic…" /></label>
@@ -303,7 +309,7 @@ export default function AdminPage() {
       </section>
     </section>}
 
-    {activeTab === "feedback" && <section id="admin-panel-feedback" role="tabpanel" aria-labelledby="admin-tab-feedback" className="stack-lg">
+    {activeTab === "feedback" && retoursView === "feedback" && <section id="admin-panel-feedback" role="tabpanel" aria-labelledby="admin-tab-feedback" className="stack-lg">
       <div className="admin-metrics admin-metrics--compact"><article className="card admin-metric"><span className="muted">Retours reçus</span><strong>{dashboard.feedback_total}</strong></article><article className="card admin-metric"><span className="muted">À traiter</span><strong>{dashboard.feedback_new_total}</strong></article><article className="card admin-metric"><span className="muted">Note moyenne de l’application</span>{dashboard.feedback_average_rating !== null ? <><StarRating value={dashboard.feedback_average_rating} label={`Note moyenne : ${dashboard.feedback_average_rating} sur 5`} /><strong>{dashboard.feedback_average_rating.toLocaleString("fr-FR")} / 5</strong><small>{dashboard.feedback_rated_total} note{dashboard.feedback_rated_total > 1 ? "s" : ""}</small></> : <><strong>—</strong><small>Aucune note pour le moment</small></>}</article></div>
       <section className="card admin-table-card"><div className="admin-table-title"><div><span className="eyebrow">Retours du site</span><h2>Feedback des visiteurs</h2></div><span className="muted">{filteredFeedback.length} résultat(s) · maximum 200 chargés</span></div>
         <label className="field admin-search"><span>Rechercher dans les retours</span><input type="search" value={feedbackSearch} onChange={(event) => setFeedbackSearch(event.target.value)} placeholder="Mot, catégorie, statut…" /></label>
@@ -312,7 +318,7 @@ export default function AdminPage() {
       </section>
     </section>}
 
-    {activeTab === "survey" && <section id="admin-panel-survey" role="tabpanel" aria-labelledby="admin-tab-survey" className="stack-lg">
+    {activeTab === "feedback" && retoursView === "survey" && <section id="admin-panel-survey" role="tabpanel" aria-labelledby="admin-tab-survey" className="stack-lg">
       <div className="admin-metrics admin-metrics--compact">
         <article className="card admin-metric"><span className="muted">Enquête visiteurs proposée</span><strong>{dashboard.visitor_survey_prompted_total}</strong><small>après cinq pages publiques</small></article>
         <article className="card admin-metric"><span className="muted">Réponses visiteurs</span><strong>{dashboard.visitor_survey_responses_total}</strong><small>{dashboard.visitor_survey_completion_rate.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}% de réponse</small></article>
@@ -336,10 +342,8 @@ export default function AdminPage() {
     {activeTab === "establishments" && <section id="admin-panel-establishments" role="tabpanel" aria-labelledby="admin-tab-establishments" className="grid admin-management-grid">
       <AdminEstablishmentsClient aside={<article className="card"><span className="eyebrow">Limites du rôle</span><h2>Contrôle administratif, pas clinique</h2><p className="muted">Le staff <span className="notranslate" translate="no">Mon E‑Carnet</span> ne vérifie pas les justificatifs personnels du médecin dans ce parcours. L’établissement vérifie ses médecins, émet un code temporaire et décide des demandes de rattachement. L’espace établissement n’accède jamais aux dossiers médicaux.</p></article>} />
     </section>}
-    {activeTab === "account-requests" && <section id="admin-panel-account-requests" role="tabpanel" aria-labelledby="admin-tab-account-requests"><AdminAccountActionRequestsClient /></section>}
+    {activeTab === "users" && <section id="admin-panel-users" role="tabpanel" aria-labelledby="admin-tab-users"><AdminUsersClient /></section>}
     {activeTab === "audit" && <section id="admin-panel-audit" role="tabpanel" aria-labelledby="admin-tab-audit"><AdminAuditJournal /></section>}
-    {activeTab === "recovery" && <section id="admin-panel-recovery" role="tabpanel" aria-labelledby="admin-tab-recovery"><AdminRecoveryClient /></section>}
-    {activeTab === "representation-transfers" && <section id="admin-panel-representation-transfers" role="tabpanel" aria-labelledby="admin-tab-representation-transfers"><AdminRepresentationTransfersClient /></section>}
     {activeTab === "banners" && <section id="admin-panel-banners" role="tabpanel" aria-labelledby="admin-tab-banners"><AdminBannersClient /></section>}
     {activeTab === "billing" && <section id="admin-panel-billing" role="tabpanel" aria-labelledby="admin-tab-billing"><AdminBillingClient /></section>}
     {activeTab === "settings" && <section id="admin-panel-settings" role="tabpanel" aria-labelledby="admin-tab-settings"><AdminSettingsClient onLogout={() => void askSignOut()} /></section>}

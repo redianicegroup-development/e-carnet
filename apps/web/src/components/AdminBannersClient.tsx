@@ -1,15 +1,18 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { DragEvent, FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { ApiError, apiGet, apiPost, apiUpload } from "../infrastructure/api/client";
 import { formatWhen } from "./access/access-history";
 import { useConfirm } from "./modal/ConfirmProvider";
+import { Icon } from "./ui/Icon";
 import "./ad-banner.css";
 
 type State = "scheduled" | "live" | "ended" | "withdrawn";
-type Banner = { id: string; alt_text: string; link_url: string; starts_at: string; ends_at: string; state: State; impressions: number; clicks: number; mobile_url: string };
+type Banner = { id: string; starts_at: string; ends_at: string; state: State; impressions: number; clicks: number; mobile_url: string };
 type Listing = { ads_enabled: boolean; items: Banner[] };
 
+const ACCEPTED = ["image/png", "image/jpeg", "image/webp", "image/gif"];
+const MAX_BYTES = 5 * 1024 * 1024;
 const STATE_LABEL: Record<State, string> = { scheduled: "Programmée", live: "En ligne", ended: "Terminée", withdrawn: "Retirée" };
 const STATE_BADGE: Record<State, string> = { scheduled: "declared", live: "verified", ended: "measured", withdrawn: "contested" };
 
@@ -27,8 +30,8 @@ export function AdminBannersClient() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState("");
   const [natural, setNatural] = useState<{ w: number; h: number } | null>(null);
-  const [alt, setAlt] = useState("");
-  const [link, setLink] = useState("");
+  const [dragging, setDragging] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
   const [start, setStart] = useState(() => localInput(new Date()));
   const [end, setEnd] = useState(() => localInput(new Date(Date.now() + 30 * 86400000)));
   const [fx, setFx] = useState(50);
@@ -43,9 +46,17 @@ export function AdminBannersClient() {
   useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
 
   function pick(next: File | null) {
+    if (next && !ACCEPTED.includes(next.type)) { setError("Format non accepté : choisissez une image PNG, JPG, WebP ou GIF."); return; }
+    if (next && next.size > MAX_BYTES) { setError("Image trop lourde : 5 Mo au plus."); return; }
+    setError("");
     if (preview) URL.revokeObjectURL(preview);
     setFile(next); setNatural(null); setFx(50); setFy(50);
     setPreview(next ? URL.createObjectURL(next) : "");
+    if (!next && input.current) input.current.value = "";
+  }
+  function drop(event: DragEvent<HTMLLabelElement>) {
+    event.preventDefault(); setDragging(false);
+    pick(event.dataTransfer.files?.[0] ?? null);
   }
 
   const ratioOk = natural ? Math.abs(natural.w / natural.h - 3) < 0.03 : true;
@@ -56,14 +67,14 @@ export function AdminBannersClient() {
     event.preventDefault();
     if (!file) { setError("Importez l’image de la bannière."); return; }
     const form = new FormData();
-    form.append("image", file); form.append("alt_text", alt); form.append("link_url", link);
+    form.append("image", file);
     form.append("starts_at", new Date(start).toISOString()); form.append("ends_at", new Date(end).toISOString());
     form.append("focus_x", String(fx / 100)); form.append("focus_y", String(fy / 100));
     setBusy(true); setError(""); setMessage("");
     try {
       const created = await apiUpload<{ overlaps: number }>("/api/v1/advertising/admin/banners/", form);
       setMessage(created.overlaps > 0 ? "Bannière publiée. Une autre est programmée à la même période : la plus récente s’affiche." : "Bannière publiée.");
-      pick(null); setAlt(""); setLink("");
+      pick(null);
       await load();
     } catch (caught) { setError(caught instanceof ApiError ? caught.message : "Publication impossible."); }
     finally { setBusy(false); }
@@ -79,12 +90,20 @@ export function AdminBannersClient() {
     <div className="stack-lg">
       <section className="card stack">
         <h2>Nouvelle bannière</h2>
-        <p className="muted">Une seule image suffit : format 3:1, 1500 × 500 px conseillé (1200 × 400 au minimum), PNG, JPG, WebP ou GIF. Les versions ordinateur et mobile sont générées automatiquement.</p>
-        {listing && !listing.ads_enabled && <p className="notice">La diffusion aux patients est désactivée sur ce serveur (ADS_ENABLED). Vous pouvez préparer des bannières, elles ne s’afficheront pas.</p>}
+        <p className="muted">Une seule image suffit : les versions ordinateur et mobile sont générées automatiquement. Minimum 1200 × 400 px.</p>
+        {listing && !listing.ads_enabled && <p className="notice" role="note">La diffusion aux patients est <strong>éteinte</strong> sur ce serveur (réglage <code>ADS_ENABLED</code>). Vous pouvez préparer des bannières : elles ne s’afficheront qu’une fois la diffusion allumée par l’hébergeur.</p>}
         <form className="ad-form" onSubmit={publish}>
-          <label className="field">Image
-            <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={(event) => pick(event.target.files?.[0] ?? null)} />
+          <label
+            className="ad-drop" data-dragging={dragging ? "true" : undefined} data-filled={file ? "true" : undefined}
+            onDragOver={(event) => { event.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={drop}
+          >
+            <input ref={input} className="ad-drop__input" type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={(event) => pick(event.target.files?.[0] ?? null)} />
+            <span className="ad-drop__icon" aria-hidden="true"><Icon name="folder" size={26} /></span>
+            {file
+              ? <span className="ad-drop__text"><strong>{file.name}</strong><small>{(file.size / 1024 / 1024).toFixed(2)} Mo · touchez ou déposez une autre image pour remplacer</small></span>
+              : <span className="ad-drop__text"><strong>{dragging ? "Relâchez pour déposer l’image" : "Déposez l’image ici ou touchez pour la choisir"}</strong><small>3:1 · 1500 × 500 px conseillé · PNG, JPG, WebP ou GIF · 5 Mo au plus</small></span>}
           </label>
+          {file && <button className="button small ad-drop__clear" type="button" onClick={() => pick(null)}>Retirer l’image</button>}
           {file?.type === "image/gif" && <p className="muted">GIF : seule la première image est conservée.</p>}
           {preview && (
             <>
@@ -102,12 +121,6 @@ export function AdminBannersClient() {
               </div>
             </>
           )}
-          <label className="field">Texte alternatif (obligatoire)
-            <input value={alt} onChange={(event) => setAlt(event.target.value)} maxLength={200} placeholder="Décrivez l’image pour les lecteurs d’écran" required />
-          </label>
-          <label className="field">Lien (facultatif, https)
-            <input type="url" value={link} onChange={(event) => setLink(event.target.value)} placeholder="https://" />
-          </label>
           <div className="field-pair">
             <label className="field">Début<input type="datetime-local" value={start} onChange={(event) => setStart(event.target.value)} required /></label>
             <label className="field">Fin<input type="datetime-local" value={end} onChange={(event) => setEnd(event.target.value)} required /></label>
@@ -126,9 +139,8 @@ export function AdminBannersClient() {
         <ul className="ad-list">
           {listing?.items.map((item) => (
             <li key={item.id} className="card">
-              <div className="ad-frame ad-frame--thumb"><img src={item.mobile_url} alt={item.alt_text} loading="lazy" /></div>
+              <div className="ad-frame ad-frame--thumb"><img src={item.mobile_url} alt="Bannière sponsorisée" loading="lazy" /></div>
               <div><span className={`badge ${STATE_BADGE[item.state]}`}>{STATE_LABEL[item.state]}</span></div>
-              <p>{item.alt_text}</p>
               <p className="muted">Du {formatWhen(item.starts_at)} au {formatWhen(item.ends_at)}. {item.impressions} affichages, {item.clicks} clics.</p>
               {(item.state === "live" || item.state === "scheduled") && <button type="button" className="button" onClick={() => void withdraw(item)}>Retirer</button>}
             </li>

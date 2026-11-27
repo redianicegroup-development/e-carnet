@@ -10,14 +10,15 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.audit.services import record_event
-from .admin_views import IsOperationsAdmin
+from .ops_portal import IsOpsPortal, OpsPortalAuthentication
 from .models import OperationalIncident
 
 
 class AdminOperationsSummaryView(APIView):
     """Résumé technique sans contenu médical, destiné à la console opérations."""
 
-    permission_classes = [IsOperationsAdmin]
+    authentication_classes = [OpsPortalAuthentication]
+    permission_classes = [IsOpsPortal]
 
     @staticmethod
     def _check_database():
@@ -77,7 +78,7 @@ class AdminOperationsSummaryView(APIView):
             "version": os.environ.get("ECARNET_RELEASE_VERSION", "non définie"),
             "components": components, "incidents": incidents,
             "configuration": {
-                "operations_email_allowlist_configured": bool(getattr(settings, "ECARNET_OPERATIONS_ADMIN_EMAILS", ())),
+                "ops_portal_configured": True,
                 "smtp_configured": bool(getattr(settings, "EMAIL_HOST", "")) and getattr(settings, "EMAIL_BACKEND", "").endswith("smtp.EmailBackend"),
                 "database_configured": bool(os.environ.get("DATABASE_URL")),
                 "external_monitoring_url_configured": bool(os.environ.get("ECARNET_MONITOR_BASE_URL")),
@@ -91,7 +92,8 @@ class AdminOperationsSummaryView(APIView):
 
 
 class AdminOperationsIncidentView(APIView):
-    permission_classes = [IsOperationsAdmin]
+    authentication_classes = [OpsPortalAuthentication]
+    permission_classes = [IsOpsPortal]
 
     def patch(self, request, incident_id):
         incident = get_object_or_404(OperationalIncident, pk=incident_id)
@@ -103,9 +105,9 @@ class AdminOperationsIncidentView(APIView):
         if action == "acknowledge":
             incident.status = "acknowledged"
             incident.acknowledged_at = timezone.now()
-            incident.acknowledged_by = request.user
+            incident.acknowledged_by = None
             incident.save(update_fields=("status", "acknowledged_at", "acknowledged_by", "last_seen_at"))
-            record_event(event_type="operations.incident.acknowledged", actor=request.user, actor_role="ecarnet_staff", metadata={"incident_key": incident.incident_key, "category": incident.category, "severity": incident.severity, "status": incident.status})
+            record_event(event_type="operations.incident.acknowledged", actor=None, actor_role="ops_portal", metadata={"incident_key": incident.incident_key, "category": incident.category, "severity": incident.severity, "status": incident.status})
         elif action == "resolve":
             note = request.data.get("resolution_note", "")
             if not isinstance(note, str) or len(note.strip()) > 500:
@@ -114,7 +116,7 @@ class AdminOperationsIncidentView(APIView):
             incident.resolved_at = timezone.now()
             incident.resolution_note = note.strip()
             incident.save(update_fields=("status", "resolved_at", "resolution_note", "last_seen_at"))
-            record_event(event_type="operations.incident.resolved", actor=request.user, actor_role="ecarnet_staff", metadata={"incident_key": incident.incident_key, "category": incident.category, "severity": incident.severity, "status": incident.status})
+            record_event(event_type="operations.incident.resolved", actor=None, actor_role="ops_portal", metadata={"incident_key": incident.incident_key, "category": incident.category, "severity": incident.severity, "status": incident.status})
         else:
             return Response({"success": False, "message": "Action d’incident inconnue."}, status=400)
         return Response({"success": True, "data": AdminOperationsSummaryView._incident_payload(incident)})

@@ -1,5 +1,6 @@
 import logging
 import uuid
+from datetime import timedelta
 
 from django.contrib.auth import get_user_model, logout
 from django.db import DatabaseError, transaction
@@ -12,8 +13,10 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from .account_state import active_suspension
 from .admin_views import IsSuperuserOnly
 from .models import AccountActionRequest, AccountContext, AccountProfile, AuthIdentity, ThemePreference
+from .session_control import end_all_sessions
 from apps.cloudinary_storage import destroy as cloudinary_destroy
 
 
@@ -28,6 +31,7 @@ DELETION_FAILED_MESSAGE = (
 
 
 class AccountActionRequestInputSerializer(serializers.Serializer):
+    """Suspension : durée + motif, effet immédiat. Suppression : aucun motif demandé, effet immédiat."""
     request_type = serializers.ChoiceField(choices=("suspension", "deletion"))
     suspension_days = serializers.IntegerField(required=False, min_value=1, max_value=90)
     reason = serializers.ChoiceField(choices=AccountActionRequest.REASONS, required=False, allow_blank=True)
@@ -39,17 +43,18 @@ class AccountActionRequestInputSerializer(serializers.Serializer):
             days = attrs.get("suspension_days")
             if days not in SUSPENSION_DAYS:
                 raise serializers.ValidationError({"suspension_days": "Choisissez une durée proposée."})
-            attrs["reason"] = ""
-            attrs["details"] = ""
-        else:
-            if "suspension_days" in attrs:
-                raise serializers.ValidationError({"suspension_days": "La durée concerne uniquement une suspension."})
             if not attrs.get("reason"):
-                raise serializers.ValidationError({"reason": "Choisissez un motif."})
+                raise serializers.ValidationError({"reason": "Choisissez un motif de suspension."})
             if attrs["reason"] == "other" and not attrs.get("details", "").strip():
                 raise serializers.ValidationError({"details": "Précisez votre autre motif."})
             if attrs["reason"] != "other":
                 attrs["details"] = ""
+        else:
+            if "suspension_days" in attrs:
+                raise serializers.ValidationError({"suspension_days": "La durée concerne uniquement une suspension."})
+            # Suppression sans motif : si un ancien client en envoie un, il est ignoré et jamais conservé.
+            attrs["reason"] = ""
+            attrs["details"] = ""
         return attrs
 
 
@@ -131,19 +136,27 @@ def request_payload(item):
         "status": item.status,
         "submitted_at": item.submitted_at.isoformat(),
         "reviewed_at": item.reviewed_at.isoformat() if item.reviewed_at else None,
+        "suspended_until": item.suspended_until.isoformat() if item.suspended_until else None,
+        "lifted_at": item.lifted_at.isoformat() if item.lifted_at else None,
         "account_deleted": item.user_id is None,
     }
 
 
-def admin_request_payload(item):
-    user = item.user
+def journal_payload(item, now):
+    """Ligne du journal de la console : en lecture seule. Pour une suspension, seul le MOTIF est montré (jamais le détail libre ni l'identité)."""
+    if item.request_type == "deletion":
+        return {"id": str(item.id), "kind": "deletion", "submitted_at": item.submitted_at.isoformat()}
+    if item.suspended_until is None:
+        state = "legacy"  # demande enregistrée avant le passage à la suspension immédiate : elle n'a jamais pris effet
+    elif item.lifted_at:
+        state = "ended" if item.lifted_at >= item.suspended_until else "lifted"
+    else:
+        state = "active" if item.suspended_until > now else "ended"
+    reasons = dict(AccountActionRequest.REASONS)
     return {
-        **request_payload(item),
-        "user_email": user.email if user else "",
-        "user_first_name": user.first_name if user else "",
-        "user_last_name": user.last_name if user else "",
-        "reviewed_by_email": item.reviewed_by.email if item.reviewed_by else None,
-        "protected_account": bool(user and (user.is_staff or user.is_superuser)),
+        "id": str(item.id), "kind": "suspension", "submitted_at": item.submitted_at.isoformat(), "suspension_days": item.suspension_days,
+        "reason": item.reason, "reason_label": reasons.get(item.reason, ""), "suspended_until": item.suspended_until.isoformat() if item.suspended_until else None,
+        "state": state,
     }
 
 
@@ -165,7 +178,7 @@ class CurrentAccountActionRequestsView(APIView):
         try:
             return self._handle(request)
         except (ProtectedError, RestrictedError, DatabaseError):
-            logger.exception("suppression de compte: échec de base de données (user=%s)", getattr(request.user, "pk", None))
+            logger.exception("action de compte: échec de base de données (user=%s)", getattr(request.user, "pk", None))
             return Response({"success": False, "message": DELETION_FAILED_MESSAGE}, status=500)
 
     @transaction.atomic
@@ -174,110 +187,53 @@ class CurrentAccountActionRequestsView(APIView):
         serializer.is_valid(raise_exception=True)
         values = serializer.validated_data
         user = get_user_model().objects.select_for_update().get(pk=request.user.pk)
-        if values["request_type"] == "deletion" and (user.is_staff or user.is_superuser):
-            raise PermissionDenied("Un compte administrateur ou superadministrateur ne peut pas être supprimé.")
-        if values["request_type"] == "suspension" and AccountActionRequest.objects.filter(user=user, request_type="suspension", status__in=OPEN_STATUSES).exists():
-            return Response({"success": False, "message": "Une demande de ce type est déjà en attente de traitement."}, status=409)
+        protected = user.is_staff or user.is_superuser
 
-        if values["request_type"] == "deletion":
-            # The user has already confirmed in the UI: disable/anonymize now; no admin approval is required.
-            item = AccountActionRequest.objects.select_for_update().filter(
-                user=user, request_type="deletion", status__in=OPEN_STATUSES,
-            ).order_by("-submitted_at").first()
-            if item:
-                item.reason = values["reason"]
-                item.details = values.get("details", "")
-                item.status = "resolved"
-                item.reviewed_at = timezone.now()
-                item.save(update_fields=("reason", "details", "status", "reviewed_at", "updated_at"))
-            else:
-                item = AccountActionRequest.objects.create(
-                    user=user, request_type="deletion", reason=values["reason"], details=values.get("details", ""),
-                    status="resolved", reviewed_at=timezone.now(),
-                )
-            try:
-                anonymize_and_disable_account(user)
-            except RuntimeError as exc:
-                logger.warning("suppression de compte: service de fichiers refusé (user=%s): %s", user.pk, exc)
-                transaction.set_rollback(True)
-                return Response({"success": False, "message": str(exc)}, status=502)
-            except PermissionDenied:
-                raise
-            except Exception:  # noqa: BLE001 - quelle que soit la cause, la transaction est annulée et la cause est journalisée
-                logger.exception("suppression de compte: erreur inattendue (user=%s)", user.pk)
-                transaction.set_rollback(True)
-                return Response({"success": False, "message": DELETION_FAILED_MESSAGE}, status=500)
-            item.user = None  # keep the request/reason anonymized in the admin log, not linked to the deleted identity
-            item.save(update_fields=("user",))
+        if values["request_type"] == "suspension":
+            if protected:
+                raise PermissionDenied("Un compte administrateur ou superadministrateur ne peut pas être suspendu ainsi.")
+            now = timezone.now()
+            if active_suspension(user, now):
+                return Response({"success": False, "message": "Votre compte est déjà suspendu."}, status=409)
+            # Suspension IMMÉDIATE : aucune validation de l'équipe. Le compte se ferme, toutes les sessions s'arrêtent, il se rouvrira de lui-même.
+            item = AccountActionRequest.objects.create(
+                user=user, request_type="suspension", suspension_days=values["suspension_days"], reason=values["reason"],
+                details=values.get("details", ""), status="resolved", reviewed_at=now,
+                suspended_until=now + timedelta(days=values["suspension_days"]),
+            )
+            user.is_active = False
+            user.save(update_fields=("is_active",))
+            end_all_sessions(user)
             logout(request)
             return Response({"success": True, "data": request_payload(item)}, status=201)
 
-        item = AccountActionRequest.objects.create(user=user, **values)
-        if item.request_type == "suspension":
-            # La demande attend l'équipe : notification sans identité (elle se lit dans la console).
-            from apps.establishments.role_notifications import notify_staff
-
-            notify_staff(
-                kind="admin.suspension_request", title="Nouvelle demande de suspension de compte",
-                body=f"Une personne demande une suspension de {item.suspension_days} jour(s). Ouvrez la console pour la traiter.",
-                event_key=f"admin-suspension-request:{item.id}", push_url="/admin",
-            )
+        if protected:
+            raise PermissionDenied("Un compte administrateur ou superadministrateur ne peut pas être supprimé.")
+        # Suppression IMMÉDIATE et sans motif : la personne a déjà confirmé dans l'écran, aucune validation de l'équipe n'est nécessaire.
+        item = AccountActionRequest.objects.create(user=user, request_type="deletion", status="resolved", reviewed_at=timezone.now())
+        try:
+            anonymize_and_disable_account(user)
+        except RuntimeError as exc:
+            logger.warning("suppression de compte: service de fichiers refusé (user=%s): %s", user.pk, exc)
+            transaction.set_rollback(True)
+            return Response({"success": False, "message": str(exc)}, status=502)
+        except PermissionDenied:
+            raise
+        except Exception:  # noqa: BLE001 - quelle que soit la cause, la transaction est annulée et la cause est journalisée
+            logger.exception("suppression de compte: erreur inattendue (user=%s)", user.pk)
+            transaction.set_rollback(True)
+            return Response({"success": False, "message": DELETION_FAILED_MESSAGE}, status=500)
+        item.user = None  # la ligne du journal reste, sans lien avec l'identité effacée
+        item.save(update_fields=("user",))
+        logout(request)
         return Response({"success": True, "data": request_payload(item)}, status=201)
 
 
 class AdminAccountActionRequestsView(APIView):
+    """Journal des suspensions et des suppressions, en LECTURE SEULE : l'équipe ne traite plus ces demandes (elles sont immédiates)."""
     permission_classes = [IsSuperuserOnly]
 
     def get(self, request):
-        items = AccountActionRequest.objects.select_related("user", "reviewed_by").order_by("-submitted_at")[:250]
-        return Response({"success": True, "data": [admin_request_payload(item) for item in items]})
-
-
-class AdminAccountActionRequestStatusView(APIView):
-    permission_classes = [IsSuperuserOnly]
-
-    def patch(self, request, request_id):
-        status_value = request.data.get("status")
-        allowed = {choice[0] for choice in AccountActionRequest.STATUSES}
-        if not isinstance(status_value, str) or status_value not in allowed:
-            return Response({"success": False, "message": "Statut de demande invalide."}, status=400)
-        item = get_object_or_404(AccountActionRequest.objects.select_related("user", "reviewed_by"), pk=request_id)
-        if item.request_type == "deletion" and item.user_id is not None and status_value == "resolved":
-            return Response({"success": False, "message": "Utilisez l’action de suppression immédiate pour clôturer cette demande."}, status=409)
-        if item.user_id is None and status_value != "resolved":
-            return Response({"success": False, "message": "Une demande déjà supprimée ne peut pas être remise en attente."}, status=409)
-        item.status = status_value
-        item.reviewed_by = request.user
-        item.reviewed_at = timezone.now()
-        item.save(update_fields=("status", "reviewed_by", "reviewed_at", "updated_at"))
-        return Response({"success": True, "data": admin_request_payload(item)})
-
-
-class AdminDeleteRequestedAccountView(APIView):
-    permission_classes = [IsSuperuserOnly]
-
-    @transaction.atomic
-    def post(self, request, request_id):
-        item = get_object_or_404(
-            AccountActionRequest.objects.select_for_update().select_related("user", "reviewed_by"), pk=request_id,
-        )
-        if item.request_type != "deletion":
-            return Response({"success": False, "message": "Seule une demande de suppression peut déclencher cette action."}, status=400)
-        if not item.user_id:
-            return Response({"success": False, "message": "Ce compte a déjà été supprimé ou anonymisé."}, status=409)
-        if item.status not in OPEN_STATUSES:
-            return Response({"success": False, "message": "La demande n’est plus en attente de traitement."}, status=409)
-        user = get_user_model().objects.select_for_update().get(pk=item.user_id)
-        if user.is_staff or user.is_superuser:
-            return Response({"success": False, "message": "Les comptes staff et superadministrateurs sont protégés contre la suppression."}, status=403)
-        try:
-            anonymize_and_disable_account(user)
-        except RuntimeError as exc:
-            transaction.set_rollback(True)
-            return Response({"success": False, "message": str(exc)}, status=502)
-        item.user = None
-        item.status = "resolved"
-        item.reviewed_by = request.user
-        item.reviewed_at = timezone.now()
-        item.save(update_fields=("user", "status", "reviewed_by", "reviewed_at", "updated_at"))
-        return Response({"success": True, "data": admin_request_payload(item)})
+        now = timezone.now()
+        items = AccountActionRequest.objects.order_by("-submitted_at")[:250]
+        return Response({"success": True, "data": [journal_payload(item, now) for item in items]})

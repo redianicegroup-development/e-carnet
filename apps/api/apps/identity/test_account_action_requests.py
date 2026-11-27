@@ -23,27 +23,62 @@ class AccountActionRequestTests(TestCase):
         self.client = APIClient()
         self.client.force_authenticate(self.user)
 
-    def test_user_can_request_suspension_for_a_listed_duration_and_account_is_not_deleted(self):
-        response = self.client.post(self.user_url, {"request_type": "suspension", "suspension_days": 14}, format="json")
+    def test_suspension_is_immediate_closes_the_account_and_ends_by_itself(self):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from .models import LoginEvent
+
+        login = APIClient()
+        self.assertEqual(login.post("/api/v1/identity/login/", {"email": "patient@example.test", "password": "Test-password-2026!"}, format="json").status_code, 200)
+        response = login.post(self.user_url, {"request_type": "suspension", "suspension_days": 14, "reason": "privacy"}, format="json")
         self.assertEqual(response.status_code, 201)
-        self.assertEqual(response.data["data"]["suspension_days"], 14)
-        self.assertEqual(response.data["data"]["status"], "new")
-        self.assertTrue(User.objects.filter(pk=self.user.pk).exists())
-        self.assertEqual(AccountActionRequest.objects.get().user, self.user)
+        data = response.data["data"]
+        self.assertEqual((data["suspension_days"], data["status"], data["reason"]), (14, "resolved", "privacy"))
+        self.assertTrue(User.objects.filter(pk=self.user.pk).exists(), "le compte n'est pas supprimé")
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active, "effet immédiat, sans validation de l'équipe")
+        self.assertEqual(login.get("/api/v1/identity/me/").status_code, 403, "la session en cours est fermée")
+        item = AccountActionRequest.objects.get()
+        self.assertGreater(item.suspended_until, timezone.now() + timedelta(days=13))
+
+        # Pendant la suspension : bon mot de passe → message clair ; mauvais mot de passe → message neutre (rien n'est révélé).
+        blocked = APIClient().post("/api/v1/identity/login/", {"email": "patient@example.test", "password": "Test-password-2026!"}, format="json")
+        self.assertEqual((blocked.status_code, blocked.data["code"]), (403, "account_suspended"))
+        self.assertIn("suspendu jusqu’au", blocked.data["message"])
+        wrong = APIClient().post("/api/v1/identity/login/", {"email": "patient@example.test", "password": "mauvais-mot-de-passe"}, format="json")
+        self.assertEqual((wrong.status_code, wrong.data["code"]), (400, "invalid_credentials"))
+        self.assertTrue(LoginEvent.objects.filter(user=self.user, outcome="blocked").exists())
+
+        # À l'échéance, la prochaine connexion rouvre le compte.
+        AccountActionRequest.objects.filter(pk=item.pk).update(suspended_until=timezone.now() - timedelta(minutes=1))
+        reopened = APIClient().post("/api/v1/identity/login/", {"email": "patient@example.test", "password": "Test-password-2026!"}, format="json")
+        self.assertEqual(reopened.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.is_active)
+        item.refresh_from_db()
+        self.assertIsNotNone(item.lifted_at)
+
+    def test_suspension_needs_a_reason_and_other_needs_details(self):
+        missing = self.client.post(self.user_url, {"request_type": "suspension", "suspension_days": 7}, format="json")
+        self.assertEqual(missing.status_code, 400)
+        other = self.client.post(self.user_url, {"request_type": "suspension", "suspension_days": 7, "reason": "other"}, format="json")
+        self.assertEqual(other.status_code, 400)
+        self.assertFalse(AccountActionRequest.objects.exists())
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.is_active)
 
     def test_suspension_duration_must_be_one_of_the_offered_values(self):
-        response = self.client.post(self.user_url, {"request_type": "suspension", "suspension_days": 10}, format="json")
+        response = self.client.post(self.user_url, {"request_type": "suspension", "suspension_days": 10, "reason": "privacy"}, format="json")
         self.assertEqual(response.status_code, 400)
         self.assertFalse(AccountActionRequest.objects.exists())
 
-    def test_other_deletion_reason_requires_details_and_deletes_identity_immediately(self):
+    def test_deletion_needs_no_reason_and_deletes_identity_immediately(self):
         patient = PatientProfile.objects.create(user=self.user, phone="+2250102030405", address="Adresse privée", coverage_provider="Assurance")
         ClinicalDeclaration.objects.create(patient=patient, kind="allergy", label="Allergie confidentielle")
-        invalid = self.client.post(self.user_url, {"request_type": "deletion", "reason": "other"}, format="json")
-        self.assertEqual(invalid.status_code, 400)
-        created = self.client.post(self.user_url, {
-            "request_type": "deletion", "reason": "other", "details": "Je souhaite préciser mon motif.",
-        }, format="json")
+        # Un ancien client qui envoie encore un motif : il est ignoré et jamais conservé.
+        created = self.client.post(self.user_url, {"request_type": "deletion", "reason": "privacy", "details": "texte libre"}, format="json")
         self.assertEqual(created.status_code, 201)
         self.user.refresh_from_db()
         patient.refresh_from_db()
@@ -56,21 +91,17 @@ class AccountActionRequestTests(TestCase):
         self.assertFalse(ClinicalDeclaration.objects.filter(patient=patient).exists())
         saved_request = AccountActionRequest.objects.get()
         self.assertIsNone(saved_request.user_id)
-        self.assertEqual(saved_request.status, "resolved")
+        self.assertEqual((saved_request.status, saved_request.reason, saved_request.details), ("resolved", "", ""))
         self.assertTrue(created.data["data"]["account_deleted"])
 
-        admin = User.objects.create_superuser(
-            username="admin@example.test", email="admin@example.test", password="Test-password-2026!",
-        )
+        admin = User.objects.create_superuser(username="admin@example.test", email="admin@example.test", password="Test-password-2026!")
         admin_client = APIClient()
         admin_client.force_authenticate(admin)
         response = admin_client.get(self.admin_url)
         self.assertEqual(response.status_code, 200)
         row = response.data["data"][0]
-        self.assertEqual(row["user_email"], "")
-        self.assertTrue(row["account_deleted"])
-        self.assertEqual(row["reason"], "other")
-        self.assertEqual(row["details"], "Je souhaite préciser mon motif.")
+        self.assertEqual(row["kind"], "deletion")
+        self.assertEqual(set(row), {"id", "kind", "submitted_at"}, "le journal d'une suppression ne montre ni motif ni identité")
 
     def test_account_deletion_erases_the_records_of_the_account_and_of_its_children(self):
         patient = PatientProfile.objects.create(user=self.user, first_name="Camille", last_name="Patient", phone="+2250102030405")
@@ -79,7 +110,7 @@ class AccountActionRequestTests(TestCase):
         ClinicalDeclaration.objects.create(patient=patient, kind="allergy", label="Allergie du titulaire")
         ClinicalDeclaration.objects.create(patient=child, kind="allergy", label="Allergie de l'enfant")
         encounter = CareEncounter.objects.create(patient=child, reason="Fièvre", observations="Toux", status="draft", vitals={"weight_kg": 20.0})
-        created = self.client.post(self.user_url, {"request_type": "deletion", "reason": "not_needed"}, format="json")
+        created = self.client.post(self.user_url, {"request_type": "deletion"}, format="json")
         self.assertEqual(created.status_code, 201)
         self.assertFalse(ClinicalDeclaration.objects.filter(patient__in=(patient, child)).exists(), "les lignes sont réellement supprimées de la base")
         child.refresh_from_db()
@@ -107,7 +138,7 @@ class AccountActionRequestTests(TestCase):
             reason_category="unconscious", reason_note="Camille retrouvée inconsciente chez elle", expires_at=timezone.now() + timedelta(hours=1),
             review_due_at=timezone.now() + timedelta(hours=72),
         )
-        created = self.client.post(self.user_url, {"request_type": "deletion", "reason": "not_needed"}, format="json")
+        created = self.client.post(self.user_url, {"request_type": "deletion"}, format="json")
         self.assertEqual(created.status_code, 201)
         access = EmergencyAccessRequest.objects.get()
         self.assertEqual(access.reason_note, ERASED_EMERGENCY_NOTE)
@@ -115,10 +146,10 @@ class AccountActionRequestTests(TestCase):
         self.user.refresh_from_db()
         self.assertFalse(self.user.is_active)
 
-    def test_duplicate_open_request_is_rejected_and_other_accounts_cannot_read_it(self):
-        first = self.client.post(self.user_url, {"request_type": "suspension", "suspension_days": 7}, format="json")
+    def test_second_suspension_is_rejected_and_other_accounts_cannot_read_it(self):
+        first = self.client.post(self.user_url, {"request_type": "suspension", "suspension_days": 7, "reason": "experience"}, format="json")
         self.assertEqual(first.status_code, 201)
-        duplicate = self.client.post(self.user_url, {"request_type": "suspension", "suspension_days": 30}, format="json")
+        duplicate = self.client.post(self.user_url, {"request_type": "suspension", "suspension_days": 30, "reason": "experience"}, format="json")
         self.assertEqual(duplicate.status_code, 409)
         other = User.objects.create_user(username="other@example.test", email="other@example.test")
         other_client = APIClient()
@@ -127,39 +158,36 @@ class AccountActionRequestTests(TestCase):
         self.assertEqual(own_requests.status_code, 200)
         self.assertEqual(own_requests.data["data"], [])
 
-    def test_only_superuser_can_read_requests_or_change_status(self):
-        request = AccountActionRequest.objects.create(user=self.user, request_type="deletion", reason="privacy")
-        request_id = str(request.id)
+    def test_journal_is_read_only_superadmin_only_and_shows_the_reason_of_a_suspension(self):
+        self.client.post(self.user_url, {"request_type": "suspension", "suspension_days": 7, "reason": "privacy", "details": ""}, format="json")
         staff = User.objects.create_user(username="staff@example.test", is_staff=True)
         staff_client = APIClient()
         staff_client.force_authenticate(staff)
         self.assertEqual(staff_client.get(self.admin_url).status_code, 403)
-        self.assertEqual(staff_client.patch(f"{self.admin_url}{request_id}/", {"status": "in_review"}, format="json").status_code, 403)
 
         admin = User.objects.create_superuser(username="admin@example.test", email="admin@example.test", password="Test-password-2026!")
         admin_client = APIClient()
         admin_client.force_authenticate(admin)
-        changed = admin_client.patch(f"{self.admin_url}{request_id}/", {"status": "in_review"}, format="json")
-        self.assertEqual(changed.status_code, 200)
-        saved = AccountActionRequest.objects.get(pk=request_id)
-        self.assertEqual(saved.status, "in_review")
-        self.assertEqual(saved.reviewed_by, admin)
-        self.assertIsNotNone(saved.reviewed_at)
-        deleted = admin_client.post(f"{self.admin_url}{request_id}/delete/", {}, format="json")
-        self.assertEqual(deleted.status_code, 200)
-        self.user.refresh_from_db()
-        self.assertFalse(self.user.is_active)
-        saved.refresh_from_db()
-        self.assertIsNone(saved.user_id)
-        self.assertEqual(saved.status, "resolved")
+        rows = admin_client.get(self.admin_url).data["data"]
+        self.assertEqual(len(rows), 1)
+        row = rows[0]
+        self.assertEqual((row["kind"], row["state"], row["reason"], row["suspension_days"]), ("suspension", "active", "privacy", 7))
+        self.assertTrue(row["reason_label"])
+        for forbidden in ("user_email", "user_name", "details", "status"):
+            self.assertNotIn(forbidden, row)
+        # L'équipe ne traite plus ces demandes : plus de changement de statut ni de suppression à sa main.
+        item_id = row["id"]
+        self.assertEqual(admin_client.patch(f"{self.admin_url}{item_id}/", {"status": "in_review"}, format="json").status_code, 404)
+        self.assertEqual(admin_client.post(f"{self.admin_url}{item_id}/delete/", {}, format="json").status_code, 404)
 
-    def test_admin_and_superadmin_accounts_cannot_be_deleted(self):
+    def test_admin_and_superadmin_accounts_cannot_be_deleted_or_suspended(self):
         for index, flags in enumerate(({"is_staff": True}, {"is_superuser": True, "is_staff": True})):
             privileged = User.objects.create_user(username=f"privileged-{index}@example.test", **flags)
             client = APIClient()
             client.force_authenticate(privileged)
-            response = client.post(self.user_url, {"request_type": "deletion", "reason": "privacy"}, format="json")
-            self.assertEqual(response.status_code, 403)
+            for payload in ({"request_type": "deletion"}, {"request_type": "suspension", "suspension_days": 7, "reason": "privacy"}):
+                response = client.post(self.user_url, payload, format="json")
+                self.assertEqual(response.status_code, 403)
             privileged.refresh_from_db()
             self.assertTrue(privileged.is_active)
             self.assertTrue(AccountActionRequest.objects.filter(user=privileged).count() == 0)
@@ -184,18 +212,11 @@ class AccountActionRequestTests(TestCase):
         response = client.get("/api/v1/identity/me/")
         self.assertTrue(response.data["data"]["is_admin"])
 
-    def test_admin_delete_endpoint_refuses_staff_and_superadmin_targets(self):
+    def test_a_member_can_be_closed_by_the_team_only_through_the_users_console_never_by_deleting_a_request(self):
         admin = User.objects.create_superuser(username="root@example.test", email="root@example.test", password="Test-password-2026!")
         admin_client = APIClient()
         admin_client.force_authenticate(admin)
-        for index, target in enumerate((
-            User.objects.create_user(username="staff-target@example.test", is_staff=True),
-            admin,
-        )):
-            item = AccountActionRequest.objects.create(user=target, request_type="deletion", reason="privacy")
-            response = admin_client.post(f"{self.admin_url}{item.id}/delete/", {}, format="json")
-            self.assertEqual(response.status_code, 403, f"cible protégée no {index}")
-            target.refresh_from_db()
-            self.assertTrue(target.is_active)
-            item.refresh_from_db()
-            self.assertIsNotNone(item.user_id)
+        item = AccountActionRequest.objects.create(user=self.user, request_type="deletion", reason="privacy")
+        self.assertEqual(admin_client.post(f"{self.admin_url}{item.id}/delete/", {}, format="json").status_code, 404)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.is_active)

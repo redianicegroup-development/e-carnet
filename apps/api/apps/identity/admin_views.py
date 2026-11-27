@@ -33,25 +33,6 @@ class IsSuperuserOnly(BasePermission):
         return bool(request.user and request.user.is_authenticated and request.user.is_superuser)
 
 
-class IsOperationsAdmin(IsSuperuserOnly):
-    """Superadmin autorisé par e-mail pour la surveillance technique.
-
-    Fermé par défaut : si ECARNET_OPERATIONS_ADMIN_EMAILS est vide, personne n'y accède,
-    sauf en développement local (DEBUG) où les superadmins de test restent acceptés.
-    En staging/production, la liste est donc obligatoire.
-    """
-
-    message = "Accès réservé aux e-mails d’exploitation configurés."
-
-    def has_permission(self, request, view):
-        if not super().has_permission(request, view):
-            return False
-        allowed = getattr(settings, "ECARNET_OPERATIONS_ADMIN_EMAILS", ())
-        if not allowed:
-            return bool(settings.DEBUG)
-        return request.user.email.strip().lower() in allowed
-
-
 class AdminDashboardView(APIView):
     permission_classes = [IsSuperuserOnly]
 
@@ -226,78 +207,6 @@ RECOVERY_EVENT_LABELS = {
 # Actions de l'équipe : l'acteur est l'administrateur, le compte aidé est dans `metadata["resource_id"]` (identifiant, jamais un secret).
 RECOVERY_TEAM_EVENTS = frozenset({"account.recovery_unlocked_by_admin", "account.temporary_password_issued_by_admin"})
 RECOVERY_HELP_MARK = "[Récupération de compte]"
-
-
-class AdminRecoveryView(APIView):
-    """Récupérations de compte vues par l'équipe : ce qui s'est passé, quels comptes sont bloqués, qui a demandé de l'aide.
-
-    Jamais la réponse secrète ni le mot de passe (ils ne sont d'ailleurs conservés nulle part en clair). Réservé aux superadministrateurs."""
-    permission_classes = [IsSuperuserOnly]
-
-    def get(self, request):
-        now = timezone.now()
-        day_ago = now - timedelta(hours=24)
-        events_queryset = AuditEvent.objects.filter(event_type__in=RECOVERY_EVENT_LABELS)
-        recent = events_queryset.filter(created_at__gte=day_ago)
-
-        def count(event_type):
-            return recent.filter(event_type=event_type).count()
-
-        recent_events = list(events_queryset.select_related("actor").order_by("-created_at")[:200])
-        helped_ids = {int(event.metadata["resource_id"]) for event in recent_events if event.event_type in RECOVERY_TEAM_EVENTS and str(event.metadata.get("resource_id", "")).isdigit()}
-        helped = {user.pk: user for user in get_user_model().objects.filter(pk__in=helped_ids)}
-
-        def event_person(event):
-            """Le compte concerné : le titulaire, ou — pour une action de l'équipe — la personne aidée (et non l'administrateur)."""
-            if event.event_type in RECOVERY_TEAM_EVENTS:
-                resource = str(event.metadata.get("resource_id", ""))
-                return helped.get(int(resource)) if resource.isdigit() else None
-            return event.actor
-
-        def event_payload(event):
-            person = event_person(event)
-            return {
-                "id": str(event.id),
-                "event_type": event.event_type,
-                "label": RECOVERY_EVENT_LABELS[event.event_type],
-                "email": person.email if person else "",
-                "name": f"{person.first_name} {person.last_name}".strip() if person else "",
-                "failures": event.metadata.get("extension_count"),
-                "by_team": event.event_type in RECOVERY_TEAM_EVENTS,
-                "created_at": event.created_at.isoformat(),
-            }
-
-        events = [event_payload(event) for event in recent_events]
-        locked = [{
-            "id": profile.user_id,
-            "email": profile.user.email,
-            "name": f"{profile.user.first_name} {profile.user.last_name}".strip(),
-            "failures": profile.recovery_failures,
-            "locked_until": profile.recovery_locked_until.isoformat(),
-        } for profile in AccountProfile.objects.filter(recovery_locked_until__gt=now).select_related("user").order_by("-recovery_locked_until")[:100]]
-        help_requests = [{
-            "id": str(item.id),
-            "name": f"{item.first_name} {item.last_name}".strip(),
-            "contact_kind": item.contact_kind,
-            "contact_value": item.contact_value,
-            "message": item.message[len(RECOVERY_HELP_MARK):].strip() if item.message.startswith(RECOVERY_HELP_MARK) else item.message,
-            "status": item.status,
-            "submitted_at": item.submitted_at.isoformat(),
-        } for item in ContactMessage.objects.filter(message__startswith=RECOVERY_HELP_MARK).order_by("-submitted_at")[:100]]
-        return Response({"success": True, "data": {
-            "generated_at": now.isoformat(),
-            "summary": {
-                "failed_24h": count("account.recovery_answer_failed"),
-                "blocked_24h": count("account.recovery_attempt_blocked"),
-                "locked_now": len(locked),
-                "verified_24h": count("account.recovery_answer_verified"),
-                "resets_24h": count("account.password_reset_by_recovery"),
-                "help_open": ContactMessage.objects.filter(message__startswith=RECOVERY_HELP_MARK).exclude(status="resolved").count(),
-            },
-            "events": events,
-            "locked_accounts": locked,
-            "help_requests": help_requests,
-        }})
 
 
 class AdminContactMessageStatusView(APIView):

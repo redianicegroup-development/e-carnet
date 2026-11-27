@@ -62,7 +62,6 @@ test("un bouton Partager accompagne chaque code généré", () => {
     "src/components/EstablishmentAdminWorkspace.tsx": /<ShareCodeButton[\s\S]*joinCodeMessage\(/,
     "src/components/TrustedContactDelegationClient.tsx": /<ShareCodeButton[\s\S]*delegationMessage\(/,
     "src/components/AdminEstablishmentsClient.tsx": /<ShareCodeButton[\s\S]*transmissionMessage\(/,
-    "src/components/AdminRecoveryClient.tsx": /<ShareCodeButton[\s\S]*recoveryPasswordMessage\(/,
   };
   for (const [file, pattern] of Object.entries(withShare)) assert.match(read(file), pattern, file);
   const button = read("src/components/ShareCodeButton.tsx");

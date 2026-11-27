@@ -5,6 +5,7 @@ import { ApiError, apiGet, apiPost } from "../infrastructure/api/client";
 import { formatDay, formatWhen } from "./access/access-history";
 import { useConfirm } from "./modal/ConfirmProvider";
 import { EVENT_LABEL, INVOICE_BADGE, INVOICE_LABEL, fcfa } from "./EstablishmentBilling";
+import { Profile, ProfileGrid, type ProfileStatus } from "./ui/Profile";
 import "./billing.css";
 
 type Row = { id: string; name: string; city: string; establishment_status: string; suspension_reason: string; offer_name: string; subscription_status: string; status_label: string; pending_count: number; pending_total_fcfa: number; oldest_due_date: string | null; days_overdue: number };
@@ -15,7 +16,7 @@ type Detail = {
   invoices: Invoice[]; payments: { id: string; invoice_number: string; method_label: string; status: string; amount_fcfa: number; confirmed_at: string | null; created_at: string }[];
   events: { kind: string; detail: string; created_at: string }[];
 };
-const BADGE: Record<string, string> = { active: "verified", pending_payment: "declared", past_due: "contested", unpaid: "contested", suspended: "contested", cancelled: "expired", none: "expired" };
+const TONE: Record<string, ProfileStatus["tone"]> = { active: "ok", pending_payment: "warn", past_due: "warn", unpaid: "warn", suspended: "off", cancelled: "off", none: "off" };
 
 /* Console → Facturation : suivi des abonnements et confirmation des paiements reçus hors ligne (virement, mobile money).
    La confirmation exige une référence de transaction ; elle active l'abonnement et lève une suspension pour impayé, jamais une autre. */
@@ -62,20 +63,26 @@ export function AdminBillingClient() {
         <h2>Facturation des établissements</h2>
         <p className="muted">Le patient ne paie jamais. Une suspension pour impayé ne touche que l’espace professionnel de l’établissement : les patients gardent leur carnet.</p>
         {!rows && !error && <p className="muted">Chargement…</p>}
-        <ul className="billing__list">
-          {rows?.map((row) => (
-            <li key={row.id}>
-              <div className="billing__line"><strong>{row.name}</strong><span className={`badge ${BADGE[row.subscription_status] ?? "declared"}`}>{row.status_label}</span></div>
-              <p className="muted">{row.city}. {row.offer_name || "Pas d’offre"}{row.establishment_status === "suspended" ? ` · Établissement suspendu${row.suspension_reason ? ` (${row.suspension_reason})` : ""}` : ""}</p>
-              {row.pending_count > 0 && <p>{row.pending_count} facture(s) à régler, {fcfa(row.pending_total_fcfa)}{row.oldest_due_date ? `, la plus ancienne échue le ${formatDay(row.oldest_due_date)}` : ""}{row.days_overdue > 0 ? ` (${row.days_overdue} jours de retard)` : ""}.</p>}
-              <div className="row"><button type="button" className="button" onClick={() => void open(row.id)}>Voir le détail</button></div>
-            </li>
-          ))}
-        </ul>
+        {rows && rows.length === 0 && <p className="empty">Aucun établissement.</p>}
+        {rows && rows.length > 0 && <ProfileGrid label="Établissements et abonnements">
+          {rows.map((row) => <Profile
+            key={row.id} name={row.name} label={row.name} subtitle={row.offer_name || "Pas d’offre"}
+            status={{ label: row.status_label, tone: TONE[row.subscription_status] ?? "warn" }}
+            rows={[
+              { label: "Ville", value: row.city || "—" },
+              { label: "Offre", value: row.offer_name || "Pas d’offre" },
+              { label: "Abonnement", value: row.status_label },
+              { label: "Établissement", value: row.establishment_status === "suspended" ? `Suspendu${row.suspension_reason ? ` (${row.suspension_reason})` : ""}` : "Actif" },
+              { label: "À régler", value: row.pending_count > 0 ? `${row.pending_count} facture(s), ${fcfa(row.pending_total_fcfa)}` : "Rien à régler" },
+              ...(row.pending_count > 0 && row.oldest_due_date ? [{ label: "Plus ancienne échéance", value: `${formatDay(row.oldest_due_date)}${row.days_overdue > 0 ? ` (${row.days_overdue} jours de retard)` : ""}` }] : []),
+            ]}
+            actions={[{ label: "Voir le détail", tone: "primary", onClick: async ({ close }) => { close(); await open(row.id); window.setTimeout(() => document.getElementById("billing-detail")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60); } }]}
+          />)}
+        </ProfileGrid>}
       </section>
 
       {detail && (
-        <section className="card stack" aria-label={`Détail de ${detail.establishment.name}`}>
+        <section className="card stack" id="billing-detail" aria-label={`Détail de ${detail.establishment.name}`}>
           <div className="billing__line"><h3>{detail.establishment.name}</h3><button type="button" className="button" onClick={() => setDetail(null)}>Fermer</button></div>
           <h4>Factures</h4>
           {detail.invoices.length === 0 && <p className="muted">Aucune facture.</p>}

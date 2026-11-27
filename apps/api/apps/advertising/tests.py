@@ -64,8 +64,13 @@ class BannerApiTests(TestCase):
         self.assertEqual(self.client.get(LIST).status_code, 403)
         self.assertEqual(self.client.post(LIST, self.payload(), format="multipart").status_code, 403)
 
+    def test_publish_without_alt_text_uses_the_default(self):
+        response = self.publish(alt_text="")
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()["data"]["alt_text"], "Bannière sponsorisée")
+
     def test_publish_validates_alt_text_link_and_dates(self):
-        self.assertEqual(self.publish(alt_text="").status_code, 400)
+        self.assertEqual(self.publish(alt_text="ab").status_code, 400)
         self.assertEqual(self.publish(link_url="http://exemple.test").status_code, 400)
         self.assertEqual(self.publish(link_url="javascript:alert(1)").status_code, 400)
         now = timezone.now()
@@ -85,7 +90,6 @@ class BannerApiTests(TestCase):
         self.client.force_authenticate(self.patient_user)
         self.assertIsNone(self.client.get(CURRENT).json()["data"])
 
-    @override_settings(ADS_ENABLED=True)
     def test_patient_sees_live_banner_with_sponsored_label_and_it_is_counted_without_identity(self):
         banner_id = self.publish().json()["data"]["id"]
         self.client.force_authenticate(self.patient_user)

@@ -24,7 +24,7 @@ HEAVY = ("image_desktop", "image_mobile")
 
 
 def ads_enabled():
-    """Diffusion publique : fermée par défaut. La fonction est préparée, son activation reste une décision produit, juridique et confidentialité."""
+    """Diffusion publique activée par défaut ; ADS_ENABLED=false permet de la suspendre."""
     value = getattr(settings, "ADS_ENABLED", None)
     if value is None:
         value = os.environ.get("ADS_ENABLED", "")
@@ -68,6 +68,9 @@ def _float(raw, default=0.5):
         return default
 
 
+DEFAULT_ALT_TEXT = "Bannière sponsorisée"
+
+
 class AdminBannerListCreateView(APIView):
     """Console d'administration → Bannières. Un seul upload, deux variantes générées, une période, un bouton « Publier »."""
     permission_classes = [IsAuthenticated, IsSuperuserOnly]
@@ -83,9 +86,11 @@ class AdminBannerListCreateView(APIView):
         upload = request.FILES.get("image")
         if upload is None:
             return fail("Importez l’image de la bannière.")
-        alt_text = str(request.data.get("alt_text", "")).strip()
+        # Le formulaire de la console n'envoie plus de texte alternatif : une bannière « Sponsorisé » reçoit un texte par défaut pour les lecteurs
+        # d'écran. Un texte envoyé par un autre client reste accepté (3 à 200 caractères).
+        alt_text = str(request.data.get("alt_text", "")).strip() or DEFAULT_ALT_TEXT
         if len(alt_text) < 3 or len(alt_text) > 200:
-            return fail("Décrivez l’image en quelques mots (3 à 200 caractères) : ce texte est lu par les lecteurs d’écran.")
+            return fail("Le texte alternatif doit compter de 3 à 200 caractères, ou rester vide.")
         link_url = str(request.data.get("link_url", "")).strip()
         if link_url:
             try:

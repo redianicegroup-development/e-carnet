@@ -17,3 +17,17 @@
 @media (min-width: 640px) { .ad-form .field-pair { grid-template-columns: 1fr 1fr; } }
 .ad-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
 .ad-list li { display: grid; gap: 8px; }
+
+/* Zone de dépôt de la bannière : toute la surface se touche, se dépose ou se tape au clavier (le vrai champ fichier reste dans le DOM). */
+.ad-drop { position: relative; display: flex; align-items: center; gap: 14px; padding: 22px 18px; border: 2px dashed var(--border-strong, #C9B98F); border-radius: 20px; background: var(--surface-tint, #FFF7E6); color: var(--text, #1E3A34); cursor: pointer; transition: border-color .18s, background-color .18s, transform .18s; }
+.ad-drop:hover { border-color: var(--primary, #4BAA8B); }
+.ad-drop[data-dragging="true"] { border-color: var(--primary, #4BAA8B); border-style: solid; background: var(--primary-tint, #FFE3B3); transform: scale(1.01); }
+.ad-drop[data-filled="true"] { border-style: solid; }
+.ad-drop:focus-within { outline: 3px solid var(--focus, var(--primary, #4BAA8B)); outline-offset: 3px; }
+.ad-drop__input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.ad-drop__icon { display: grid; place-items: center; flex: none; width: 52px; height: 52px; border-radius: 50%; background: var(--primary-tint, #FFE3B3); color: var(--primary, #2F7A63); }
+.ad-drop__text { display: grid; gap: 3px; min-width: 0; }
+.ad-drop__text strong { overflow-wrap: anywhere; }
+.ad-drop__text small { color: var(--text-muted, #4A5D57); }
+.ad-drop__clear { justify-self: start; }
+@media (prefers-reduced-motion: reduce) { .ad-drop { transition: none; } .ad-drop[data-dragging="true"] { transform: none; } }

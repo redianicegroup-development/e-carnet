@@ -1,17 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ApiError } from "../infrastructure/api/client";
 import { useConfirm } from "./modal/ConfirmProvider";
 import { ConsultationSeal } from "./ConsultationSeal";
 import { getPendingForGrant, waitForResults, type PendingForGrant } from "../application/lab-results";
 import { PendingResultsPanel, ProfessionalPendingList } from "./ProfessionalPendingResults";
-import { ConsultationCard } from "./consultation/ConsultationCard";
-import { ListSearchBar } from "./list/ListSearchBar";
-import { useListFilter } from "./list/useListFilter";
 import { SYMPTOM_PICTOGRAMS } from "../lib/pictograms";
-import { distinctOptions, matchesQuery, sameOption, withinPeriod } from "../lib/list-filter";
 import { ProfessionalMeasurementEntry } from "./ProfessionalMeasurementEntry";
 import { ProfessionalTemplateApprovals } from "./ProfessionalTemplateApprovals";
 import { ProfessionalGuestAccess } from "./ProfessionalGuestAccess";
@@ -19,11 +15,14 @@ import { ProfessionalGuestToConfirm } from "./ProfessionalGuestToConfirm";
 import { listGuestConsultationsToConfirm, rejectGuestConsultation, type GuestConsultationToConfirm } from "../application/guest-access";
 import { CollapsibleSection } from "./ui/CollapsibleSection";
 import { PersonAvatar } from "./ui/PersonAvatar";
+import { Icon } from "./ui/Icon";
+import { InfoTip } from "./ui/InfoTip";
+import { ProfessionalGiveAppointment } from "./ProfessionalGiveAppointment";
 import { EstablishmentLogo } from "./EstablishmentLogo";
 import { useProfessionalProfile } from "./ClinicalGate";
 import { ChipPicker, FormSection, VitalsPicker } from "./consultation/ConsultationParts";
 import { ExamPicker, PrescriptionPicker, type ExamDraft, type LineDraft } from "./consultation/OrderPickers";
-import { Encounter, listAuthorizedEncounters, listProfessionalConsultations, listProfessionalGrants, ProfessionalGrant, Consultation, uploadExamProof, validateProfessionalConsultation, type ConsultationInput } from "../application/professional-access-grants";
+import { Encounter, listAuthorizedEncounters, listProfessionalGrants, ProfessionalGrant, uploadExamProof, validateProfessionalConsultation, type ConsultationInput } from "../application/professional-access-grants";
 import { CARE_PLAN_ITEMS, CLINICAL_FINDINGS, CONCLUSION_ITEMS, DIAGNOSES, buildPicked } from "../lib/consultation-options";
 import { buildObservations, OBSERVATIONS_MAX, OTHER_MAX, parseObservations, SYMPTOMS, type SymptomsForm } from "../lib/preconsult";
 import { emptyVitalsForm, parseVitalsForm, vitalsToForm, type VitalsForm } from "../lib/vitals";
@@ -53,15 +52,13 @@ function checkOrders(lines: LineDraft[], exams: ExamDraft[]): OrdersResult {
   return { ok: true, prescription_lines, exams: exams.filter((exam) => exam.label.trim() || exam.photo) };
 }
 
-const MOCK_CONSULTATIONS: Consultation[] = [];
-
-/* `tiles` : les autres tuiles de la page (Plans de suivi, Vaccinations à confirmer), posées dans la même grille. Ordre (19/11/2026) : toutes les tuiles
-   d'abord, puis « Mes consultations », toujours dépliée, en dessous. */
-export function ProfessionalConsultations({ tiles }: { tiles?: ReactNode } = {}) {
+/* Page « Suivi » du professionnel : compléter la pré-consultation, signer, mode invité.
+   Décision du 25/11/2026 : plus d'historique « Mes consultations » ici (le professionnel n'a pas à relire ses consultations signées après coup)
+   et plus de tuiles « Plans de suivi » ni « Vaccinations à confirmer » (les vaccins sont saisis par les agents de vaccination). */
+export function ProfessionalConsultations() {
   const confirm = useConfirm();
   const profile = useProfessionalProfile();
   const [grants, setGrants] = useState<ProfessionalGrant[]>([]);
-  const [consultations, setConsultations] = useState<Consultation[]>(MOCK_CONSULTATIONS);
   const [encounters, setEncounters] = useState<Encounter[]>([]);
   const [grantId, setGrantId] = useState("");
   const [encounterId, setEncounterId] = useState("");
@@ -80,7 +77,6 @@ export function ProfessionalConsultations({ tiles }: { tiles?: ReactNode } = {})
   // Signature ou cachet enregistrés : sans eux, le serveur refuse la validation. La barrière s'affiche sous le formulaire.
   const [sealReady, setSealReady] = useState(false);
   const [message, setMessage] = useState("Chargement des autorisations actives…");
-  const { state: listFilter, patch: patchFilter, reset: resetFilter, filtered: listFiltered } = useListFilter();
   // Photos déjà envoyées : si la signature échoue après l'envoi, un nouvel essai réutilise la photo au lieu de la renvoyer.
   const uploadedProofs = useRef(new WeakMap<File, string>());
   // PRO-21 : consultation de CE patient qui attendait des résultats (null : parcours habituel, ou fonction éteinte).
@@ -88,16 +84,18 @@ export function ProfessionalConsultations({ tiles }: { tiles?: ReactNode } = {})
   // Mode invité (médecin sans téléphone) : consultations écrites en son nom sur le téléphone d'un patient, à relire puis signer.
   const [guestItems, setGuestItems] = useState<GuestConsultationToConfirm[]>([]);
   const [guestPending, setGuestPending] = useState<GuestConsultationToConfirm | null>(null);
+  // Bouton « RDV » : fenêtre pour donner un rendez-vous au patient de la consultation, et sa confirmation à côté du bouton.
+  const [rdvOpen, setRdvOpen] = useState(false);
+  const [rdvNotice, setRdvNotice] = useState("");
 
   const activeMembership = profile.status === "ready" ? profile.profile.memberships.find((item) => item.establishment_id === profile.profile.active_establishment && item.status === "active") ?? null : null;
 
   useEffect(() => {
     let active = true;
-    Promise.all([listProfessionalGrants(), listProfessionalConsultations()]).then(([allGrants, allConsultations]) => {
+    listProfessionalGrants().then((allGrants) => {
       if (!active) return;
       const usable = allGrants.filter((grant) => grant.status === "active" && grant.scope.includes("preconsultation"));
       setGrants(usable);
-      setConsultations(allConsultations);
       setMessage(usable.length === 1 ? "Un patient a autorisé son accès." : "Données chargées.");
       // Venu du scan du QR : le patient qui vient de se connecter s'ouvre tout de suite, même s'il y en a d'autres. Le paramètre est retiré de l'adresse.
       const scanned = new URLSearchParams(window.location.search).get("acces");
@@ -119,12 +117,14 @@ export function ProfessionalConsultations({ tiles }: { tiles?: ReactNode } = {})
   }, []);
 
   function resetForm() {
+    setRdvOpen(false); setRdvNotice("");
     setReason(""); setSymptoms({ selected: [], other: "" }); setVitalsForm(emptyVitalsForm());
     setClinical(EMPTY_PICK); setDiagnosis(EMPTY_PICK); setCarePlan(EMPTY_PICK); setConclusion(EMPTY_PICK);
     setLines([]); setExams([]);
   }
 
   async function chooseGrant(value: string, options: { reveal?: boolean } = {}) {
+    setRdvOpen(false); setRdvNotice("");
     setGuestPending(null);
     setGrantId(value);
     setEncounterId("");
@@ -319,7 +319,7 @@ export function ProfessionalConsultations({ tiles }: { tiles?: ReactNode } = {})
     setSubmitting(true);
     try {
       const requested_exams = pending ? [] : await buildRequestedExams(orders.exams);
-      const consultation = await validateProfessionalConsultation({
+      await validateProfessionalConsultation({
         access_grant_id: grantId,
         source_encounter_id: encounterId,
         ...(pending ? { pending_consultation_id: pending.id } : {}),
@@ -335,7 +335,6 @@ export function ProfessionalConsultations({ tiles }: { tiles?: ReactNode } = {})
         care_plan: buildPicked(carePlan.selected, CARE_PLAN_ITEMS, carePlan.other),
         attestation_svg: "<svg></svg>",
       });
-      setConsultations((current) => [consultation, ...current]);
       if (guestPending) { const signedGuestId = guestPending.id; setGuestItems((current) => current.filter((entry) => entry.id !== signedGuestId)); setGuestPending(null); }
       // L'accès s'est fermé de lui-même à la signature (côté serveur) : ce patient quitte la liste des patients connectés.
       const signedGrantId = grantId;
@@ -353,10 +352,6 @@ export function ProfessionalConsultations({ tiles }: { tiles?: ReactNode } = {})
     }
   }
 
-  const filteredConsultations = consultations.filter((item) => matchesQuery([item.patient_name, item.facility_label, item.reason, item.professional_name], listFilter.query)
-    && withinPeriod(item.validated_at, listFilter.period)
-    && (!listFilter.facility || sameOption(item.facility_label, listFilter.facility)));
-  const facilityOptions = distinctOptions(consultations.map((item) => item.facility_label));
   // Pendant la relecture d'une consultation écrite en mode invité, seul ce patient est proposé : son accès de 2 h est fermé depuis longtemps.
   const shownGrants: ProfessionalGrant[] = guestPending ? [{
     id: guestPending.access_grant_id, reference: "invité", professional_id: null, establishment_id: null, professional_name: "", facility_label: guestPending.facility_label,
@@ -367,7 +362,7 @@ export function ProfessionalConsultations({ tiles }: { tiles?: ReactNode } = {})
   const selectedGrant = guestPending ? null : shownGrants.find((grant) => grant.id === grantId) ?? null;
   const symptomsTooLong = buildObservations(symptoms).length > OBSERVATIONS_MAX;
 
-  return <div className="stack-lg"><ProfessionalTemplateApprovals /><ProfessionalPendingList /><ProfessionalAttestationReminder grantId={grantId} /><ProfessionalGuestToConfirm items={guestItems} activeId={guestPending?.id ?? null} onReview={reviewGuest} onReject={(item) => void rejectGuest(item)} /><section className="hero-page"><h1>Compléter sans ressaisir.</h1><p className="muted">La dernière pré-consultation du patient s’affiche dès que son autorisation est active. En signant, vous la clôturez.</p><p className="notice" role="status" aria-live="polite">{message}</p></section><section className="patient-grid"><form id="terminer-consultation" className="card preconsult-form" onSubmit={submit}><h2>Terminer la consultation</h2>{loading ? <p className="empty">Chargement des autorisations…</p> : shownGrants.length === 0 ? <p className="empty">Aucune autorisation active permettant de reprendre une pré-consultation.</p> : <>
+  return <div className="stack-lg"><ProfessionalTemplateApprovals /><ProfessionalPendingList /><ProfessionalAttestationReminder grantId={grantId} /><ProfessionalGuestToConfirm items={guestItems} activeId={guestPending?.id ?? null} onReview={reviewGuest} onReject={(item) => void rejectGuest(item)} /><section className="hero-page"><div className="page-header__title"><h1>Compléter sans ressaisir.</h1><InfoTip label="Plus d’informations : consultation">La dernière pré-consultation du patient s’affiche dès que son autorisation est active. En signant, vous la clôturez.</InfoTip></div><p className="notice" role="status" aria-live="polite">{message}</p></section><section className="patient-grid"><form id="terminer-consultation" className="card preconsult-form" onSubmit={submit}><h2>Terminer la consultation</h2>{loading ? <p className="empty">Chargement des autorisations…</p> : shownGrants.length === 0 ? <p className="empty">Aucune autorisation active permettant de reprendre une pré-consultation.</p> : <>
     <div className="consult-context">
       {activeMembership && <div className="consult-establishment"><EstablishmentLogo logo={activeMembership.establishment_logo} name={activeMembership.establishment_name} size={40} /><div><span className="muted">Établissement actif</span><strong>{activeMembership.establishment_name}</strong></div><Link className="button small" href="/professionnel/acces">Changer</Link></div>}
       {shownGrants.length > 1 && <div className="patient-picker" role="group" aria-label="Patient"><span className="eyebrow">Patient</span>{shownGrants.map((grant) => <button type="button" key={grant.id} className="patient-option" aria-pressed={grant.id === grantId} onClick={() => void chooseGrant(grant.id)}><PersonAvatar src={grant.patient_avatar} name={grant.patient_name || grant.reference} size={40} /><span><strong>{grant.patient_name || `Accès ${grant.reference}`}</strong><small className="muted">{grant.access_mode === "guest" ? "Mode invité · " : ""}Accès {grant.reference}</small></span></button>)}</div>}
@@ -389,5 +384,14 @@ export function ProfessionalConsultations({ tiles }: { tiles?: ReactNode } = {})
     <FormSection num={7} title="Conclusion"><ChipPicker label="Conclusion" options={CONCLUSION_ITEMS} selected={conclusion.selected} other={conclusion.other} onSelected={(selected) => setConclusion({ ...conclusion, selected })} onOther={(other) => setConclusion({ ...conclusion, other })} otherLabel="Autre conclusion (facultatif)" /></FormSection>
     <FormSection num={8} title="Ordonnance" hint="Choisissez dans les listes ; « Autre » pour ce qui n’y figure pas."><PrescriptionPicker lines={lines} onChange={setLines} /></FormSection>
     {!pending && <FormSection num={9} title="Examens demandés" hint="Choisissez l’examen, ou joignez la photo de la demande si vous préférez ne pas le saisir. Si le résultat est nécessaire pour conclure, utilisez « Attendre les résultats »."><ExamPicker exams={exams} onChange={setExams} /></FormSection>}
-    <p className="muted">Cette validation ne constitue pas une signature électronique qualifiée.</p><ConsultationSeal onReadyChange={setSealReady} />{!pending && !guestPending && <button className="button" type="button" disabled={submitting || !encounterId || exams.length === 0} onClick={() => void waitResults()}>Attendre les résultats</button>} {pending?.status !== "waiting_results" && <><button className="button primary" type="submit" disabled={submitting || !encounterId || !sealReady} aria-disabled={submitting || !encounterId || !sealReady}>{submitting ? "Signature…" : "Terminer et signer"}</button>{!sealReady && encounterId && <p className="muted" role="status">« Terminer et signer » s’active dès que votre signature ou votre cachet est enregistré.</p>}</>}</>}</>}</form>{selectedGrant && <ProfessionalMeasurementEntry grant={selectedGrant} />}<div className="section-grid"><CollapsibleSection title="Mode invité" icon="idcard" hint="Patient sans téléphone"><ProfessionalGuestAccess onReady={openGuestGrant} /></CollapsibleSection>{tiles}<CollapsibleSection title="Mes consultations" alwaysOpen icon="stethoscope" hint="Historique signé"><div className="professional-history"><div className="professional-history__heading"><ListSearchBar label="Rechercher patient, établissement ou motif" placeholder="Patient, établissement, motif…" state={listFilter} onChange={patchFilter} onReset={resetFilter} shown={filteredConsultations.length} total={consultations.length} filtered={listFiltered} facilityOptions={facilityOptions} showPeriod shortcut /></div>{loading ? <p className="empty">Chargement…</p> : filteredConsultations.length === 0 ? <p className="empty">{consultations.length ? "Aucune consultation ne correspond à cette recherche ou à ces filtres." : "Aucune consultation validée."}</p> : <div className="consult-list" aria-live="polite">{filteredConsultations.map((item, index) => <ConsultationCard key={item.id} item={item} index={index} showPatient />)}</div>}</div></CollapsibleSection></div></section></div>;
+    <p className="muted">Cette validation ne constitue pas une signature électronique qualifiée.</p><ConsultationSeal onReadyChange={setSealReady} />{selectedGrant && <div className="consult-rdv"><button className="button" type="button" onClick={() => setRdvOpen(true)}><Icon name="clock" size={18} />RDV</button>{rdvNotice && <p className="notice" role="status">{rdvNotice}</p>}</div>}{!pending && !guestPending && <button className="button" type="button" disabled={submitting || !encounterId || exams.length === 0} onClick={() => void waitResults()}>Attendre les résultats</button>} {pending?.status !== "waiting_results" && <><button className="button primary" type="submit" disabled={submitting || !encounterId || !sealReady} aria-disabled={submitting || !encounterId || !sealReady}>{submitting ? "Signature…" : "Terminer et signer"}</button>{!sealReady && encounterId && <p className="muted" role="status">« Terminer et signer » s’active dès que votre signature ou votre cachet est enregistré.</p>}</>}</>}</>}</form>{selectedGrant && <ProfessionalMeasurementEntry grant={selectedGrant} />}<div className="section-grid"><CollapsibleSection title="Mode invité" icon="idcard" hint="Patient sans téléphone"><ProfessionalGuestAccess onReady={openGuestGrant} /></CollapsibleSection></div></section>{rdvOpen && selectedGrant && <ProfessionalGiveAppointment
+    grantId={selectedGrant.id}
+    patientName={selectedGrant.patient_name || `Accès ${selectedGrant.reference}`}
+    defaultReason={reason}
+    onClose={() => setRdvOpen(false)}
+    onGiven={(appointment) => {
+      setRdvOpen(false);
+      setRdvNotice(`RDV donné à ${appointment.patient_name || selectedGrant.patient_name || "ce patient"} : ${new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }).format(new Date(appointment.starts_at))}.`);
+    }}
+  />}</div>;
 }

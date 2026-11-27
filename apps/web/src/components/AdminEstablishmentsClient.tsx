@@ -1,9 +1,10 @@
 "use client";
 
-import { Fragment, useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { ApiError, apiGet, apiPost } from "../infrastructure/api/client";
 import { useConfirm } from "./modal/ConfirmProvider";
 import { ShareCodeButton } from "./ShareCodeButton";
+import { Profile, ProfileGrid, type ProfileStatus } from "./ui/Profile";
 import "./admin-establishments.css";
 
 type AccessState = "temporary_password" | "expired" | "activated" | "revoked";
@@ -49,6 +50,8 @@ const SUSPENSION_REASONS = [
 ] as const;
 
 /* Libellé et couleur de badge du suivi : une seule étiquette par structure, de la remise du mot de passe jusqu'à « Prête ». */
+const FOLLOW_TONE: Record<string, ProfileStatus["tone"]> = { active: "ok", pending: "warn", expired: "warn", revoked: "off" };
+
 function followUp(item: Item): { label: string; tone: string } {
   if (item.status === "suspended") return { label: "Suspendue", tone: "revoked" };
   if (item.stage === "ready") return { label: "Prête", tone: "active" };
@@ -86,6 +89,7 @@ export function AdminEstablishmentsClient({ aside }: { aside?: ReactNode }) {
   const [replacementFirstName, setReplacementFirstName] = useState("");
   const [replacementLastName, setReplacementLastName] = useState("");
   const [auditTarget, setAuditTarget] = useState("");
+  const [panelId, setPanelId] = useState("");
   const [auditItems, setAuditItems] = useState<Record<string, AuditEntry[]>>({});
 
   useEffect(() => {
@@ -97,6 +101,10 @@ export function AdminEstablishmentsClient({ aside }: { aside?: ReactNode }) {
   }, [tick]);
 
   const refresh = () => setTick((value) => value + 1);
+  const panelItem = listing?.items.find((entry) => entry.id === panelId && (suspendTarget === panelId || replacementTarget === panelId || auditTarget === panelId)) ?? null;
+  const panelKey = panelItem?.id ?? "";
+  useEffect(() => { if (panelKey) document.getElementById("admin-establishment-panel")?.scrollIntoView({ behavior: "smooth", block: "nearest" }); }, [panelKey]);
+  function closePanel() { setPanelId(""); setSuspendTarget(""); setReplacementTarget(""); setAuditTarget(""); }
 
   function resetFeedback() {
     setMessage("");
@@ -363,50 +371,51 @@ export function AdminEstablishmentsClient({ aside }: { aside?: ReactNode }) {
         {!listing && !error && <p className="muted">Chargement…</p>}
         {listing && listing.items.length === 0 && <p className="muted">Aucun établissement créé pour l’instant.</p>}
         {listing && listing.items.length > 0 && (
-          <div className="admin-table-wrap">
-            <table className="admin-table admin-table--stack">
-              <thead><tr><th scope="col">Établissement</th><th scope="col">Responsable</th><th scope="col">Suivi</th><th scope="col">Mot de passe temporaire</th><th scope="col">Dernière mise à jour</th><th scope="col"><span className="sr-only">Actions</span></th></tr></thead>
-              <tbody>
-                {listing.items.map((item) => {
-                  const status = followUp(item);
-                  const state = item.access?.state;
-                  const pendingActivation = item.stage === "awaiting_activation";
-                  const renamed = Boolean(item.name_updated_at && item.original_name);
-                  return (
-                    <Fragment key={item.id}>
-                    <tr>
-                      <th scope="row">
-                        <span className="admin-structure">
-                          <span className="admin-structure__logo" aria-hidden="true">{item.logo ? <img src={item.logo} alt="" loading="lazy" /> : item.name.slice(0, 2).toUpperCase()}</span>
-                          <span className="admin-structure__text"><strong>{item.name}</strong><span className="muted">{item.internal_code ?? "sans code"}</span></span>
-                        </span>
-                        {renamed && <small className="admin-renamed">Renommé par l’établissement le {when(item.name_updated_at)} · nom vérifié : {item.original_name}</small>}
-                      </th>
-                      <td data-label="Responsable">{item.administrator ? <>{item.administrator.name || "—"}<br /><span className="muted admin-break">{item.administrator.email}</span></> : <span className="muted admin-break">{item.access?.email ?? "—"}</span>}</td>
-                      <td data-label="Suivi"><span className={`badge ${status.tone}`}>{status.label}</span></td>
-                      <td data-label="Mot de passe temporaire">{state === "temporary_password" && item.access?.expires_at ? <>Expire le {when(item.access.expires_at)}</> : state === "expired" ? <>Expiré</> : <span className="muted">—</span>}</td>
-                      <td data-label="Dernière mise à jour">{item.profile_completed_at ? when(item.updated_at) : <span className="muted">Fiche non remplie</span>}</td>
-                      <td className="admin-table__actions">
-                        {pendingActivation && item.access && item.status === "active" && (
-                          <span className="admin-inline-actions">
-                            <button type="button" className="button small" disabled={busy} onClick={() => void reissue(item)}>{state === "revoked" ? "Rouvrir l’accès" : "Nouveau mot de passe"}</button>
-                            {(state === "temporary_password" || state === "expired") && <button type="button" className="button small danger" disabled={busy} onClick={() => void revoke(item)}>Révoquer</button>}
-                          </span>
-                        )}
-                        {item.administrator && item.status === "active" && <button type="button" className="button small" disabled={busy} onClick={() => { setReplacementTarget(replacementTarget === item.id ? "" : item.id); setReplacementEmail(""); setReplacementFirstName(""); setReplacementLastName(""); }}>Remplacer le responsable</button>}
-                        {item.status === "active" ? <button type="button" className="button small danger" disabled={busy} onClick={() => { setSuspendTarget(suspendTarget === item.id ? "" : item.id); setReplacementTarget(""); }}>Suspendre</button> : <button type="button" className="button small primary" disabled={busy} onClick={() => void changeEstablishmentStatus(item, "reactivate")}>Réactiver</button>}
-                        <button type="button" className="button small" disabled={busy} aria-expanded={auditTarget === item.id} onClick={() => void toggleAudit(item)}>{auditTarget === item.id ? "Masquer le journal" : "Journal"}</button>
-                        {suspendTarget === item.id && item.status === "active" && <div className="stack"><label className="field"><span>Motif de suspension</span><select value={suspendReason} onChange={(event) => setSuspendReason(event.target.value)}>{SUSPENSION_REASONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><span className="admin-inline-actions"><button type="button" className="button small danger" disabled={busy} onClick={() => void changeEstablishmentStatus(item, "suspend")}>Confirmer la suspension</button><button type="button" className="button small" onClick={() => setSuspendTarget("")}>Annuler</button></span></div>}
-                        {replacementTarget === item.id && item.status === "active" && <div className="stack"><label className="field"><span>E-mail du nouveau responsable</span><input type="email" autoComplete="email" value={replacementEmail} onChange={(event) => setReplacementEmail(event.target.value)} /></label><label className="field"><span>Prénom</span><input autoComplete="given-name" value={replacementFirstName} onChange={(event) => setReplacementFirstName(event.target.value)} /></label><label className="field"><span>Nom</span><input autoComplete="family-name" value={replacementLastName} onChange={(event) => setReplacementLastName(event.target.value)} /></label><span className="admin-inline-actions"><button type="button" className="button small danger" disabled={busy || !replacementEmail.trim() || !replacementFirstName.trim() || !replacementLastName.trim()} onClick={() => void submitReplacement(item)}>Confirmer le remplacement</button><button type="button" className="button small" onClick={() => setReplacementTarget("")}>Annuler</button></span></div>}
-                      </td>
-                    </tr>
-                    {auditTarget === item.id && <tr><td colSpan={6}><section className="stack" aria-label={`Journal de ${item.name}`}><h3>Journal récent — {item.name}</h3>{auditItems[item.id] ? auditItems[item.id].length === 0 ? <p className="empty">Aucun événement enregistré.</p> : auditItems[item.id].map((event) => <article className="record" key={event.id}><div><strong>{event.event_type}</strong><p className="muted">{event.actor} · {event.actor_role}{event.metadata.status ? ` · ${event.metadata.status}` : ""}{event.metadata.reason_code ? ` · motif : ${event.metadata.reason_code}` : ""}{event.metadata.resource_count ? ` · ${event.metadata.resource_count} patients distincts` : ""}</p></div><time dateTime={event.created_at}>{when(event.created_at)}</time></article>) : <p className="muted" role="status">Chargement du journal…</p>}<p className="muted">Les éléments affichés sont limités aux 100 derniers événements et ne contiennent pas de contenu médical.</p></section></td></tr>}
-                    </Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <>
+          <ProfileGrid label="Établissements créés">
+            {listing.items.map((item) => {
+              const status = followUp(item);
+              const state = item.access?.state;
+              const pendingActivation = item.stage === "awaiting_activation";
+              const renamed = Boolean(item.name_updated_at && item.original_name);
+              const openPanel = (kind: "suspend" | "replace") => ({ close }: { close: () => void }) => {
+                close();
+                setSuspendTarget(kind === "suspend" ? item.id : ""); setReplacementTarget(kind === "replace" ? item.id : ""); setAuditTarget("");
+                if (kind === "replace") { setReplacementEmail(""); setReplacementFirstName(""); setReplacementLastName(""); }
+                setPanelId(item.id);
+              };
+              return <Profile
+                key={item.id} name={item.name} label={item.name} subtitle={item.internal_code ?? "sans code"} photo={item.logo || null}
+                status={{ label: status.label, tone: FOLLOW_TONE[status.tone] ?? "warn" }}
+                rows={[
+                  { label: "Code", value: item.internal_code ?? "sans code" },
+                  { label: "Responsable", value: item.administrator ? <>{item.administrator.name || "—"}<br /><span className="muted admin-break">{item.administrator.email}</span></> : <span className="muted admin-break">{item.access?.email ?? "—"}</span> },
+                  { label: "Suivi", value: status.label },
+                  { label: "Mot de passe temporaire", value: state === "temporary_password" && item.access?.expires_at ? `Expire le ${when(item.access.expires_at)}` : state === "expired" ? "Expiré" : "—" },
+                  { label: "Dernière mise à jour", value: item.profile_completed_at ? when(item.updated_at) : "Fiche non remplie" },
+                ]}
+                note={renamed ? `Renommé par l’établissement le ${when(item.name_updated_at)} · nom vérifié : ${item.original_name}` : undefined}
+                actions={[
+                  ...(pendingActivation && item.access && item.status === "active" ? [{ label: state === "revoked" ? "Rouvrir l’accès" : "Nouveau mot de passe", disabled: busy, onClick: ({ close }: { close: () => void }) => { close(); void reissue(item); } }] : []),
+                  ...(pendingActivation && item.access && item.status === "active" && (state === "temporary_password" || state === "expired") ? [{ label: "Révoquer", tone: "danger" as const, disabled: busy, onClick: ({ close }: { close: () => void }) => { close(); void revoke(item); } }] : []),
+                  ...(item.administrator && item.status === "active" ? [{ label: "Remplacer le responsable", disabled: busy, onClick: openPanel("replace") }] : []),
+                  item.status === "active"
+                    ? { label: "Suspendre", tone: "danger" as const, disabled: busy, onClick: openPanel("suspend") }
+                    : { label: "Réactiver", tone: "primary" as const, disabled: busy, onClick: ({ close }: { close: () => void }) => { close(); void changeEstablishmentStatus(item, "reactivate"); } },
+                  { label: "Journal", onClick: ({ close }: { close: () => void }) => { close(); setSuspendTarget(""); setReplacementTarget(""); setPanelId(item.id); if (auditTarget !== item.id) void toggleAudit(item); } },
+                ]}
+              />;
+            })}
+          </ProfileGrid>
+          {panelItem && (
+            <section className="card stack admin-establishment-panel" id="admin-establishment-panel" aria-label={`Actions pour ${panelItem.name}`}>
+              <div className="admin-table-title"><div><span className="eyebrow">Action en cours</span><h3>{panelItem.name}</h3></div><button type="button" className="button small" onClick={closePanel}>Fermer</button></div>
+              {panelItem.status === "active" && suspendTarget === panelItem.id && <div className="stack"><label className="field"><span>Motif de suspension</span><select value={suspendReason} onChange={(event) => setSuspendReason(event.target.value)}>{SUSPENSION_REASONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><span className="admin-inline-actions"><button type="button" className="button small danger" disabled={busy} onClick={() => void changeEstablishmentStatus(panelItem, "suspend")}>Confirmer la suspension</button><button type="button" className="button small" onClick={() => setSuspendTarget("")}>Annuler</button></span></div>}
+              {panelItem.status === "active" && replacementTarget === panelItem.id && <div className="stack"><label className="field"><span>E-mail du nouveau responsable</span><input type="email" autoComplete="email" value={replacementEmail} onChange={(event) => setReplacementEmail(event.target.value)} /></label><label className="field"><span>Prénom</span><input autoComplete="given-name" value={replacementFirstName} onChange={(event) => setReplacementFirstName(event.target.value)} /></label><label className="field"><span>Nom</span><input autoComplete="family-name" value={replacementLastName} onChange={(event) => setReplacementLastName(event.target.value)} /></label><span className="admin-inline-actions"><button type="button" className="button small danger" disabled={busy || !replacementEmail.trim() || !replacementFirstName.trim() || !replacementLastName.trim()} onClick={() => void submitReplacement(panelItem)}>Confirmer le remplacement</button><button type="button" className="button small" onClick={() => setReplacementTarget("")}>Annuler</button></span></div>}
+              {auditTarget === panelItem.id && <section className="stack" aria-label={`Journal de ${panelItem.name}`}><h3>Journal récent — {panelItem.name}</h3>{auditItems[panelItem.id] ? auditItems[panelItem.id].length === 0 ? <p className="empty">Aucun événement enregistré.</p> : auditItems[panelItem.id].map((event) => <article className="record" key={event.id}><div><strong>{event.event_type}</strong><p className="muted">{event.actor} · {event.actor_role}{event.metadata.status ? ` · ${event.metadata.status}` : ""}{event.metadata.reason_code ? ` · motif : ${event.metadata.reason_code}` : ""}{event.metadata.resource_count ? ` · ${event.metadata.resource_count} patients distincts` : ""}</p></div><time dateTime={event.created_at}>{when(event.created_at)}</time></article>) : <p className="muted" role="status">Chargement du journal…</p>}<p className="muted">Les éléments affichés sont limités aux 100 derniers événements et ne contiennent pas de contenu médical.</p></section>}
+            </section>
+          )}
+          </>
         )}
         {listing?.truncated && <p className="muted">Seuls les {listing.items.length} établissements les plus récents sont affichés.</p>}
       </article>

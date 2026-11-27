@@ -107,7 +107,7 @@ class MedicalDocumentsV2Tests(TestCase):
 
     def test_account_erasure_destroys_private_assets_before_erasing_document_rows(self):
         document = MedicalDocument.objects.create(patient=self.profile, original_name="cloud.pdf", document_type="other", content_type="application/pdf", size_bytes=10, cloudinary_public_id="private/patient/cloud", cloudinary_resource_type="raw")
-        with patch("apps.identity.account_action_views.cloudinary_destroy", return_value={"result": "ok"}) as destroy:
+        with patch("apps.patients.erasure.cloudinary_destroy", return_value={"result": "ok"}) as destroy:
             anonymize_and_disable_account(self.user)
         destroy.assert_called_once_with("private/patient/cloud", resource_type="raw")
         self.assertFalse(MedicalDocument.objects.filter(pk=document.pk).exists())
@@ -116,7 +116,7 @@ class MedicalDocumentsV2Tests(TestCase):
 
     def test_account_erasure_keeps_identity_and_document_reference_when_cloudinary_refuses(self):
         document = MedicalDocument.objects.create(patient=self.profile, original_name="cloud.pdf", document_type="other", content_type="application/pdf", size_bytes=10, cloudinary_public_id="private/patient/refused", cloudinary_resource_type="raw")
-        with patch("apps.identity.account_action_views.cloudinary_destroy", side_effect=RuntimeError("refused")):
+        with patch("apps.patients.erasure.cloudinary_destroy", side_effect=RuntimeError("refused")):
             with self.assertRaises(RuntimeError):
                 anonymize_and_disable_account(self.user)
         self.user.refresh_from_db()

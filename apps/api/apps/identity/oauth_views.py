@@ -13,6 +13,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from authlib.jose import JsonWebKey, jwt
 from apps.audit.services import record_event
+from .account_state import block_state, lift_expired_suspension, record_login
 from .models import AccountContext, AccountProfile, AuthIdentity
 from .visitor_tracking import track_auth_response
 
@@ -168,6 +169,12 @@ class OAuthCallbackView(APIView):
                 if link_user_id and str(existing.user_id) != link_user_id: return ui_redirect(provider, status="conflict", message="Cette méthode est déjà liée à un autre compte.")
                 stage = "existing_identity_login"
                 user = existing.user
+                if not user.is_active:
+                    lift_expired_suspension(user)
+                if not user.is_active:
+                    # Compte suspendu par la personne ou désactivé par l'équipe : pas de session, et on dit pourquoi.
+                    record_login(user, "blocked", "oauth")
+                    return ui_redirect(provider, status="error", message=block_state(user)["message"])
                 first_name, last_name = split_name(profile.get("name"))
                 changed = []
                 if not user.first_name and (profile.get("first_name") or first_name):
@@ -179,7 +186,7 @@ class OAuthCallbackView(APIView):
                 if not account_profile.avatar_data and not account_profile.avatar_url and profile.get("avatar", "").startswith("https://"):
                     account_profile.avatar_url = profile["avatar"]
                     account_profile.save(update_fields=("avatar_url", "updated_at"))
-                login(request, user); existing.last_seen_at = timezone.now(); existing.save(update_fields=("last_seen_at",))
+                login(request, user); record_login(user, "success", "oauth"); existing.last_seen_at = timezone.now(); existing.save(update_fields=("last_seen_at",))
                 fallback = settings_path(existing.user) if link_user_id else account_destination(existing.user)
                 destination = fallback if fallback == "/onboarding/securite" else safe_next_path(next_path, fallback)
                 response = oauth_success_redirect(destination)
@@ -217,6 +224,7 @@ class OAuthCallbackView(APIView):
             if not getattr(user, "account_profile", None): AccountProfile.objects.create(user=user, avatar_url=profile.get("avatar", ""))
             stage = "session_login"
             login(request, user)
+            record_login(user, "success", "oauth")
             stage = "audit_event"
             record_event(event_type="oauth.identity_linked" if linked else "oauth.account_created", actor=user, actor_role="account", metadata={"action": "linked" if linked else "created", "provider": provider})
             fallback = settings_path(user) if linked else account_destination(user)

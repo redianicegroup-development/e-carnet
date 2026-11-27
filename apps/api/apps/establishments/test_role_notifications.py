@@ -121,12 +121,12 @@ class LaboratoryAndStaffNotificationTests(TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(self.inbox(self.root)["total_count"], 0)
 
-    def test_suspension_request_notifies_the_team(self):
+    def test_an_immediate_suspension_does_not_notify_the_team(self):
+        """La suspension est immédiate et ne demande aucune action de l'équipe : le journal de la console suffit, aucune cloche ne sonne."""
         patient = User.objects.create_user(username="patient-ln", email="patient-ln@test", password="patient-password")
         self.client.force_authenticate(patient)
-        response = self.client.post("/api/v1/identity/me/account-requests/", {"request_type": "suspension", "suspension_days": 14}, format="json")
+        response = self.client.post("/api/v1/identity/me/account-requests/", {"request_type": "suspension", "suspension_days": 14, "reason": "privacy"}, format="json")
         self.assertEqual(response.status_code, 201)
-        items = self.inbox(self.root)["items"]
-        self.assertEqual(items[0]["kind"], "admin.suspension_request")
-        self.assertIn("14", items[0]["body"])
-        self.assertNotIn("patient-ln", items[0]["body"])
+        patient.refresh_from_db()
+        self.assertFalse(patient.is_active)
+        self.assertEqual(self.inbox(self.root)["items"], [])

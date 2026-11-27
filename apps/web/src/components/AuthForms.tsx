@@ -34,6 +34,8 @@ function oauthErrorTitleFor(status: string | null): string {
 /* Titre du modal d'erreur de connexion : le motif clair est dans le message du serveur, le titre dit de quoi il s'agit. */
 function errorTitleFor(status: number, code: unknown, login: boolean): string {
   if (code === "temporary_password_expired") return "Mot de passe temporaire expiré";
+  if (code === "account_suspended") return "Compte suspendu";
+  if (code === "account_deactivated") return "Compte désactivé";
   if (code === "invalid_credentials" || status === 401) return "E-mail ou mot de passe incorrect";
   if (status === 429) return "Trop de tentatives";
   return login ? "Connexion impossible" : "Création impossible";

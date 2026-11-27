@@ -109,18 +109,15 @@ test("récupération de compte : essais restants, blocage et réponse acceptée 
   assert.equal(notice.formatWait(86400), "24 h");
 });
 
-test("la récupération affiche une modal et le suivi est visible dans la console admin", () => {
+test("la récupération affiche une modal ; la console n'expose plus aucun journal de récupération (secrets jamais visibles)", () => {
   const flow = read("src/components/auth/RecoveryFlow.tsx");
   assert.match(flow, /RecoveryNoticeDialog/);
   assert.match(flow, /createPortal/);
   const admin = read("src/app/admin/page.tsx");
-  assert.match(admin, /AdminRecoveryClient/);
-  assert.match(admin, /recovery/);
-  const client = read("src/components/AdminRecoveryClient.tsx");
-  assert.match(client, /\/api\/v1\/identity\/admin\/recovery\//);
-  assert.match(client, /contact-messages/);
+  assert.doesNotMatch(admin, /AdminRecoveryClient|admin-panel-recovery/);
+  assert.equal(existsSync(new URL("src/components/AdminRecoveryClient.tsx", new URL("../", import.meta.url))), false);
   const urls = readFileSync(new URL("../api/apps/identity/urls.py", root), "utf8");
-  assert.match(urls, /admin\/recovery\//);
+  assert.doesNotMatch(urls, /admin\/recovery\//);
 });
 
 test("liaison Google : démarre seulement pour une adresse Gmail, Google configuré et pas encore lié", () => {

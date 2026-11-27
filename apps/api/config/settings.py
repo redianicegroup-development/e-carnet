@@ -60,6 +60,7 @@ REST_FRAMEWORK = {
     # Limitation des tentatives (force brute sur mots de passe, codes, invitations, QR).
     "DEFAULT_THROTTLE_RATES": {
         "auth_login": os.environ.get("ECARNET_RATE_LOGIN", "20/hour"),
+        "ops_login": os.environ.get("ECARNET_RATE_OPS_LOGIN", "6/hour"),
         "auth_login_email": os.environ.get("ECARNET_RATE_LOGIN_EMAIL", "8/hour"),
         "auth_register": os.environ.get("ECARNET_RATE_REGISTER", "10/hour"),
         "auth_recovery": os.environ.get("ECARNET_RATE_RECOVERY", "12/hour"),
@@ -73,6 +74,7 @@ REST_FRAMEWORK = {
         "monitoring_webhook": os.environ.get("ECARNET_RATE_MONITOR_WEBHOOK", "600/hour"),
         "code_redeem": os.environ.get("ECARNET_RATE_CODE", "10/hour"),
         "grant_request": os.environ.get("ECARNET_RATE_GRANT", "60/hour"),
+        "appointment_give": os.environ.get("ECARNET_RATE_APPOINTMENT_GIVE", "60/hour"),
         "guest_lookup": os.environ.get("ECARNET_RATE_GUEST_LOOKUP", "30/hour"),
         "guest_start": os.environ.get("ECARNET_RATE_GUEST_START", "20/hour"),
         "break_glass_open": os.environ.get("ECARNET_RATE_BREAK_GLASS_OPEN", "6/hour"),
@@ -123,12 +125,16 @@ ECARNET_ESTABLISHMENT_ADMIN_CLINICAL_READ = os.environ.get("ECARNET_ESTABLISHMEN
 # Durée optionnelle d'une ouverture de dossier, en minutes. 0 = jusqu'à la clôture du motif (ETA-09).
 # Les valeurs positives peuvent imposer une expiration automatique; la logique métier plafonne à 240 minutes.
 ECARNET_RECORD_OPENING_TTL_MINUTES = int(os.environ.get("ECARNET_RECORD_OPENING_TTL_MINUTES", "0") or 0)
-ECARNET_OPERATIONS_ADMIN_EMAILS = tuple(
-    email.strip().lower()
-    for email in os.environ.get("ECARNET_OPERATIONS_ADMIN_EMAILS", "").split(",")
-    if email.strip()
-)
+# Portail de surveillance technique (/surveillance) : accès SÉPARÉ de la console d'administration, sans compte Mon E‑Carnet. Fermé par défaut :
+# il ne s'ouvre que si au moins un identifiant (adresse e-mail) ET le secret (24 caractères minimum) sont posés ici.
+# Plusieurs identifiants peuvent être séparés par des virgules. Voir identity/ops_portal.py.
+ECARNET_OPS_PORTAL_ID = os.environ.get("ECARNET_OPS_PORTAL_ID", "").strip()
+ECARNET_OPS_PORTAL_SECRET = os.environ.get("ECARNET_OPS_PORTAL_SECRET", "")
+ECARNET_OPS_PORTAL_SESSION_SECONDS = int(os.environ.get("ECARNET_OPS_PORTAL_SESSION_SECONDS", "1800") or 1800)
 ECARNET_MONITOR_WEBHOOK_SECRET = os.environ.get("ECARNET_MONITOR_WEBHOOK_SECRET", "")
+
+# Diffusion des bannières aux patients : activée par défaut, désactivation explicite avec ADS_ENABLED=false.
+ADS_ENABLED = os.environ.get("ADS_ENABLED", "true").strip().lower() in {"1", "true", "yes", "on"}
 
 # --- Web Push (VAPID) ---------------------------------------------------------------------------------------------
 # Sans clés, le push est simplement désactivé : les notifications dans l'application restent la source de vérité.

@@ -45,16 +45,17 @@ test("fiche d'onboarding : logo, nom pré-rempli modifiable, ville, adresse facu
   assert.doesNotMatch(editor, /type="email" autoComplete="email" value=\{values/, "l'e-mail n'est plus saisi");
 });
 
-test("console équipe : la carte du tableau ne fait plus déborder la page, et chaque ligne devient une carte sur mobile", () => {
+test("console équipe : la liste des établissements est un profil grid (plus de tableau qui déborde), la fiche porte le suivi", () => {
   const css = read("src/components/admin-establishments.css");
   assert.match(css, /\.admin-management-grid > \* \{ min-width: 0; \}/);
-  assert.match(css, /@media \(max-width: 860px\)[\s\S]*\.admin-table--stack td\[data-label\]::before \{ content: attr\(data-label\)/);
   const client = read("src/components/AdminEstablishmentsClient.tsx");
-  assert.match(client, /admin-table admin-table--stack/);
+  assert.match(client, /<ProfileGrid label="Établissements créés">/);
+  assert.doesNotMatch(client, /admin-table admin-table--stack/, "plus de tableau : il se coupait sur mobile");
   assert.match(client, /Dernière mise à jour/);
   assert.match(client, /Renommé par l’établissement le/);
-  assert.match(client, /nom vérifié : \{item\.original_name\}/);
-  assert.match(client, /admin-structure__logo/);
+  assert.match(client, /nom vérifié : \$\{item\.original_name\}/);
+  assert.match(client, /photo=\{item\.logo \|\| null\}/, "le logo de l'établissement est la photo du profil");
+  for (const action of ["Remplacer le responsable", "Suspendre", "Réactiver", "Journal", "Nouveau mot de passe"]) assert.match(client, new RegExp(action), action);
 });
 
 test("hero : le texte révélé est vert (il se confondait avec la photo claire)", () => {

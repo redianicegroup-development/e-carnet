@@ -29,94 +29,135 @@ def signed_post(client, payload, *, timestamp=None, secret=SECRET, raw_body=None
         HTTP_X_ECARNET_MONITOR_SIGNATURE=f"sha256={monitoring_signature(secret, ts, event_id, body)}",
     )
 
+PORTAL = {"ECARNET_OPS_PORTAL_ID": "exploitation", "ECARNET_OPS_PORTAL_SECRET": "un-secret-d-exploitation-assez-long-2026"}
+
+
+def portal_login(client, identifier="exploitation", secret="un-secret-d-exploitation-assez-long-2026"):
+    return client.post("/api/v1/identity/ops/login/", {"identifier": identifier, "secret": secret}, format="json")
+
+
+@override_settings(CACHES=REAL_CACHE, **PORTAL)
 class AdminOperationsTests(TestCase):
-    url = "/api/v1/identity/admin/operations/summary/"
+    """Surveillance technique : portail SÉPARÉ de la console (identifiant + secret posés dans les variables d'environnement du serveur)."""
+    url = "/api/v1/identity/ops/summary/"
 
-    def test_anonymous_users_cannot_access_operations(self):
-        self.assertEqual(APIClient().get(self.url).status_code, 403)
+    def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
+        self.addCleanup(cache.clear)
+        IpScopedThrottle.cache.clear() if hasattr(IpScopedThrottle, "cache") else None
 
-    @override_settings(ECARNET_OPERATIONS_ADMIN_EMAILS=("ops@example.test",))
-    def test_superadmin_outside_allowlist_cannot_access_operations(self):
-        user = get_user_model().objects.create_superuser(
-            username="other@example.test", email="other@example.test", password="Test-password-2026!",
-        )
+    def opened(self):
+        client = APIClient()
+        response = portal_login(client)
+        self.assertEqual(response.status_code, 200, response.content)
+        client.defaults["HTTP_X_OPS_CSRF"] = response.data["data"]["csrf"]
+        return client
+
+    def test_summary_requires_a_portal_session(self):
+        self.assertEqual(APIClient().get(self.url).status_code, 401)
+
+    def test_a_superadmin_account_gives_no_access_to_the_portal(self):
+        user = get_user_model().objects.create_superuser(username="root@example.test", email="root@example.test", password="Test-password-2026!")
         client = APIClient()
         client.force_authenticate(user)
         self.assertEqual(client.get(self.url).status_code, 403)
 
-    @override_settings(ECARNET_OPERATIONS_ADMIN_EMAILS=("ops@example.test",))
-    def test_allowed_operations_email_receives_safe_summary(self):
-        user = get_user_model().objects.create_superuser(
-            username="ops@example.test", email="OPS@example.test", password="Test-password-2026!",
-        )
-        client = APIClient()
-        client.force_authenticate(user)
+    def test_login_with_the_environment_secrets_opens_a_safe_summary(self):
+        client = self.opened()
         response = client.get(self.url)
         self.assertEqual(response.status_code, 200)
         payload = response.data["data"]
         self.assertIn(payload["status"], {"ok", "warning", "error"})
-        self.assertIn("database", payload["components"])
-        self.assertIn("cache", payload["components"])
-        self.assertIn("media", payload["components"])
-        self.assertNotIn("password", payload)
-        self.assertNotIn("secret_key", payload)
-        self.assertNotIn("patient_records", payload)
+        for component in ("database", "cache", "media"):
+            self.assertIn(component, payload["components"])
+        flat = json.dumps(payload).lower()
+        for forbidden in ("password", "secret_key", "patient_records", PORTAL["ECARNET_OPS_PORTAL_SECRET"], PORTAL["ECARNET_OPS_PORTAL_ID"]):
+            self.assertNotIn(forbidden, flat)
+        cookie = client.cookies["ecarnet_ops"]
+        self.assertTrue(cookie["httponly"])
+        self.assertEqual(cookie["path"], "/api/v1/identity/ops/")
+        self.assertTrue(AuditEvent.objects.filter(event_type="operations.portal.login", actor__isnull=True).exists())
 
-    @override_settings(ECARNET_OPERATIONS_ADMIN_EMAILS=("ops@example.test",))
-    def test_operations_admin_can_acknowledge_and_resolve_incident(self):
-        user = get_user_model().objects.create_superuser(
-            username="incident-ops@example.test", email="ops@example.test", password="Test-password-2026!",
-        )
-        incident = OperationalIncident.objects.create(
-            incident_key="api:test-500", severity="major", category="api", summary="Taux d’erreur de test élevé.",
-        )
-        client = APIClient()
-        client.force_authenticate(user)
-        incident_url = f"/api/v1/identity/admin/operations/incidents/{incident.id}/"
-        acknowledged = client.patch(incident_url, {"action": "acknowledge"}, format="json")
-        self.assertEqual(acknowledged.status_code, 200)
+    def test_login_accepts_each_comma_separated_email_identifier(self):
+        with override_settings(ECARNET_OPS_PORTAL_ID=" first@example.test, second@example.test "):
+            for email in ("first@example.test", "second@example.test"):
+                response = portal_login(APIClient(), email)
+                self.assertEqual(response.status_code, 200)
+
+            response = portal_login(APIClient(), "other@example.test")
+            self.assertEqual(response.status_code, 401)
+
+    def test_wrong_identifier_or_secret_is_refused_without_saying_which(self):
+        for identifier, secret in (("exploitation", "mauvais-secret"), ("autre", "un-secret-d-exploitation-assez-long-2026"), ("", ""), (None, None)):
+            response = portal_login(APIClient(), identifier, secret)
+            self.assertEqual(response.status_code, 401)
+            self.assertEqual(response.data["message"], "Identifiant ou secret incorrect.")
+        self.assertEqual(AuditEvent.objects.filter(event_type="operations.portal.login_failed").count(), 4)
+
+    def test_portal_stays_closed_until_both_secrets_are_set_and_long_enough(self):
+        for overrides in ({"ECARNET_OPS_PORTAL_ID": ""}, {"ECARNET_OPS_PORTAL_SECRET": ""}, {"ECARNET_OPS_PORTAL_SECRET": "trop-court"}):
+            with override_settings(**overrides):
+                response = portal_login(APIClient())
+                self.assertEqual((response.status_code, response.data["code"]), (503, "not_configured"))
+
+    def test_changing_the_secret_kills_open_sessions(self):
+        client = self.opened()
+        self.assertEqual(client.get(self.url).status_code, 200)
+        with override_settings(ECARNET_OPS_PORTAL_SECRET="un-autre-secret-d-exploitation-2026-xx"):
+            self.assertEqual(client.get(self.url).status_code, 401)
+
+    def test_session_expires(self):
+        client = self.opened()
+        with override_settings(ECARNET_OPS_PORTAL_SESSION_SECONDS=300), patch("django.core.signing.time.time", return_value=time.time() + 400):
+            self.assertEqual(client.get(self.url).status_code, 401)
+
+    def test_too_many_failures_lock_the_portal_even_for_the_right_secret(self):
+        from .ops_portal import LOCK_LIMIT
+        for index in range(LOCK_LIMIT):  # attaque répartie : une adresse IP différente à chaque essai
+            portal_login(APIClient(REMOTE_ADDR=f"10.1.{index // 200}.{index % 200 + 1}"), "exploitation", "mauvais-secret")
+        locked = portal_login(APIClient(REMOTE_ADDR="10.9.9.9"))
+        self.assertEqual((locked.status_code, locked.data["code"]), (429, "locked"))
+
+    def test_one_address_is_throttled_after_a_few_attempts(self):
+        client = APIClient(REMOTE_ADDR="10.7.7.7")
+        statuses = [portal_login(client, "exploitation", "mauvais-secret").status_code for _ in range(8)]
+        self.assertEqual(statuses[:6], [401] * 6)
+        self.assertEqual(statuses[6], 429)
+
+    def test_logout_clears_the_cookie(self):
+        client = self.opened()
+        self.assertEqual(client.post("/api/v1/identity/ops/logout/", {}, format="json").status_code, 200)
+        self.assertEqual(client.cookies["ecarnet_ops"].value, "")
+
+    def test_changes_need_the_security_header(self):
+        incident = OperationalIncident.objects.create(incident_key="api:csrf", severity="warning", category="api", summary="Test.")
+        url = f"/api/v1/identity/ops/incidents/{incident.id}/"
+        client = self.opened()
+        client.defaults.pop("HTTP_X_OPS_CSRF")
+        self.assertEqual(client.patch(url, {"action": "acknowledge"}, format="json").status_code, 403)
+        client.defaults["HTTP_X_OPS_CSRF"] = "jeton-invente"
+        self.assertEqual(client.patch(url, {"action": "acknowledge"}, format="json").status_code, 403)
+        incident.refresh_from_db()
+        self.assertEqual(incident.status, "open")
+
+    def test_portal_can_acknowledge_and_resolve_incident(self):
+        incident = OperationalIncident.objects.create(incident_key="api:test-500", severity="major", category="api", summary="Taux d’erreur de test élevé.")
+        client = self.opened()
+        url = f"/api/v1/identity/ops/incidents/{incident.id}/"
+        self.assertEqual(client.patch(url, {"action": "acknowledge"}, format="json").status_code, 200)
         incident.refresh_from_db()
         self.assertEqual(incident.status, "acknowledged")
-        resolved = client.patch(incident_url, {"action": "resolve", "resolution_note": "Contrôle terminé."}, format="json")
-        self.assertEqual(resolved.status_code, 200)
+        self.assertEqual(client.patch(url, {"action": "resolve", "resolution_note": "Contrôle terminé."}, format="json").status_code, 200)
         incident.refresh_from_db()
         self.assertEqual(incident.status, "resolved")
-        self.assertTrue(AuditEvent.objects.filter(event_type="operations.incident.acknowledged", actor=user).exists())
-        self.assertTrue(AuditEvent.objects.filter(event_type="operations.incident.resolved", actor=user).exists())
+        self.assertTrue(AuditEvent.objects.filter(event_type="operations.incident.acknowledged", actor__isnull=True, actor_role="ops_portal").exists())
+        self.assertTrue(AuditEvent.objects.filter(event_type="operations.incident.resolved", actor__isnull=True).exists())
 
-    # ---- Liste d'exploitation : fermée par défaut hors développement local
-    def test_empty_allowlist_denies_every_superadmin_outside_debug(self):
-        user = get_user_model().objects.create_superuser(username="root@example.test", email="root@example.test", password="Test-password-2026!")
-        client = APIClient()
-        client.force_authenticate(user)
-        with override_settings(ECARNET_OPERATIONS_ADMIN_EMAILS=(), DEBUG=False):
-            self.assertEqual(client.get(self.url).status_code, 403)
-
-    def test_empty_allowlist_stays_open_for_local_debug_only(self):
-        user = get_user_model().objects.create_superuser(username="dev@example.test", email="dev@example.test", password="Test-password-2026!")
-        client = APIClient()
-        client.force_authenticate(user)
-        with override_settings(ECARNET_OPERATIONS_ADMIN_EMAILS=(), DEBUG=True):
-            self.assertEqual(client.get(self.url).status_code, 200)
-
-    # ---- Étiquette d'environnement
-    @override_settings(ECARNET_OPERATIONS_ADMIN_EMAILS=("ops@example.test",), ECARNET_ENVIRONMENT="staging")
-    def test_environment_label_comes_from_configuration(self):
-        user = get_user_model().objects.create_superuser(username="env@example.test", email="ops@example.test", password="Test-password-2026!")
-        client = APIClient()
-        client.force_authenticate(user)
-        self.assertEqual(client.get(self.url).data["data"]["environment"], "staging")
-        with override_settings(ECARNET_ENVIRONMENT="", DEBUG=False):
-            self.assertEqual(client.get(self.url).data["data"]["environment"], "production")
-
-    # ---- Incidents : un incident résolu ne se rouvre pas, répéter « acquitter » est sans effet, le journal dit lequel
-    @override_settings(ECARNET_OPERATIONS_ADMIN_EMAILS=("ops@example.test",))
     def test_resolved_incident_cannot_be_acknowledged_or_resolved_again(self):
-        user = get_user_model().objects.create_superuser(username="guard@example.test", email="ops@example.test", password="Test-password-2026!")
         incident = OperationalIncident.objects.create(incident_key="db:slow", severity="major", category="database", summary="Base lente.")
-        client = APIClient()
-        client.force_authenticate(user)
-        url = f"/api/v1/identity/admin/operations/incidents/{incident.id}/"
+        client = self.opened()
+        url = f"/api/v1/identity/ops/incidents/{incident.id}/"
         self.assertEqual(client.patch(url, {"action": "resolve", "resolution_note": "Réglé."}, format="json").status_code, 200)
         for action in ("acknowledge", "resolve"):
             self.assertEqual(client.patch(url, {"action": action}, format="json").status_code, 409)
@@ -124,18 +165,22 @@ class AdminOperationsTests(TestCase):
         self.assertEqual(incident.status, "resolved")
         self.assertEqual(AuditEvent.objects.filter(event_type__startswith="operations.incident.").count(), 1)
 
-    @override_settings(ECARNET_OPERATIONS_ADMIN_EMAILS=("ops@example.test",))
     def test_acknowledging_twice_is_idempotent_and_the_audit_names_the_incident(self):
-        user = get_user_model().objects.create_superuser(username="twice@example.test", email="ops@example.test", password="Test-password-2026!")
         incident = OperationalIncident.objects.create(incident_key="api:slow", severity="warning", category="api", summary="API lente.")
-        client = APIClient()
-        client.force_authenticate(user)
-        url = f"/api/v1/identity/admin/operations/incidents/{incident.id}/"
+        client = self.opened()
+        url = f"/api/v1/identity/ops/incidents/{incident.id}/"
         self.assertEqual(client.patch(url, {"action": "acknowledge"}, format="json").status_code, 200)
         self.assertEqual(client.patch(url, {"action": "acknowledge"}, format="json").status_code, 200)
         events = AuditEvent.objects.filter(event_type="operations.incident.acknowledged")
         self.assertEqual(events.count(), 1)
         self.assertEqual(events.get().metadata.get("incident_key"), "api:slow")
+
+    def test_environment_label_comes_from_configuration(self):
+        client = self.opened()
+        with override_settings(ECARNET_ENVIRONMENT="staging"):
+            self.assertEqual(client.get(self.url).data["data"]["environment"], "staging")
+        with override_settings(ECARNET_ENVIRONMENT="", DEBUG=False):
+            self.assertEqual(client.get(self.url).data["data"]["environment"], "production")
 
     # ---- Webhook de monitoring : signature avec horodatage
     @override_settings(ECARNET_MONITOR_WEBHOOK_SECRET=SECRET)

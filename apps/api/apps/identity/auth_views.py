@@ -20,6 +20,7 @@ from apps.audit.services import record_event
 from apps.cloudinary_storage import CLOUDINARY_CONFIGURED, upload as cloudinary_upload
 from apps.patients.models import PatientProfile
 from .auth_serializers import AccountIdentitySerializer, AccountSerializer, LinkedIdentitySerializer, LoginSerializer, PasswordChangeSerializer, PatientOnboardingSerializer, RecoveryAnswerSerializer, RecoveryQuestionSerializer, RecoveryResetSerializer, RecoverySetupSerializer, RegisterSerializer
+from .account_state import block_state, lift_expired_suspension, record_login
 from .models import AccountContext, AccountProfile, AuthIdentity
 from .visitor_tracking import track_auth_response
 
@@ -47,8 +48,18 @@ class LoginView(APIView):
     def post(self, request):
         serializer = LoginSerializer(data=request.data); serializer.is_valid(raise_exception=True)
         matches = get_user_model().objects.filter(email__iexact=serializer.validated_data["email"])
-        user = matches.first() if matches.count() == 1 else None
-        user = authenticate(request, username=user.get_username(), password=serializer.validated_data["password"]) if user else None
+        candidate = matches.first() if matches.count() == 1 else None
+        # Une suspension arrivée à échéance se lève ici, juste avant la vérification du mot de passe.
+        if candidate is not None and not candidate.is_active:
+            lift_expired_suspension(candidate)
+        user = authenticate(request, username=candidate.get_username(), password=serializer.validated_data["password"]) if candidate else None
+        # Compte fermé (suspendu par la personne ou désactivé par l'équipe) : Django refuse la connexion. Si la personne vient de saisir son bon
+        # mot de passe, on lui dit POURQUOI ; sinon la réponse reste le simple « incorrect » (rien n'est révélé à qui ne le connaît pas).
+        if candidate is not None and user is None and not candidate.is_active and candidate.check_password(serializer.validated_data["password"]):
+            state = block_state(candidate)
+            record_login(candidate, "blocked")
+            response = Response({"success": False, "code": state["code"], "message": state["message"]}, status=403)
+            return track_auth_response(request, response, "login_failure")
         # Mot de passe temporaire périmé : la personne vient de le saisir correctement, on peut donc lui dire POURQUOI la connexion est refusée
         # (cela ne révèle rien à quelqu'un qui ne le connaît pas : un mauvais mot de passe reste un simple « incorrect »).
         if user and temporary_password_expired(getattr(user, "account_profile", None)):
@@ -56,11 +67,14 @@ class LoginView(APIView):
                 "success": False, "code": "temporary_password_expired",
                 "message": f"Ce mot de passe temporaire a expiré (il est valable {TEMPORARY_PASSWORD_TTL.days} jours). Demandez-en un nouveau à la personne qui vous a ouvert l’accès : l’équipe Mon E‑Carnet ou votre établissement.",
             }, status=400)
+            record_login(user, "failure")
             return track_auth_response(request, response, "login_failure")
         if not user:
+            record_login(candidate, "failure")
             response = Response({"success": False, "code": "invalid_credentials", "message": "Email ou mot de passe incorrect. Avec un mot de passe temporaire, recopiez-le exactement : tirets, majuscules et minuscules compris."}, status=400)
             return track_auth_response(request, response, "login_failure")
         login(request, user)
+        record_login(user, "success")
         mark_temporary_login(request, getattr(user, "account_profile", None))
         response = Response({"success": True, "data": account_payload(user)})
         return track_auth_response(request, response, "login_success")

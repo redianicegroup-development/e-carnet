@@ -11,6 +11,7 @@ import { downloadEmergencyCardPng } from "./emergency-card/emergency-card-image"
 import { initials, useSpaceAccount } from "./shell/SpaceShell";
 import { profileInitials, type PatientProfileEntry } from "../lib/patient-profiles";
 import { Icon } from "./ui/Icon";
+import { SectionIntro } from "./ui/InfoTip";
 
 type EmergencyCard = {
   first_name: string;
@@ -87,9 +88,8 @@ export function PatientEmergencyCardSettingsClient({ variant = "patient", profil
 
   return <section className="card ecard-panel" aria-labelledby="emergency-card-title">
     <div className="ecard-panel__head">
-      <span className="eyebrow">{professional ? "Carte professionnelle" : "Carte d’urgence"}</span>
+      <SectionIntro eyebrow={professional ? "Carte professionnelle" : "Carte d’urgence"}>{professional ? "Votre carte avec votre métier et votre spécialité. Vous pouvez la télécharger en image ; elle se met à jour quand vous modifiez votre profil." : "Votre carte d’urgence, avec la taille et le poids que vous avez déclarés. Elle se met à jour quand vous modifiez votre carnet."}</SectionIntro>
       <h2 id="emergency-card-title" className="ecard-panel__title"><button className="ecard-panel__toggle" type="button" aria-expanded={cardOpen} aria-controls={cardPanelId} onClick={() => setCardOpen((open) => !open)}>{professional ? "Ma carte professionnelle" : "Ma carte virtuelle"}<Icon name="chevron" size={20} /></button></h2>
-      <p className="muted">{professional ? "Votre carte avec votre métier et votre spécialité. Vous pouvez la télécharger en image ; elle se met à jour quand vous modifiez votre profil." : "Votre carte d’urgence, avec la taille et le poids que vous avez déclarés. Elle se met à jour quand vous modifiez votre carnet."}</p>
     </div>
 
     {loading ? <p className="notice" role="status">Chargement de la carte…</p> : <>
@@ -98,7 +98,7 @@ export function PatientEmergencyCardSettingsClient({ variant = "patient", profil
 
       <div className="ecard-panel__actions">
         <button type="button" className="button primary" disabled={exporting} onClick={() => void downloadPng()}><Icon name="download" />{exporting ? "Création de l’image…" : "Télécharger en PNG"}</button>
-        <Link className="button" href={professional ? "/professionnel/onboarding?retour=parametres" : "/patient/carnet#carte-urgence"}>{professional ? "Modifier mon profil" : "Modifier ma carte"}</Link>
+        <Link className="button" href={professional ? "/professionnel/onboarding?retour=parametres" : "/patient/carnet/carte"}>{professional ? "Modifier mon profil" : "Modifier ma carte"}</Link>
       </div>
 
       {publicUrl && <aside className="patient-dossier__qr" aria-labelledby="home-qr-title">

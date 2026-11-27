@@ -13,7 +13,7 @@ test("les décisions de consentement et les actions irréversibles passent par l
   for (const action of ["accept", "refuse", "extend"]) {
     assert.doesNotMatch(grants, new RegExp(`onClick=\\{\\(\\) => act\\(item\\.id, "${action}"\\)`), `« ${action} » ne doit pas partir sans confirmation`);
   }
-  for (const file of ["AdminAccountActionRequestsClient", "EstablishmentConsole", "AdminEstablishmentsClient"]) {
+  for (const file of ["AccountActionRequestsSettingsClient", "AdminUsersClient", "EstablishmentConsole", "AdminEstablishmentsClient"]) {
     assert.match(read(`src/components/${file}.tsx`), /await confirm\(/, `${file} doit confirmer avant d'agir`);
   }
   assert.match(read("src/components/AdminEstablishmentsClient.tsx"), /tone: "danger"/, "la révocation d'une invitation est une confirmation de type danger");
@@ -200,7 +200,11 @@ test("titres en double : une rubrique « solo » masque le titre répété sous 
   const carnet = read("src/components/PatientCarnet.tsx");
   assert.match(section, /solo \? " carnet-accordion__panel--solo" : ""/);
   assert.match(css, /carnet-accordion__panel--solo > \.card > \.section-heading:first-child h2/);
-  for (const title of ["Mes documents", "Mes vaccins", "Rappels de médicaments", "Mes plans de suivi", "Rendez-vous"]) assert.match(carnet, new RegExp(`<CollapsibleSection title="${title}" solo`));
+  // 25/11/2026 : les rubriques du carnet sont des pages ; le titre répété y est masqué de la même façon (carnet-subpage--solo).
+  assert.match(css, /carnet-subpage--solo > \.card > \.section-heading:first-child h2/);
+  for (const title of ["Mes documents", "Rappels de médicaments", "Mes plans de suivi", "Rendez-vous"]) assert.match(carnet, new RegExp(`<TileLink href="[^"]+" title="${title}"`));
+  for (const page of ["documents", "rappels", "suivi", "rendez-vous", "export"]) assert.match(read(`src/app/patient/carnet/${page}/page.tsx`), /<CarnetSubPage [^>]*solo>/, page);
+  assert.doesNotMatch(carnet, /Mes vaccins/, "les vaccins sont saisis par les agents de vaccination : ils ne sont plus dans « Ce que je déclare »");
   // Les consultations vivent dans Visites : le carnet ne les répète pas.
   assert.doesNotMatch(carnet, /Mes consultations|PatientConsultations/);
   assert.doesNotMatch(carnet, /<h2>Exporter mon carnet<\/h2>/);

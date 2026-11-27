@@ -19,7 +19,7 @@ from rest_framework.views import APIView
 
 from apps.audit.models import AuditEvent
 from apps.audit.services import ALLOWED_METADATA_KEYS, record_event
-from .admin_views import IsOperationsAdmin
+from .admin_views import IsSuperuserOnly
 
 PAGE_SIZE_DEFAULT = 50
 PAGE_SIZE_MAX = 100
@@ -90,7 +90,7 @@ def filtered_events(params):
 class AdminAuditJournalView(APIView):
     """GET ?type=&role=&from=&to=&limit=&before=<date-heure ISO> : événements, du plus récent au plus ancien."""
 
-    permission_classes = [IsOperationsAdmin]
+    permission_classes = [IsSuperuserOnly]
 
     def get(self, request):
         qs = filtered_events(request.query_params)
@@ -127,7 +127,7 @@ def _csv_cell(value) -> str:
 class AdminAuditExportView(APIView):
     """GET ?type=&role=&from=&to= : export CSV (UTF-8 avec BOM, lisible par Excel), au plus 5 000 lignes, journalisé."""
 
-    permission_classes = [IsOperationsAdmin]
+    permission_classes = [IsSuperuserOnly]
 
     def get(self, request):
         events = [serialize_event(event) for event in filtered_events(request.query_params)[:EXPORT_MAX_ROWS]]

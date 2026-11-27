@@ -33,6 +33,9 @@ class AccountProfile(models.Model):
     # après laquelle le changement est imposé côté serveur (identity/middleware.py) tant que ce drapeau n'est pas levé.
     must_change_password = models.BooleanField(default=False)
     temporary_password_expires_at = models.DateTimeField(null=True, blank=True)
+    # Désactivation décidée par l'équipe Mon E‑Carnet (console → Utilisateurs). Tant qu'elle est posée, une suspension demandée par la personne
+    # ne rouvre jamais le compte à son échéance : seule la réactivation par l'équipe le fait (voir identity/account_state.py).
+    staff_deactivated_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
 
@@ -303,6 +306,10 @@ class AccountActionRequest(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     reviewed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="reviewed_account_action_requests")
     reviewed_at = models.DateTimeField(null=True, blank=True)
+    # Suspension demandée par la personne : elle prend effet tout de suite. `suspended_until` est la fin prévue ; `lifted_at` se remplit quand
+    # le compte est rouvert (à l'échéance, à la prochaine connexion, ou par l'équipe).
+    suspended_until = models.DateTimeField(null=True, blank=True)
+    lifted_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ("-submitted_at",)
@@ -353,3 +360,25 @@ class MonitoringWebhookEvent(models.Model):
 
     def __str__(self):
         return f"Événement de monitoring {self.event_id}"
+
+
+class LoginEvent(models.Model):
+    """Journal des connexions (console → Utilisateurs). Il ne garde ni adresse IP, ni appareil, ni texte saisi : seulement qui (si le compte existe),
+    le résultat, le moyen utilisé et l'heure. Les anciennes lignes sont supprimées par `cleanup_login_events` (90 jours)."""
+    OUTCOMES = (("success", "Connexion réussie"), ("failure", "Échec de connexion"), ("blocked", "Compte suspendu ou désactivé"))
+    METHODS = (("password", "Mot de passe"), ("oauth", "Compte Google, Facebook ou Apple"))
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="login_events")
+    outcome = models.CharField(max_length=10, choices=OUTCOMES)
+    method = models.CharField(max_length=10, choices=METHODS, default="password")
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+        indexes = [models.Index(fields=("outcome", "created_at"), name="identity_loginevt_out_dt")]
+        verbose_name = "événement de connexion"
+        verbose_name_plural = "événements de connexion"
+
+    def __str__(self):
+        return f"{self.get_outcome_display()} · {self.user_id} · {self.created_at:%d/%m/%Y %H:%M}"
